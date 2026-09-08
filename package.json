@@ -11,7 +11,8 @@
     "dsh-plugin-desktop",
     "dsh-plugin-desktop-beta",
     "dsh-community-fabric",
-    "dsh-community-market"
+    "dsh-community-market",
+    "dsh-plugin-ssh"
   ],
   "resolutions": {
     "app-builder-lib@npm:26.15.7": "patch:app-builder-lib@npm%3A26.15.7#./patches/app-builder-lib@26.15.7.patch",
@@ -1040,9 +1041,9 @@
     }
   },
   "scripts": {
-    "build": "yarn workspace dsh-community-market build && yarn workspace dsh-plugin-desktop build && yarn workspace dsh-plugin-desktop-beta build",
-    "typecheck": "yarn workspace dsh-plugin-desktop typecheck && yarn workspace dsh-plugin-desktop-beta typecheck && yarn workspace dsh-community-market typecheck",
-    "test": "yarn workspace dsh-plugin-desktop test && yarn workspace dsh-plugin-desktop-beta test && yarn workspace dsh-community-market test",
+    "build": "yarn workspace dsh-community-market build && yarn workspace dsh-plugin-desktop build && yarn workspace dsh-plugin-desktop-beta build && yarn workspace dsh-plugin-ssh build",
+    "typecheck": "yarn workspace dsh-plugin-desktop typecheck && yarn workspace dsh-plugin-desktop-beta typecheck && yarn workspace dsh-community-market typecheck && yarn workspace dsh-plugin-ssh typecheck",
+    "test": "yarn workspace dsh-plugin-desktop test && yarn workspace dsh-plugin-desktop-beta test && yarn workspace dsh-community-market test && yarn workspace dsh-plugin-ssh test",
     "test:bilingual-docs": "node --test scripts/bilingual-docs.test.mjs",
     "check:bilingual-docs": "yarn test:bilingual-docs && node scripts/verify-bilingual-docs.mjs",
     "test:architecture-gates": "node --test scripts/market-dependency-direction.test.mjs",
@@ -1050,7 +1051,7 @@
     "check:vendored-runtime": "node scripts/sync-vendored-runtime.mjs --check --channel stable && node scripts/sync-vendored-runtime.mjs --check --channel beta",
     "check:desktop-variants": "node scripts/verify-desktop-variants.mjs",
     "check:layout": "yarn check:bilingual-docs && yarn check:architecture && yarn check:vendored-runtime && yarn check:desktop-variants && node scripts/verify-layout.mjs",
-    "check": "yarn check:layout && yarn workspace dsh-community-fabric check && yarn workspace dsh-community-market check && yarn workspace dsh-plugin-desktop check && yarn workspace dsh-plugin-desktop-beta check",
+    "check": "yarn check:layout && yarn workspace dsh-community-fabric check && yarn workspace dsh-community-market check && yarn workspace dsh-plugin-desktop check && yarn workspace dsh-plugin-desktop-beta check && yarn ssh:check",
     "dev": "yarn workspace dsh-community-market build && yarn workspace dsh-plugin-desktop dev",
     "start": "yarn workspace dsh-plugin-desktop start",
     "package:dir": "yarn workspace dsh-community-market build && yarn workspace dsh-plugin-desktop package:dir",
@@ -1070,6 +1071,9 @@
     "dist:mac:beta": "yarn workspace dsh-community-market build && yarn workspace dsh-plugin-desktop-beta dist:mac",
     "dist:mac-smoke:beta": "yarn workspace dsh-community-market build && yarn workspace dsh-plugin-desktop-beta dist:mac-smoke",
     "dist:win:beta": "yarn workspace dsh-community-market build && yarn workspace dsh-plugin-desktop-beta dist:win",
-    "dist:win-portable:beta": "yarn workspace dsh-community-market build && yarn workspace dsh-plugin-desktop-beta dist:win-portable"
+    "dist:win-portable:beta": "yarn workspace dsh-community-market build && yarn workspace dsh-plugin-desktop-beta dist:win-portable",
+    "ssh:build": "yarn workspace dsh-plugin-ssh build",
+    "ssh:check": "yarn workspace dsh-plugin-ssh build && yarn workspace dsh-plugin-ssh typecheck && yarn workspace dsh-plugin-ssh test",
+    "ssh:pack": "yarn workspace dsh-plugin-ssh pack:plugin"
   }
 }

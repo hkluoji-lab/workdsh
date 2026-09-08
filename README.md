@@ -1,3 +1,5 @@
+> **DSH SSH 插件**：本仓库中的独立 SSH / SFTP + AI 插件见 [使用说明](dsh-plugin-ssh/README.md)，市场收录准备见 [提交材料](dsh-plugin-ssh/MARKET-SUBMISSION.md)。下方为 Desktop 原有说明。
+
 <p align="center">
   <a href="https://dshdesktop.cn"><img src="assets/desktop-hero-zh.png" alt="DSH Desktop：基于 DeepSeek Harness 构建的开源桌面客户端" width="100%"></a>
 </p>
