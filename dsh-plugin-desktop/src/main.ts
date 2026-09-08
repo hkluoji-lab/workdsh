@@ -1,9 +1,9 @@
-/** DSH Desktop executable: minimal Electron bootstrap around the Host Cordis root. */
+/** DSH SSH executable: minimal Electron bootstrap around the Host Cordis root. */
 
 import { app, crashReporter, safeStorage, shell } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   boot,
@@ -14,7 +14,7 @@ import {
   type FailLoudProcess,
 } from '@deepseek-ai/dsh-app-boot'
 import { provideCmdline } from '@deepseek-ai/dsh-cmdline'
-import { defaultDshHome, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
+import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { DSH_LAUNCH_ENVIRONMENT_KEY } from '@deepseek-ai/dsh-launch-environment'
 import type {} from '@deepseek-ai/dsh-web-app'
 import type {} from '@deepseek-ai/dsh-client-connection'
@@ -674,8 +674,8 @@ async function start(): Promise<void> {
     })
     const dshBootstrapPath = fileURLToPath(new URL('./desktop-cli.js', import.meta.url))
     const releasePnpmRuntime = generation.own(() => { pnpmRuntime.dispose() })
-    const fallbackHome = resolveDshHome()
-    const defaultHome = resolve(defaultDshHome())
+    const defaultHome = join(desktopUserDataDir, 'harness')
+    const fallbackHome = process.env.DSH_HOME === undefined ? defaultHome : resolveDshHome()
     const fallbackSource = process.env.DSH_HOME === undefined ? 'default' : 'environment'
     let dataDirectoryLocation: DesktopDataDirectoryLocation | undefined
     let homeDir: string

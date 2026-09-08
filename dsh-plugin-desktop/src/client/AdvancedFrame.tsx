@@ -87,6 +87,16 @@ export function DesktopOwnedFrame({ layout, mode, platform, renderSlot, SessionP
   const sidebarBase = useRef(0)
   const detailsBase = useRef(0)
   const [dragging, setDragging] = useState(false)
+  const [sshOpen, setSshOpen] = useState(true)
+  const [sshMounted, setSshMounted] = useState(true)
+  useEffect(() => {
+    const listener = (event: MessageEvent) => {
+      const frame = frameRef.current?.querySelector('iframe[title="SSH 工作区"]')
+      if (event.origin === window.location.origin && event.source === (frame as HTMLIFrameElement | null)?.contentWindow && event.data?.type === 'dsh-ssh-model-settings') setSshOpen(false)
+    }
+    window.addEventListener('message', listener)
+    return () => window.removeEventListener('message', listener)
+  }, [])
   const onDragEnd = useCallback(() => { setDragging(false) }, [])
   const onSidebarStart = useCallback(() => {
     sidebarBase.current = columnsRef.current.sidebar
@@ -124,6 +134,11 @@ export function DesktopOwnedFrame({ layout, mode, platform, renderSlot, SessionP
       <aside className="dshDesktopDetailsSurface">
         <SessionProvider>{renderSlot('details', {})}</SessionProvider>
       </aside>
+      <button type="button" onClick={() => { setSshMounted(true); setSshOpen(value => !value) }}
+        style={{ position: 'absolute', right: 20, bottom: 12, zIndex: 80, padding: '6px 12px', background: '#263424', color: '#d0dfc2', border: '1px solid #53684a', borderRadius: 5, cursor: 'pointer', WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        {sshOpen ? '返回 AI' : 'SSH 工作区'}
+      </button>
+      {sshMounted && <iframe hidden={!sshOpen} title="SSH 工作区" src="/desktop/ssh/" style={{ position: 'absolute', inset: '36px 0 44px', width: '100%', height: 'calc(100% - 80px)', border: 0, zIndex: 70 }} />}
       {/* Electron resolves app regions in DOM order; Desktop overlays must remain later. */}
       {mode === 'advanced' && platform === 'win32' && <div className="dshDesktopWindowsCaptionRow" aria-hidden="true" />}
       <div className="dshDesktopOverlay" data-shell-overlay>

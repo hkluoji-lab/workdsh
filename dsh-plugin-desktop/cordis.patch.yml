@@ -4,7 +4,9 @@
     - id: desktop-shell
       name: dsh-plugin-desktop
       config:
-        mode: compatibility
+        mode: advanced
+    - id: desktop-ssh
+      name: dsh-plugin-desktop/ssh
     - id: desktop-terminal
       name: dsh-plugin-desktop/terminal
       disabled: !!js process.platform === 'linux'
@@ -18,6 +20,8 @@
       name: dsh-plugin-desktop/profiles
     - id: desktop-updates
       name: dsh-plugin-desktop/updates
+      config:
+        enabled: false
 
 # A desktop launch has no terminal operator waiting for the Web readiness line.
 - id: web-runtime

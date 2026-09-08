@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-desktop-beta",
   "version": "2.0.5-beta.2",
-  "description": "DSH Desktop Beta: an Electron shell composed as a DeepSeek Harness Cordis plugin",
+  "description": "DSH SSH Beta: an Electron shell composed as a DeepSeek Harness Cordis plugin",
   "license": "MIT",
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
@@ -71,7 +71,11 @@
       "types": "./lib/types/updates.d.ts",
       "default": "./lib/updates.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./ssh": {
+      "types": "./lib/types/ssh.d.ts",
+      "default": "./lib/ssh.js"
+    }
   },
   "files": [
     "build/app-icon.png",
@@ -273,6 +277,8 @@
     "@deepseek-ai/dsh-workflow": "0.1.3-alpha.2",
     "@deepseek-ai/dsh-workspace": "0.1.3-alpha.2",
     "@deepseek-ai/schemastery": "^3.18.2",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "adm-zip": "^0.6.0",
     "dsh-community-market": "0.1.0-dev.0",
     "dshmarket": "1.38.1",
@@ -284,6 +290,8 @@
     "selfsigned": "5.5.0",
     "semver": "^7.8.5",
     "sonner": "^2.0.8",
+    "ssh2": "^1.17.0",
+    "ws": "^8.21.3",
     "yaml": "^2.9.0"
   },
   "peerDependencies": {
@@ -300,6 +308,8 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/semver": "^7.7.1",
+    "@types/ssh2": "^1.15.6",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^6",
     "builder-util": "26.15.3",
     "class-variance-authority": "^0.7.1",
@@ -320,8 +330,8 @@
     "vitest": "4.1.8"
   },
   "build": {
-    "appId": "ai.deepseek.dsh.desktop.beta",
-    "productName": "DSH Desktop Beta",
+    "appId": "io.techflag.dsh.ssh.beta",
+    "productName": "DSH SSH Beta",
     "asar": {
       "smartUnpack": true
     },
@@ -358,7 +368,7 @@
         "build/tray-iconTemplate.png",
         "build/tray-iconTemplate@2x.png"
       ],
-      "artifactName": "DSH-Desktop-Beta-${version}-${arch}.${ext}",
+      "artifactName": "DSH-SSH-Beta-${version}-${arch}.${ext}",
       "target": [
         "dir"
       ],
@@ -396,7 +406,7 @@
           ]
         }
       ],
-      "artifactName": "DSH-Desktop-Beta-${version}-${arch}-Portable.${ext}",
+      "artifactName": "DSH-SSH-Beta-${version}-${arch}-Portable.${ext}",
       "icon": "build/app-icon.png"
     },
     "nsis": {
@@ -409,9 +419,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "differentialPackage": false,
-      "shortcutName": "DSH Desktop Beta",
+      "shortcutName": "DSH SSH Beta",
       "useZip": false,
-      "artifactName": "DSH-Desktop-Beta-${version}-${arch}-Setup.${ext}"
+      "artifactName": "DSH-SSH-Beta-${version}-${arch}-Setup.${ext}"
     },
     "linux": {
       "asarUnpack": [

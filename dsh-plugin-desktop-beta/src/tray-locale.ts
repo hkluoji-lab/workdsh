@@ -27,7 +27,7 @@ const labels: Record<DesktopLocale, Record<DesktopTrayLabelKey, (value: string) 
     addProfile: () => 'New Profile…',
     checkForUpdates: () => 'Check for Updates…',
     checkingForUpdates: () => 'Checking for Updates…',
-    downloadingUpdate: version => `Downloading DSH Desktop ${version}…`,
+    downloadingUpdate: version => `Downloading DSH SSH ${version}…`,
     enterSafeMode: () => 'Enter Safe Mode…',
     exportDiagnostics: () => 'Export Diagnostics…',
     exitSafeMode: () => 'Exit Safe Mode and Restart…',
@@ -40,13 +40,13 @@ const labels: Record<DesktopLocale, Record<DesktopTrayLabelKey, (value: string) 
     switchToExtended: () => 'Switch to Extended Window',
     installStable: () => 'Install Stable Edition…',
     unavailableForDesktop: profileName => `${profileName} (Unavailable for Desktop)`,
-    updateAvailable: version => `DSH Desktop ${version} Available`,
+    updateAvailable: version => `DSH SSH ${version} Available`,
   },
   zh: {
     addProfile: () => '新建 Profile…',
     checkForUpdates: () => '检查更新…',
     checkingForUpdates: () => '正在检查更新…',
-    downloadingUpdate: version => `正在下载 DSH Desktop ${version}…`,
+    downloadingUpdate: version => `正在下载 DSH SSH ${version}…`,
     enterSafeMode: () => '进入安全模式…',
     exportDiagnostics: () => '导出诊断信息…',
     exitSafeMode: () => '退出安全模式并重启…',
@@ -59,7 +59,7 @@ const labels: Record<DesktopLocale, Record<DesktopTrayLabelKey, (value: string) 
     switchToExtended: () => '切换到扩展窗口',
     installStable: () => '安装稳定版…',
     unavailableForDesktop: profileName => `${profileName}（不可用于桌面端）`,
-    updateAvailable: version => `DSH Desktop ${version} 可用`,
+    updateAvailable: version => `DSH SSH ${version} 可用`,
   },
 }
 
@@ -81,16 +81,16 @@ export interface DesktopRestartConfirmationCopy {
 
 export const rendererRecoveryCopy: Record<DesktopLocale, DesktopRestartConfirmationCopy> = {
   en: {
-    title: 'Restore DSH Desktop',
+    title: 'Restore DSH SSH',
     message: 'The interface could not recover automatically.',
-    detail: 'Automatic recovery stopped after repeated failures to avoid a restart loop. You can try again without restarting the background service. Unsent input may be lost. Export diagnostics from the tray to investigate. Choose Open DSH Desktop from the tray to return to this prompt later.',
+    detail: 'Automatic recovery stopped after repeated failures to avoid a restart loop. You can try again without restarting the background service. Unsent input may be lost. Export diagnostics from the tray to investigate. Choose Open DSH SSH from the tray to return to this prompt later.',
     confirm: 'Try recovery again',
     cancel: 'Not now',
   },
   zh: {
-    title: '恢复 DSH Desktop',
+    title: '恢复 DSH SSH',
     message: '界面未能自动恢复。',
-    detail: '自动恢复连续失败，为避免重启循环已暂停。可以再次尝试恢复，无需重启后台服务。未发送的输入可能丢失。请从托盘导出诊断信息以继续调查。稍后可从托盘选择“打开 DSH Desktop”再次打开此提示。',
+    detail: '自动恢复连续失败，为避免重启循环已暂停。可以再次尝试恢复，无需重启后台服务。未发送的输入可能丢失。请从托盘导出诊断信息以继续调查。稍后可从托盘选择“打开 DSH SSH”再次打开此提示。',
     confirm: '再次尝试恢复',
     cancel: '暂不处理',
   },
@@ -99,15 +99,15 @@ export const rendererRecoveryCopy: Record<DesktopLocale, DesktopRestartConfirmat
 const restartConfirmationCopy: Record<DesktopLocale, Record<'normal' | 'recovery', DesktopRestartConfirmationCopy>> = {
   en: {
     normal: {
-      title: 'Restart DSH Desktop',
-      message: 'Restart DSH Desktop now?',
+      title: 'Restart DSH SSH',
+      message: 'Restart DSH SSH now?',
       detail: 'Running operations and unsent input may be interrupted. Saved settings will not be lost.',
       confirm: 'Restart',
       cancel: 'Cancel',
     },
     recovery: {
       title: 'Restart in Recovery Mode',
-      message: 'Restart DSH Desktop in Recovery Mode?',
+      message: 'Restart DSH SSH in Recovery Mode?',
       detail: 'The next launch opens the recovery assistant before the Profile and plugin Host start. Running operations and unsent input may be interrupted.',
       confirm: 'Restart in Recovery Mode',
       cancel: 'Cancel',
@@ -115,15 +115,15 @@ const restartConfirmationCopy: Record<DesktopLocale, Record<'normal' | 'recovery
   },
   zh: {
     normal: {
-      title: '重启 DSH Desktop',
-      message: '现在重启 DSH Desktop？',
+      title: '重启 DSH SSH',
+      message: '现在重启 DSH SSH？',
       detail: '正在运行的操作和未发送的输入可能会中断，已保存的设置不会丢失。',
       confirm: '重启',
       cancel: '取消',
     },
     recovery: {
       title: '重启到恢复模式',
-      message: '重启 DSH Desktop 并进入恢复模式？',
+      message: '重启 DSH SSH 并进入恢复模式？',
       detail: '下次启动会在 Profile 和插件 Host 运行前打开恢复助手。正在运行的操作和未发送的输入可能会中断。',
       confirm: '重启到恢复模式',
       cancel: '取消',

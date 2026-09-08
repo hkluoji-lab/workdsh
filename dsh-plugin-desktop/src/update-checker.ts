@@ -1,4 +1,4 @@
-/** Headless version checks against the public DSH Desktop release service. */
+/** Headless version checks against the public DSH SSH release service. */
 
 import {
   assertDesktopInstallationId,
@@ -6,14 +6,14 @@ import {
   type DesktopInstallationId,
 } from './desktop-installation-id.ts'
 
-/** Public endpoint returning the latest DSH Desktop version for a requested channel. */
+/** Public endpoint returning the latest DSH SSH version for a requested channel. */
 export const DESKTOP_VERSION_ENDPOINT = 'https://www.dshdesktop.cn/api/desktop/version'
 
 /** Header carrying the installed Desktop version to the fixed version endpoint. */
-export const DESKTOP_CURRENT_VERSION_HEADER = 'X-DSH-Desktop-Version'
+export const DESKTOP_CURRENT_VERSION_HEADER = 'X-DSH-SSH-Version'
 
 /** Header selecting an isolated Desktop release stream. */
-export const DESKTOP_RELEASE_CHANNEL_HEADER = 'X-DSH-Desktop-Channel'
+export const DESKTOP_RELEASE_CHANNEL_HEADER = 'X-DSH-SSH-Channel'
 
 /** Release streams supported by the Desktop service. */
 export type DesktopReleaseChannel = 'stable' | 'beta'
@@ -108,7 +108,7 @@ export function compareSemVerVersions(left: string, right: string): number | nul
 }
 
 /**
- * Check the fixed DSH Desktop version endpoint for a release in one channel.
+ * Check the fixed DSH SSH version endpoint for a release in one channel.
  * @param options - installed version, caller-owned signal, and optional request adapter.
  * @returns a successful comparison, or null when any request or validation step fails.
  */

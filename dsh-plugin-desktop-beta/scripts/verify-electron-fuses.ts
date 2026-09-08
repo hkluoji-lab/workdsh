@@ -209,6 +209,13 @@ function requestedArchitectures(
   const targetNames = new Set(
     [...targets.keys()].filter((name): name is string => typeof name === 'string'),
   )
+  // MacPackager omits DIR_TARGET from the returned map entirely. Recover
+  // only an explicitly configured directory target, never scan stale outputs.
+  if (key === 'mac' && targets.size === 0) {
+    const configured = result.configuration.mac?.target
+    const entries = configured == null ? [] : Array.isArray(configured) ? configured : [configured]
+    if (entries.length > 0 && entries.every(target => (typeof target === 'string' ? target : target.target).split(':')[0] === DIR_TARGET)) targetNames.add(DIR_TARGET)
+  }
   const fromConfiguration = configuredTargetArchitectures(
     result.configuration[key],
     targetNames,

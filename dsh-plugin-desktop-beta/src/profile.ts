@@ -107,7 +107,7 @@ const DESKTOP_WINDOWS_PWSH_SANDBOX_PACKAGE = `${DESKTOP_PACKAGE_NAME}/windows-pw
 const AGENT_PRESETS_ROW_ID = 'agent-presets'
 /** Harness-home directory holding locally authored presets (`agent-presets/discovery`). */
 const USER_PRESET_DIRNAME = '.agent-presets'
-const DEFAULT_DESKTOP_SHELL_MODE: DesktopShellMode = 'compatibility'
+const DEFAULT_DESKTOP_SHELL_MODE: DesktopShellMode = 'advanced'
 const DEFAULT_DESKTOP_PORT = DESKTOP_DEFAULT_WEB_PORT
 const DESKTOP_WEB_SERVER_ROW_ID = 'desktop-webserver'
 const DESKTOP_WEB_SERVER_PACKAGE = `${DESKTOP_PACKAGE_NAME}/webserver`

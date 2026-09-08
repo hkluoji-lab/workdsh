@@ -258,7 +258,7 @@ export function buildWindowsNsisAb(options: WindowsNsisAbBuildOptions): WindowsN
       // The patch target is an untracked package copy, not repository state.
       '--unsafe-paths',
       // Anchor package-relative patch paths at the isolated -C directory.
-      '--directory=.',
+      '--directory=',
       '--include=templates/nsis/include/extractAppPackage.nsh',
       options.appBuilderPatch,
     ],
@@ -305,7 +305,7 @@ export function buildWindowsNsisAb(options: WindowsNsisAbBuildOptions): WindowsN
     )
   }
 
-  const installerName = `DSH-Desktop-${version}-x64-Setup.exe`
+  const installerName = `DSH-SSH-${version}-x64-Setup.exe`
   const directInstaller = join(directOutput, installerName)
   const stagedInstaller = join(stagedOutput, installerName)
   assertPortableExecutable(directInstaller, 'direct-extract NSIS installer')

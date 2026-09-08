@@ -78,7 +78,7 @@ describe('Desktop factory reset', () => {
       expect(readDesktopSetupWizardState(userDataDir, profile)).toBeUndefined()
       const settings = join(profile, 'settings.yaml')
       const defaults = readDesktopSetupWizardSettings(settings)
-      expect(defaults.mode).toBe('compatibility')
+      expect(defaults.mode).toBe('advanced')
       expect(defaults.notifications.enabled).toBe(true)
       await completeOrSkipDesktopSetupWizard(userDataDir, profile, 'skipped', versions)
       expect(readDesktopSetupWizardSettings(settings)).toEqual(defaults)

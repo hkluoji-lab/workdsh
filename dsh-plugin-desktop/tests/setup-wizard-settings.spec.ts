@@ -75,7 +75,7 @@ describe('Desktop Setup Wizard settings document', () => {
     expect(readDesktopSetupWizardSettings(join(root, 'settings.json')))
       .toEqual(defaultDesktopSetupWizardSettings())
     expect(defaultDesktopSetupWizardSettings()).toMatchObject({
-      mode: 'compatibility',
+      mode: 'advanced',
       macosMaterial: 'transparent',
       windowsMaterial: 'off',
       openBrowser: false,
@@ -338,7 +338,7 @@ describe('Desktop Setup Wizard settings document', () => {
     const root = temporaryDirectory()
     const path = join(root, 'settings.yaml')
     const lockPath = `${path}.lock`
-    const contents = 'dsh-desktop:\n  mode: compatibility\n  macosMaterial: transparent\n'
+    const contents = 'dsh-desktop:\n  mode: advanced\n  macosMaterial: transparent\n'
     writeFileSync(path, contents)
     writeFileSync(lockPath, 'owner\n')
 
@@ -351,7 +351,7 @@ describe('Desktop Setup Wizard settings document', () => {
     const root = temporaryDirectory()
     const path = join(root, 'settings.yaml')
     const lockPath = `${path}.lock`
-    const contents = 'dsh-desktop:\n  mode: compatibility\n  macosMaterial: transparent\n'
+    const contents = 'dsh-desktop:\n  mode: advanced\n  macosMaterial: transparent\n'
     writeFileSync(path, contents)
     writeFileSync(lockPath, 'owner\n')
 

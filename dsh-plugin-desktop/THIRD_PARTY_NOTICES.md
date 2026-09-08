@@ -357,7 +357,9 @@ the package names, versions, and licenses for transparency.
 | @vscode/ripgrep | 1.18.0 | MIT |
 | @vscode/ripgrep-darwin-arm64 | 1.18.0 | MIT |
 | @vscode/ripgrep-darwin-x64 | 1.18.0 | MIT |
+| @xterm/addon-fit | 0.11.0 | MIT |
 | @xterm/headless | 6.0.0 | MIT |
+| @xterm/xterm | 6.0.0 | MIT |
 | accepts | 2.0.0 | MIT |
 | adm-zip | 0.6.0 | MIT |
 | agent-base | 7.1.4 | MIT |
@@ -365,14 +367,17 @@ the package names, versions, and licenses for transparency.
 | ajv-formats | 3.0.1 | MIT |
 | anser | 2.3.5 | MIT |
 | argparse | 2.0.1 | Python-2.0 |
+| asn1 | 0.2.6 | MIT |
 | asn1js | 3.0.10 | BSD-3-Clause |
 | async-function | 1.0.0 | MIT |
 | async-generator-function | 1.0.0 | MIT |
 | base64-js | 1.5.1 | MIT |
+| bcrypt-pbkdf | 1.0.2 | BSD-3-Clause |
 | bignumber.js | 9.3.1 | MIT |
 | body-parser | 2.3.0 | MIT |
 | bowser | 2.14.1 | MIT |
 | buffer-equal-constant-time | 1.0.1 | BSD-3-Clause |
+| buildcheck | 0.0.7 | MIT |
 | bundle-name | 4.1.0 | MIT |
 | bytes | 3.1.2 | MIT |
 | bytestreamjs | 2.0.1 | BSD-3-Clause |
@@ -393,6 +398,7 @@ the package names, versions, and licenses for transparency.
 | cookie | 0.7.2 | MIT |
 | cookie-signature | 1.2.2 | MIT |
 | cors | 2.8.6 | MIT |
+| cpu-features | 0.0.10 | MIT |
 | cross-spawn | 7.0.6 | MIT |
 | data-uri-to-buffer | 4.0.1 | MIT |
 | debug | 2.6.9 | MIT |
@@ -523,6 +529,7 @@ the package names, versions, and licenses for transparency.
 | mime-db | 1.54.0 | MIT |
 | mime-types | 3.0.2 | MIT |
 | ms | 2.0.0 | MIT |
+| nan | 2.28.0 | MIT |
 | negotiator | 1.0.0 | MIT |
 | node-addon-api | 7.1.1 | MIT |
 | node-addon-native-custom-loader | 0.1.4 | MIT |
@@ -590,6 +597,7 @@ the package names, versions, and licenses for transparency.
 | side-channel-weakmap | 1.0.2 | MIT |
 | sonner | 2.0.8 | MIT |
 | space-separated-tokens | 2.0.2 | MIT |
+| ssh2 | 1.17.0 | MIT |
 | statuses | 2.0.2 | MIT |
 | stringify-entities | 4.0.4 | MIT |
 | toidentifier | 1.0.1 | MIT |
@@ -598,6 +606,7 @@ the package names, versions, and licenses for transparency.
 | tslib | 2.8.1 | 0BSD |
 | tsyringe | 4.10.0 | MIT |
 | turndown | 7.2.4 | MIT |
+| tweetnacl | 0.14.5 | Unlicense |
 | type-is | 2.1.0 | MIT |
 | typebox | 1.3.7 | MIT |
 | undici | 7.29.0 | MIT |

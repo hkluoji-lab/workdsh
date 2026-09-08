@@ -4,7 +4,6 @@ import {
   app,
   dialog,
   nativeTheme,
-  net,
   Notification,
   shell,
 } from 'electron'
@@ -107,7 +106,7 @@ const PRODUCT_VERSION = desktopProductVersion()
 /** Main-process deadline for one Renderer generation to settle its client Loader. */
 export const RENDERER_BOOT_TIMEOUT_MS = 30_000
 
-/** Native adapter used by the DSH Desktop launcher and owned by its Cordis shell plugin. */
+/** Native adapter used by the DSH SSH launcher and owned by its Cordis shell plugin. */
 export class ElectronDesktopRuntime implements DesktopRuntime {
   readonly platform: DesktopPlatform
   readonly windowsBuild: number | undefined
@@ -154,12 +153,12 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
     })
     this.updates = {
       get isPackaged() { return app.isPackaged },
-      get canDownload() { return app.isPackaged && platformStrategy.updateDownloadPlatform !== undefined },
+      get canDownload() { return false },
       get currentVersion() { return PRODUCT_VERSION },
       get releaseChannel() { return DESKTOP_RELEASE_CHANNEL },
       get statePath() { return join(app.getPath('userData'), 'updates', 'state.json') },
       ...(installationId === undefined ? {} : { installationId }),
-      request: (url, init) => net.fetch(url, init),
+      request: async () => { throw new Error('DSH SSH 更新源尚未配置') },
       confirmDownload: (version, channel) => this.confirmUpdateDownload(version, channel),
       showManualCheckResult: result => this.showManualUpdateCheckResult(result),
       downloadAndOpen: (version, signal, channel) => this.downloadAndOpenUpdate(version, signal, channel),
@@ -698,7 +697,7 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
       version,
       ...(channel === 'stable' ? {} : { channel }),
       destinationPath,
-      request: (url, init) => net.fetch(url, init),
+      request: async () => { throw new Error('DSH SSH 更新源尚未配置') },
       signal,
     })
     signal.throwIfAborted()

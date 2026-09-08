@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-desktop",
   "version": "2.0.5",
-  "description": "DSH Desktop: an Electron shell composed as a DeepSeek Harness Cordis plugin",
+  "description": "DSH SSH: an Electron shell composed as a DeepSeek Harness Cordis plugin",
   "license": "MIT",
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
@@ -71,7 +71,11 @@
       "types": "./lib/types/updates.d.ts",
       "default": "./lib/updates.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./ssh": {
+      "types": "./lib/types/ssh.d.ts",
+      "default": "./lib/ssh.js"
+    }
   },
   "files": [
     "build/app-icon.ico",
@@ -270,6 +274,8 @@
     "@deepseek-ai/dsh-workflow": "0.1.2-rc.1",
     "@deepseek-ai/dsh-workspace": "0.1.2-rc.1",
     "@deepseek-ai/schemastery": "^3.18.2",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "adm-zip": "^0.6.0",
     "dsh-community-market": "0.1.0-dev.0",
     "dshmarket": "1.38.1",
@@ -280,6 +286,8 @@
     "selfsigned": "5.5.0",
     "semver": "^7.8.5",
     "sonner": "^2.0.8",
+    "ssh2": "^1.17.0",
+    "ws": "^8.21.3",
     "yaml": "^2.9.0"
   },
   "peerDependencies": {
@@ -296,6 +304,8 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/semver": "^7.7.1",
+    "@types/ssh2": "^1.15.6",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^6",
     "builder-util": "26.15.3",
     "class-variance-authority": "^0.7.1",
@@ -315,8 +325,8 @@
     "vitest": "4.1.8"
   },
   "build": {
-    "appId": "ai.deepseek.dsh.desktop",
-    "productName": "DSH Desktop",
+    "appId": "io.techflag.dsh.ssh",
+    "productName": "DSH SSH",
     "asar": {
       "smartUnpack": true
     },
@@ -389,7 +399,7 @@
           ]
         }
       ],
-      "artifactName": "DSH-Desktop-${version}-${arch}-Portable.${ext}",
+      "artifactName": "DSH-SSH-${version}-${arch}-Portable.${ext}",
       "icon": "build/app-icon.ico"
     },
     "nsis": {
@@ -403,10 +413,10 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "differentialPackage": false,
-      "shortcutName": "DSH Desktop",
+      "shortcutName": "DSH SSH",
       "uninstallerIcon": "build/app-icon.ico",
       "useZip": false,
-      "artifactName": "DSH-Desktop-${version}-${arch}-Setup.${ext}"
+      "artifactName": "DSH-SSH-${version}-${arch}-Setup.${ext}"
     },
     "linux": {
       "asarUnpack": [
