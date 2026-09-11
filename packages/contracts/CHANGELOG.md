@@ -1,3 +1,7 @@
+# 0.1.0-alpha.3
+
+- `IdentityService` 增加统一成员资格查询，Access 不读取具体身份 Provider 的内部存储。
+
 # 0.1.0-alpha.2
 
 - 增加 `IdentityProfile` 与 `IdentityService`，让 Host 身份提供方同时暴露可信主体、组织和成员快照。

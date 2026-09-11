@@ -6,7 +6,7 @@
 
 Harness 的 User、Permission Preset、Approval、Sandbox、Credentials、Session 和 scope 继续拥有各自运行职责。WorkDSH 不复制这些实现。官方能力没有 Organization、Membership、业务 ResourceOwner、AccessGrant 和企业 AuditEvent 的统一契约，因此建立纯 TypeScript `workdsh-contracts` 包承载业务差异，决策见 [ADR-0016](../adr/0016-governance-contracts-first.md)。
 
-首版无 Cordis 插件入口、数据库、Remote、页面和认证实现。IdentityProvider 只能在 Host 受信边界从提供方证据解析 ActorContext；浏览器、模型或 Agent 工具提交的 principalId/organizationId 不能直接成为可信上下文。AccessService 和 AuditService 接收同一上下文，后续本地与企业 provider 不改变消费方契约。
+契约包本身无 Cordis 插件入口、数据库、Remote、页面和认证实现。IdentityProvider 只能在 Host 受信边界从提供方证据解析 ActorContext；浏览器、模型或 Agent 工具提交的 principalId/organizationId 不能直接成为可信上下文。AccessService 和 AuditService 接收同一上下文，后续本地与企业 provider 不改变消费方契约。实际 Host 基础服务及持久化证据见 [Access 与 Audit 验证](d01-access-audit.md)。
 
 ## 当前验证
 
@@ -24,4 +24,4 @@ Harness 的 User、Permission Preset、Approval、Sandbox、Credentials、Sessio
 
 ## 尚未验证
 
-授权决策、审计追加、两主体/两组织负例、撤权、Session/文件/工具入口绑定及团队 runtime 失败关闭尚未实现。完成这些证据前 P0-04/P0-05 和 D01 保持进行中，团队远程入口保持关闭。
+Session、文件、工具、Remote 入口绑定，成员停用时在途运行取消，以及团队 runtime 失败关闭尚未实现。完成这些证据前 P0-04/P0-05 和 D01 保持进行中，团队远程入口保持关闭。

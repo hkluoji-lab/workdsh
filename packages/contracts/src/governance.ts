@@ -119,6 +119,8 @@ export interface IdentityProvider<Evidence = IdentityResolutionContext | undefin
 export interface IdentityService<Evidence = IdentityResolutionContext | undefined> extends IdentityProvider<Evidence> {
   /** Trusted profile loaded by the Host. It never accepts client-selected identity. */
   profile(): IdentityProfile;
+  /** Resolve active or suspended membership without exposing provider storage. */
+  membership(organizationId: string, principalId: string): Membership | undefined;
 }
 
 export interface AccessService {

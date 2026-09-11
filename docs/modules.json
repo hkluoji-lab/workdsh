@@ -220,7 +220,7 @@
     "title": "资源授权",
     "phase": "P0/P1",
     "task": "P1-09",
-    "status": "planned",
+    "status": "in_progress",
     "directories": [
       "src/domain",
       "src/services",
@@ -230,14 +230,15 @@
       "src/client/components",
       "src/harness",
       "tests"
-    ]
+    ],
+    "moduleVersion": "0.1"
   },
   {
     "path": "packages/plugins/audit",
     "title": "审计",
     "phase": "P1",
     "task": "P1-09",
-    "status": "planned",
+    "status": "in_progress",
     "directories": [
       "src/domain",
       "src/services",
@@ -247,7 +248,8 @@
       "src/client/components",
       "src/harness",
       "tests"
-    ]
+    ],
+    "moduleVersion": "0.1"
   },
   {
     "path": "packages/plugins/model-policy",

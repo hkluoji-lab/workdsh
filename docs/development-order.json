@@ -30,7 +30,8 @@
       "evidence": [
         "docs/evidence/d01-installation.md",
         "docs/evidence/d01-client.md",
-        "docs/evidence/d01-governance-contracts.md"
+        "docs/evidence/d01-governance-contracts.md",
+        "docs/evidence/d01-access-audit.md"
       ]
     },
     {

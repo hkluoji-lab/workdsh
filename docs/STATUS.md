@@ -1,16 +1,18 @@
 # 当前状态与任务台账
 
-更新时间：2026-09-11。
+更新时间：2026-09-12。
 
 ## 当前模块版本
 
-版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；当前活动工程模块转为治理契约与本地身份提供方 **0.1**。`workdsh-bundle@0.1.0-alpha.35` 仍表示现有产品组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
+版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；当前活动工程模块为治理契约、本地身份、资源授权和审计 **0.1**。`workdsh-bundle@0.1.0-alpha.35` 仍表示现有产品组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
 
 Skill 0.1 提前切片现已正式结项：`development-order.activeSlice` 标为 completed，`packages/plugins/skills` 标为 implemented，P1-03 标为 completed。D03 正式阶段仍等待 D02；到达时只补 ActorContext/access/audit 治理适配与组合验收，不重复开发技能页面和管理闭环。
 
-D01 当前转入 P0-04。`workdsh-contracts@0.1.0-alpha.2` 定义服务端解析的 ActorContext、IdentityProfile、Organization、Membership、ResourceOwner、AccessGrant、AuthorizationDecision、RuntimeBinding、AuditEvent 及 identity/access/audit 提供方接口，并提供最小运行时信任边界校验。该包无 Cordis、UI、数据库或传输依赖；架构依据见 ADR-0016。下一项实现 access/audit，再做两主体/两组织授权与审计负例。
+D01 当前推进 P0-04/P0-05。`workdsh-contracts@0.1.0-alpha.3` 定义服务端解析的 ActorContext、IdentityProfile、Organization、Membership、ResourceOwner、AccessGrant、AuthorizationDecision、RuntimeBinding、AuditEvent 及 identity/access/audit 提供方接口，并增加只读 membership 查询边界。该包无 Cordis、UI、数据库或传输依赖；架构依据见 ADR-0016。
 
-P0-05 同步推进到 `workdsh-provider-identity-local@0.1.0-alpha.2`。本地 provider 已注册为 Cordis Host Service，通过官方 `ctx.storageDomain` 原子保存主体、个人组织与 owner 成员关系；冷启动保持同一 revision，配置与持久身份冲突时拒绝启动。principal/organization 仍只来自 Host 配置，每次请求生成独立 requestId，输入夹带的伪造身份字段会被忽略。Harness 官方匿名安装 ID 明确只用于遥测关联，未被误用为用户身份。当前仍缺 access/audit 服务和双组织全链负例，因此团队远程入口继续关闭。
+P0-05 同步推进到 `workdsh-provider-identity-local@0.1.0-alpha.3`。本地 provider 已注册为 Cordis Host Service，通过官方 `ctx.storageDomain` 原子保存主体、个人组织与 owner 成员关系；冷启动保持同一 revision，配置与持久身份冲突时拒绝启动。principal/organization 仍只来自 Host 配置，每次请求生成独立 requestId，输入夹带的伪造身份字段会被忽略。Harness 官方匿名安装 ID 明确只用于遥测关联，未被误用为用户身份。
+
+`workdsh-plugin-audit@0.1.0-alpha.1` 和 `workdsh-plugin-access@0.1.0-alpha.1` 已建立真实 Cordis Host Service。两者使用官方 Storage Domain 分域持久化；Access 只经 IdentityService 查询成员关系，实行组织隔离、资源 owner、显式 grant/revoke、revision 冲突检测，并在返回授权结果前写入审计。跨组织访问、管理员读取他人私有资源、未授权动作和撤权后的访问均失败关闭；授权与审计在冷启动后保持。跨 Domain 修改没有虚构事务原子性，先记录 unknown 意图、写入授权记录、再记录 succeeded 结果。当前尚未接入 Session、文件、工具、Remote 与运行取消等全部入口，因此 D01/P1-09 保持进行中，团队远程入口继续关闭。证据见 [Access 与 Audit 验证](evidence/d01-access-audit.md)。
 
 skills alpha.23 / bundle alpha.35 收口认证 Fetch 的超时与取消。Client 对列表和修改请求设置有界超时，上传打包、流读取、预检和确认安装共用 `AbortSignal`；界面在上传和安装阶段均提供真实取消入口。Host 主动取消阻塞中的流读取并清理私有暂存目录，在文件遍历、摘要、复制及最终原子重命名前检查中止；原子发布完成后按成功结算，避免技能已安装但界面报告取消。中途上传取消与提交前取消/重试已进入 19/19 集成回归。该能力继续使用 Harness Connection 的认证 exact Fetch 扩展面，不增加第二套传输。
 
@@ -231,7 +233,7 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 | P1-06 | 资料库与成果 | P1 | todo |
 | P1-07 | 跨插件业务执行 | P1 | todo |
 | P1-08 | P1 发布验收 | P1 | todo |
-| P1-09 | 团队基础实现 | P1 | todo |
+| P1-09 | 团队基础实现 | P1 | in_progress |
 | P1-10 | 企业管理后台基础入口 | P1 | todo |
 | P1-11 | 项目配置、待办、任务、资产与交接 | P1 | todo |
 | P2-01 | 专家团模型及执行映射 | P2 | todo |

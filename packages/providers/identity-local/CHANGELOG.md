@@ -1,3 +1,7 @@
+# 0.1.0-alpha.3
+
+- 实现统一 `IdentityService.membership()` 查询，供 Access 服务检查本地成员资格。
+
 # 0.1.0-alpha.2
 
 - 注册 `ctx.workdshIdentity` Cordis Host 服务，并由 `Service.init` 管理启动顺序。

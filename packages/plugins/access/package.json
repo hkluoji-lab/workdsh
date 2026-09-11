@@ -1,6 +1,6 @@
 {
-  "name": "workdsh-provider-identity-local",
-  "version": "0.1.0-alpha.3",
+  "name": "workdsh-plugin-access",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
   "exports": {
@@ -15,7 +15,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "3.18.2",
     "zod": "4.4.3",
     "workdsh-contracts": "workspace:*"
   },

@@ -40,6 +40,8 @@ test('local identity Cordis service persists one coherent personal profile acros
     assert.equal(initial.membership.organizationId, initial.organization.id);
     assert.equal(initial.membership.principalId, initial.principalId);
     assert.equal(initial.membership.role, 'owner');
+    assert.deepEqual(first.workdshIdentity.membership(initial.organization.id, initial.principalId), initial.membership);
+    assert.equal(first.workdshIdentity.membership('another-organization', initial.principalId), undefined);
     assert.ok(Object.isFrozen(initial));
     assert.ok(Object.isFrozen(initial.organization));
     assert.ok(Object.isFrozen(initial.membership));

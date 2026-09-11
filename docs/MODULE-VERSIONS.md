@@ -26,8 +26,10 @@
 
 | 模块 | 模块版本线 | 当前开发制品 | 说明 |
 | --- | --- | --- | --- |
-| 领域公开契约 | **0.1** | `workdsh-contracts@0.1.0-alpha.2` | P0-04 实施中；已包含 Host identity profile/service 契约，access/audit 实现随后接入 |
-| 本地身份提供方 | **0.1** | `workdsh-provider-identity-local@0.1.0-alpha.2` | P0-05 实施中；官方 Storage Domain 持久化可信单用户 Profile，不用于远程认证 |
+| 领域公开契约 | **0.1** | `workdsh-contracts@0.1.0-alpha.3` | P0-04 实施中；包含 Host identity/access/audit 契约和只读 membership 查询边界 |
+| 本地身份提供方 | **0.1** | `workdsh-provider-identity-local@0.1.0-alpha.3` | P0-05 实施中；官方 Storage Domain 持久化可信单用户 Profile，不用于远程认证 |
+| 资源授权 | **0.1** | `workdsh-plugin-access@0.1.0-alpha.1` | P1-09 实施中；资源 owner、显式 grant/revoke、revision 冲突与组织隔离的 Host 基础服务 |
+| 审计 | **0.1** | `workdsh-plugin-audit@0.1.0-alpha.1` | P1-09 实施中；官方 Storage Domain 持久审计和敏感引用拒绝的 Host 基础服务 |
 | 技能管理 | **0.1** | `workdsh-plugin-skills@0.1.0-alpha.23` | 默认/本地管理闭环完成；公共市场不在当前范围，企业服务端与管理 Web 列入后期 ToDo |
 | 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.8` | 官方 Sidebar/Conversation 组合切片 |
 | 共享 UI | 0.1 | `workdsh-ui@0.1.0-alpha.3` | 公共展示基础与可访问弹框 |

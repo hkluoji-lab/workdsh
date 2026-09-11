@@ -194,6 +194,14 @@ export class LocalIdentityService extends Service implements IdentityService {
     return this.currentProfile;
   }
 
+  membership(organizationId: string, principalId: string): Membership | undefined {
+    const profile = this.profile();
+    return profile.membership.organizationId === organizationId
+      && profile.membership.principalId === principalId
+      ? profile.membership
+      : undefined;
+  }
+
   resolve(evidence?: LocalIdentityEvidence, signal?: AbortSignal): Promise<ActorContext> {
     this.profile();
     return this.provider.resolve(evidence, signal);
