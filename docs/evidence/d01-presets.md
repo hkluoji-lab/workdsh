@@ -79,6 +79,14 @@ P0-02 外部 Remote 生成遇到已复现的发布包识别边界，仍保留失
 使用公开 `ctx.agents.create({ sessionId, agentOptions, setup })`，在 setup 挂载官方文件提供方及 tool-skill；用 followup/whenIdle 驱动，并在 finally dispose。SessionStore 未挂磁盘提供方，因此“事件保留”仅指当前内存日志，不宣称已经证明落盘或进程重启恢复。初次运行因缺少 sessionId 失败，按公开契约提供 UUID 后通过。
 
 下一项为官方 Session persistence 的保存/冷恢复和目录退役；Remote 生成仍有独立兼容阻塞。产品 build/typecheck、版本检查、冻结安装通过；真实模型、浏览器及外部服务未执行。
+
+# C01 复用记录：两个 live Agent Session 的同名技能调用隔离（2026-09-11）
+
+继续复用 rc.1 的 `dsh-agent`、`dsh-agent-loop`、`dsh-skill-filesystem`、`dsh-tool-skill`、`dsh-session`、`dsh-tools` 和 scope 生命周期。自有代码只增加固定本地 LLM adapter 与测试断言；没有实现第二套 Agent loop、技能 registry、工具执行器或 Session 状态。
+
+测试同时创建 A/B 两个官方 Agent Session，各自在自身 setup scope 挂载名称同为 `sample` 的文件技能，正文分别包含 `SESSION_SCOPE_A` 和 `SESSION_SCOPE_B`。两个 Session 并发通过官方 skill 工具调用后，各自事件只包含自己的正文。随后 dispose B，A 再次发起完整模型—工具—模型回合，仍只读取 A 正文；A 共完成两次调用，B 只完成一次，释放 B 没有撤销 A 的 provider 或污染 A 的历史。
+
+`tests/integration/skill-session.test.mjs` 专项 3/3 通过，完整集成回归 19/19 通过。该证据完成 C01 的 live Session 同名正文、提示词目录与工具调用隔离部分；正常关闭后的跨进程恢复和目录退役已有上一节证据。WorkDSH 业务层的不可变 SkillRevision 绑定与团队主体授权仍属于后续契约，不能由本测试代替。模型 I/O 为固定本地 adapter，不代表真实模型效果。
 # C01 复用记录：落盘冷恢复与目录退役（2026-09-10）
 
 使用 rc.1 `dsh-session-persistence-jsonl` 官方根入口，配置隔离临时 root 与 compression=none；复用 `sessionPersistence.open/flush` 和 `agents.resume`，不解析或写入物理日志。依据为发布包 README、handle 公开类型及本地 Session 文档。本轮测试将第一次运行与恢复放在独立 Node 进程，模型继续使用固定测试适配器。

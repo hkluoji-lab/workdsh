@@ -64,7 +64,7 @@ P0/P1 为当前实现范围，包含团队基础服务及多主体隔离测试�
 
 DOC-06 已完成 127/127 份文档审查；[收尾清单](research/harness-review-closure.md) 登记 C01—C06 与版本差异。下一项实际编码为 C01：扩展现有 probe:presets，验证两个同时存活 Session 的技能目录和正文按需加载。然后继续自有生成 Remote、取消与 D01 剩余门槛，不能把阅读完成作为产品准入证据。
 
-接续：C01 已通过双 Session 目录和发布包正文接口测试，证据见 [预设探针](evidence/d01-presets.md)。Session 内正文消费和正常关闭后的磁盘恢复已通过；下一步验证两个存活 Agent Session 的同名技能调用与卸载隔离，P0-02 生成兼容阻塞仍保留。每项编码遵守 AGENTS.md 的官方优先复用约束，并填写 PLUGIN-DELIVERY 中的复用记录。
+接续：C01 已通过双 Session 目录、发布包正文接口、Session 内正文消费、正常关闭后的磁盘恢复，以及两个同时存活 Agent Session 的同名技能调用与同伴卸载隔离，证据见 [预设探针](evidence/d01-presets.md)。WorkDSH 不可变 SkillRevision 绑定仍属于业务契约；D01 下一项回到 P0-02 发布版 Remote 生成兼容及网络取消，不能绕过官方生成器。每项编码遵守 AGENTS.md 的官方优先复用约束，并填写 PLUGIN-DELIVERY 中的复用记录。
 
 - 验证原生预设发现、创建或受控生成、挂载、空会话选择、首次执行和恢复接口。
 - 验证两种专家组合并发工作时技能目录及可变状态隔离。
