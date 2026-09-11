@@ -11,9 +11,11 @@
     "types": [
       "node"
     ],
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "jsx": "react-jsx"
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ]
 }

@@ -209,6 +209,10 @@ export async function probeBrowser(address, sessionCookie, screenshotPath, { ins
     invalid.searchParams.set('workdsh-view', 'missing');
     await page.goto(invalid.href);
     await expect.poll(() => new URL(page.url()).searchParams.get('workdsh-view')).toBe('conversation');
+    await page.goto(`${address}/?workdsh-view=diagnostics`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('button', { name: 'WorkDSH 接入验证', exact: true })).toHaveCount(0);
+    await expect(page.getByTestId('workdsh-probe')).toHaveCount(0);
+    await expect.poll(() => new URL(page.url()).searchParams.get('workdsh-view')).toBe('conversation');
     if (errors.length) throw new Error(`Browser reported ${errors.length} uncaught errors: ${errors.join('; ')}`);
     console.log('PASS: official Sidebar owns native workspace/session actions; WorkDSH contributes brand and additive panels');
     console.log('PASS: global skill library, real Remote inventory, reconnect, and route normalization');
