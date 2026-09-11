@@ -1,5 +1,7 @@
 # WorkDSH
 
+<p align="center"><img src="assets/brand/workdsh-logo.svg" width="128" alt="WorkDSH 标志"></p>
+
 [English](README.md) | **简体中文**
 
 基于 DeepSeek Harness 的插件化 Web 工作平台。专家、技能、连接器、行业应用等是可独立分发的功能插件，每个插件管理多个对应对象，并能在同一任务中协作。
@@ -41,6 +43,7 @@
 - [验收矩阵](docs/ACCEPTANCE.md)
 - [开发与环境说明](docs/DEVELOPMENT.md)
 - [官方依据及兼容验证](docs/COMPATIBILITY.md)
+- [品牌资产](docs/BRAND.md)
 
 使用 Node.js 22.19+ 和 pnpm 10.34.5：
 

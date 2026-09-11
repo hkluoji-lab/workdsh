@@ -31,8 +31,8 @@
 | 资源授权 | **0.1** | `workdsh-plugin-access@0.1.0-alpha.3` | 本地基线完成；持久 Session owner、受控 Session Host 入口、RuntimeBinding 与官方工具授权/审计 |
 | 审计 | **0.1** | `workdsh-plugin-audit@0.1.0-alpha.2` | 本地基线完成；官方 Storage Domain 持久审计、排空和敏感引用拒绝 |
 | 技能管理 | **0.1** | `workdsh-plugin-skills@0.1.0-alpha.23` | 默认/本地管理闭环完成；公共市场不在当前范围，企业服务端与管理 Web 列入后期 ToDo |
-| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.9` | D02 进行中；官方 Sidebar/Conversation 组合与 TSX 页面边界 |
-| 共享 UI | 0.1 | `workdsh-ui@0.1.0-alpha.3` | 公共展示基础与可访问弹框 |
-| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.37` | 集成版本；Client 装配与诊断 TSX 分层，诊断仅显式启用 |
+| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.9` | D02 已完成；官方 Sidebar/Conversation 组合与 TSX 页面边界 |
+| 共享 UI | 0.1 | `workdsh-ui@0.1.0-alpha.4` | D02 已完成；纯导出入口、独立组件、令牌与样式模块 |
+| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.38` | 集成版本；组合已收口的 D02 工作台与共享 UI |
 
 专家、连接器、资料库等 planned 模块在开始实际开发时再建立各自版本线，不为占位目录虚构版本。

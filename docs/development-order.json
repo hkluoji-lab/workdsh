@@ -1,5 +1,5 @@
 {
-  "currentStep": "D02",
+  "currentStep": "D04",
   "steps": [
     {
       "id": "D00",
@@ -46,7 +46,7 @@
       "dependsOn": [
         "D01"
       ],
-      "status": "in_progress",
+      "status": "completed",
       "evidence": [
         "docs/evidence/d02-foundation.md"
       ]
@@ -60,8 +60,11 @@
       "dependsOn": [
         "D02"
       ],
-      "status": "todo",
-      "evidence": []
+      "status": "completed",
+      "evidence": [
+        "docs/evidence/skills-browser.md",
+        "docs/evidence/d02-foundation.md"
+      ]
     },
     {
       "id": "D04",

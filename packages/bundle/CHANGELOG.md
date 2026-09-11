@@ -1,3 +1,8 @@
+# 0.1.0-alpha.38
+
+- 组合共享 UI alpha.4：公开入口、TSX 组件、设计令牌与样式模块分离，保持现有组件 API 兼容。
+- 增加 WorkDSH 品牌 Logo 的可维护 SVG 与应用图标视觉稿。
+
 # 0.1.0-alpha.37
 
 - 将 Client 公开入口、Harness 装配、品牌、URL 状态、诊断 TSX 和样式拆分，移除入口文件中的 `createElement` 页面结构。

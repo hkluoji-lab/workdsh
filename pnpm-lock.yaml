@@ -373,6 +373,9 @@ importers:
       workdsh-plugin-workbench:
         specifier: workspace:*
         version: link:../plugins/workbench
+      workdsh-ui:
+        specifier: workspace:*
+        version: link:../ui
 
   packages/contracts:
     devDependencies:

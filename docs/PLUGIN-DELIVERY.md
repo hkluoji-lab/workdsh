@@ -2,12 +2,12 @@
 
 > 当前追加（2026-09-11）：P1-03 当前切片扩展到新增技能闭环。“添加技能”提供查找、上传、创建；创建进入 Harness 原生任务并预填 `/skill-creator`，原生 `/`、`@`、权限、模型与发送保持 Conversation owner。上传使用 Connection 鉴权的流式 exact Fetch route，经 Host 预检和用户确认后写入官方文件技能目录；监听刷新和后续 `/name` 调用仍由 Harness Skill 子系统拥有。SkillHub/套件不在当前产品范围。默认/本地修订、启停、卸载已实现；当前不开发公共市场。企业服务端、管理 Web、组织目录、分类、版本和下发策略按 ADR 0015 进入后期 ToDo。
 
-> 当前追加（2026-09-10）：用户要求先实现原型公共外壳；[ADR 0014](adr/0014-workbench-sidebar-presentation.md) 允许 P1-01 展示切片，该段为当时的展示切片说明；当前 D01 已完成、D02 进行中。
+> 当前追加（2026-09-10）：用户要求先实现原型公共外壳；[ADR 0014](adr/0014-workbench-sidebar-presentation.md) 允许 P1-01 展示切片，该段为当时的展示切片说明；当前 D01—D03 已完成，开发顺序进入 D04。
 
 > 当前执行覆盖（2026-09-10）：依据用户确认，按 [ADR 0013](adr/0013-feature-slices-with-pending-gates.md) 提前交付 P1-03 原生任务技能浏览切片。该段为提前切片时的历史说明；D01 后续已按本地边界完成。其余模块和团队准入不变。
 
 
-状态：D01 已按本地单用户治理边界完成，D02 基础插件与工作台 `0.1` 进行中；P1-03 Skill `0.1` 提前切片已经完成。企业服务器、管理 Web 和多人全路径治理见[企业版架构说明](ENTERPRISE-EDITION.md)，不阻塞当前顺序。
+状态：D01 本地治理、D02 基础插件/工作台 `0.1` 与 D03 Skill `0.1` 已完成；当前进入 D04 专家模块 `0.1`。企业服务器、管理 Web 和多人全路径治理见[企业版架构说明](ENTERPRISE-EDITION.md)，不阻塞当前顺序。
 
 ## 执行规则
 
@@ -87,13 +87,13 @@ D00 设计处理和用户批准的 Skill 0.1 提前切片均已完成。Skill �
 
 检查命令：node scripts/check-plan.mjs。它检查顺序结构和状态门槛，不能证明产品测试真实通过，证据仍须审阅。
 
-## 当前下一步：D02 / P1-01 工作台与共享 UI 0.1
+## 当前下一步：D04 / P1-02 专家模块 0.1
 
 DOC-06 官方文档审查已完成 127/127；C01 的目录、正文、真实 Agent Session 调用、正常冷恢复和同名技能隔离已经通过。Skill exact Fetch 的认证、超时、传输中取消、原子提交边界与重试也已通过。发布版 Typert 对外部 workspace 的生成限制作为未来通用 Remote 的上游兼容项保留，不再阻塞本地 Skill 0.1。
 
 `workdsh-contracts`、local identity、access、audit 和 Session owner/runtime binding 已完成本地 `0.1` 基线，见 [ADR-0016](adr/0016-governance-contracts-first.md) 与 [D01 证据](evidence/d01-access-audit.md)。它们不复制 Harness User、Permission Preset、Approval、Sandbox、Session scope 或执行器。
 
-当前只继续 P1-01：核对 WorkDSH 工作台的真实业务入口、状态、空态、失败与恢复行为，收口可复用的展示组件，并通过官方 Sidebar、Workspace、Session 和 Conversation 组合完成打包浏览器验收。D02 不复制原生导航、Composer 或 Session 行为。
+D02 已完成官方 Sidebar、Workspace、Session 与 Conversation 的增量组合及共享 UI 收口。当前按 P1-02 开始专家领域契约、Host 管理服务、原生任务交接和管理页面；不复制 Harness 的 preset、Session 或 Agent 执行器。
 
 企业 Session Remote、文件和其他 Remote 的多人授权、成员撤权与在途取消、SSO、服务器端、管理 Web 和隔离 Worker 统一记录在[企业版架构说明](ENTERPRISE-EDITION.md)。团队远程入口保持关闭，这些工作不再阻塞 D02。
 

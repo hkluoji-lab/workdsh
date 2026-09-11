@@ -1,5 +1,7 @@
 # WorkDSH
 
+<p align="center"><img src="assets/brand/workdsh-logo.svg" width="128" alt="WorkDSH logo"></p>
+
 **English** | [简体中文](README.zh-CN.md)
 
 A plugin-based Web work platform built on DeepSeek Harness. Experts, skills, connectors, industry applications, and other capabilities are distributed as independent feature plugins. Each plugin manages multiple domain objects and can participate in the same task.
@@ -42,6 +44,7 @@ The current product does not provide a public Skill marketplace, SkillHub, or bu
 - [Development environment](docs/DEVELOPMENT.md)
 - [Official basis and compatibility evidence](docs/COMPATIBILITY.md)
 - [Plugin delivery order and versioning](docs/PLUGIN-DELIVERY.md)
+- [Brand assets](docs/BRAND.md)
 
 Use Node.js 22.19+ and pnpm 10.34.5:
 

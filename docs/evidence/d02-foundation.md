@@ -1,6 +1,6 @@
 # D02 基础插件与工作台 0.1
 
-日期：2026-09-12。状态：进行中。
+日期：2026-09-12。状态：已完成。
 
 ## 已具备的前置基础
 
@@ -16,9 +16,13 @@ D02 只收口 P1-01 的工作台和共享 UI `0.1`：在 Harness 官方 Sidebar�
 
 bundle `0.1.0-alpha.37` 继续拆分默认 Client：公开入口只导出 Harness 装配，品牌、URL 状态和诊断页面使用独立 TSX，诊断样式独立维护。D01 接入验证只有显式 `diagnostics=1` 才注册；普通产品路径即使传入 `workdsh-view=diagnostics` 也归一化到原生 Conversation。
 
+最终代码切片为 UI `0.1.0-alpha.4` / bundle `0.1.0-alpha.38`：`packages/ui/src/index.ts` 只保留兼容导出，Icon、导航、Modal、设计令牌及两类样式分别维护。共享组件不访问 Cordis、Remote、Host 或领域数据。完整构建、类型检查、32/32 集成、计划检查、版本锁定与正式打包 Chromium 探针通过。
+
 ## 退出条件
 
 - 工作台不复制 Harness 的 Sidebar、Composer、Session 或 Workspace 行为。
 - 页面入口、空状态、加载、失败、重试和卸载清理有真实行为及验证。
 - 公共 UI 组件只负责展示与交互，不直接访问领域存储或 Host 服务。
 - build、typecheck、相关集成与真实打包浏览器验收通过后，D02 才能完成。
+
+以上退出条件均已满足。D02 不包含专家、连接器、行业应用或企业后台功能。

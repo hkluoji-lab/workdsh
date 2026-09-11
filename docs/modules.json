@@ -17,7 +17,7 @@
     "moduleVersion": "0.1",
     "phase": "P1",
     "task": "P1-01",
-    "status": "in_progress",
+    "status": "implemented",
     "directories": [
       "src/components",
       "src/styles",
@@ -42,7 +42,7 @@
     "moduleVersion": "0.1",
     "phase": "P1",
     "task": "P1-01",
-    "status": "in_progress",
+    "status": "implemented",
     "directories": [
       "src/domain",
       "src/services",

@@ -4,11 +4,11 @@
 
 ## 当前模块版本
 
-版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；治理契约、本地身份、资源授权和审计的本地 **0.1** 基线已经完成；当前活动工程模块为工作台与共享 UI **0.1**。`workdsh-bundle@0.1.0-alpha.37` 仍表示当前本地候选组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
+版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；治理契约、本地身份、资源授权和审计的本地 **0.1** 基线已经完成；工作台与共享 UI **0.1** 已完成，当前开发顺序进入专家模块 D04。`workdsh-bundle@0.1.0-alpha.38` 仍表示当前本地候选组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
 
 Skill 0.1 提前切片现已正式结项：`development-order.activeSlice` 标为 completed，`packages/plugins/skills` 标为 implemented，P1-03 标为 completed。D03 正式阶段仍等待 D02；到达时只补 ActorContext/access/audit 治理适配与组合验收，不重复开发技能页面和管理闭环。
 
-D01 已按本地单用户范围完成，当前步骤进入 D02。`workdsh-contracts@0.1.0-alpha.4` 定义服务端解析的 ActorContext、IdentityProfile、Organization、Membership、ResourceOwner、AccessGrant、AuthorizationDecision、SessionOwnerBinding、RuntimeBinding、AuditEvent 及 identity/access/audit 提供方接口，并增加审计排空边界。该包无 Cordis、UI、数据库或传输依赖；架构依据见 ADR-0016。
+D01、D02 及提前完成的 D03 Skill 0.1 均已收口，当前步骤进入 D04 专家模块。`workdsh-contracts@0.1.0-alpha.4` 定义服务端解析的 ActorContext、IdentityProfile、Organization、Membership、ResourceOwner、AccessGrant、AuthorizationDecision、SessionOwnerBinding、RuntimeBinding、AuditEvent 及 identity/access/audit 提供方接口，并增加审计排空边界。该包无 Cordis、UI、数据库或传输依赖；架构依据见 ADR-0016。
 
 P0-05 的本地基线交付为 `workdsh-provider-identity-local@0.1.0-alpha.3`。本地 provider 已注册为 Cordis Host Service，通过官方 `ctx.storageDomain` 原子保存主体、个人组织与 owner 成员关系；冷启动保持同一 revision，配置与持久身份冲突时拒绝启动。principal/organization 仍只来自 Host 配置，每次请求生成独立 requestId，输入夹带的伪造身份字段会被忽略。Harness 官方匿名安装 ID 明确只用于遥测关联，未被误用为用户身份。
 
@@ -65,7 +65,7 @@ D01 的完成范围现明确为本地单用户产品基线：锁定 Harness 官�
 
 企业 Session Remote、服务器认证、组织成员管理、文件与其他 Remote 的全路径多人授权、撤权后的在途取消、隔离 Worker、管理 Web 和组织能力分发均移入[企业版架构说明](ENTERPRISE-EDITION.md)与 [ToDo](TODO.md)。这些能力不会从计划中消失，也不再被写成当前本地版本的伪完成条件。P0-02—P0-05 和 P1-09 的 `completed` 只表示本地基线完成；企业版必须以 E01—E05 重新立项和验收。
 
-结构化顺序台账已把 D01 标为 completed、D02 标为 in_progress。D02 当前只继续工作台和共享 UI 的本地 `0.1` 收口；不会为了推进当前版本提前开发企业服务端。
+结构化顺序台账已把 D01—D03 标为 completed，当前步骤为 D04 专家模块。企业服务端继续保持后置。
 
 ## 当前约束：Harness 官方开发规范
 
@@ -242,7 +242,7 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 | P0-03 | 专家预设、技能与恢复探针 | P0 | completed |
 | P0-04 | 契约与兼容门槛 | P0 | completed |
 | P0-05 | 团队身份与全路径隔离探针 | P0 | completed |
-| P1-01 | 契约与工作台 | P1 | in_progress |
+| P1-01 | 契约与工作台 | P1 | completed |
 | P1-02 | 专家管理及 expert-manager | P1 | todo |
 | P1-03 | 技能管理及 skill-creator | P1 | completed |
 | P1-04 | 连接器管理 | P1 | todo |
@@ -455,3 +455,11 @@ H08 Cookbook 第一批完成，当前 88/127。新增扩展交付清单，区分
 下一步：development/i18n 共 6 份及剩余 14 个子系统反查。当前仍为 D01，正式业务插件、数据库和完整工作台未开始。此轮仅文档与审查台账变更，产品构建、浏览器、真实模型和外部连接器测试未执行。
 
 验证：`audit:harness-docs` 为 107/127、20 待审；`check:plan` 通过（25 模块、33 文档），检查脚本语法与 `git diff --check` 通过。仓库当前文件未跟踪，diff 检查不能代替新增文件审阅；本轮文档链接由计划检查器覆盖。pnpm 仍提示 package.json 的 overrides 被忽略，本轮未更改依赖配置。
+
+## 2026-09-12：D02 完成与跨平台品牌资产
+
+共享 UI `0.1.0-alpha.4` 将公开入口收为纯导出文件，Icon、LogoMark、导航组件、Modal、设计令牌及样式分别维护；Skills 与 Workbench 继续通过相同公开 API 消费。默认组合包升级为 `0.1.0-alpha.38`，Harness Sidebar 品牌 Slot 使用共享 LogoMark，未创建额外 React root 或修改上游。
+
+新增跨平台 WorkDSH 主标与应用图标：蓝色折叠 W 配青色智能火花，分别提供透明 SVG、通用圆角底座 SVG 与高分辨率 PNG 视觉稿。品牌不绑定单一桌面系统，也不复用 WorkBuddy、DeepSeek Harness 或其他产品的商标图形。
+
+D02 的工作台行为、公共 UI 边界、失败恢复和打包浏览器条件已满足；D03 Skill 0.1 使用既有完整管理闭环证据正式过序。当前唯一下一阶段为 D04 专家模块 0.1；企业服务端和管理 Web 仍留在后期 ToDo。
