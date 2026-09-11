@@ -4,7 +4,7 @@
 
 ## 当前模块版本
 
-版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；治理契约、本地身份、资源授权和审计的本地 **0.1** 基线已经完成；当前活动工程模块为工作台与共享 UI **0.1**。`workdsh-bundle@0.1.0-alpha.35` 仍表示现有产品组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
+版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；治理契约、本地身份、资源授权和审计的本地 **0.1** 基线已经完成；当前活动工程模块为工作台与共享 UI **0.1**。`workdsh-bundle@0.1.0-alpha.36` 仍表示当前本地候选组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
 
 Skill 0.1 提前切片现已正式结项：`development-order.activeSlice` 标为 completed，`packages/plugins/skills` 标为 implemented，P1-03 标为 completed。D03 正式阶段仍等待 D02；到达时只补 ActorContext/access/audit 治理适配与组合验收，不重复开发技能页面和管理闭环。
 
@@ -52,6 +52,10 @@ skills alpha.9、bundle alpha.21 修正技能库筛选语义：官方目录目�
 
 18989 预览曾误用项目内空的 `.test-runtime/preview/agents`，导致官方文件提供方只发现 bundle 自带的 `skill-creator`；用户原有技能并未删除，仍位于 `/Users/techflag/.agents/skills`。预览已恢复使用当前用户 Agents home；用户新增 `file-count-by-category` 后，实测技能库显示 15 个。新增 `corepack pnpm preview` 固定该启动方式；自动化探针继续隔离，不能把测试目录当成人工预览目录。
 
+
+## 2026-09-12：D02 工作台代码边界收口
+
+workbench `0.1.0-alpha.9` / bundle `0.1.0-alpha.36` 将公开入口、Harness Slot 装配、TSX 页面结构和样式拆开。`packages/plugins/workbench/src/index.ts` 只导出装配函数，`src/harness/client.ts` 只负责官方 Slot 注册，`BusinessPanel.tsx` 和独立样式模块负责展示。没有创建第二个 React root，也没有改变 Harness 对 Sidebar、Workspace、Session 和 Conversation 的所有权。Node 22.23.2 下相关 build/typecheck、32/32 集成测试及完整打包浏览器探针通过。
 
 ## 2026-09-12：本地 D01 收口与企业版后置
 

@@ -1,3 +1,7 @@
+# 0.1.0-alpha.36
+
+- 组合 workbench alpha.9：将 Harness Slot 装配与 TSX 页面/样式拆分，保持公开入口和官方 UI 所有权边界清晰。
+
 # 0.1.0-alpha.35
 
 组合 skills alpha.23：认证 Fetch 增加超时与取消结算；导入打包、流式上传、预检和原子安装传播 AbortSignal，并提供可见取消操作。发布前取消不安装，已验证暂存可继续确认。

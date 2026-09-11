@@ -1,3 +1,8 @@
+# 0.1.0-alpha.9
+
+- 进入 D02，将 Harness Slot 装配、工作台 TSX 页面结构与样式拆分，公开入口只导出装配函数。
+- 保持官方 Sidebar、Workspace、Session 与 Conversation 所有权，未接入领域页继续显示真实边界。
+
 # 0.1.0-alpha.8
 
 在 Harness 官方 Sidebar 上按 WorkBuddy 信息架构增量加入助理、项目、“专家 · 技能 · 连接器”、定时任务、资料库和更多。“专家 · 技能 · 连接器”保持一个能力中心入口，内部再分领域；官方工作区/会话区域及全部菜单继续由 Harness 持有。

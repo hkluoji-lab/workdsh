@@ -1,0 +1,31 @@
+import type { Context } from '@deepseek-ai/cordis';
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client';
+import {
+  BusinessPanel,
+  BusinessPanelIcon,
+  businessPanels,
+} from '../client/components/BusinessPanel.js';
+
+/**
+ * Keep the official Sidebar and Conversation occupants in place. WorkDSH only
+ * contributes business navigation and paired main panels through public Slots.
+ */
+export function applyWorkbenchClient(ctx: Context): void {
+  for (const panel of businessPanels) {
+    if ('description' in panel && panel.description) {
+      ctx.slots.inject('main', () => ctx.slots.register({
+        name: 'main',
+        key: panel.id,
+        inject: () => ({ label: panel.label, description: panel.description }),
+      }, BusinessPanel));
+    }
+    ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
+      name: 'sidebar.panellist',
+      id: panel.id,
+      label: panel.label,
+      order: panel.order,
+      inject: () => ({ icon: panel.icon }),
+    }, BusinessPanelIcon));
+  }
+}
