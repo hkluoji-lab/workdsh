@@ -29,6 +29,7 @@
 
 ## 开发入口
 
+- [公开开发路线图（中英文）](docs/ROADMAP.md)
 - [开发规则](AGENTS.md)
 - [详细开发计划](docs/PLAN.md)
 - [当前状态与任务台账](docs/STATUS.md)

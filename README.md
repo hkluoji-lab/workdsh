@@ -29,6 +29,7 @@ The current product does not provide a public Skill marketplace, SkillHub, or bu
 
 ## Development
 
+- [Public roadmap](docs/ROADMAP.md)
 - [Repository rules](AGENTS.md)
 - [Development plan](docs/PLAN.md)
 - [Status](docs/STATUS.md)
