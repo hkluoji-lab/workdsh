@@ -91,3 +91,15 @@ skills alpha.19 / bundle alpha.31 以 WorkBuddy 的导入弹框为交互参考�
 Client 支持 `.zip`、单个 `.md` 与文件夹选择，Host 预检通过后返回不含本地路径的 opaque receipt、名称、说明、文件清单和体积。用户明确选择共享 Agents 或当前 Profile 并确认后才调用原子安装；同名目标停止安装且保留暂存，取消、成功或过期会清理。ZIP 解包拒绝越界路径，限制 50 MiB、400 个文件和 6 层资源目录，导入期间不执行脚本。分类设计位恢复为禁用按钮，等待公共目录契约提供真实分类数据。
 
 单元/集成覆盖 staged Markdown 的“预检不安装—确认安装—凭据失效”、无效扩展名、认证路由元数据和 Host 路径不回传；总计 13/13。Chromium probe 增加真实文件选择、预检信息、确认安装、详情打开与列表重新发现。
+
+## 2026-09-11：打包 Web 的跨重启状态恢复
+
+本轮没有增加新的 Skill 状态层。官方优先复用记录如下：全局发现与重新发现继续使用 Harness `ctx.skills` 和文件 provider/watcher；浏览器认证继续使用 `dsh-client-connection`；Client 仍由官方 Web module graph 和唯一 React root 装载；停用与卸载的 WorkDSH 业务凭据继续由现有 `SkillManager` 私有状态目录拥有。新增内容只扩展真实打包验收脚本。
+
+`probe:browser` 在首次完整管理操作后保留隔离 Profile 与 Agents root，并执行两次新的 Host 冷启动：
+
+- 第一次重启后验证 `workdsh-import-fixture` 仍在全局列表；从“最近卸载”恢复 `workdsh-browser-fixture`，重新读取编辑后的 `SKILL.md` 和 `references/browser-check.md`，再停用技能。
+- 第二次重启后验证技能仍为停用状态，随后重新启用，并确认它回到原始受控根。
+- 之后继续执行原有 bundle 停服移除、重启后 Host/Client 缺席和重新安装，确保新增状态验收没有绕过发布包生命周期。
+
+Node 22.23.2 / pnpm 10.34.5 下完整 `corepack pnpm probe:browser` 通过。截图位于忽略提交的 `.artifacts/client-skill-restart.png` 与 `.artifacts/client-skill-disabled-restart.png`。未调用真实模型、外部连接器或公共技能服务。

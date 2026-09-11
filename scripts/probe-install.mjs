@@ -92,6 +92,24 @@ try {
   if (process.argv.includes('--browser')) {
     const { probeBrowser } = await import('./probe-browser.mjs');
     await probeBrowser(address, sessionCookie, resolve(artifacts, 'client-probe.png'));
+
+    // Keep the installed bundle and its isolated data intact across two cold
+    // Host restarts. This verifies durable Skill state through the packaged UI,
+    // rather than only exercising same-process reads.
+    await stopServer();
+    startServer();
+    await until(() => serverOutput.includes('[workdsh:probe] activated') && /http:\/\/127\.0\.0\.1:\d+/.test(serverOutput), 'first Skill persistence restart');
+    const persistedAddress = serverOutput.match(/http:\/\/127\.0\.0\.1:\d+/)[0];
+    const persistedCookie = await authenticate(persistedAddress);
+    const { probeSkillStateAfterRestart, probeDisabledSkillAfterRestart } = await import('./probe-browser.mjs');
+    await probeSkillStateAfterRestart(persistedAddress, persistedCookie, resolve(artifacts, 'client-skill-restart.png'));
+
+    await stopServer();
+    startServer();
+    await until(() => serverOutput.includes('[workdsh:probe] activated') && /http:\/\/127\.0\.0\.1:\d+/.test(serverOutput), 'second Skill persistence restart');
+    const disabledAddress = serverOutput.match(/http:\/\/127\.0\.0\.1:\d+/)[0];
+    const disabledCookie = await authenticate(disabledAddress);
+    await probeDisabledSkillAfterRestart(disabledAddress, disabledCookie, resolve(artifacts, 'client-skill-disabled-restart.png'));
   }
   // Bundle composition is validated across a stopped Host. Live removal is a separate capability.
   await stopServer();

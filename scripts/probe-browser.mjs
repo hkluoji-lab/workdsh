@@ -1,5 +1,28 @@
 import { chromium, expect } from '@playwright/test';
 
+function sessionCookies(address, sessionCookie) {
+  return sessionCookie.split('; ').filter(Boolean).map(pair => {
+    const at = pair.indexOf('=');
+    return { name: pair.slice(0, at), value: pair.slice(at + 1), url: address, httpOnly: true, sameSite: 'Strict' };
+  });
+}
+
+async function dismissSetup(page) {
+  const notice = page.getByRole('button', { name: 'Continue', exact: true });
+  await notice.waitFor({ state: 'visible', timeout: 10000 }).then(() => notice.click()).catch(() => {});
+  const later = page.getByRole('button', { name: 'Configure later', exact: true });
+  await later.waitFor({ state: 'visible', timeout: 5000 }).then(() => later.click()).catch(() => {});
+}
+
+async function openAuthenticatedSkillsPage(browser, address, sessionCookie) {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  await page.context().addCookies(sessionCookies(address, sessionCookie));
+  await page.goto(`${address}/?diagnostics=1&workdsh-view=skills`, { waitUntil: 'domcontentloaded' });
+  await dismissSetup(page);
+  await expect(page.getByTestId('workdsh-skills')).toBeVisible({ timeout: 30000 });
+  return page;
+}
+
 /** Real Chromium + official Web boot. No injected Context or simulated Remote. */
 export async function probeBrowser(address, sessionCookie, screenshotPath, { installed = true } = {}) {
   const browser = await chromium.launch({ headless: true });
@@ -14,19 +37,14 @@ export async function probeBrowser(address, sessionCookie, screenshotPath, { ins
       socket.onMessage(message => { connection.sent++; upstream.send(message); });
       upstream.onMessage(message => { connection.received++; socket.send(message); });
     });
-    await page.context().addCookies(sessionCookie.split('; ').filter(Boolean).map(pair => {
-      const at = pair.indexOf('=');
-      return { name: pair.slice(0, at), value: pair.slice(at + 1), url: address, httpOnly: true, sameSite: 'Strict' };
-    }));
+    await page.context().addCookies(sessionCookies(address, sessionCookie));
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') console.error(message.text().replace(/token=[^\s]+/g, 'token=[redacted]')); });
 
     await page.goto(`${address}/?diagnostics=1`, { waitUntil: 'domcontentloaded' });
-    const notice = page.getByRole('button', { name: 'Continue', exact: true });
-    await notice.waitFor({ state: 'visible', timeout: 10000 }).then(() => notice.click()).catch(() => {});
+    await dismissSetup(page);
     const later = page.getByRole('button', { name: 'Configure later', exact: true });
-    await later.waitFor({ state: 'visible', timeout: 5000 }).then(() => later.click()).catch(() => {});
     const graphRows = await page.evaluate(() => window.__DSH_BOOT__?.entries?.filter(row => row.id === 'workdsh-bundle'));
     const nav = page.getByRole('button', { name: 'WorkDSH 接入验证', exact: true });
     expect(graphRows).toHaveLength(installed ? 1 : 0);
@@ -199,6 +217,60 @@ export async function probeBrowser(address, sessionCookie, screenshotPath, { ins
       await page.screenshot({ path: screenshotPath.replace('.png', '-failure.png'), fullPage: true }).catch(() => {});
       console.error((await page.locator('body').innerText()).slice(0, 4000));
     }
+    throw error;
+  } finally {
+    await browser.close();
+  }
+}
+
+/** Verify packaged Skill state after a real Host process restart. */
+export async function probeSkillStateAfterRestart(address, sessionCookie, screenshotPath) {
+  const browser = await chromium.launch({ headless: true });
+  let page;
+  try {
+    page = await openAuthenticatedSkillsPage(browser, address, sessionCookie);
+    await expect(page.getByRole('button', { name: '查看技能 workdsh-import-fixture', exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: '最近卸载', exact: true }).click();
+    const trash = page.getByRole('dialog', { name: '最近卸载的技能' });
+    await expect(trash.getByText('workdsh-browser-fixture', { exact: true })).toBeVisible();
+    await trash.getByRole('button', { name: '恢复', exact: true }).click();
+    await expect(trash.getByText('workdsh-browser-fixture', { exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: '关闭', exact: true }).click();
+
+    await page.getByRole('button', { name: '查看技能 workdsh-browser-fixture', exact: true }).click();
+    await expect(page.getByText('DIRECT MANAGEMENT SAVED', { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: 'references/browser-check.md', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: '资源文件', exact: true })).toHaveValue('# Browser resource\n\nSaved through the SkillManager.\n');
+    await page.getByRole('button', { name: '返回概述', exact: true }).click();
+    await page.getByRole('button', { name: '关闭', exact: true }).click();
+
+    await page.getByRole('switch', { name: '停用技能 workdsh-browser-fixture', exact: true }).click();
+    await expect(page.getByRole('switch', { name: '启用技能 workdsh-browser-fixture', exact: true })).toBeVisible();
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    console.log('PASS: imported skill, trash receipt, edited SKILL.md, and resource survived a packaged Host restart');
+  } catch (error) {
+    if (page) await page.screenshot({ path: screenshotPath.replace('.png', '-failure.png'), fullPage: true }).catch(() => {});
+    throw error;
+  } finally {
+    await browser.close();
+  }
+}
+
+/** Verify disabled provenance after a second Host process restart, then restore the fixture. */
+export async function probeDisabledSkillAfterRestart(address, sessionCookie, screenshotPath) {
+  const browser = await chromium.launch({ headless: true });
+  let page;
+  try {
+    page = await openAuthenticatedSkillsPage(browser, address, sessionCookie);
+    const enable = page.getByRole('switch', { name: '启用技能 workdsh-browser-fixture', exact: true });
+    await expect(enable).toBeVisible();
+    await enable.click();
+    await expect(page.getByRole('switch', { name: '停用技能 workdsh-browser-fixture', exact: true })).toBeVisible();
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    console.log('PASS: disabled provenance survived a second packaged Host restart and restored to its original root');
+  } catch (error) {
+    if (page) await page.screenshot({ path: screenshotPath.replace('.png', '-failure.png'), fullPage: true }).catch(() => {});
     throw error;
   } finally {
     await browser.close();

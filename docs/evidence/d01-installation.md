@@ -24,4 +24,10 @@ Client 模块发现、Remote 调用、页面贡献、取消与重连尚未实测
 
 ## 复现
 
-见 ../DEVELOPMENT.md 的命令。测试不打开浏览器、不请求模型、不写用户默认 Profile。生成测试目录保留便于排查；每次使用新目录，测试 Host 在 finally 中关闭。
+见 ../DEVELOPMENT.md 的命令。默认安装探针不打开浏览器；`probe:browser` 会启动无头 Chromium。两种模式都不请求模型、不写用户默认 Profile。生成测试目录保留便于排查；每次使用新目录，测试 Host 在 finally 中关闭。
+
+## 2026-09-11 补充：Skill 状态的打包重启验收
+
+带 `--browser` 的安装探针现会在 bundle 保持安装时额外执行两次 Host 冷重启。它通过真实认证 Web 验证导入、回收站恢复、正文编辑、资源文件和停用来源凭据能够跨进程恢复；随后仍执行停服移除、缺席检查和重装。该结果补充上文早期限制中“技能未验证”的陈述，但不改变运行中 CLI 热卸载仍未验证的边界。
+
+验证命令：Node 22.23.2 下运行 `corepack pnpm probe:browser`，全部通过。测试只写新建的 `.test-runtime/install-*` 隔离目录，不读取或修改用户默认 Profile，也不请求模型。

@@ -10,7 +10,7 @@ WorkDSH is developed as a collection of independently versioned modules. Each mo
 
 `v0.1.0-alpha.1` delivers the first local/default Skill management preview. It covers the global Skill library, full `SKILL.md` and resource reading, editing with conflict detection, enable/disable, recoverable uninstall, safe import, and native Conversation-based creation.
 
-Before Skill `0.1` is considered stable, the project will finish the remaining production gates around published Remote generation compatibility, clean installation and restart acceptance, failure recovery, and live command-line lifecycle verification.
+Clean installation, packaged Web cold-restart acceptance, and failure recovery are now verified for Skill `0.1`. Before it is considered stable, the project still needs published Remote generation compatibility and a defined runtime command-line lifecycle boundary.
 
 ### Module delivery order
 
@@ -42,7 +42,7 @@ WorkDSH 按独立版本化的模块开发。每个模块开始实现时建立自
 
 `v0.1.0-alpha.1` 是首个默认/本地 Skill 管理预览，包含全局技能库、完整 `SKILL.md` 与资源读取、带冲突检测的编辑、启停、可恢复卸载、安全导入，以及基于 Harness 原生 Conversation 的创建流程。
 
-Skill `0.1` 进入稳定状态前，还需完成发布版 Remote 生成兼容、干净安装与重启验收、失败恢复和命令行真实生命周期等生产门槛。
+Skill `0.1` 的干净安装、真实打包 Web 冷重启与失败恢复验收已经完成。进入稳定状态前还需解决发布版 Remote 生成兼容，并核定命令行运行时生命周期边界。
 
 ### 模块交付顺序
 
