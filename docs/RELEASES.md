@@ -96,3 +96,14 @@ Checksums detect download corruption; they are not a separate publisher signatur
 6. 默认交付 `.tgz`；GitHub 源码推送不等于 npm 发布。公共技能市场、企业后台与独立开发库发行仍按已批准范围推进。
 
 Official basis: [Package and install a plugin](https://deepseek-harness.github.io/deepseek-harness/develop/basic/publish). Local verification: [Skill standalone evidence](evidence/skills-standalone-package.md).
+
+## 本次发布回执 / Publication receipt
+
+源码与制品提交 / Source commit: [`c6e0fd5`](https://github.com/techflag/workdsh/commit/c6e0fd5)。两个模块 tag 指向同一源提交，各模块独立版本不变。全部六个附件已从公开 URL 无认证下载，与本地上传文件字节摘要一致。中英文 README 和嵌入截图也已公开回读一致。
+
+| 安装包 / Package | SHA-256 |
+| --- | --- |
+| `workdsh-plugin-skills-0.1.0-alpha.24.tgz` | `11d1dd6134d4e6ef1c01c3cba0c8c9558715b70ea7165f8af240b62b7ca3311e` |
+| `workdsh-bundle-0.1.0-alpha.39.tgz` | `f22f614937962f8f98f7df5862774f1db7e9e8670eae48531aed31af735ffc29` |
+
+This documentation-only receipt follows the release commit. Module tags and release manifests keep the original source commit; no published artifact was replaced.
