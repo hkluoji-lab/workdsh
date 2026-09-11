@@ -1,0 +1,132 @@
+# 0.1.0-alpha.34
+
+组合 skills alpha.22：补齐批量管理、卸载依赖影响与确认后竞态复核；新增受管导入、资源保留、冷进程重启和官方调用的组合验收；修复卡片菜单点击层级和导入弹框关闭顺序。
+
+# 0.1.0-alpha.33
+
+组合 skills alpha.21：接入 Harness 官方类型化 Tool 注册，新增受控草稿、校验、显式确认发布闭环；无效本地技能不再静默消失，列表和详情展示诊断并允许修复。
+
+# 0.1.0-alpha.32
+
+组合 skills alpha.20：全局同名安装使用跨进程技能锁，覆盖所有官方根、扁平 `.md`、目录技能及其他已注册提供方；暂存和复制安装使用完整文件清单内容指纹复核，拒绝预检后同长度篡改。补充并发确认与 Host 重启后确认回归。
+
+# 0.1.0-alpha.31
+
+组合 skills alpha.19：增加规范的技能导入弹框与认证流式上传，Host 先对 `.zip`、`.md` 或文件夹做结构和安全预检，用户确认后才写入官方技能目录；保留未来公共技能分类的禁用设计位。
+
+# 0.1.0-alpha.30
+
+组合 skills alpha.18：保留停用技能原始作用域并原位恢复，以跨进程锁封闭 revision 检查与写入竞态；增加受控根/符号链接校验、资源文件查看编辑、新建资源、最近卸载与恢复，并在页面重新获得焦点时刷新全局目录。
+
+# 0.1.0-alpha.29
+
+组合 skills alpha.17：全局技能页改用 Host SkillManager，经 Harness Connection 的鉴权 `/api` Fetch route 读取与管理；编辑保存含 revision 冲突检测，打开目录复用 session.openWorkspacePath，启停与可恢复卸载直接生效并刷新全局列表。
+
+# 0.1.0-alpha.28
+
+组合 skills alpha.16：将 Client 的 Harness 装配、页面组件、任务草稿和样式拆分，保持官方 Slot 与唯一 renderer 运行契约不变。
+
+# 0.1.0-alpha.27
+
+组合 skills alpha.15：技能 Host 增加导入目录预检、符号链接与体积限制、官方共享/Profile 目标选择、临时目录复制后复核及原子安装；失败时清理临时产物。
+
+# 0.1.0-alpha.26
+
+技能库对齐 WorkBuddy 的紧凑已安装卡片、操作菜单和浮层详情；组合共享 Modal，并加入本地技能正文、资源、修订冲突、启停与可恢复卸载 Host 服务。
+
+# 0.1.0-alpha.25
+
+技能 Client 页面改用 TSX 表达 React 结构；继续通过 Harness 官方 Slot 和注入 props 组合，行为与数据边界不变。
+
+# 0.1.0-alpha.24
+
+修正从长列表进入详情时沿用旧滚动位置的问题，详情每次从标题与试用入口开始显示。
+
+# 0.1.0-alpha.23
+
+技能列表按“我安装的”真实范围组织，卡片进入独立摘要详情；详情提供原生“去试试”任务入口。完整正文、编辑、打开目录、启停和卸载在 Host 管理契约接入前不显示假动作。
+
+# 0.1.0-alpha.22
+
+将 `skill-creator` Host 注册迁回技能插件源码所有，组合包在构建时装配；所有任务共享技能默认写入官方 `DSH_AGENTS_HOME/skills`，补充同名冲突、显式更新和公共分类元数据边界。
+
+# 0.1.0-alpha.21
+
+技能库移除没有真实元数据支撑的办公协同、开发工具、数据分析、内容创作和知识学习分类，并将无动作的“我安装的”按钮改为静态已安装数量状态；搜索和添加技能保持可操作。
+
+# 0.1.0-alpha.20
+
+“添加技能”改为查找、上传、创建三项菜单；上传与创建进入 Harness 原生 Conversation，分别预填导入说明和 WorkBuddy 参考创建文案，继续保留原生附件、命令、权限、模型与发送能力。skill-creator 增加导入检查约束，避免执行未审查脚本或建立第二套技能注册表。
+
+# 0.1.0-alpha.19
+
+技能库移除当前产品不存在的 SkillHub/套件，并开放“添加技能”。入口创建 Harness 原生 Session，通过公开 InputActions 预填 `/skill-creator`；随包引导技能注册到官方 SkillRegistry，创建结果继续由官方文件提供方、watcher 和 `/name` 调用链处理。
+
+# 0.1.0-alpha.16
+
+组合 workbench alpha.8：在官方 Sidebar 骨架中恢复 WorkBuddy 参考的 WorkDSH 业务导航和能力中心入口，同时保留原生工作区/会话能力。
+
+# 0.1.0-alpha.14
+
+组合 workbench alpha.6 与 skills alpha.4：恢复 Harness 官方 Sidebar 的完整工作区/会话操作，并删除原生侧栏中残留的“专家 · 技能 · 连接器”入口。
+
+# 0.1.0-alpha.13
+
+组合 workbench alpha.5：删除自建新任务输入器，首页与未知路由统一落到 Harness 原生 Conversation 空会话，从官方输入链获得 `/`、`@`、附件、权限、模型和 preset 能力。
+
+# 0.1.0-alpha.12
+
+组合 workbench alpha.4：左侧显示真实工作区与所属会话，首页只显示当前工作区；删除左侧能力中心聚合入口。
+
+# 0.1.0-alpha.11
+
+补齐首页依赖的 `workspaces` 与 `conversation` Client 服务注入声明，确保 Cordis 在渲染首页前完成官方服务装配。
+
+# 0.1.0-alpha.10
+
+组合 workbench alpha.3：默认 home 改为 WorkDSH 新任务入口，使用 Harness 官方工作区、Session 与 Conversation 服务创建任务；接入验证移至 `workdsh-view=diagnostics`。
+
+# 0.1.0-alpha.9
+
+组合 skills alpha.3：技能页改为全局技能库，移除任务选择与“打开对应任务”，增加已安装、SkillHub、分类和安装入口骨架；未接入的写操作保持禁用。
+
+# 0.1.0-alpha.8
+
+修正设置弹框主按钮受侧栏通用文字色覆盖的问题，并锁定按钮宽度与悬停对比度。
+
+# 0.1.0-alpha.7
+
+组合 workbench alpha.2：设置入口改为显式的设置说明弹框，避免点击后无解释地进入 Harness 新会话页。
+
+# 0.1.0-alpha.6
+
+固定公共侧栏窄屏图标栏呈现，避免预览同版本制品缓存；沿用 alpha.5 已验证功能。
+
+# 0.1.0-alpha.5
+
+组合 workbench 与 ui 首版，正式侧栏使用原型导航结构和共用图标；任务读取官方实时模型，保留原生导航往返。skills alpha.2 复用公共图标并提供“我的技能”范围入口。
+
+# Changes
+
+## 0.1.0-alpha.2 — local Client probe
+
+- Add a browser diagnostic panel through official main/sidebar Slots.
+- Read live Host plugin inventory through the official Remote namespace.
+- Declare the package root Host export for rc.1 Client discovery; retain ./probe.
+- Build a single-file browser artifact using the public ClientBundleRegistration protocol; React remains a platform external.
+- Add headless Chromium checks for discovery, navigation, Remote response and page reload.
+- No business workbench, database, model request or external account integration yet.
+
+## 0.1.0-alpha.1 — local P0 candidate
+
+- Add a compiled lifecycle probe and a public dsh.bundle patch.
+- No business tools, model calls, credentials or UI changes.
+- Local tarball testing only; no registry release.
+
+## 0.1.0-alpha.3
+
+组合 skills 0.1.0-alpha.1：真实任务技能目录、搜索、说明弹框、新建/返回任务及命令复制。使用官方 Session/skills Remote，尚不含技能导入、修订与团队管理。
+
+## 0.1.0-alpha.4
+
+修正原型偏差：官方深色主题、能力分类工具栏、折叠任务范围、中性技能卡片；正常入口隐藏接入诊断导航。业务侧栏尚未整体迁移。

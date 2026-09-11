@@ -1,0 +1,219 @@
+{
+  "currentStep": "D01",
+  "steps": [
+    {
+      "id": "D00",
+      "title": "修复设计审查",
+      "tasks": [
+        "DOC-05"
+      ],
+      "dependsOn": [],
+      "status": "completed",
+      "evidence": [
+        "docs/evidence/d00-resolution.md"
+      ]
+    },
+    {
+      "id": "D01",
+      "title": "安装链与公开接口探针",
+      "tasks": [
+        "P0-01",
+        "P0-02",
+        "P0-03",
+        "P0-04",
+        "P0-05"
+      ],
+      "dependsOn": [
+        "D00"
+      ],
+      "status": "in_progress",
+      "evidence": [
+        "docs/evidence/d01-installation.md",
+        "docs/evidence/d01-client.md"
+      ]
+    },
+    {
+      "id": "D02",
+      "title": "基础插件与工作台最小版本",
+      "tasks": [
+        "P1-09",
+        "P1-01"
+      ],
+      "dependsOn": [
+        "D01"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D03",
+      "title": "技能插件",
+      "tasks": [
+        "P1-03"
+      ],
+      "dependsOn": [
+        "D02"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D04",
+      "title": "专家插件",
+      "tasks": [
+        "P1-02"
+      ],
+      "dependsOn": [
+        "D03"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D05",
+      "title": "连接器插件",
+      "tasks": [
+        "P1-04"
+      ],
+      "dependsOn": [
+        "D04"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D06",
+      "title": "资料库插件",
+      "tasks": [
+        "P1-06"
+      ],
+      "dependsOn": [
+        "D05"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D07",
+      "title": "项目插件",
+      "tasks": [
+        "P1-11"
+      ],
+      "dependsOn": [
+        "D06"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D08",
+      "title": "行业应用插件",
+      "tasks": [
+        "P1-05"
+      ],
+      "dependsOn": [
+        "D07"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D09",
+      "title": "企业后台首期",
+      "tasks": [
+        "P1-10"
+      ],
+      "dependsOn": [
+        "D08"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D10",
+      "title": "首期集成与组合验收",
+      "tasks": [
+        "P1-07",
+        "P1-08"
+      ],
+      "dependsOn": [
+        "D09"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D11",
+      "title": "专家团",
+      "tasks": [
+        "P2-01",
+        "P2-02"
+      ],
+      "dependsOn": [
+        "D10"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D12",
+      "title": "自动化插件",
+      "tasks": [
+        "P2-03",
+        "P2-04"
+      ],
+      "dependsOn": [
+        "D11"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D13",
+      "title": "提供方示例完善",
+      "tasks": [
+        "P2-05"
+      ],
+      "dependsOn": [
+        "D12"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D14",
+      "title": "团队部署与团队资料",
+      "tasks": [
+        "P3-01",
+        "P3-02"
+      ],
+      "dependsOn": [
+        "D13"
+      ],
+      "status": "todo",
+      "evidence": []
+    },
+    {
+      "id": "D15",
+      "title": "表格、页面与业务场景",
+      "tasks": [
+        "P3-03",
+        "P3-04",
+        "P3-05",
+        "P3-06"
+      ],
+      "dependsOn": [
+        "D14"
+      ],
+      "status": "todo",
+      "evidence": []
+    }
+  ],
+  "activeSlice": {
+    "id": "skill-create-loop",
+    "task": "P1-03",
+    "status": "in_progress",
+    "decision": "docs/adr/0015-skill-control-plane-and-runtime-projection.md",
+    "scope": "Skill 0.1 使用 Harness 默认/本地技能并完成个人本地管理闭环；当前不开发公共市场、公共目录、SkillHub 或套件。企业服务端、管理 Web、组织目录、分类、版本和下发策略列入后期 ToDo，各模块开始时独立建立 0.1 版本线，不预先建立 Skill 0.2。"
+  }
+}
