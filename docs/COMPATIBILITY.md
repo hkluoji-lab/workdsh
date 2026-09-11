@@ -27,8 +27,8 @@
 
 | 能力 | 设计用途 | 状态 |
 | --- | --- | --- |
-| bundle / plugin CLI | 独立安装与卸载 | tgz 安装、Host 激活、停服卸载后重启及重装通过；运行中 CLI 热卸载未验证 |
-| Client Modules / Remote / Slots | 功能页面和 Host 通信 | 包根扫描、侧栏/页面注册、官方清单 Remote、页面刷新、WebSocket 关闭后自动重连及新 HTTP 查询、停服卸载后 Client 缺席通过；自有 Remote/取消/在途恢复仍待验，见 [Client 证据](evidence/d01-client.md) |
+| bundle / plugin CLI | 独立安装与卸载 | tgz 安装、Host 激活、停服卸载后重启及重装通过；当前产品运维契约为停止 Host 后变更包并重启，运行中 CLI 热变更不作为用户路径 |
+| Client Modules / Remote / Slots | 功能页面和 Host 通信 | 包根扫描、侧栏/页面注册、官方清单 Remote、页面刷新、WebSocket 关闭后自动重连及新 HTTP 查询、停服卸载后 Client 缺席通过；Skill exact Fetch 的认证、超时、中途取消、暂存清理和提交前重试通过；通用自有 Typert Remote 生成仍为上游兼容项，见 [Client 证据](evidence/d01-client.md) |
 | Agent Preset 创作/挂载/恢复 | 专家发布与精确修订绑定 | 待验证 |
 | scoped skills/tools | 按专家选择能力 | 待验证 |
 | Session 注入与投影 | 持久执行事实与对象绑定 | 待验证 |
@@ -39,7 +39,7 @@
 
 安装及生命周期证据见 [D01 安装验证](evidence/d01-installation.md)。Client/Remote 等未执行部分继续保持待验证；本机 HTTP 登录不是团队授权证据。
 
-2026-09-10 自有 Remote 补充：rc.1 generator 只识别登记的 workspace protocol 符号或对应 ambient 声明，当前纯 npm 最小例无法生成 Remote 元数据。官方 runtime decorator/namespace 测试 4/4 通过，但不替代生成。该点阻塞自有 Remote 发布链；保留固定版本、不修改依赖、不伪造 protocol。复现与边界见 [Remote 证据](evidence/d01-remote.md)。
+2026-09-10 自有 Remote 补充：rc.1 generator 只识别登记的 workspace protocol 符号或对应 ambient 声明，当前纯 npm 最小例无法生成 Remote 元数据。官方 runtime decorator/namespace 测试 4/4 通过，但不替代生成。该点阻塞未来通用自有 Remote 的发布链，作为 Harness 升级兼容项保留；它不阻塞 Skill 插件使用 Connection 官方 exact Fetch 扩展面。项目不修改依赖、不伪造 protocol。复现与边界见 [Remote 证据](evidence/d01-remote.md)。
 
 团队产品依据与证据边界见 [TEAM-DESIGN](TEAM-DESIGN.md)，包括用户提供的企业版概述以及官方连接器、协作、企业智能体说明。
 

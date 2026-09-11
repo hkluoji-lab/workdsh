@@ -59,7 +59,8 @@ async function resourceFiles(directory: string, root = directory, depth = 0): Pr
   return files.slice(0, 200).sort();
 }
 
-async function inspectImportTree(source: string): Promise<{ document: string; root: string; files: string[]; totalBytes: number; fingerprint: string }> {
+async function inspectImportTree(source: string, signal?: AbortSignal): Promise<{ document: string; root: string; files: string[]; totalBytes: number; fingerprint: string }> {
+  signal?.throwIfAborted();
   const sourceInfo = await lstat(source);
   if (sourceInfo.isSymbolicLink()) throw new Error('skill/import-symlink');
   const root = sourceInfo.isDirectory() ? source : dirname(source);
@@ -67,6 +68,7 @@ async function inspectImportTree(source: string): Promise<{ document: string; ro
   if (!sourceInfo.isDirectory() && basename(source) !== 'SKILL.md') throw new Error('skill/import-missing-skill-md');
   const files: string[] = []; let totalBytes = 0;
   const visit = async (directory: string, depth: number): Promise<void> => {
+    signal?.throwIfAborted();
     if (depth > 6) throw new Error('skill/import-too-deep');
     for (const row of await readdir(directory, { withFileTypes: true })) {
       const path = join(directory, row.name);
@@ -88,20 +90,22 @@ async function inspectImportTree(source: string): Promise<{ document: string; ro
   const sortedFiles = files.sort();
   const fingerprint = createHash('sha256');
   for (const file of sortedFiles) {
+    signal?.throwIfAborted();
     fingerprint.update(file); fingerprint.update('\0');
     fingerprint.update(await readFile(join(root, file))); fingerprint.update('\0');
   }
   return { document, root, files: sortedFiles, totalBytes, fingerprint: fingerprint.digest('hex') };
 }
 
-async function copyImportTree(source: string, target: string): Promise<void> {
+async function copyImportTree(source: string, target: string, signal?: AbortSignal): Promise<void> {
+  signal?.throwIfAborted();
   const sourceInfo = await lstat(source);
   if (sourceInfo.isDirectory()) {
     await mkdir(target, { recursive: true });
     for (const row of await readdir(source, { withFileTypes: true })) {
       if (row.isSymbolicLink()) throw new Error('skill/import-symlink');
       const from = join(source, row.name); const to = join(target, row.name);
-      if (row.isDirectory()) await copyImportTree(from, to);
+      if (row.isDirectory()) await copyImportTree(from, to, signal);
       else if (row.isFile()) await copyFile(from, to);
     }
   } else {
@@ -136,8 +140,8 @@ export class SkillManager extends Service {
     this.draftRoot = join(this.stateRoot, 'drafts');
     this.imports = new SkillImportStaging(
       join(this.stateRoot, 'imports'),
-      source => this.inspectImport(source),
-      request => this.installImport(request),
+      (source, signal) => this.inspectImport(source, signal),
+      (request, signal) => this.installImport(request, signal),
     );
   }
 
@@ -342,9 +346,9 @@ export class SkillManager extends Service {
     });
   }
 
-  async inspectImport(source: string): Promise<SkillImportInspection> {
+  async inspectImport(source: string, signal?: AbortSignal): Promise<SkillImportInspection> {
     const resolvedSource = resolve(source);
-    const inspected = await inspectImportTree(resolvedSource);
+    const inspected = await inspectImportTree(resolvedSource, signal);
     const metadata = frontmatter(inspected.document);
     const name = typeof metadata.name === 'string' ? metadata.name.trim() : undefined;
     const description = typeof metadata.description === 'string' ? metadata.description.trim() : undefined;
@@ -353,27 +357,30 @@ export class SkillManager extends Service {
     return { name, description, files: inspected.files, totalBytes: inspected.totalBytes };
   }
 
-  async installImport(request: SkillImportRequest): Promise<SkillMutationReceipt> {
+  async installImport(request: SkillImportRequest, signal?: AbortSignal): Promise<SkillMutationReceipt> {
+    signal?.throwIfAborted();
     const source = resolve(request.source);
-    const inspected = await inspectImportTree(source);
+    const inspected = await inspectImportTree(source, signal);
     const metadata = frontmatter(inspected.document);
     const name = typeof metadata.name === 'string' ? metadata.name.trim() : '';
     const description = typeof metadata.description === 'string' ? metadata.description.trim() : '';
     if (!skillNamePattern.test(name) || !isSkillName(name)) throw new Error('skill/invalid-name');
     if (!description) throw new Error('skill/description-required');
     return this.withSkillLock(name, async () => {
+      signal?.throwIfAborted();
       // A name is global from the user's point of view. Reject collisions in every
       // official root and with bundled/remote providers instead of creating a
       // second candidate whose winner depends on provider order.
-      if (await this.detail(name)) throw new Error('skill/target-exists');
+      if (await this.detail(name, signal)) throw new Error('skill/target-exists');
       const root = request.scope === 'profile' ? this.activeRoots[1] : this.activeRoots[0];
       const target = join(root, name);
       await this.assertAbsent(target); await this.assertAbsent(`${target}.md`); await mkdir(root, { recursive: true });
       const temporary = join(root, `.workdsh-import-${name}-${process.pid}-${Date.now()}`);
       try {
-        await copyImportTree(source, temporary);
-        const copied = await inspectImportTree(temporary);
+        await copyImportTree(source, temporary, signal);
+        const copied = await inspectImportTree(temporary, signal);
         if (frontmatterValue(copied.document, 'name') !== name || copied.fingerprint !== inspected.fingerprint) throw new Error('skill/import-verification-failed');
+        signal?.throwIfAborted();
         await rename(temporary, target);
         return { name, state: 'enabled', path: target };
       } catch (error) {

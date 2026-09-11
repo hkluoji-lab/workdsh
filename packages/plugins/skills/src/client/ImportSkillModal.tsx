@@ -16,7 +16,8 @@ const maximumBytes = 50 * 1024 * 1024;
 function messageOf(cause: unknown): string { return cause instanceof Error ? cause.message : '技能导入失败，请重试。'; }
 function sizeOf(bytes: number): string { return bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KiB` : `${(bytes / 1024 / 1024).toFixed(1)} MiB`; }
 
-async function packageSelection(files: FileList | readonly File[]): Promise<File> {
+async function packageSelection(files: FileList | readonly File[], signal: AbortSignal): Promise<File> {
+  signal.throwIfAborted();
   const selected = [...files];
   if (!selected.length) throw new Error('请选择技能文件。');
   if (selected.length === 1 && !selected[0].webkitRelativePath) return selected[0];
@@ -25,9 +26,11 @@ async function packageSelection(files: FileList | readonly File[]): Promise<File
   if (total > maximumBytes) throw new Error('技能目录不得超过 50 MiB。');
   const entries: Record<string, Uint8Array> = {};
   for (const file of selected) {
+    signal.throwIfAborted();
     const path = file.webkitRelativePath || file.name;
     entries[path] = new Uint8Array(await file.arrayBuffer());
   }
+  signal.throwIfAborted();
   return new File([zipSync(entries, { level: 6 })], 'skill-directory.zip', { type: 'application/zip' });
 }
 
@@ -39,32 +42,33 @@ export function ImportSkillModal({ open, management, onClose, onInstalled }: Imp
   const [error, setError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
-  const uploadAbort = useRef<AbortController | undefined>(undefined);
+  const operationAbort = useRef<AbortController | undefined>(undefined);
 
   const discard = async () => {
     const current = staged;
     setStaged(undefined); setError(''); setBusy(false); setDragging(false); setScope('shared-agents');
     if (current) await management.discardImport(current.id).catch(() => {});
   };
-  const close = () => { uploadAbort.current?.abort(); void discard(); onClose(); };
-  useEffect(() => () => { uploadAbort.current?.abort(); if (staged) void management.discardImport(staged.id).catch(() => {}); }, [management, staged]);
+  const close = () => { operationAbort.current?.abort(); void discard(); onClose(); };
+  useEffect(() => () => { operationAbort.current?.abort(); if (staged) void management.discardImport(staged.id).catch(() => {}); }, [management, staged]);
 
   const inspect = async (files: FileList | readonly File[]) => {
     setBusy(true); setError('');
+    const controller = new AbortController(); operationAbort.current?.abort(); operationAbort.current = controller;
     try {
       if (staged) await management.discardImport(staged.id).catch(() => {});
-      const upload = await packageSelection(files);
+      const upload = await packageSelection(files, controller.signal);
       if (upload.size > maximumBytes) throw new Error('技能包不得超过 50 MiB。');
-      const controller = new AbortController(); uploadAbort.current = controller;
       setStaged(await management.stageImport(upload, controller.signal));
     } catch (cause) { setStaged(undefined); if (!(cause instanceof DOMException && cause.name === 'AbortError')) setError(messageOf(cause)); }
-    finally { uploadAbort.current = undefined; setBusy(false); }
+    finally { if (operationAbort.current === controller) operationAbort.current = undefined; setBusy(false); }
   };
   const install = async () => {
     if (!staged) return;
     setBusy(true); setError('');
+    const controller = new AbortController(); operationAbort.current?.abort(); operationAbort.current = controller;
     try {
-      const receipt = await management.commitImport(staged.id, scope);
+      const receipt = await management.commitImport(staged.id, scope, controller.signal);
       setStaged(undefined);
       // Close the import layer before opening the installed skill detail. This
       // preserves one modal at a time and prevents the hidden import backdrop
@@ -72,7 +76,8 @@ export function ImportSkillModal({ open, management, onClose, onInstalled }: Imp
       onClose();
       await onInstalled(receipt.name);
     }
-    catch (cause) { setError(messageOf(cause)); setBusy(false); }
+    catch (cause) { setError(messageOf(cause)); }
+    finally { if (operationAbort.current === controller) operationAbort.current = undefined; setBusy(false); }
   };
 
   return <Modal open={open} label="导入技能" className="import-skill-dialog" onClose={close}>
@@ -88,6 +93,7 @@ export function ImportSkillModal({ open, management, onClose, onInstalled }: Imp
         <strong>{busy ? '正在上传并预检…' : '拖拽文件或点击上传'}</strong>
         <small>.zip 技能包或 SKILL.md</small>
       </button>
+      {busy && <button type="button" className="folder-picker" onClick={() => operationAbort.current?.abort()}>取消上传</button>}
       <input ref={fileInput} className="visually-hidden" type="file" accept=".zip,.md,text/markdown,application/zip" onChange={event => { if (event.currentTarget.files) void inspect(event.currentTarget.files); event.currentTarget.value = ''; }} />
       <input ref={folderInput} className="visually-hidden" type="file" multiple {...({ webkitdirectory: '', directory: '' } as React.InputHTMLAttributes<HTMLInputElement>)} onChange={event => { if (event.currentTarget.files) void inspect(event.currentTarget.files); event.currentTarget.value = ''; }} />
       <button type="button" className="folder-picker" disabled={busy} onClick={() => folderInput.current?.click()}>选择技能文件夹</button>
@@ -97,7 +103,7 @@ export function ImportSkillModal({ open, management, onClose, onInstalled }: Imp
       <dl><dt>来源文件</dt><dd>{staged.fileName}</dd><dt>文件</dt><dd>{staged.inspection.files.length} 个，{sizeOf(staged.inspection.totalBytes)}</dd><dt>安装范围</dt><dd><select value={scope} onChange={event => setScope(event.currentTarget.value as SkillInstallScope)}><option value="shared-agents">所有 WorkDSH 任务（共享）</option><option value="profile">当前 Harness Profile</option></select></dd></dl>
       <details><summary>查看文件清单</summary><ul className="import-file-list">{staged.inspection.files.map(path => <li key={path}>{path}</li>)}</ul></details>
       <p className="import-note">预检已通过。确认后才会写入 Harness 官方技能目录；若已存在同名技能，安装会停止且不会覆盖。</p>
-      <div className="import-actions"><button type="button" disabled={busy} onClick={() => void discard()}>重新选择</button><button type="button" className="install" disabled={busy} onClick={() => void install()}>{busy ? '正在安装…' : '确认安装'}</button></div>
+      <div className="import-actions"><button type="button" onClick={() => busy ? operationAbort.current?.abort() : void discard()}>{busy ? '取消安装' : '重新选择'}</button><button type="button" className="install" disabled={busy} onClick={() => void install()}>{busy ? '正在安装…' : '确认安装'}</button></div>
     </section>}
     {error && <p className="error" role="alert">{error}</p>}
   </Modal>;

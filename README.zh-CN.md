@@ -70,9 +70,9 @@ UI 设计审阅：[交互原型](docs/ui/index.html) · [视觉与页面规范](
 
 首个预览版本精确包含以下模块版本：
 
-- `workdsh-plugin-skills@0.1.0-alpha.22`
+- `workdsh-plugin-skills@0.1.0-alpha.23`
 - `workdsh-plugin-workbench@0.1.0-alpha.8`
 - `workdsh-ui@0.1.0-alpha.3`
-- `workdsh-bundle@0.1.0-alpha.34`
+- `workdsh-bundle@0.1.0-alpha.35`
 
 能力、限制与验证证据详见 [v0.1.0-alpha.1 发布说明](docs/releases/v0.1.0-alpha.1.md)。

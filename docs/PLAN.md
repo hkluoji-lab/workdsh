@@ -44,9 +44,9 @@ P0/P1 为当前实现范围，包含团队基础服务及多主体隔离测试�
 
 ### P0-02 安装与客户端扩展探针
 
-当前兼容性待解：纯 npm 最小例已完成 Host 取消/卸载验证，但官方生成器未产出 Remote 元数据；复现与下一步见 [Remote 证据](evidence/d01-remote.md)。先修复生成再验证网络链，不提前完成本任务。
+当前兼容性记录：纯 npm 最小例已完成 Host 取消/卸载验证，但官方生成器未产出 Remote 元数据；复现见 [Remote 证据](evidence/d01-remote.md)。该问题保留为 Harness 升级时的生成 Remote 兼容项，不再阻塞使用官方 Connection exact Fetch 扩展面的 Skill 0.1。未来新增的一元业务 Remote 仍须先通过官方生成链，不能复制当前适配层作为通用协议。
 
-识别边界现已定位到 rc.1 对外部 protocol 符号的处理，runtime decorator 检查通过。P0-02 保留此阻塞；同一 D01 内继续独立 C01 正文 scope 隔离与 Session 技能消费，不跳 D02。两个 scope 的同名正文隔离已通过，Session 工具消费为下一项。
+识别边界现已定位到 rc.1 对外部 protocol 符号的处理，runtime decorator 检查通过。C01 正文 scope 隔离、Session 技能消费、冷恢复和 Skill 管理网络取消均已验证。P0-02 中的通用生成 Remote 门槛继续登记，但与本地 Skill 0.1 的官方 exact Fetch 路径分开判定。
 
 后续进展：官方 Agent loop 的 Session skill 消费正反例已通过（固定测试模型，无外部请求），现已通过官方 JSONL 正常关闭后的跨进程恢复及空目录退役测试；不代替崩溃恢复、Remote 或团队准入。
 
@@ -64,7 +64,7 @@ P0/P1 为当前实现范围，包含团队基础服务及多主体隔离测试�
 
 DOC-06 已完成 127/127 份文档审查；[收尾清单](research/harness-review-closure.md) 登记 C01—C06 与版本差异。下一项实际编码为 C01：扩展现有 probe:presets，验证两个同时存活 Session 的技能目录和正文按需加载。然后继续自有生成 Remote、取消与 D01 剩余门槛，不能把阅读完成作为产品准入证据。
 
-接续：C01 已通过双 Session 目录、发布包正文接口、Session 内正文消费、正常关闭后的磁盘恢复，以及两个同时存活 Agent Session 的同名技能调用与同伴卸载隔离，证据见 [预设探针](evidence/d01-presets.md)。WorkDSH 不可变 SkillRevision 绑定仍属于业务契约；D01 下一项回到 P0-02 发布版 Remote 生成兼容及网络取消，不能绕过官方生成器。每项编码遵守 AGENTS.md 的官方优先复用约束，并填写 PLUGIN-DELIVERY 中的复用记录。
+接续：C01 已通过双 Session 目录、发布包正文接口、Session 内正文消费、正常关闭后的磁盘恢复，以及两个同时存活 Agent Session 的同名技能调用与同伴卸载隔离，证据见 [预设探针](evidence/d01-presets.md)。Skill 管理的认证请求超时、流式上传取消、提交前取消和重试也已通过。WorkDSH 不可变 SkillRevision 绑定仍属于后续业务契约；Typert 外部 workspace 生成问题作为上游兼容项保留。每项编码遵守 AGENTS.md 的官方优先复用约束，并填写 PLUGIN-DELIVERY 中的复用记录。
 
 - 验证原生预设发现、创建或受控生成、挂载、空会话选择、首次执行和恢复接口。
 - 验证两种专家组合并发工作时技能目录及可变状态隔离。

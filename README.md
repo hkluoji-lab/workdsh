@@ -66,9 +66,9 @@ UI design references: [interaction prototype](docs/ui/index.html) and [visual an
 
 The first preview ships these exact module versions:
 
-- `workdsh-plugin-skills@0.1.0-alpha.22`
+- `workdsh-plugin-skills@0.1.0-alpha.23`
 - `workdsh-plugin-workbench@0.1.0-alpha.8`
 - `workdsh-ui@0.1.0-alpha.3`
-- `workdsh-bundle@0.1.0-alpha.34`
+- `workdsh-bundle@0.1.0-alpha.35`
 
 See the [v0.1.0-alpha.1 release notes](docs/releases/v0.1.0-alpha.1.md) for capabilities, limitations, and validation evidence.

@@ -10,7 +10,7 @@ WorkDSH is developed as a collection of independently versioned modules. Each mo
 
 `v0.1.0-alpha.1` delivers the first local/default Skill management preview. It covers the global Skill library, full `SKILL.md` and resource reading, editing with conflict detection, enable/disable, recoverable uninstall, safe import, and native Conversation-based creation.
 
-Clean installation, packaged Web cold-restart acceptance, and failure recovery are now verified for Skill `0.1`. Before it is considered stable, the project still needs published Remote generation compatibility and a defined runtime command-line lifecycle boundary.
+Clean installation, packaged Web cold-restart acceptance, failure recovery, and authenticated request cancellation are now verified for Skill `0.1`. The published Typert generator's external-workspace limitation remains an upstream compatibility item for later generated Remotes; it does not block the local Skill module, which uses the official Connection exact Fetch extension. Runtime package changes use the documented stopped-Host and restart lifecycle.
 
 ### Module delivery order
 
@@ -42,7 +42,7 @@ WorkDSH 按独立版本化的模块开发。每个模块开始实现时建立自
 
 `v0.1.0-alpha.1` 是首个默认/本地 Skill 管理预览，包含全局技能库、完整 `SKILL.md` 与资源读取、带冲突检测的编辑、启停、可恢复卸载、安全导入，以及基于 Harness 原生 Conversation 的创建流程。
 
-Skill `0.1` 的干净安装、真实打包 Web 冷重启与失败恢复验收已经完成。进入稳定状态前还需解决发布版 Remote 生成兼容，并核定命令行运行时生命周期边界。
+Skill `0.1` 的干净安装、真实打包 Web 冷重启、失败恢复和认证请求取消验收已经完成。发布版 Typert 对外部 workspace 的限制保留为后续生成 Remote 的上游兼容事项；本地 Skill 模块使用官方 Connection exact Fetch 扩展面，不受其阻塞。运行包变更采用已记录的“停止 Host、变更、重启”生命周期。
 
 ### 模块交付顺序
 

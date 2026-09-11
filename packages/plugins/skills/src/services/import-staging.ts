@@ -11,8 +11,8 @@ const stagingLifetimeMs = 24 * 60 * 60 * 1000;
 const importIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 type Receipt = StagedSkillImport & { readonly source: string; readonly createdAt: string; readonly sourceFingerprint: string };
-type Inspect = (source: string) => Promise<SkillImportInspection>;
-type Install = (request: { source: string; scope?: SkillInstallScope }) => Promise<SkillMutationReceipt>;
+type Inspect = (source: string, signal?: AbortSignal) => Promise<SkillImportInspection>;
+type Install = (request: { source: string; scope?: SkillInstallScope }, signal?: AbortSignal) => Promise<SkillMutationReceipt>;
 
 function safeArchivePath(raw: string): string | undefined {
   const portable = raw.replace(/\\/g, '/').replace(/^\.\//, '');
@@ -24,10 +24,11 @@ function safeArchivePath(raw: string): string | undefined {
   return segments.join('/');
 }
 
-async function sourceFingerprint(root: string): Promise<string> {
+async function sourceFingerprint(root: string, signal?: AbortSignal): Promise<string> {
   const hash = createHash('sha256');
   const files: string[] = [];
   const visit = async (directory: string): Promise<void> => {
+    signal?.throwIfAborted();
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
       if (entry.isDirectory()) await visit(path);
@@ -37,6 +38,7 @@ async function sourceFingerprint(root: string): Promise<string> {
   };
   await visit(root);
   for (const path of files.sort()) {
+    signal?.throwIfAborted();
     hash.update(path.slice(root.length + 1)); hash.update('\0');
     hash.update(await readFile(path)); hash.update('\0');
   }
@@ -47,11 +49,17 @@ async function writeUpload(body: ReadableStream<Uint8Array> | null, target: stri
   if (!body) throw new Error('skill/import-empty');
   const handle = await open(target, 'wx', 0o600);
   const reader = body.getReader();
+  let aborting: Promise<void> | undefined;
+  const abortRead = (): void => {
+    aborting = reader.cancel(signal.reason).catch(() => undefined);
+  };
+  signal.addEventListener('abort', abortRead, { once: true });
   let total = 0;
   try {
     for (;;) {
       signal.throwIfAborted();
       const part = await reader.read();
+      signal.throwIfAborted();
       if (part.done) break;
       total += part.value.byteLength;
       if (total > maximumUploadBytes) throw new Error('skill/import-too-large');
@@ -59,6 +67,8 @@ async function writeUpload(body: ReadableStream<Uint8Array> | null, target: stri
     }
     if (!total) throw new Error('skill/import-empty');
   } finally {
+    signal.removeEventListener('abort', abortRead);
+    await aborting;
     reader.releaseLock();
     await handle.close();
   }
@@ -119,10 +129,12 @@ export class SkillImportStaging {
       await writeUpload(body, input, signal);
       const declared = await stat(input);
       if (declared.size > maximumUploadBytes) throw new Error('skill/import-too-large');
+      signal.throwIfAborted();
       const source = extension === '.zip' ? await extractZip(input, join(directory, 'tree')) : await this.stageMarkdown(input, directory);
-      const inspection = await this.inspect(source);
+      signal.throwIfAborted();
+      const inspection = await this.inspect(source, signal);
       const createdAt = new Date(); const expiresAt = new Date(createdAt.getTime() + stagingLifetimeMs);
-      const receipt: Receipt = { id, fileName: safeName, inspection, source, sourceFingerprint: await sourceFingerprint(source), createdAt: createdAt.toISOString(), expiresAt: expiresAt.toISOString() };
+      const receipt: Receipt = { id, fileName: safeName, inspection, source, sourceFingerprint: await sourceFingerprint(source, signal), createdAt: createdAt.toISOString(), expiresAt: expiresAt.toISOString() };
       await writeFile(join(directory, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
       return { id, fileName: safeName, inspection, expiresAt: receipt.expiresAt };
     } catch (error) {
@@ -131,9 +143,11 @@ export class SkillImportStaging {
     }
   }
 
-  async commit(id: string, scope?: SkillInstallScope): Promise<SkillMutationReceipt> {
-    const receipt = await this.readReceipt(id);
-    const installed = await this.install({ source: receipt.source, scope });
+  async commit(id: string, scope?: SkillInstallScope, signal?: AbortSignal): Promise<SkillMutationReceipt> {
+    signal?.throwIfAborted();
+    const receipt = await this.readReceipt(id, signal);
+    signal?.throwIfAborted();
+    const installed = await this.install({ source: receipt.source, scope }, signal);
     await rm(join(this.root, id), { recursive: true, force: true });
     return installed;
   }
@@ -150,15 +164,16 @@ export class SkillImportStaging {
     return target;
   }
 
-  private async readReceipt(id: string): Promise<Receipt> {
+  private async readReceipt(id: string, signal?: AbortSignal): Promise<Receipt> {
+    signal?.throwIfAborted();
     if (!importIdPattern.test(id)) throw new Error('skill/import-invalid-id');
     let receipt: Receipt;
     try { receipt = JSON.parse(await readFile(join(this.root, id, 'receipt.json'), 'utf8')) as Receipt; }
     catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new Error('skill/import-expired'); throw error; }
     if (receipt.id !== id || typeof receipt.sourceFingerprint !== 'string' || !resolve(receipt.source).startsWith(`${resolve(join(this.root, id))}${sep}`)) throw new Error('skill/import-invalid-id');
     if (Date.parse(receipt.expiresAt) <= Date.now()) { await this.discard(id); throw new Error('skill/import-expired'); }
-    const current = await this.inspect(receipt.source);
-    if (current.name !== receipt.inspection.name || current.totalBytes !== receipt.inspection.totalBytes || await sourceFingerprint(receipt.source) !== receipt.sourceFingerprint) throw new Error('skill/import-verification-failed');
+    const current = await this.inspect(receipt.source, signal);
+    if (current.name !== receipt.inspection.name || current.totalBytes !== receipt.inspection.totalBytes || await sourceFingerprint(receipt.source, signal) !== receipt.sourceFingerprint) throw new Error('skill/import-verification-failed');
     return receipt;
   }
 

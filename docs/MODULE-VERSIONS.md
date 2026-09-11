@@ -26,9 +26,9 @@
 
 | 模块 | 模块版本线 | 当前开发制品 | 说明 |
 | --- | --- | --- | --- |
-| 技能管理 | **0.1** | `workdsh-plugin-skills@0.1.0-alpha.22` | 默认/本地管理闭环完成；公共市场不在当前范围，企业服务端与管理 Web 列入后期 ToDo |
+| 技能管理 | **0.1** | `workdsh-plugin-skills@0.1.0-alpha.23` | 默认/本地管理闭环完成；公共市场不在当前范围，企业服务端与管理 Web 列入后期 ToDo |
 | 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.8` | 官方 Sidebar/Conversation 组合切片 |
 | 共享 UI | 0.1 | `workdsh-ui@0.1.0-alpha.3` | 公共展示基础与可访问弹框 |
-| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.34` | 集成版本，记录前三项的具体制品 |
+| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.35` | 集成版本，记录前三项的具体制品 |
 
 专家、连接器、资料库等 planned 模块在开始实际开发时再建立各自版本线，不为占位目录虚构版本。

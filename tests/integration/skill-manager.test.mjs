@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -209,6 +209,30 @@ test('browser import staging preflights inert markdown and commits only after co
     assert.equal((await ctx.workdshSkills.list()).some(row => row.name === 'staged-skill'), true);
     await assert.rejects(ctx.workdshSkills.imports.commit(staged.id), /skill\/import-expired/);
     await assert.rejects(ctx.workdshSkills.imports.stage('candidate.txt', new Blob([document]).stream(), AbortSignal.timeout(5000)), /skill\/import-file-type/);
+    const importsRoot = join(agentsHome, '.workdsh-state/skills/imports');
+    const beforeCancelledUpload = (await readdir(importsRoot).catch(error => error.code === 'ENOENT' ? [] : Promise.reject(error))).sort();
+    let releaseUpload;
+    const slowUpload = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(document.slice(0, 24)));
+        releaseUpload = () => { controller.enqueue(new TextEncoder().encode(document.slice(24))); controller.close(); };
+      },
+      cancel() { releaseUpload = undefined; },
+    });
+    const cancelledUpload = new AbortController();
+    const interruptedStage = ctx.workdshSkills.imports.stage('cancelled.md', slowUpload, cancelledUpload.signal);
+    await new Promise(resolve => setImmediate(resolve));
+    cancelledUpload.abort();
+    await assert.rejects(interruptedStage, error => error?.name === 'AbortError');
+    releaseUpload?.();
+    const afterCancelledUpload = (await readdir(importsRoot).catch(error => error.code === 'ENOENT' ? [] : Promise.reject(error))).sort();
+    assert.deepEqual(afterCancelledUpload, beforeCancelledUpload, 'cancelled transfer removes its private staging directory');
+    const cancelledCommitDocument = document.replaceAll('staged-skill', 'cancelled-commit-skill');
+    const cancelledCommit = await ctx.workdshSkills.imports.stage('cancelled-commit.md', new Blob([cancelledCommitDocument]).stream(), AbortSignal.timeout(5000));
+    const commitAbort = new AbortController(); commitAbort.abort();
+    await assert.rejects(ctx.workdshSkills.imports.commit(cancelledCommit.id, 'shared-agents', commitAbort.signal), error => error?.name === 'AbortError');
+    assert.equal((await ctx.workdshSkills.list()).some(row => row.name === 'cancelled-commit-skill'), false, 'abort before the atomic commit boundary leaves no installed target');
+    assert.equal((await ctx.workdshSkills.imports.commit(cancelledCommit.id, 'shared-agents')).name, 'cancelled-commit-skill', 'cancelled commit keeps the verified staging receipt retryable');
     const tampered = await ctx.workdshSkills.imports.stage('tampered.md', new Blob([document.replace('staged-skill', 'staged-other')]).stream(), AbortSignal.timeout(5000));
     const stagedFile = join(agentsHome, '.workdsh-state/skills/imports', tampered.id, 'tree/SKILL.md');
     const beforeTamper = await readFile(stagedFile, 'utf8');

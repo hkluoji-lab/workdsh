@@ -13,6 +13,7 @@ const record = (value: unknown): Record<string, unknown> | undefined => value !=
 const nameFrom = (payload: unknown): string | undefined => typeof record(payload)?.name === 'string' ? record(payload)?.name as string : undefined;
 
 function publicFailure(error: unknown): ConnectionRpcResult<never> {
+  if (error instanceof DOMException && error.name === 'AbortError') return fail('skill/request-cancelled', '操作已取消。');
   const code = error instanceof Error && error.message.startsWith('skill/') ? error.message : 'skill/internal';
   const messages: Record<string, string> = {
     'skill/invalid-name': '技能名称无效。',
@@ -67,7 +68,7 @@ async function dispatch(ctx: Context, rawEndpoint: unknown, payload: unknown, si
     if (endpoint === 'commit-import') {
       const input = record(payload); const id = input?.id; const scope = input?.scope;
       if (typeof id !== 'string' || (scope !== undefined && scope !== 'shared-agents' && scope !== 'profile')) return fail('skill/invalid-request', '导入范围或凭据无效。');
-      return ok(await ctx.workdshSkills.imports.commit(id, scope as SkillInstallScope | undefined));
+      return ok(await ctx.workdshSkills.imports.commit(id, scope as SkillInstallScope | undefined, signal));
     }
     if (endpoint === 'discard-import') {
       const id = record(payload)?.id;

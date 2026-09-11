@@ -67,7 +67,7 @@
 
 ### 技能管理传输兼容规则
 
-技能管理的首选形态仍是 Typert 生成 Remote。锁定的 rc.1 以及隔离验证的 rc.2 在外部 npm workspace 中均无法识别 Remote 装饰器，生成器会错误报告“没有 Remote methods”。在该上游问题修复前，技能插件使用公开的 `@deepseek-ai/dsh-client-connection` exact Fetch route：缓冲 JSON 操作使用一个精确路径，浏览器文件上传使用另一个 `requestBody: 'streaming'` 精确路径。Host 插件只声明 `connection` 注入；所有 payload 在 Host 做运行时校验；流式路由自行实施 50 MiB 上限和中止清理；错误只返回稳定 code 和公开消息；文件路径只由 Host 管理器从受控根解析，浏览器不得取得或拼接 Host 路径。请求继续经过 Connection 的 Host/Origin 栅栏和浏览器会话认证，业务插件不直接依赖 `webServer`，也不建立第二套 transport。官方把 exact Fetch route 定位为流式或浏览器原生响应扩展面；Typert 可在外部包稳定生成后迁移 JSON 管理调用，文件上传仍使用该官方流式扩展面。
+新的一元业务协议首选 Typert 生成 Remote。锁定的 rc.1 以及隔离验证的 rc.2 在外部 npm workspace 中均无法识别 Remote 装饰器，生成器会错误报告“没有 Remote methods”。Skill 管理使用公开的 `@deepseek-ai/dsh-client-connection` exact Fetch route：缓冲 JSON 操作使用一个精确路径，浏览器文件上传使用另一个 `requestBody: 'streaming'` 精确路径。Host 插件只声明 `connection` 注入；所有 payload 在 Host 做运行时校验；流式路由实施 50 MiB 上限、中止传播和暂存清理；Client 为查询、修改和上传设置有界超时并提供显式取消；错误只返回稳定 code 和公开消息；文件路径只由 Host 管理器从受控根解析，浏览器不得取得或拼接 Host 路径。请求继续经过 Connection 的 Host/Origin 栅栏和浏览器会话认证，业务插件不直接依赖 `webServer`，也不建立第二套 transport。取消必须在原子发布前生效；发布完成后按成功结算并重新读取 Host 事实。Typert 的外部 workspace 生成问题保留为上游兼容事项，不得为其他插件复制 Skill 的 endpoint 形成通用私有协议。
 
 “打开文件夹”必须用官方 `ctx.remote.session.openWorkspacePath({ path, action: 'reveal' })`；Client 只能使用 Host 返回的已校验目录。“编辑”读取完整 `SKILL.md`，保存时携带内容摘要 revision，冲突必须重新加载。“停用”移动出官方活动根但保留在 WorkDSH 隔离目录；“卸载”先进入可恢复回收目录。上述操作成功后重新读取 Host 全局列表，不能仅修改浏览器状态伪造结果。
 

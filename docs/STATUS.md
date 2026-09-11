@@ -4,11 +4,13 @@
 
 ## 当前模块版本
 
-版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。当前活动业务模块是技能管理，模块版本为 **0.1**，开发制品为 `workdsh-plugin-skills@0.1.0-alpha.22`；`workdsh-bundle@0.1.0-alpha.34` 只表示当前组合版本，不代替技能版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
+版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。当前活动业务模块是技能管理，模块版本为 **0.1**，开发制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；`workdsh-bundle@0.1.0-alpha.35` 只表示当前组合版本，不代替技能版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
+
+skills alpha.23 / bundle alpha.35 收口认证 Fetch 的超时与取消。Client 对列表和修改请求设置有界超时，上传打包、流读取、预检和确认安装共用 `AbortSignal`；界面在上传和安装阶段均提供真实取消入口。Host 主动取消阻塞中的流读取并清理私有暂存目录，在文件遍历、摘要、复制及最终原子重命名前检查中止；原子发布完成后按成功结算，避免技能已安装但界面报告取消。中途上传取消与提交前取消/重试已进入 19/19 集成回归。该能力继续使用 Harness Connection 的认证 exact Fetch 扩展面，不增加第二套传输。
 
 2026-09-11 补齐真实打包 Web 的 Skill 冷重启验收。第一次 Host 重启后，浏览器确认导入技能仍被全局发现、回收站凭据仍可恢复、编辑后的完整 `SKILL.md` 与新增资源内容未丢失；恢复后停用技能。第二次 Host 重启后，浏览器确认停用来源凭据仍有效，并将技能恢复到原始共享根。随后原有停服移除、Client/Host 缺席和重新安装流程继续通过。此项复用 Harness 官方 Web、Connection 认证、Skill provider/watcher 和 Loader，不新增状态协议；产品包版本未变。
 
-C01 的 live Session 隔离探针也已补齐：两个官方 Agent Session 在各自 setup scope 挂载同名 `sample` 技能，并发走完官方模型—skill 工具—模型回合；A/B 的请求和持久 Session 事件只包含各自正文。dispose B 后 A 再次调用仍只读取 A。专项 3/3、完整集成 19/19 通过。该结果不代替 WorkDSH 的不可变 SkillRevision 或团队授权；D01 下一项回到已记录阻塞的发布版 Remote 生成兼容和网络取消。
+C01 的 live Session 隔离探针也已补齐：两个官方 Agent Session 在各自 setup scope 挂载同名 `sample` 技能，并发走完官方模型—skill 工具—模型回合；A/B 的请求和持久 Session 事件只包含各自正文。dispose B 后 A 再次调用仍只读取 A。专项 3/3、完整集成 19/19 通过。该结果不代替 WorkDSH 的不可变 SkillRevision 或团队授权。发布版 Typert 的外部 workspace 生成问题保留为 Harness 升级兼容项，不阻塞已经采用官方 Connection exact Fetch 扩展面的本地 Skill 0.1。
 
 skills alpha.22 / bundle alpha.34 补齐本地 Skill 0.1 的最后一组领域能力：批量启用、停用与可恢复卸载逐项返回结果；卸载前由 Host 汇总已注册领域的依赖影响，确认携带影响 revision，执行时发现依赖变化或强依赖会停止卸载。组合回归从受管导入开始，保留资源文件，销毁 Host 后由冷启动新进程通过官方 Skill 工具成功调用。Node 22.23.2 下 build、typecheck 与 18/18 集成测试通过。Skill 0.1 的个人本地管理闭环已完成；真实打包浏览器已验证全局目录、详情、编辑、资源、导入、原生创建交接、依赖确认、菜单可点击、重连、移除与重装。按 ADR 0015，当前不开发公共市场；企业服务端、管理 Web、组织目录、分类、版本和下发策略进入后期 ToDo，不阻塞默认/本地 Skill 0.1。
 

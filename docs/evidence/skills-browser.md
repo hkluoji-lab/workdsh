@@ -103,3 +103,9 @@ Client 支持 `.zip`、单个 `.md` 与文件夹选择，Host 预检通过后返
 - 之后继续执行原有 bundle 停服移除、重启后 Host/Client 缺席和重新安装，确保新增状态验收没有绕过发布包生命周期。
 
 Node 22.23.2 / pnpm 10.34.5 下完整 `corepack pnpm probe:browser` 通过。截图位于忽略提交的 `.artifacts/client-skill-restart.png` 与 `.artifacts/client-skill-disabled-restart.png`。未调用真实模型、外部连接器或公共技能服务。
+
+## 2026-09-11：认证请求超时与取消
+
+skills alpha.23 / bundle alpha.35 为 Connection exact Fetch 管理调用增加有界超时，并把 `AbortError` 与 `TimeoutError` 映射为稳定客户端错误。上传打包、浏览器流、Host 预检和确认安装共用同一操作信号；上传和安装阶段均提供显式取消入口。
+
+Host 在等待流数据时主动取消 reader，并在异常路径删除该请求的私有暂存目录；目录遍历、内容摘要、复制和安装在最终原子 `rename` 前持续检查信号。原子发布完成后不再因迟到的取消改写结果，而是返回成功并由 Client 重新读取 Host 列表。19/19 集成测试包含传输中途取消后暂存目录无残留、提交前取消不产生目标、原暂存收据仍可重试。此实现复用 Harness Connection 的认证、Host/Origin 校验和 exact Fetch 扩展面，没有新增 transport。发布版 Typert 的外部 workspace 生成限制继续记录在兼容性台账，但不阻塞本地 Skill 0.1。
