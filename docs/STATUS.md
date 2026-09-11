@@ -4,7 +4,13 @@
 
 ## 当前模块版本
 
-版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。当前活动业务模块是技能管理，模块版本为 **0.1**，开发制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；`workdsh-bundle@0.1.0-alpha.35` 只表示当前组合版本，不代替技能版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
+版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；当前活动工程模块转为治理契约与本地身份提供方 **0.1**。`workdsh-bundle@0.1.0-alpha.35` 仍表示现有产品组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
+
+Skill 0.1 提前切片现已正式结项：`development-order.activeSlice` 标为 completed，`packages/plugins/skills` 标为 implemented，P1-03 标为 completed。D03 正式阶段仍等待 D02；到达时只补 ActorContext/access/audit 治理适配与组合验收，不重复开发技能页面和管理闭环。
+
+D01 当前转入 P0-04。新增 `workdsh-contracts@0.1.0-alpha.1`，定义服务端解析的 ActorContext、Organization、Membership、ResourceOwner、AccessGrant、AuthorizationDecision、RuntimeBinding、AuditEvent 及 identity/access/audit 提供方接口，并提供最小运行时信任边界校验。该包无 Cordis、UI、数据库或传输依赖；架构依据见 ADR-0016。下一项实现可信本地 IdentityProvider，再做两主体/两组织授权与审计负例。
+
+P0-05 同步启动 `workdsh-provider-identity-local@0.1.0-alpha.1`。本地 provider 的 principal/organization 只来自 Host 配置，每次请求生成独立 requestId，输入仅允许携带 Host 已验证的 sessionId/runId；即使运行时对象夹带伪造身份字段也会被忽略。Harness 官方匿名安装 ID 明确只用于遥测关联，未被误用为用户身份。当前仍缺稳定配置/Storage 装配、Membership、access/audit 服务和双组织全链负例，因此团队远程入口继续关闭。
 
 skills alpha.23 / bundle alpha.35 收口认证 Fetch 的超时与取消。Client 对列表和修改请求设置有界超时，上传打包、流读取、预检和确认安装共用 `AbortSignal`；界面在上传和安装阶段均提供真实取消入口。Host 主动取消阻塞中的流读取并清理私有暂存目录，在文件遍历、摘要、复制及最终原子重命名前检查中止；原子发布完成后按成功结算，避免技能已安装但界面报告取消。中途上传取消与提交前取消/重试已进入 19/19 集成回归。该能力继续使用 Harness Connection 的认证 exact Fetch 扩展面，不增加第二套传输。
 
@@ -215,11 +221,11 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 | P0-01 | 环境与发布依赖锁定 | P0 | completed |
 | P0-02 | bundle/Host/Client 安装链探针 | P0 | in_progress |
 | P0-03 | 专家预设、技能与恢复探针 | P0 | in_progress |
-| P0-04 | 契约与兼容门槛 | P0 | todo |
-| P0-05 | 团队身份与全路径隔离探针 | P0 | todo |
+| P0-04 | 契约与兼容门槛 | P0 | in_progress |
+| P0-05 | 团队身份与全路径隔离探针 | P0 | in_progress |
 | P1-01 | 契约与工作台 | P1 | in_progress |
 | P1-02 | 专家管理及 expert-manager | P1 | todo |
-| P1-03 | 技能管理及 skill-creator | P1 | in_progress |
+| P1-03 | 技能管理及 skill-creator | P1 | completed |
 | P1-04 | 连接器管理 | P1 | todo |
 | P1-05 | 行业应用与项目 | P1 | todo |
 | P1-06 | 资料库与成果 | P1 | todo |

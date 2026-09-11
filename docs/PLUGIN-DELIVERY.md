@@ -83,35 +83,18 @@ Review 必须核对未重复建立 Agent loop、Skill registry/解析器、模�
 
 ## 当前允许的下一步
 
-D00 设计处理已完成，证据见 [D00 处理记录](evidence/d00-resolution.md)。当前 D01：P0-01 已完成，安装与 Client 页面/官方 Remote 探针部分通过；继续自有 Remote、恢复与隔离探针，尚不启动业务插件。
+D00 设计处理和用户批准的 Skill 0.1 提前切片均已完成。Skill 功能证据见 [浏览器与管理证据](evidence/skills-browser.md)，正式 D03 阶段仍等待 D02 前置，不重复开发另一份技能插件。
 
 检查命令：node scripts/check-plan.mjs。它检查顺序结构和状态门槛，不能证明产品测试真实通过，证据仍须审阅。
 
-## 当前下一步：D01 / P0-03 预设与技能探针
+## 当前下一步：D01 / P0-04 与 P0-05 治理边界
 
-按本轮用户确认，D01 内部优先推进能力组合验证；原有 Remote、取消、热卸载和权限验证仍保留为退出门槛，不因 UI 探针通过而跳过。
+DOC-06 官方文档审查已完成 127/127；C01 的目录、正文、真实 Agent Session 调用、正常冷恢复和同名技能隔离已经通过。Skill exact Fetch 的认证、超时、传输中取消、原子提交边界与重试也已通过。发布版 Typert 对外部 workspace 的生成限制作为未来通用 Remote 的上游兼容项保留，不再阻塞本地 Skill 0.1。
 
-在继续 D01 探针和进入 D02 之前，按 [官方文档能力审查](research/deepseek-harness-capability-review.md) 的 H01—H09 顺序审完仓库内官方文档镜像。`pnpm audit:harness-docs` 提供精确覆盖进度；未审条目不能作为架构依据。
+当前首先实施 `workdsh-contracts` 0.1，固化 ActorContext、Organization、Membership、ResourceOwner、AccessGrant、RuntimeBinding、AuditEvent 及 identity/access/audit 服务边界，见 [ADR-0016](adr/0016-governance-contracts-first.md)。该包无 UI、数据库和传输，不复制 Harness User、Permission Preset、Approval、Sandbox 或 Session scope。
 
-DOC-06 文档准入已完成（127/127）；新增差异与验证项见 [收尾清单](research/harness-review-closure.md)。当前先做 C01 两 Session 与技能正文，再接 P0-02 自有 Remote/取消；余下十步及 P0-05/P0-04 保留，D01 仍进行中。
+随后实现可信本地 IdentityProvider，并以两主体、两组织及客户端伪造身份负例验证 access/audit 全链。团队远程入口继续关闭；企业 SSO、服务端与管理 Web 保留到后期阶段。P0-04/P0-05 证据完成后才关闭 D01、进入 D02 基础插件和工作台最小版本。
 
-2026-09-10 接续：C01 双 Session 目录隔离与发布包 registry/provider 正文加载已通过，下一项为 P0-02 自有生成 Remote/取消。Session 内 skill 工具消费、正文/工具/提示词隔离及业务不可变绑定仍待验，不把本轮部分证据算成 C01 或 P0-03 整体完成。
+仍保留的运行差异探针按 [审查收尾清单](research/harness-review-closure.md) 独立执行：Plan 提交时机、Shell/PTY/Code runtime 停稳、feedback/inspect/lookup 主体限制，以及 Subagent/Goal 恢复。它们不能因 Skill 0.1 完成而删除，也不要求为验证创建假业务 UI。
 
-P0-02 最新进展：Host 协作取消/卸载测试已通过；纯 npm 最小例的官方 Typert 生成仍报无 Remote 方法。先解决公开生成配置兼容性，再进入网络调用/取消验证。见 [Remote 证据](evidence/d01-remote.md)，不以本地服务测试替代端到端退出门槛。
-
-接续安排：Remote 生成已定位 rc.1 的外部 protocol 符号识别边界，保留失败门槛；在等待公开兼容路径期间，同一 D01 内推进独立 C01 的 scope 同名正文隔离，不转入 D02。此项不替代 Session 工具消费及团队隔离。
-
-最新 C01：scope 正文隔离及真实官方 Agent loop 中的 skill 工具允许/拒绝消费已通过，模型使用本地固定适配器。官方 JSONL 正常关闭后的跨进程恢复与空目录退役已通过；下一项为两个存活 Agent Session 的同名技能调用与卸载隔离。C01 和 D01 均不整体完成。
-
-1. 核对 rc.1 发布包的 preset/Session/skill 公开接口、类型与配置，记录实际接口，不凭截图猜测。
-2. 创建隔离 DSH_HOME/Profile 与两个测试预设，使用受支持的复制或配置机制；不修改用户预设，不编辑私有 Session 日志。
-3. 验证发现、有效/无效诊断、空会话选择，以及两组技能目录与随包资源的可见性。先完成不依赖模型的验证。
-4. 验证非空会话拒绝切换、默认预设变化不影响旧会话；真实首次执行单独记录。需要模型凭据时使用显式测试配置，不把模拟模型通过写成真实模型验证。
-5. 验证重启恢复，以及预设修改/删除后历史会话行为；比较同进程代次与重启恢复。未保留旧修订时明确失败，不静默降级到新组合。
-6. 验证 ExpertRevision/preset/Session 的可重建绑定、精确模型解析、unsupported reasoning effort 拒绝，以及同一 prepared call 的 adapter 代次一致性。
-7. 验证两个 Agent scope 的提示词、动态上下文、工具和技能隔离；同组合子 Agent 显式 `composeFrom`，不同专家挂载不同不可变 preset，二者均重新授权。
-8. 验证一次性/可继续 Subagent 的结果、partial、inbox 接受、interrupt、dispose、冷恢复和 provider 卸载；验证 Agent Team 的 task CAS、mailbox ack 与 fork 隔离。
-9. 验证 compaction 中断、部分提交、flush 失败和工具调用平衡；确认项目、资料与成果领域事实不随 surface 压缩删除。验证 TokenMeter 的 estimated/usage 区分。
-10. 形成 docs/evidence/d01-presets.md（已创建并持续补充，包含命令、版本、正反例、失败日志摘要和未验证项），据结果修订专家/技能/专家团适配契约。
-
-完成以上仍须收尾 P0-02 自有 Remote/取消/清理及 P0-05 隔离检查，最后 P0-04 固化兼容与契约；全部退出证据满足才进入 D02 基础插件和真实工作台。PTC 性能比较、专家管理业务界面不属于本探针范围。
+正式依赖顺序保持 D01 → D02 → D03 → D04。D03 到达时核对已交付 Skill 0.1 与 D02 的 ActorContext/access/audit 集成，缺少的只是治理适配与组合验收，不重做已安装列表、详情、导入、编辑、启停、卸载或创建流程。

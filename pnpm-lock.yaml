@@ -365,6 +365,12 @@ importers:
         specifier: workspace:*
         version: link:../plugins/workbench
 
+  packages/contracts:
+    devDependencies:
+      '@types/node':
+        specifier: 22.19.0
+        version: 22.19.0
+
   packages/plugins/skills:
     dependencies:
       fflate:
@@ -461,6 +467,16 @@ importers:
       workdsh-ui:
         specifier: workspace:*
         version: link:../../ui
+
+  packages/providers/identity-local:
+    dependencies:
+      workdsh-contracts:
+        specifier: workspace:*
+        version: link:../../contracts
+    devDependencies:
+      '@types/node':
+        specifier: 22.19.0
+        version: 22.19.0
 
   packages/ui:
     devDependencies:

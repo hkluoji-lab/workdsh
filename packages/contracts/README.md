@@ -1,11 +1,11 @@
 # 领域公开契约
 
-状态：**规划中，尚未实现**。目录已建立，不代表功能完成。
+状态：**0.1 契约实现中**。`0.1.0-alpha.1` 提供身份、组织、资源归属、授权、运行绑定和审计的纯 TypeScript 契约及受信边界校验。
 
 - 实现阶段：P0
 - 主任务：P0-04，详见 [开发计划](../../docs/PLAN.md)
 - 职责：按领域导出服务类型、对象引用和诊断；包含身份/授权上下文。
-- 边界：无 UI/数据库实现；无万能 CRUD 服务。
+- 边界：无 UI/数据库实现；无万能 CRUD 服务；ActorContext 必须由 Host 身份提供方解析，不能接收客户端或模型自报身份。
 
 ## 开发前阅读
 
@@ -15,4 +15,4 @@
 
 ## 验收与下一步
 
-完成对应 PLAN 任务及 [验收矩阵](../../docs/ACCEPTANCE.md) 场景，记录真实测试证据后才更新状态。先验证公开接口，再实现；目前仅保留骨架，不声明加载入口、假工具或成功响应。企业 Skill 架构见 [ADR 0015](../../docs/adr/0015-skill-control-plane-and-runtime-projection.md)。
+下一步由本地 identity provider 实现服务端主体解析，再由 access 和 audit 分别消费本包接口。完成对应 PLAN 任务及 [验收矩阵](../../docs/ACCEPTANCE.md) 场景后才完成 P0-04/P0-05。企业 Skill 架构见 [ADR 0015](../../docs/adr/0015-skill-control-plane-and-runtime-projection.md)。

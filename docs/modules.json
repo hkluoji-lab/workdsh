@@ -4,11 +4,12 @@
     "title": "领域公开契约",
     "phase": "P0",
     "task": "P0-04",
-    "status": "planned",
+    "status": "in_progress",
     "directories": [
       "src",
       "tests"
-    ]
+    ],
+    "moduleVersion": "0.1"
   },
   {
     "path": "packages/ui",
@@ -79,7 +80,7 @@
     "moduleVersion": "0.1",
     "phase": "P1",
     "task": "P1-03",
-    "status": "in_progress",
+    "status": "implemented",
     "directories": [
       "src/domain",
       "src/services",
@@ -345,7 +346,7 @@
     "title": "本地身份提供方",
     "phase": "P0/P1",
     "task": "P0-05",
-    "status": "planned",
+    "status": "in_progress",
     "directories": [
       "src/domain",
       "src/services",
@@ -355,7 +356,8 @@
       "src/client/components",
       "src/harness",
       "tests"
-    ]
+    ],
+    "moduleVersion": "0.1"
   },
   {
     "path": "packages/providers/identity-oidc",

@@ -29,7 +29,8 @@
       "status": "in_progress",
       "evidence": [
         "docs/evidence/d01-installation.md",
-        "docs/evidence/d01-client.md"
+        "docs/evidence/d01-client.md",
+        "docs/evidence/d01-governance-contracts.md"
       ]
     },
     {
@@ -212,8 +213,12 @@
   "activeSlice": {
     "id": "skill-create-loop",
     "task": "P1-03",
-    "status": "in_progress",
+    "status": "completed",
     "decision": "docs/adr/0015-skill-control-plane-and-runtime-projection.md",
-    "scope": "Skill 0.1 使用 Harness 默认/本地技能并完成个人本地管理闭环；当前不开发公共市场、公共目录、SkillHub 或套件。企业服务端、管理 Web、组织目录、分类、版本和下发策略列入后期 ToDo，各模块开始时独立建立 0.1 版本线，不预先建立 Skill 0.2。"
+    "scope": "Skill 0.1 使用 Harness 默认/本地技能并完成个人本地管理闭环；当前不开发公共市场、公共目录、SkillHub 或套件。企业服务端、管理 Web、组织目录、分类、版本和下发策略列入后期 ToDo，各模块开始时独立建立 0.1 版本线，不预先建立 Skill 0.2。",
+    "evidence": [
+      "docs/evidence/skills-browser.md",
+      "docs/releases/v0.1.0-alpha.1.md"
+    ]
   }
 }
