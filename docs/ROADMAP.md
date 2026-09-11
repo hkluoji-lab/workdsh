@@ -8,6 +8,8 @@ WorkDSH is developed as a collection of independently versioned modules. Each mo
 
 ### Current preview
 
+Skill `0.1.0-alpha.24` is now distributed independently, with optional presentation bundle `0.1.0-alpha.39`. See [module releases and compatibility](RELEASES.md). The original `v0.1.0-alpha.1` remains a historical repository snapshot.
+
 `v0.1.0-alpha.1` delivers the first local/default Skill management preview. It covers the global Skill library, full `SKILL.md` and resource reading, editing with conflict detection, enable/disable, recoverable uninstall, safe import, and native Conversation-based creation.
 
 Clean installation, packaged Web cold-restart acceptance, failure recovery, and authenticated request cancellation are now verified for Skill `0.1`. The published Typert generator's external-workspace limitation remains an upstream compatibility item for later generated Remotes; it does not block the local Skill module, which uses the official Connection exact Fetch extension. Runtime package changes use the documented stopped-Host and restart lifecycle.
@@ -40,6 +42,8 @@ Detailed task IDs, prerequisites, and exit criteria remain authoritative in the 
 WorkDSH 按独立版本化的模块开发。每个模块开始实现时建立自己的 `0.1` 版本线；开始新模块不会迫使已经交付的模块进行没有实际变化的版本升级。
 
 ### 当前预览
+
+Skill `0.1.0-alpha.24` 现按模块独立分发，可选展示包为 `0.1.0-alpha.39`。见[模块发布与兼容矩阵](RELEASES.md)。原 `v0.1.0-alpha.1` 保留为历史仓库快照。
 
 `v0.1.0-alpha.1` 是首个默认/本地 Skill 管理预览，包含全局技能库、完整 `SKILL.md` 与资源读取、带冲突检测的编辑、启停、可恢复卸载、安全导入，以及基于 Harness 原生 Conversation 的创建流程。
 

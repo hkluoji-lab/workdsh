@@ -367,9 +367,6 @@ importers:
       react:
         specifier: 19.2.4
         version: 19.2.4
-      workdsh-plugin-skills:
-        specifier: workspace:*
-        version: link:../plugins/skills
       workdsh-plugin-workbench:
         specifier: workspace:*
         version: link:../plugins/workbench
@@ -481,6 +478,9 @@ importers:
       react:
         specifier: 19.2.4
         version: 19.2.4
+      workdsh-contracts:
+        specifier: workspace:*
+        version: link:../../contracts
       workdsh-ui:
         specifier: workspace:*
         version: link:../../ui

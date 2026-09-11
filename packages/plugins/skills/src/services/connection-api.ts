@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { ConnectionRpcResult, HostConnectionHandle } from '@deepseek-ai/dsh-client-connection';
-import type { SkillInstallScope, SkillManagementEndpoint } from '../shared.js';
+import type { SkillInstallScope, SkillManagementEndpoint, SkillManagementService } from '../shared.js';
 
 export const skillManagementPath = '/api/workdsh-skills';
 export const skillImportPath = '/api/workdsh-skills/import';
@@ -54,36 +54,36 @@ function publicFailure(error: unknown): ConnectionRpcResult<never> {
   return fail(code, messages[code] ?? '技能操作失败，请重试。');
 }
 
-async function dispatch(ctx: Context, rawEndpoint: unknown, payload: unknown, signal: AbortSignal): Promise<ConnectionRpcResult<unknown>> {
+async function dispatch(manager: SkillManagementService, rawEndpoint: unknown, payload: unknown, signal: AbortSignal): Promise<ConnectionRpcResult<unknown>> {
   if (typeof rawEndpoint !== 'string') return fail('skill/invalid-request', '技能管理操作无效。');
   const endpoint = rawEndpoint as SkillManagementEndpoint;
   try {
-    if (endpoint === 'list') return ok(await ctx.workdshSkills.list(signal));
-    if (endpoint === 'trash-list') return ok(await ctx.workdshSkills.listTrash());
+    if (endpoint === 'list') return ok(await manager.list(signal));
+    if (endpoint === 'trash-list') return ok(await manager.listTrash());
     if (endpoint === 'restore') {
       const id = record(payload)?.id;
       if (typeof id !== 'string') return fail('skill/invalid-request', '回收记录无效。');
-      return ok(await ctx.workdshSkills.restore(id));
+      return ok(await manager.restore(id));
     }
     if (endpoint === 'commit-import') {
       const input = record(payload); const id = input?.id; const scope = input?.scope;
       if (typeof id !== 'string' || (scope !== undefined && scope !== 'shared-agents' && scope !== 'profile')) return fail('skill/invalid-request', '导入范围或凭据无效。');
-      return ok(await ctx.workdshSkills.imports.commit(id, scope as SkillInstallScope | undefined, signal));
+      return ok(await manager.imports.commit(id, scope as SkillInstallScope | undefined, signal));
     }
     if (endpoint === 'discard-import') {
       const id = record(payload)?.id;
       if (typeof id !== 'string') return fail('skill/invalid-request', '导入凭据无效。');
-      await ctx.workdshSkills.imports.discard(id); return ok(null);
+      await manager.imports.discard(id); return ok(null);
     }
     if (endpoint === 'batch') {
       const input = record(payload); const names = input?.names; const action = input?.action;
       if (!Array.isArray(names) || !names.every(name => typeof name === 'string') || (action !== 'enable' && action !== 'disable' && action !== 'uninstall')) return fail('skill/invalid-request', '批量技能操作无效。');
-      return ok(await ctx.workdshSkills.batch({ names, action }));
+      return ok(await manager.batch({ names, action }));
     }
     const name = nameFrom(payload);
     if (!name) return fail('skill/invalid-request', '请求缺少有效的技能名称。');
     if (endpoint === 'detail') {
-      const detail = await ctx.workdshSkills.detail(name, signal);
+      const detail = await manager.detail(name, signal);
       return detail ? ok(detail) : fail('skill/not-found', '未找到该技能。');
     }
     if (endpoint === 'update') {
@@ -91,30 +91,30 @@ async function dispatch(ctx: Context, rawEndpoint: unknown, payload: unknown, si
       if (typeof input?.document !== 'string' || input.document.length > 1024 * 1024 || typeof input.expectedRevision !== 'string') {
         return fail('skill/invalid-request', '技能文档或版本信息无效。');
       }
-      return ok(await ctx.workdshSkills.update({ name, document: input.document, expectedRevision: input.expectedRevision }));
+      return ok(await manager.update({ name, document: input.document, expectedRevision: input.expectedRevision }));
     }
     if (endpoint === 'resource') {
       const resourcePath = record(payload)?.path;
       if (typeof resourcePath !== 'string') return fail('skill/invalid-request', '资源文件路径无效。');
-      return ok(await ctx.workdshSkills.readResource(name, resourcePath));
+      return ok(await manager.readResource(name, resourcePath));
     }
     if (endpoint === 'write-resource') {
       const input = record(payload);
       if (typeof input?.path !== 'string' || typeof input.document !== 'string' || input.document.length > 1024 * 1024 || (input.expectedRevision !== undefined && typeof input.expectedRevision !== 'string')) {
         return fail('skill/invalid-request', '资源文件内容或版本信息无效。');
       }
-      return ok(await ctx.workdshSkills.writeResource({ name, path: input.path, document: input.document, expectedRevision: input.expectedRevision as string | undefined }));
+      return ok(await manager.writeResource({ name, path: input.path, document: input.document, expectedRevision: input.expectedRevision as string | undefined }));
     }
     if (endpoint === 'set-enabled') {
       const enabled = record(payload)?.enabled;
       if (typeof enabled !== 'boolean') return fail('skill/invalid-request', '启用状态无效。');
-      return ok(await ctx.workdshSkills.setEnabled(name, enabled));
+      return ok(await manager.setEnabled(name, enabled));
     }
-    if (endpoint === 'dependency-impact') return ok(await ctx.workdshSkills.dependencyImpact(name));
+    if (endpoint === 'dependency-impact') return ok(await manager.dependencyImpact(name));
     if (endpoint === 'uninstall') {
       const expectedImpactRevision = record(payload)?.expectedImpactRevision;
       if (typeof expectedImpactRevision !== 'string') return fail('skill/invalid-request', '卸载前必须确认最新依赖影响。');
-      return ok(await ctx.workdshSkills.uninstall(name, expectedImpactRevision));
+      return ok(await manager.uninstall(name, expectedImpactRevision));
     }
     return fail('skill/unknown-endpoint', '未知的技能管理操作。');
   } catch (error) {
@@ -129,11 +129,30 @@ function json(result: ConnectionRpcResult<unknown>, status = 200): Response {
 /** Register the management API inside Connection's authenticated `/api` carrier. */
 export function registerSkillManagementConnection(ctx: Context): void {
   const connection = (ctx as Context & { connection: HostConnectionHandle }).connection;
-  connection.fetch.register({
+  const manager = ctx.workdshSkills;
+  const lifetime = new AbortController();
+  const pending = new Set<Promise<Response>>();
+  const handle = (fetcher: (request: Request) => Promise<Response>) => (request: Request) => {
+    if (lifetime.signal.aborted) return Promise.resolve(json(fail('skill/unavailable', '技能管理已停止。'), 503));
+    const current = new Request(request, { signal: AbortSignal.any([request.signal, lifetime.signal]) });
+    const operation = fetcher(current);
+    pending.add(operation);
+    void operation.then(() => pending.delete(operation), () => pending.delete(operation));
+    return operation;
+  };
+  // Unregister, abort and drain in one disposer: a removed feature must not
+  // leave an upload or management write executing after dispose has completed.
+  const unregister: Array<() => Promise<void>> = [];
+  ctx.effect(() => async () => {
+    lifetime.abort();
+    await Promise.all(unregister.map(dispose => dispose()));
+    await Promise.allSettled([...pending]);
+  }, 'workdsh.skills.fetch');
+  unregister.push(connection.fetch.register({
     path: skillManagementPath,
     methods: ['POST'],
     requestBody: 'buffered',
-    fetch: async request => {
+    fetch: handle(async request => {
       const declaredLength = Number(request.headers.get('content-length') ?? '0');
       if (Number.isFinite(declaredLength) && declaredLength > maximumBodyBytes) return json(fail('skill/request-too-large', '技能管理请求过大。'), 413);
       try {
@@ -141,28 +160,28 @@ export function registerSkillManagementConnection(ctx: Context): void {
         if (text.length > maximumBodyBytes) return json(fail('skill/request-too-large', '技能管理请求过大。'), 413);
         const body = record(JSON.parse(text));
         if (!body) return json(fail('skill/invalid-request', '技能管理请求格式无效。'), 400);
-        return json(await dispatch(ctx, body.endpoint, body.payload, request.signal));
+        return json(await dispatch(manager, body.endpoint, body.payload, request.signal));
       } catch (error) {
         if (error instanceof SyntaxError) return json(fail('skill/invalid-request', '技能管理请求格式无效。'), 400);
         return json(publicFailure(error));
       }
-    },
-  });
-  connection.fetch.register({
+    }),
+  }));
+  unregister.push(connection.fetch.register({
     path: skillImportPath,
     methods: ['POST'],
     requestBody: 'streaming',
-    fetch: async request => {
+    fetch: handle(async request => {
       const declaredLength = Number(request.headers.get('content-length') ?? '0');
       if (Number.isFinite(declaredLength) && declaredLength > maximumUploadBytes) return json(fail('skill/import-too-large', '技能包不得超过 50 MiB。'), 413);
       const encodedName = request.headers.get('x-workdsh-file-name');
       if (!encodedName) return json(fail('skill/invalid-request', '请求缺少文件名。'), 400);
       try {
         const fileName = decodeURIComponent(encodedName);
-        return json(ok(await ctx.workdshSkills.imports.stage(fileName, request.body, request.signal)));
+        return json(ok(await manager.imports.stage(fileName, request.body, request.signal)));
       } catch (error) {
         return json(publicFailure(error));
       }
-    },
-  });
+    }),
+  }));
 }

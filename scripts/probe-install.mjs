@@ -14,6 +14,8 @@ const dsh = resolve(root, 'node_modules/@deepseek-ai/dsh/lib/bin.js');
 const pnpm = resolve(root, 'node_modules/pnpm/bin/pnpm.cjs');
 const version = JSON.parse(readFileSync(resolve(root, 'packages/bundle/package.json'), 'utf8')).version;
 const tarball = resolve(artifacts, `workdsh-bundle-${version}.tgz`);
+const skillsVersion = JSON.parse(readFileSync(resolve(root, 'packages/plugins/skills/package.json'), 'utf8')).version;
+const skillsTarball = resolve(artifacts, `workdsh-plugin-skills-${skillsVersion}.tgz`);
 function command(bin, args) {
   return new Promise((res, rej) => {
     const child = spawn(process.execPath, [bin, ...args], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -60,11 +62,15 @@ async function authenticate(address) {
   return cookie;
 }
 try {
+  await command(pnpm, ['--filter', 'workdsh-plugin-skills', 'pack', '--pack-destination', artifacts]);
   await command(pnpm, ['--filter', 'workdsh-bundle', 'pack', '--pack-destination', artifacts]);
   await command(dsh, ['--profile', 'probe', '--from-default-profile', 'web', '--dump-config']);
-  await command(dsh, ['plugin', '--profile', 'probe', 'add', tarball]);
+  // Official Profile composition explicitly installs feature layers. The product
+  // bundle does not secretly initialize or own the Skill plugin.
+  await command(dsh, ['plugin', '--profile', 'probe', 'add', skillsTarball, tarball]);
   const config = await command(dsh, ['--profile', 'probe', '--dump-config']);
   assert.ok(config.includes('workdsh-installation-probe'));
+  assert.equal(config.split('id: workdsh-skills').length - 1, 1);
   const installed = JSON.parse(readFileSync(resolve(home, 'profiles/probe/node_modules/workdsh-bundle/package.json'), 'utf8'));
   assert.equal(installed.version, version);
   if (process.argv.includes('--browser')) {
@@ -110,6 +116,21 @@ try {
     const disabledAddress = serverOutput.match(/http:\/\/127\.0\.0\.1:\d+/)[0];
     const disabledCookie = await authenticate(disabledAddress);
     await probeDisabledSkillAfterRestart(disabledAddress, disabledCookie, resolve(artifacts, 'client-skill-disabled-restart.png'));
+
+    // Check the opposite removal direction as well: Skill owns no product shell.
+    const fixturePath = resolve(home, 'agents/skills/workdsh-browser-fixture/SKILL.md');
+    const fixtureBefore = readFileSync(fixturePath, 'utf8');
+    await stopServer();
+    await command(dsh, ['plugin', '--profile', 'probe', 'remove', 'workdsh-plugin-skills']);
+    startServer();
+    await until(() => serverOutput.includes('[workdsh:probe] activated') && /http:\/\/127\.0\.0\.1:\d+/.test(serverOutput), 'product without Skill');
+    const shellAddress = serverOutput.match(/http:\/\/127\.0\.0\.1:\d+/)[0];
+    const shellCookie = await authenticate(shellAddress);
+    const { probeProductWithoutSkills } = await import('./probe-browser.mjs');
+    await probeProductWithoutSkills(shellAddress, shellCookie);
+    assert.equal(readFileSync(fixturePath, 'utf8'), fixtureBefore);
+    await stopServer();
+    await command(dsh, ['plugin', '--profile', 'probe', 'add', skillsTarball]);
   }
   // Bundle composition is validated across a stopped Host. Live removal is a separate capability.
   await stopServer();

@@ -3,14 +3,13 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client';
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client';
-import { applySkillsClient } from 'workdsh-plugin-skills/client';
-import { applyWorkbenchClient } from 'workdsh-plugin-workbench';
+import * as workbench from 'workdsh-plugin-workbench';
 import { BrandMark, BrandName, DiagnosticsMark } from '../components/Brand.js';
 import { DiagnosticsPanel, type Inventory } from '../components/DiagnosticsPanel.js';
 import { NavigationLocation } from '../components/NavigationLocation.js';
 
 export const name = 'workdsh-client';
-export const inject = ['slots', 'layout', 'remote', 'remote.pluginInventory', 'remote.skills', 'remote.session', 'sessions', 'workspaces', 'theme', 'connection'];
+export const inject = ['slots', 'layout', 'remote', 'remote.pluginInventory', 'theme'];
 
 const productViews: Readonly<Record<string, string>> = {
   skills: 'workdsh-skills', assistant: 'workdsh-assistant', projects: 'workdsh-projects',
@@ -21,8 +20,13 @@ export function apply(ctx: Context): void {
   const diagnostics = new URL(window.location.href).searchParams.get('diagnostics') === '1';
   const viewToPanel = diagnostics ? { ...productViews, diagnostics: 'workdsh-probe' } : productViews;
   const panelToView = Object.fromEntries(Object.entries(viewToPanel).map(([view, panel]) => [panel, view]));
-  const selectView = (view: string | null) => ctx.layout.selectPanel(view && viewToPanel[view]
-    ? viewToPanel[view] as Parameters<typeof ctx.layout.selectPanel>[0] : null);
+  const selectView = (view: string | null) => {
+    const requested = view ? viewToPanel[view] : undefined;
+    const selected = requested && ctx.slots.entriesOfSlot('main').some(entry => entry.options.key === requested)
+      ? requested as Parameters<typeof ctx.layout.selectPanel>[0] : null;
+    ctx.layout.selectPanel(selected);
+    return selected;
+  };
 
   const previousTheme = ctx.theme.getTheme().preference;
   const unregisterTheme = ctx.theme.register({ id: 'workdsh', colorScheme: 'dark', tokens: {
@@ -41,8 +45,7 @@ export function apply(ctx: Context): void {
     unregisterTheme();
   });
 
-  applySkillsClient(ctx);
-  applyWorkbenchClient(ctx);
+  ctx.plugin(workbench);
   ctx.slots.inject('sidebar.brand.name', () => ctx.slots.register({ name: 'sidebar.brand.name', priority: -10 }, BrandName));
   ctx.slots.inject('sidebar.brand.mark', () => ctx.slots.register({ name: 'sidebar.brand.mark', priority: -10 }, BrandMark));
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
@@ -50,7 +53,6 @@ export function apply(ctx: Context): void {
   }, NavigationLocation));
 
   ctx.slots.inject('main', () => {
-    const requested = new URL(window.location.href).searchParams.get('workdsh-view');
     const dispose = diagnostics ? ctx.slots.register({
       name: 'main', key: 'workdsh-probe', inject: () => ({
         inspect: async (): Promise<Inventory> => {
@@ -63,7 +65,6 @@ export function apply(ctx: Context): void {
         returnToConversation: () => ctx.layout.selectPanel(null),
       }),
     }, DiagnosticsPanel) : () => {};
-    selectView(requested ?? (diagnostics ? 'diagnostics' : null));
     return dispose;
   });
   if (diagnostics) ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({

@@ -1,3 +1,8 @@
+# 0.1.0-alpha.5
+
+- 新增领域子路径 ./skills，定义本地 SkillManagementService v1、管理 DTO 和依赖影响检查契约。
+- 类型源与技能运行实现分离，不引入 Cordis、UI 或数据库依赖；不将本地服务宣称为企业鉴权或不可变修订 API。
+
 # 0.1.0-alpha.4
 
 - 增加持久 `SessionOwnerBinding`、运行期 `RuntimeBindingRequest` 与 `RuntimeBindingService`，让 Session 恢复和工具执行使用同一 Host 授权边界。

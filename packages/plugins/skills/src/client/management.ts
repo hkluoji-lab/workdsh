@@ -41,29 +41,32 @@ async function call<T>(ctx: Context, endpoint: string, payload: unknown, signal?
   }, endpoint === 'commit-import' ? 60_000 : 30_000, signal);
 }
 
-export function createSkillManagementClient(ctx: Context) {
+export function createSkillManagementClient(ctx: Context, lifetime?: AbortSignal) {
+  const scoped = (signal?: AbortSignal) => lifetime && signal ? AbortSignal.any([lifetime, signal]) : lifetime ?? signal;
+  const invoke = <T>(endpoint: string, payload: unknown, signal?: AbortSignal) => call<T>(ctx, endpoint, payload, scoped(signal));
   return {
-    list: () => call<readonly ManagedSkillSummary[]>(ctx, 'list', {}),
-    detail: (name: string) => call<ManagedSkillDetail>(ctx, 'detail', { name }),
-    update: (request: SkillWriteRequest) => call<ManagedSkillDetail>(ctx, 'update', request),
-    resource: (name: string, resourcePath: string) => call<ManagedSkillResource>(ctx, 'resource', { name, path: resourcePath }),
-    writeResource: (request: SkillResourceWriteRequest) => call<ManagedSkillResource>(ctx, 'write-resource', request),
-    setEnabled: (name: string, enabled: boolean) => call<SkillMutationReceipt>(ctx, 'set-enabled', { name, enabled }),
-    dependencyImpact: (name: string) => call<SkillDependencyImpact>(ctx, 'dependency-impact', { name }),
-    uninstall: (name: string, expectedImpactRevision: string) => call<SkillMutationReceipt>(ctx, 'uninstall', { name, expectedImpactRevision }),
-    batch: (names: readonly string[], action: SkillBatchAction) => call<SkillBatchResult>(ctx, 'batch', { names, action }),
-    listTrash: () => call<readonly TrashedSkillSummary[]>(ctx, 'trash-list', {}),
-    restore: (id: string) => call<SkillMutationReceipt>(ctx, 'restore', { id }),
+    list: () => invoke<readonly ManagedSkillSummary[]>('list', {}),
+    detail: (name: string) => invoke<ManagedSkillDetail>('detail', { name }),
+    update: (request: SkillWriteRequest) => invoke<ManagedSkillDetail>('update', request),
+    resource: (name: string, resourcePath: string) => invoke<ManagedSkillResource>('resource', { name, path: resourcePath }),
+    writeResource: (request: SkillResourceWriteRequest) => invoke<ManagedSkillResource>('write-resource', request),
+    setEnabled: (name: string, enabled: boolean) => invoke<SkillMutationReceipt>('set-enabled', { name, enabled }),
+    dependencyImpact: (name: string) => invoke<SkillDependencyImpact>('dependency-impact', { name }),
+    uninstall: (name: string, expectedImpactRevision: string) => invoke<SkillMutationReceipt>('uninstall', { name, expectedImpactRevision }),
+    batch: (names: readonly string[], action: SkillBatchAction) => invoke<SkillBatchResult>('batch', { names, action }),
+    listTrash: () => invoke<readonly TrashedSkillSummary[]>('trash-list', {}),
+    restore: (id: string) => invoke<SkillMutationReceipt>('restore', { id }),
     stageImport: async (file: File, signal?: AbortSignal) => {
       return request<StagedSkillImport>(`${path}/import`, {
         method: 'POST', credentials: 'same-origin',
         headers: { 'content-type': file.type || 'application/octet-stream', 'x-workdsh-file-name': encodeURIComponent(file.name) },
         body: file,
-      }, 120_000, signal);
+      }, 120_000, scoped(signal));
     },
-    commitImport: (id: string, scope: SkillInstallScope, signal?: AbortSignal) => call<SkillMutationReceipt>(ctx, 'commit-import', { id, scope }, signal),
-    discardImport: (id: string) => call<null>(ctx, 'discard-import', { id }),
+    commitImport: (id: string, scope: SkillInstallScope, signal?: AbortSignal) => invoke<SkillMutationReceipt>('commit-import', { id, scope }, signal),
+    discardImport: (id: string) => invoke<null>('discard-import', { id }),
     openDirectory: async (path: string) => {
+      lifetime?.throwIfAborted();
       const result = await ctx.remote.session.openWorkspacePath({ path, action: 'reveal' });
       if (!result.ok) throw failure(result.error);
     },

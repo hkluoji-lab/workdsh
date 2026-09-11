@@ -1,6 +1,14 @@
 # WorkDSH 公开契约草案
 
-状态：本地 `0.1` 治理契约基线完成。`workdsh-contracts@0.1.0-alpha.4` 已实现 Host identity/access/audit 与 Session owner/runtime binding 契约；未进入该包的领域接口仍是拟定义草案，不是声称已存在的 Harness API。企业服务器与受控 Remote 见[后期企业版说明](ENTERPRISE-EDITION.md)。架构决策见 [ADR-0016](adr/0016-governance-contracts-first.md)。
+状态：本地 `0.1` 治理契约基线完成。`workdsh-contracts@0.1.0-alpha.5` 已实现 Host identity/access/audit 与 Session owner/runtime binding 契约；未进入该包的领域接口仍是拟定义草案，不是声称已存在的 Harness API。企业服务器与受控 Remote 见[后期企业版说明](ENTERPRISE-EDITION.md)。架构决策见 [ADR-0016](adr/0016-governance-contracts-first.md)。
+
+## 已实现的本地 Skill 契约
+
+`workdsh-contracts/skills` 导出 `SkillManagementService`（`contractVersion: 1`）、管理 DTO 与 `SkillDependencyInspector`。独立 Skill Host 提供 `ctx.workdshSkills`；消费者只导入公共类型，使用 `inject: ['workdshSkills']` 声明服务依赖，并以 `ctx.effect()` 托管依赖检查注册。用法见[Skill README](../packages/plugins/skills/README.md)。
+
+它覆盖现有本地目录、完整正文/资源、冲突保存、导入/草稿发布、启停、卸载影响及恢复。官方 Connection 承载浏览器请求；同 Host 插件协作直接注入服务，不新增网络层。两个消费者共享、服务缺失/恢复和清理已有测试。
+
+此契约不接收客户端自报身份，也未实现全入口多用户治理；仅用于既有受信本地 Host 组合。它不提供专家所需的不可变 `SkillRevision` 或引用租约；这些仍是 D04 的明确依赖适配任务。以下尚未进入 contracts 包的领域接口仍为草案。
 
 ## 首期团队上下文
 

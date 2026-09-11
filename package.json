@@ -14,8 +14,8 @@
     "check:acceptance": "node scripts/check-acceptance.mjs",
     "check:env": "node scripts/check-environment.mjs",
     "test:planning": "node --test tests/planning/*.test.mjs",
-    "build": "corepack pnpm --filter workdsh-contracts build && corepack pnpm --filter workdsh-provider-identity-local build && corepack pnpm --filter workdsh-plugin-audit build && corepack pnpm --filter workdsh-plugin-access build && corepack pnpm --filter workdsh-bundle build",
-    "typecheck": "corepack pnpm --filter workdsh-contracts typecheck && corepack pnpm --filter workdsh-provider-identity-local typecheck && corepack pnpm --filter workdsh-plugin-audit typecheck && corepack pnpm --filter workdsh-plugin-access typecheck && corepack pnpm --filter workdsh-bundle typecheck",
+    "build": "corepack pnpm --filter workdsh-contracts build && corepack pnpm --filter workdsh-provider-identity-local build && corepack pnpm --filter workdsh-plugin-audit build && corepack pnpm --filter workdsh-plugin-access build && corepack pnpm --filter workdsh-plugin-skills build && corepack pnpm --filter workdsh-bundle build",
+    "typecheck": "corepack pnpm --filter workdsh-contracts typecheck && corepack pnpm --filter workdsh-provider-identity-local typecheck && corepack pnpm --filter workdsh-plugin-audit typecheck && corepack pnpm --filter workdsh-plugin-access typecheck && corepack pnpm --filter workdsh-plugin-skills typecheck && corepack pnpm --filter workdsh-bundle typecheck",
     "probe:install": "node scripts/check-environment.mjs && node scripts/probe-install.mjs",
     "test:integration": "node --test tests/integration/*.test.mjs",
     "check:versions": "node scripts/check-published-versions.mjs",
@@ -23,7 +23,9 @@
     "probe:presets": "node scripts/check-environment.mjs && node scripts/probe-presets.mjs",
     "audit:harness-docs": "node scripts/check-harness-doc-review.mjs",
     "probe:remote:generate": "tsc -p examples/remote-probe/packages/probe/tsconfig.json && node scripts/build-remote-probe.mjs",
-    "test:remote:lifecycle": "tsc -p examples/remote-probe/packages/probe/tsconfig.json && node --test tests/remote/*.test.mjs"
+    "test:remote:lifecycle": "tsc -p examples/remote-probe/packages/probe/tsconfig.json && node --test tests/remote/*.test.mjs",
+    "preview:install": "node scripts/check-environment.mjs && node scripts/install-preview.mjs",
+    "probe:skills": "node scripts/check-environment.mjs && node scripts/probe-skills-package.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",

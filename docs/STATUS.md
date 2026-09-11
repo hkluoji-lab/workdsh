@@ -2,19 +2,39 @@
 
 更新时间：2026-09-12。
 
+## 本轮：按模块发布 GitHub 制品
+
+用户明确暂停旧桌面兼容性改造，转为推送现有代码、完善中英文 README 和上传模块对应安装包。本轮不修改 Skill 运行逻辑、不升级桌面应用、不更改用户 ssh Profile。
+
+交付映射：`skills-v0.1.0-alpha.24` → 独立 Skill 包；`bundle-v0.1.0-alpha.39` → 可选展示组合包。各自附 tgz、SHA256SUMS、带源提交的 release-manifest.json。其他模块的源码/设计同步提交，但尚未独立交付的模块不伪造安装包；规则见 [模块发布说明](RELEASES.md)。
+
+中英文 README 已按插件特色、真实截图、模块下载、安装步骤、路线图和开发入口重写。测试截图来自当前正式打包制品与隔离演示数据，替换旧原型截图。公开材料同步明确：Harness 0.1.5-rc.1 Web 已通过；DSH Desktop 2.0.5 内置 0.1.2-rc.1 安装后入口缺失仍未修复，不能以市场显示“启用中”推断 Client 激活。
+
+本轮重跑 build、typecheck、33/33 集成、2/2 规划、463 项依赖锁定、probe:skills 和 probe:browser 均通过。真实模型、其他操作系统图形端、旧桌面兼容修复和完整 live CLI 热卸载未执行。GitHub 推送与制品上传属于本轮授权发布步骤，运行功能版本保持不变。
+
+## 上轮：Skill 独立插件改造完成
+
+按用户授权落实 ADR-0018，完成 D04 前置交付修正：Skill `0.1.0-alpha.24` 有独立 Host/Client、官方配置层与浏览器制品；bundle `alpha.39` 不再隐藏初始化 Skill，默认预览通过官方 CLI 显式安装两层。Workbench `alpha.10` 改为正式子插件注册，独立分发仍待其后续交付，不声称全部模块均已改造。
+
+`workdsh-contracts@0.1.0-alpha.5` 新增 `./skills` 本地管理服务 v1。真实 Cordis 测试验证两个消费者共享、提供方缺失/恢复和上传取消清理；独立 tarball 在仓库外安装后通过真实浏览器编辑、冲突、启停、卸载/恢复及移除重装。默认产品浏览器回归和冷重启均通过；证据与边界见[独立交付验收](evidence/skills-standalone-package.md)。
+
+本轮无开发阻塞；npm 发布、真实模型和完整运行中 CLI 热卸载未执行。当前仍为 Skill 0.1，D04 专家业务未开始。下一项业务仍按既有专家交接包实施，不增加公共市场、企业后台或新的产品版本。新预览安装命令为 `corepack pnpm preview:install`，在预览停止时执行，再启动 `corepack pnpm preview`。
+
+本地预览 Profile 已通过官方 CLI 更新至 Skill alpha.24 + bundle alpha.39，18989 已启动；认证目录请求返回 200，当前读取 16 项技能。使用原有用户 Agents home，未迁移或删除技能文件。默认组合额外验证了双向移除：移除 Skill 后工作台/新会话可用，移除展示包后 Skill 仍可用。
+
 ## 当前模块版本
 
-版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；治理契约、本地身份、资源授权和审计的本地 **0.1** 基线已经完成；工作台与共享 UI **0.1** 已完成，当前开发顺序进入专家模块 D04。`workdsh-bundle@0.1.0-alpha.38` 仍表示当前本地候选组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
+版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.24`；治理契约、本地身份、资源授权和审计的本地 **0.1** 基线已经完成；工作台与共享 UI **0.1** 已完成，当前开发顺序进入专家模块 D04。`workdsh-bundle@0.1.0-alpha.39` 仍表示当前本地候选组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
 
-Skill 0.1 提前切片现已正式结项：`development-order.activeSlice` 标为 completed，`packages/plugins/skills` 标为 implemented，P1-03 标为 completed。D03 正式阶段仍等待 D02；到达时只补 ActorContext/access/audit 治理适配与组合验收，不重复开发技能页面和管理闭环。
+Skill 0.1 提前切片现已正式结项：`development-order.activeSlice` 标为 completed，`packages/plugins/skills` 标为 implemented，P1-03 标为 completed。D01—D03 已按本地交付范围过序；这不表示业务不可变 SkillRevision 与所有管理入口的 ActorContext/access/audit 适配已经实现。D04 需要的技能依赖修订/治理适配见专家交接方案，不重复开发技能页面和本地管理闭环。
 
-D01、D02 及提前完成的 D03 Skill 0.1 均已收口，当前步骤进入 D04 专家模块。`workdsh-contracts@0.1.0-alpha.4` 定义服务端解析的 ActorContext、IdentityProfile、Organization、Membership、ResourceOwner、AccessGrant、AuthorizationDecision、SessionOwnerBinding、RuntimeBinding、AuditEvent 及 identity/access/audit 提供方接口，并增加审计排空边界。该包无 Cordis、UI、数据库或传输依赖；架构依据见 ADR-0016。
+D01、D02 及提前完成的 D03 Skill 0.1 均已收口，当前步骤进入 D04 专家模块。`workdsh-contracts@0.1.0-alpha.5` 定义服务端解析的 ActorContext、IdentityProfile、Organization、Membership、ResourceOwner、AccessGrant、AuthorizationDecision、SessionOwnerBinding、RuntimeBinding、AuditEvent 及 identity/access/audit 提供方接口，并增加审计排空边界。该包无 Cordis、UI、数据库或传输依赖；架构依据见 ADR-0016。
 
 P0-05 的本地基线交付为 `workdsh-provider-identity-local@0.1.0-alpha.3`。本地 provider 已注册为 Cordis Host Service，通过官方 `ctx.storageDomain` 原子保存主体、个人组织与 owner 成员关系；冷启动保持同一 revision，配置与持久身份冲突时拒绝启动。principal/organization 仍只来自 Host 配置，每次请求生成独立 requestId，输入夹带的伪造身份字段会被忽略。Harness 官方匿名安装 ID 明确只用于遥测关联，未被误用为用户身份。
 
 `workdsh-plugin-audit@0.1.0-alpha.2` 和 `workdsh-plugin-access@0.1.0-alpha.3` 已建立真实 Cordis Host Service。两者使用官方 Storage Domain 分域持久化；Access 只经 IdentityService 查询成员关系，实行组织隔离、资源 owner、显式 grant/revoke、revision 冲突检测，并在返回授权结果前写入审计。独立 Session owner Domain 与官方工具流水线桥接已生效；新增 `workdshSessionAccess` Host 入口，在调用官方 Session Controller 创建前先保留不可替换的 owner，并在恢复 Agent 前按最新成员关系和 grant 重新授权。个人 Profile 可首次工具调用自动绑定；企业式组合应关闭该回退并只从受控入口创建/恢复。该入口当前是 Host Service；企业外部 Session Remote、文件与其他 Remote 的多人治理、成员撤权后的在途取消、服务器端认证和管理 Web 已集中记录到[企业版架构说明](ENTERPRISE-EDITION.md)，不再阻塞本地 D01。团队远程入口继续关闭。证据见 [Access 与 Audit 验证](evidence/d01-access-audit.md)。
 
-当前根构建、类型检查、32/32 集成测试、2/2 规划测试、计划清单、版本锁定和补丁格式检查均通过。
+当前根构建、类型检查、33/33 集成测试、2/2 规划测试、计划清单、版本锁定和补丁格式检查均通过。
 
 skills alpha.23 / bundle alpha.35 收口认证 Fetch 的超时与取消。Client 对列表和修改请求设置有界超时，上传打包、流读取、预检和确认安装共用 `AbortSignal`；界面在上传和安装阶段均提供真实取消入口。Host 主动取消阻塞中的流读取并清理私有暂存目录，在文件遍历、摘要、复制及最终原子重命名前检查中止；原子发布完成后按成功结算，避免技能已安装但界面报告取消。中途上传取消与提交前取消/重试已进入 19/19 集成回归。该能力继续使用 Harness Connection 的认证 exact Fetch 扩展面，不增加第二套传输。
 
@@ -463,3 +483,38 @@ H08 Cookbook 第一批完成，当前 88/127。新增扩展交付清单，区分
 新增跨平台 WorkDSH 主标与应用图标：蓝色折叠 W 配青色智能火花，分别提供透明 SVG、通用圆角底座 SVG 与高分辨率 PNG 视觉稿。品牌不绑定单一桌面系统，也不复用 WorkBuddy、DeepSeek Harness 或其他产品的商标图形。
 
 D02 的工作台行为、公共 UI 边界、失败恢复和打包浏览器条件已满足；D03 Skill 0.1 使用既有完整管理闭环证据正式过序。当前唯一下一阶段为 D04 专家模块 0.1；企业服务端和管理 Web 仍留在后期 ToDo。
+
+
+## 2026-09-12 专家与专家团文档交接
+
+按用户要求交付 [专家开发文档包](design/experts/README.md)：PRD、三图交互规范、Host/Client 技术架构、拟新增契约、专家团设计、官方依据和 7 个有限开发包。15 条需求映射到 23 条单专家验收和 4 条团队验收；新增 ADR-0017 为 Proposed，公开接口须在实施时验证。
+
+当前源码审查确认专家仍为规划目录；现有 contracts 仅导出治理契约，Skill 摘要/digest 不等于不可变业务修订，受控 Session bridge 不自动覆盖所有原生入口，实验性 Agent Team 未在当前锁定依赖中。已在方案中明确这些缺口和验证条件，避免接手工具假设接口已存在。
+
+本次没有修改业务运行源码、安装新依赖或递增包版本。currentStep 仍为 D04、状态 todo；D11 团队与企业后台继续后置。验证结果见 [文档核对记录](design/experts/REFERENCES.md)。
+
+
+## 2026-09-12 插件交付边界复核
+
+用户指出目录结构不能证明真实独立插件。核对官方入门、生命周期和打包教程后确认：workdsh-bundle 是官方机制组合包，但其中直接调用 Skill Host/Client 和 Workbench helper，尚未建立各功能完整的独立 Fiber/自动安装边界；experts 等仍为规划目录。服务类插件、共享库和可安装 bundle 必须分别描述。
+
+已补 [复核说明](design/experts/PLUGIN-DELIVERY-REVIEW.md) 并纳入 D04 EP-01/G05、EP-07/AT-20。单功能独立安装/加载/移除的结论不能由整个 bundle 安装证据推导。本次仅修正文档约束，未重构业务代码；实际入口与制品修正由后续实施验证。
+
+
+## 2026-09-12 Skill 独立制品原状实测
+
+按用户要求对原有 skills alpha.23 执行真实 build、pack、隔离 Profile 的官方 plugin add 和 dump-config。构建/打包/普通依赖安装通过，但包缺少 dsh.bundle 与 dsh.client，CLI 明确告警未激活 Profile layer，配置中没有 Skill 插件。详见 [独立包验证](evidence/skills-standalone-package.md)。
+
+此前 Skill 0.1 本地业务闭环完成的证据仍指随 workdsh-bundle 运行，不包含独立插件发行。独立打包发布安装目标尚未完成；本次没有发布 npm 或修改原包来改变验证结果。
+
+## 2026-09-12 全平台插件组合与共享依赖说明
+
+针对“独立打包是否影响全局、专家如何包含 Skill”，补充 [ADR-0018](adr/0018-composable-feature-plugins-and-shared-skills.md)。用户随后明确要求遵循 Harness 自身的插件组合精神，架构方向已 Accepted，实施仍未完成。官方底座和自有功能统一用官方插件机制装配，不建立业务大核心；专家保存共享技能引用，contracts/ui 保持库，npm 制品、Cordis 服务和业务修订分别管理。明确必需依赖消失会影响消费者，插件移除不等于删除用户数据，当前不能承诺完整热卸载或独立 Skill 发行已完成。约束已同步 AGENTS 和专家交付复核。
+
+本次只补架构与交接文档、文档检查清单；不修改运行源码、依赖版本或 currentStep。公共市场和企业服务端继续后置；Skill 独立交付修正仍纳入既有 D04 前置与 EP-01/EP-07 验收，不增加新阶段。
+
+验证：文档计划检查通过（26 模块、50 文档），本轮文档相对链接与代码围栏检查、git diff --check 通过。产品构建、运行测试、浏览器与模型调用未执行。
+
+## 2026-09-12 Skill 独立插件改造进行中
+
+用户已授权实施 ADR-0018。当前工作为 D04 的 Skill 0.1 交付前置修正：独立 Host/Client、显式 Profile 组合、公共技能服务契约及制品/生命周期验收。沿用既有业务功能和数据目录，不启动专家业务或公共/企业功能；验证结果写入 skills-standalone-package 证据。此处保留开始时的范围记录；后续完成结果见本文顶部及独立交付验收，不能以原 alpha.23 打包记录代替 alpha.24 运行证据。

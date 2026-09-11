@@ -1,7 +1,7 @@
 {
   "name": "workdsh-plugin-skills",
-  "version": "0.1.0-alpha.23",
-  "private": true,
+  "version": "0.1.0-alpha.24",
+  "private": false,
   "type": "module",
   "exports": {
     ".": {
@@ -10,24 +10,25 @@
     },
     "./client": {
       "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
+      "default": "./dist/client.browser.js"
     }
   },
   "files": [
     "dist",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "cordis.patch.yml"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "corepack pnpm --filter workdsh-contracts build && corepack pnpm --filter workdsh-ui build && tsc -p tsconfig.json && node ../../../scripts/build-skills.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-client-connection": "^0.1.5-rc.1",
-    "@deepseek-ai/dsh-skill": "^0.1.5-rc.1",
-    "@deepseek-ai/dsh-tools": "^0.1.5-rc.1",
-    "react": "^19.2.4"
+    "@deepseek-ai/cordis": "4.0.2",
+    "@deepseek-ai/dsh-client-connection": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-skill": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.1",
+    "react": "19.2.4"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
@@ -44,10 +45,30 @@
     "@deepseek-ai/dsh-tools": "0.1.5-rc.1",
     "@types/react": "19.2.14",
     "react": "19.2.4",
-    "workdsh-ui": "workspace:*"
+    "workdsh-ui": "workspace:*",
+    "workdsh-contracts": "workspace:*"
   },
   "dependencies": {
     "fflate": "0.8.3",
     "yaml": "2.9.0"
+  },
+  "description": "Local skill management plugin for DeepSeek Harness",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-api-workspace-controller",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
   }
 }

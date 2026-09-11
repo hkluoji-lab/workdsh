@@ -5,7 +5,8 @@ const clientResult = await build({
   entryPoints: [fileURLToPath(new URL('../packages/bundle/src/client/index.ts', import.meta.url))], bundle: true, write: false,
   format: 'cjs', platform: 'browser', target: 'es2022', external: ['react'],
 });
-// Compile owned feature modules into one artifact; the official loader owns runtime loading.
+// Product presentation and its explicitly registered Workbench child. Skill has
+// its own package, Host row and browser artifact; it is never bundled here.
 writeFileSync(new URL('../packages/bundle/dist/client.js', import.meta.url),
   `window.__ModuleLoader__.load({id: "workdsh-bundle", factory: function(require) {
 const module = { exports: {} };
@@ -14,9 +15,7 @@ return module.exports;
 }});
 `);
 
-// The distributable bundle composes the skills Host source at build time. The
-// separately versioned feature package remains the source owner without adding
-// a private workspace dependency to the installable tarball.
+// Product diagnostics only; no feature implementation is included in this Host.
 const hostResult = await build({
   entryPoints: [fileURLToPath(new URL('../packages/bundle/src/probe.ts', import.meta.url))],
   bundle: true,

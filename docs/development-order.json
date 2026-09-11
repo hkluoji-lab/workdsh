@@ -63,7 +63,8 @@
       "status": "completed",
       "evidence": [
         "docs/evidence/skills-browser.md",
-        "docs/evidence/d02-foundation.md"
+        "docs/evidence/d02-foundation.md",
+        "docs/evidence/skills-standalone-package.md"
       ]
     },
     {

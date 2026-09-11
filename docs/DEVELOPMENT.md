@@ -2,7 +2,7 @@
 
 ## 本地交互预览
 
-运行 `corepack pnpm preview` 启动 `http://127.0.0.1:18989`。该脚本默认使用项目内 `.test-runtime/preview` 作为 Harness Profile 数据目录，同时使用当前用户的 `~/.agents` 作为 `DSH_AGENTS_HOME`，因此官方 Skill 文件提供方可以发现用户原有技能。
+首次运行或更新代码后，先构建并在预览 Host 停止时运行 `corepack pnpm preview:install`，通过官方 CLI 将 Skill 和产品展示包分别安装到预览 Profile。随后运行 `corepack pnpm preview` 启动 `http://127.0.0.1:18989`。该脚本默认使用项目内 `.test-runtime/preview` 作为 Harness Profile 数据目录，同时使用当前用户的 `~/.agents` 作为 `DSH_AGENTS_HOME`，因此官方 Skill 文件提供方可以发现用户原有技能。
 
 `probe:browser`、`probe:install` 等自动化验收继续使用独立临时 `DSH_HOME` 与 Agents home，避免测试写入用户技能。不能把自动化测试的空 Agents home 用于人工预览，否则技能库只会显示 bundle 自带技能。需要显式测试另一套技能目录时，可在启动前设置 `DSH_AGENTS_HOME`。
 
@@ -22,6 +22,7 @@ corepack pnpm test:planning
 corepack pnpm test:integration
 corepack pnpm probe:install
 corepack pnpm probe:browser
+corepack pnpm probe:skills
 ```
 
 先 build 再执行集成测试和打包探针。测试数据位于 .test-runtime，tarball 位于 .artifacts，均不提交。当前尚无 WorkDSH 业务页面启动命令或发布入口。

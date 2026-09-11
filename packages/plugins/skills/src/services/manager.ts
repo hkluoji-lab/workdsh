@@ -7,9 +7,10 @@ import { isSkillName, type SkillDefinition, type SkillSummary } from '@deepseek-
 import { parse } from 'yaml';
 import type { ManagedSkillDetail, ManagedSkillResource, ManagedSkillSummary, SkillBatchRequest, SkillBatchResult, SkillDependency, SkillDependencyImpact, SkillDiagnostic, SkillDraft, SkillDraftWriteRequest, SkillImportInspection, SkillImportRequest, SkillMutationReceipt, SkillResourceWriteRequest, SkillValidationResult, SkillWriteRequest, TrashedSkillSummary } from '../shared.js';
 import { SkillImportStaging } from './import-staging.js';
+import type { SkillManagementService, SkillDependencyInspector } from '../shared.js';
 
 declare module '@deepseek-ai/cordis' {
-  interface Context { workdshSkills: SkillManager; }
+  interface Context { workdshSkills: SkillManagementService; }
 }
 
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -20,7 +21,7 @@ const draftIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-
 
 interface DisabledOrigin { readonly name: string; readonly originalEntry: string; readonly directoryBundle: boolean; }
 interface TrashReceipt extends TrashedSkillSummary { readonly originalEntry: string; readonly trashedEntry: string; readonly directoryBundle: boolean; }
-export type SkillDependencyInspector = (name: string) => Promise<readonly SkillDependency[]> | readonly SkillDependency[];
+export type { SkillDependencyInspector } from '../shared.js';
 
 function inside(root: string, target: string): boolean {
   const part = relative(resolve(root), resolve(target));
@@ -114,7 +115,8 @@ async function copyImportTree(source: string, target: string, signal?: AbortSign
 }
 
 /** Host authority for local skill files. Harness remains the discovery and execution owner. */
-export class SkillManager extends Service {
+export class SkillManager extends Service implements SkillManagementService {
+  readonly contractVersion = 1 as const;
   private readonly activeRoots: readonly string[];
   private readonly disabledRoot: string;
   private readonly trashRoot: string;

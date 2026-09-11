@@ -83,11 +83,15 @@ Review 必须核对未重复建立 Agent loop、Skill registry/解析器、模�
 
 ## 当前允许的下一步
 
-D00 设计处理和用户批准的 Skill 0.1 提前切片均已完成。Skill 功能证据见 [浏览器与管理证据](evidence/skills-browser.md)，正式 D03 阶段仍等待 D02 前置，不重复开发另一份技能插件。
+D00 设计处理和用户批准的 Skill 0.1 提前切片均已完成。Skill 功能证据见 [浏览器与管理证据](evidence/skills-browser.md)，D01—D03 当前已按本地范围完成，不重复开发另一份技能插件。
 
 检查命令：node scripts/check-plan.mjs。它检查顺序结构和状态门槛，不能证明产品测试真实通过，证据仍须审阅。
 
+2026-09-12：D04 前置的 Skill 独立交付修正已通过。Skill alpha.24 是独立官方配置层，bundle alpha.39 通过显式 Profile 组合使用它；本地公开服务为 contracts/skills v1。见[独立交付证据](evidence/skills-standalone-package.md)。专家引用快照仍待 D04，不由共享服务或两个测试消费者自动满足。
+
 ## 当前下一步：D04 / P1-02 专家模块 0.1
+
+实施依据：[专家开发交接包](design/experts/README.md)。当前工作固定为 EP-01～EP-07；公开面关卡 G01～G06 与验收 AT-01～AT-23 通过后收口。团队 D11 独立验收，不提前实现；本轮文档不算运行交付证据。
 
 DOC-06 官方文档审查已完成 127/127；C01 的目录、正文、真实 Agent Session 调用、正常冷恢复和同名技能隔离已经通过。Skill exact Fetch 的认证、超时、传输中取消、原子提交边界与重试也已通过。发布版 Typert 对外部 workspace 的生成限制作为未来通用 Remote 的上游兼容项保留，不再阻塞本地 Skill 0.1。
 
@@ -99,4 +103,4 @@ D02 已完成官方 Sidebar、Workspace、Session 与 Conversation 的增量组�
 
 Q01 新会话和 Q04 干净安装/重装已由 D01 证据通过。Q02 权威存储隔离和 Q03 完整远程入口主体关联只在不互信多人部署中成立，已调整到 P3 企业阶段；在通过前团队远程入口保持关闭。其他 Harness 运行差异仍作为兼容性回归维护，不作为当前本地模块的人为阻塞项。
 
-正式依赖顺序保持 D01 → D02 → D03 → D04。D03 到达时核对已交付 Skill 0.1 与 D02 的 ActorContext/access/audit 集成，缺少的只是治理适配与组合验收，不重做已安装列表、详情、导入、编辑、启停、卸载或创建流程。
+正式依赖顺序保持 D01 → D02 → D03 → D04。D04 按需要补齐 Skill 的业务修订、依赖保留与治理适配，不能把已有文件 digest 当不可变 SkillRevision；不重做已安装列表、详情、导入、编辑、启停、卸载或创建流程。

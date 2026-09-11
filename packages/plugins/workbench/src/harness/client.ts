@@ -11,7 +11,10 @@ import {
  * Keep the official Sidebar and Conversation occupants in place. WorkDSH only
  * contributes business navigation and paired main panels through public Slots.
  */
-export function applyWorkbenchClient(ctx: Context): void {
+export const name = 'workdsh-workbench-client';
+export const inject = ['slots'];
+
+export function apply(ctx: Context): void {
   for (const panel of businessPanels) {
     if ('description' in panel && panel.description) {
       ctx.slots.inject('main', () => ctx.slots.register({

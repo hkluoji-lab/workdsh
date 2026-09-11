@@ -4,6 +4,8 @@
 
 功能插件是可执行模块；bundle 是安装组合层；专家/技能/连接实例/应用是业务对象。三者不能混同。一个功能插件管理多对象，一个提供方插件可贡献多类型预置对象。
 
+Harness 底座本身是官方插件组合，WorkDSH 业务能力沿用同一套机制，不建立承载全部业务的大核心。用户已确认这一方向，见 [ADR-0018](adr/0018-composable-feature-plugins-and-shared-skills.md)：专家引用技能对象与修订，功能插件通过公开契约协作；独立分发不代表没有依赖，默认产品由统一 Profile 装配。Skill alpha.24 已完成独立 Host/Client、配置层安装与共享本地服务契约验证；默认展示包 alpha.39 不再内嵌初始化 Skill。工作台现通过 ctx.plugin 注册，但尚无独立安装制品；专家的修订引用与业务影响仍待 D04 实现，不能从本轮安装验收推导已完成。见[独立交付证据](evidence/skills-standalone-package.md)。
+
 ```mermaid
 flowchart TB
   Bundle[WorkDSH 总组合包] --> Workbench[工作台插件]

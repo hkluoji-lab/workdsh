@@ -5,7 +5,7 @@ import type { InjectFace, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 
 type NavigationLocationProps = PropsRuntime<'shell.overlay'> & InjectFace<{
   readonly panelToView: Readonly<Record<string, string>>;
-  readonly selectView: (view: string | null) => void;
+  readonly selectView: (view: string | null) => string | null;
 }>;
 
 /** URL stores presentation only, never Session identity or authority. */
@@ -22,6 +22,16 @@ export function NavigationLocation({ usePanelInfo, panelToView, selectView }: Na
     return () => window.removeEventListener('popstate', restore);
   }, [selectView]);
   useEffect(() => {
+    if (!initialized.current) {
+      // Restore after the official Client boot has composed the feature entries,
+      // rather than while one feature's apply is still awaiting its services.
+      const url = new URL(window.location.href);
+      const requested = url.searchParams.get('workdsh-view') ?? (url.searchParams.get('diagnostics') === '1' ? 'diagnostics' : null);
+      const selected = selectView(requested);
+      initialized.current = true;
+      restoring.current = true;
+      if (selected !== active) return;
+    }
     if (active !== null && !(active in panelToView)) return;
     const url = new URL(window.location.href);
     const view = active === null ? 'conversation' : panelToView[active];
@@ -32,6 +42,6 @@ export function NavigationLocation({ usePanelInfo, panelToView, selectView }: Na
     }
     initialized.current = true;
     restoring.current = false;
-  }, [active, panelToView]);
+  }, [active, panelToView, selectView]);
   return null;
 }

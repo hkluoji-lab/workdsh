@@ -53,6 +53,9 @@ export async function probeBrowser(address, sessionCookie, screenshotPath, { ins
       await expect(nav).toHaveCount(0);
       await expect(page.getByTestId('workdsh-brand')).toHaveCount(0);
       await expect(page.getByTestId('workdsh-probe')).toHaveCount(0);
+      // Removing the presentation bundle must leave the separate Skill layer usable.
+      await page.getByRole('button', { name: '专家 · 技能 · 连接器', exact: true }).click();
+      await expect(page.getByRole('button', { name: '查看技能 workdsh-browser-fixture', exact: true })).toBeVisible();
       if (errors.length) throw new Error(`Browser reported ${errors.length} uncaught errors after removal`);
       console.log('PASS: removed bundle absent from Client boot graph, sidebar, and panel after Host restart');
       return;
@@ -222,6 +225,33 @@ export async function probeBrowser(address, sessionCookie, screenshotPath, { ins
       console.error((await page.locator('body').innerText()).slice(0, 4000));
     }
     throw error;
+  } finally {
+    await browser.close();
+  }
+}
+
+/** Removing Skill must not dispose the product/workbench or leave a broken deep link. */
+export async function probeProductWithoutSkills(address, sessionCookie) {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.context().addCookies(sessionCookies(address, sessionCookie));
+    await page.goto(`${address}/?workdsh-view=skills`);
+    await dismissSetup(page);
+    await expect(page.getByTestId('workdsh-brand')).toHaveText('WorkDSH');
+    await expect(page.getByRole('button', { name: '专家 · 技能 · 连接器', exact: true })).toHaveCount(0);
+    await expect.poll(() => new URL(page.url()).searchParams.get('workdsh-view')).toBe('conversation');
+    const graph = await page.evaluate(() => window.__DSH_BOOT__.entries.map(row => row.id));
+    expect(graph).toContain('workdsh-bundle');
+    expect(graph).not.toContain('workdsh-plugin-skills');
+    await page.getByRole('button', { name: '项目', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '项目', exact: true })).toBeVisible();
+    await page.getByText(/新会话|New Session/, { exact: true }).first().click();
+    await expect(page.getByText(/探索未至之境|Into the Unknown/, { exact: true }).first()).toBeVisible();
+    expect(errors).toEqual([]);
+    console.log('PASS: removing Skill keeps WorkDSH brand, workbench, native new session, and stale URL recovery');
   } finally {
     await browser.close();
   }

@@ -1,3 +1,9 @@
+# 0.1.0-alpha.39
+
+- 移除 Skill Host/Client 的内嵌初始化和运行依赖，默认预览通过官方 CLI 显式安装独立 Skill alpha.24 配置层。
+- Workbench alpha.10 使用 ctx.plugin 注册子插件；品牌和诊断不再等待 Skill 专属服务。
+- 初始 URL 待官方 Client 组合后恢复，并核对目标页面是否已注册，防止独立功能加载时出现空白页。
+
 # 0.1.0-alpha.38
 
 - 组合共享 UI alpha.4：公开入口、TSX 组件、设计令牌与样式模块分离，保持现有组件 API 兼容。

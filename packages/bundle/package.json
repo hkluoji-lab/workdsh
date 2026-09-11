@@ -1,6 +1,6 @@
 {
   "name": "workdsh-bundle",
-  "version": "0.1.0-alpha.38",
+  "version": "0.1.0-alpha.39",
   "private": true,
   "type": "module",
   "description": "WorkDSH default Harness bundle and client composition",
@@ -37,16 +37,13 @@
         "@deepseek-ai/dsh-client-ui-sidebar",
         "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-api-session-controller",
-        "@deepseek-ai/dsh-api-workspace-controller",
-        "@deepseek-ai/dsh-client-ui-conversation",
-        "@deepseek-ai/dsh-client-ui-theme",
-        "@deepseek-ai/dsh-client-ui-session"
+        "@deepseek-ai/dsh-client-ui-theme"
       ]
     }
   },
   "scripts": {
-    "build": "corepack pnpm --filter workdsh-ui build && corepack pnpm --filter workdsh-plugin-workbench build && corepack pnpm --filter workdsh-plugin-skills build && tsc -p tsconfig.json && node ../../scripts/build-client-probe.mjs",
-    "typecheck": "corepack pnpm --filter workdsh-ui build && corepack pnpm --filter workdsh-plugin-workbench typecheck && corepack pnpm --filter workdsh-plugin-skills typecheck && tsc -p tsconfig.json --noEmit"
+    "build": "corepack pnpm --filter workdsh-ui build && corepack pnpm --filter workdsh-plugin-workbench build && tsc -p tsconfig.json && node ../../scripts/build-client-probe.mjs",
+    "typecheck": "corepack pnpm --filter workdsh-ui build && corepack pnpm --filter workdsh-plugin-workbench typecheck && tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2"
@@ -67,7 +64,6 @@
     "@types/react": "19.2.14",
     "react": "19.2.4",
     "workdsh-ui": "workspace:*",
-    "workdsh-plugin-skills": "workspace:*",
     "workdsh-plugin-workbench": "workspace:*"
   },
   "dependencies": {

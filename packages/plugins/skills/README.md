@@ -1,36 +1,69 @@
-# 技能管理
+# 技能管理插件
 
-状态：**0.1 默认/本地技能管理闭环完成**。0.1.0-alpha.23 已为认证 Fetch 和导入流程补齐超时、取消传播与原子发布前结算；创建技能继续由 Host 管理闭环负责，`skill-creator` 通过 Harness 官方 `defineTool` 使用私有草稿、结构校验、精确 revision 和显式确认发布。无效本地技能会出现在列表中并显示可修复诊断。
+> GitHub 模块制品与兼容矩阵：[发布说明](../../../docs/RELEASES.md)。当前验证 Harness **0.1.5-rc.1 Web**；内置 **0.1.2-rc.1** 的旧桌面入口缺失尚未修复，本包不包含该兼容修复。
 
-模块版本线：**0.1**。Host、Client、Remote、内置 `skill-creator` 与资源统一计入技能模块版本；当前开发制品为 `0.1.0-alpha.23`。默认组合包的版本不代替技能模块版本。
+状态：**Skill 0.1 默认/本地管理闭环与独立安装交付完成**。当前候选制品 `workdsh-plugin-skills@0.1.0-alpha.24`，尚未发布 npm。一个插件管理多个 Skill 业务对象；用户制作技能不需要发布 npm 包。
 
-- 实现阶段：P1
-- 主任务：P1-03，详见 [开发计划](../../../docs/PLAN.md)
-- 职责：多技能管理、skill-creator、原生技能提供方适配。
-- 边界：不重造技能执行器，导入不运行脚本。
+本包提供标准 Host `apply/inject`、独立 Client `apply/inject`、`dsh.bundle` 配置 patch 和 `dsh.client` 浏览器产物。官方 Loader/Profile/Cordis 拥有加载及生命周期；不依赖 WorkDSH 总包或另一个插件框架。独立安装、默认组合、移除与重装见[实际验收](../../../docs/evidence/skills-standalone-package.md)。
 
-## 开发前阅读
+- 模块版本线：**0.1**，Host、Client、资源和内置管理 Skill 共用版本。
+- 主任务：P1-03；本轮为 D04 前置交付修正，不实现专家业务。
+- 边界：复用官方 Skill provider、工具和 Conversation；不重造执行器，导入不运行脚本。
 
-[规则](../../../AGENTS.md)、[状态](../../../docs/STATUS.md)、[契约](../../../docs/CONTRACTS.md)、[团队设计](../../../docs/TEAM-DESIGN.md)。
+## 安装和组合
 
-所有业务操作遵守服务端主体和组织上下文；页面与 Agent 工具调用相同领域服务。可选功能接入通过公开契约与生命周期注入。
+兼容基线：Node 22.19+、Harness `0.1.5-rc.1`、Cordis `4.0.2`、React `19.2.4`。从已配置这些依赖的官方 Web Profile 安装本地 tgz；将以下路径替换为实际制品绝对路径：
 
-执行目录复用官方 `ctx.skills`、Skill provider、`dsh-tool-skill` 与 Session Skill Catalog。已发布 SkillRevision 必须定位不可变正文；不能让历史 Session 通过同名目录读取后来改写的内容。`modelInvocable` 与 `userInvocable` 只控制调用面，不能替代组织、项目和对象授权。provider 目录观测不完整时保留 last-good 并重试，不把临时缺项解释成业务归档。
+```sh
+dsh plugin --profile <你的 Web Profile> add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.24.tgz
+```
 
-## 验收与下一步
+按官方流程停服修改组合，再重启该 Profile。卸载管理插件用官方 `dsh plugin --profile <Profile> remove workdsh-plugin-skills`；用户技能文件和管理数据保留，重装继续使用。插件移除与页面中“卸载某个技能对象”不同：后者进入可恢复回收站。当前未宣称完整运行中 CLI 热卸载。
 
-完成对应 PLAN 任务及 [验收矩阵](../../../docs/ACCEPTANCE.md) 场景，记录真实测试证据后才更新状态。当前入口 `./client` 导出组合函数，由 bundle 编译并挂载；全局页面直接调用 Host `SkillManager`。rc.1/rc.2 的外部 workspace Typert 生成仍失败，因此 JSON 管理操作和流式上传使用官方 `dsh-client-connection` 的认证 exact Fetch route；生成器支持外部包后迁移管理调用，文件上传仍保留在官方的流式 Fetch 扩展面。默认/本地技能的功能闭环和浏览器验收已实现。当前不开发公共市场；企业服务端与管理 Web 按 [ADR 0015](../../../docs/adr/0015-skill-control-plane-and-runtime-projection.md) 列入后期 ToDo，不阻塞当前 Skill 0.1。
+仓库开发使用固定 pnpm；先 `corepack pnpm build`，再 `corepack pnpm preview:install`。安装脚本通过官方 CLI 将 Skill 和 WorkDSH 展示包作为两个独立 Profile 层安装；最后 `corepack pnpm preview`。现有预览应先停止，自动化测试使用隔离 Agents home，人工预览仍默认使用用户原有 `~/.agents`。
 
-## 修订 6 的必做补充
+可独立打包并验收：
 
-详见 [项目设计](../../../docs/PROJECT-DESIGN.md) 和 [官方依据](../../../docs/research/workbuddy-core-domains.md)。新增目录仍为规划占位；各自实现 PLAN 的 P1 补充项并验证 J01—J10 适用项。
+```sh
+corepack pnpm --filter workdsh-plugin-skills build
+corepack pnpm --filter workdsh-plugin-skills pack --pack-destination .artifacts
+corepack pnpm probe:skills
+corepack pnpm probe:browser
+```
 
-## 项目界面联动
+产物内含所需 UI 代码和本地 DTO 声明，不要求运行时存在 `workdsh-ui` 或开发 workspace。React 由官方 renderer 共享；依赖的 Harness 服务明确声明，不把框架复制进包。
 
-按 [项目设计第 7 节](../../../docs/PROJECT-DESIGN.md) 实现本领域相关交互，验收 UI01—UI08 适用项。领域对象与项目关联分离，取消不提交选择，个人连接按当前主体解析。新增目录仍为 planned。
+## 公开服务与依赖
 
-## 当前可用范围
+Host 提供 `ctx.workdshSkills`，类型源为 `workdsh-contracts/skills` 的 `SkillManagementService`，`contractVersion` 为 `1`。这是受信本地 Host 管理契约，**不属于企业鉴权 API**。使用服务的插件显式注入 `workdshSkills`，只依赖公共类型，不导入本包内部 `SkillManager`：
 
-全局技能库、搜索、完整详情、直接编辑、资源编辑、打开文件夹、启停、可恢复卸载、批量管理以及新增技能入口。卸载前由 Host 汇总已注册领域的依赖影响，并在执行时用影响 revision 重新确认。添加菜单提供查找、上传和创建：查找聚焦已安装目录，上传打开专用导入弹框并通过认证流式路由交给 Host，创建进入原生 Conversation 并预填 `/skill-creator`。导入支持 `.zip`、单个 `.md` 和文件夹；预检与安装分离，浏览器拿不到 Host 暂存路径，脚本不执行。页面不把技能归属于任务；命令发送与模型调用仍由原生 Conversation 执行。当前产品没有 SkillHub 和套件，因此不显示对应标签；分类在设计上保留；当前默认/本地技能没有真实 taxonomy，因此不提供可点击假筛选。
+```ts
+import type { Context } from '@deepseek-ai/cordis';
+import type { SkillManagementService } from 'workdsh-contracts/skills';
 
-`skill-creator` 的 Host 注册由本包根入口拥有，默认把“所有 WorkDSH 任务可用”的技能写入官方共享 Agents root（`$DSH_AGENTS_HOME/skills`，未配置时为 `~/.agents/skills`）；只有用户明确选择当前 Harness Profile 时才使用 `$DSH_HOME/skills`。已有目标必须读取并再次确认，不能覆盖无关技能。
+declare module '@deepseek-ai/cordis' {
+  interface Context { workdshSkills: SkillManagementService; }
+}
+
+export const inject = ['workdshSkills'];
+export function apply(ctx: Context) {
+  if (ctx.workdshSkills.contractVersion !== 1) throw new Error('Unsupported Skill contract');
+  // Use list/detail/readResource/update and other public methods as needed.
+}
+```
+
+领域若贡献卸载影响，通过 `registerDependencyInspector()` 返回依赖；消费者用自己的 `ctx.effect()` 托管返回的清理函数。必需服务消失时，由 Cordis 停止消费者，恢复后重新激活。两个消费者共享同一技能所有者的测试已通过，不能据此声称专家模块已实现。
+
+当前契约保留现有本地管理语义：完整正文、资源、冲突修订、导入、草稿发布、启停、依赖影响、回收和恢复。**不可变 SkillRevision、专家执行快照租约和多用户授权尚未实现**，后续专家接入必须补齐，不能把当前文件摘要当作永久历史修订。
+
+## 功能与所有权
+
+全局技能库、搜索、完整详情、直接编辑、资源编辑、打开文件夹、启停、可恢复卸载、批量管理以及新增技能入口均保持原有业务服务。添加菜单提供查找、上传和创建：查找聚焦已安装目录，上传使用专用预检/确认弹框，创建预填原生 Conversation 的 `/skill-creator`，不自动发送。
+
+管理请求与流式上传复用官方 Connection 认证 exact Fetch 扩展面；公开版本的外部 workspace Typert 生成问题仍记录为兼容项。插件撤销时取消 Client 请求、停止路由并排空在途请求；打开目录沿用原生 Session Remote。页面不持有第二套技能执行目录。
+
+内置 `skill-creator` 使用官方 `defineTool` 调用同一个 Host 服务，经过私有草稿、校验、精确 revision 和确认发布。默认共享目标为 `$DSH_AGENTS_HOME/skills`，未配置时为 `~/.agents/skills`；只有明确选择 Harness Profile 范围时使用 `$DSH_HOME/skills`。不得覆盖无关技能。
+
+本包独立贡献能力中心侧栏入口和 Skill 页面，移除后这些贡献随插件消失；官方工作区、会话、原生 `/`、`@`、附件、模型和权限仍由 Harness 拥有。当前没有 SkillHub、套件和真实 taxonomy，因此不显示假筛选；分类设计保留，公共市场、企业服务器与管理 Web 按 [ADR-0015](../../../docs/adr/0015-skill-control-plane-and-runtime-projection.md) 后置。
+
+开发前阅读[规则](../../../AGENTS.md)、[状态](../../../docs/STATUS.md)、[契约](../../../docs/CONTRACTS.md)、[团队设计](../../../docs/TEAM-DESIGN.md)和[ADR-0018](../../../docs/adr/0018-composable-feature-plugins-and-shared-skills.md)。

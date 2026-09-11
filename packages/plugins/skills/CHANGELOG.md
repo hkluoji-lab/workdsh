@@ -1,3 +1,10 @@
+# 0.1.0-alpha.24
+
+- 补齐独立 dsh.bundle/patch 与 dsh.client 浏览器产物，官方 Profile 可单独安装本包；不依赖 WorkDSH 总包或开发 workspace。
+- Host/Client 分别声明依赖与生命周期，技能侧栏入口归本插件所有。取消 Client 请求、撤销 Host 路由并排空在途上传。
+- 本地服务类型移至 workdsh-contracts/skills，两个消费者通过注入共享服务；原有技能文件、草稿和回收数据格式保持兼容。
+- 新增真实独立 tarball 浏览器验收：编辑/冲突、启停、卸载/恢复，以及移除、重装和重复安装不重复注册。
+
 # 0.1.0-alpha.23
 
 - 为认证 Fetch 管理请求增加明确超时，并把取消与超时映射为稳定客户端错误。

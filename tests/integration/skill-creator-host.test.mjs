@@ -6,7 +6,7 @@ import Tools from '@deepseek-ai/dsh-tools';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { applySkillsHost, skillCreatorContent } from '../../packages/plugins/skills/dist/index.js';
+import * as skillsHost from '../../packages/plugins/skills/dist/index.js';
 
 test('skills Host owns a disposable manager and official skill registration', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workdsh-skill-api-'));
@@ -19,7 +19,7 @@ test('skills Host owns a disposable manager and official skill registration', as
     ctx.provide('systemPrompt', { tools() {}, section() {}, getSectionOrder() { return 0; } });
     await ctx.plugin(Tools);
     await ctx.plugin(SkillRegistry);
-    applySkillsHost(ctx);
+    await ctx.plugin(skillsHost);
     const registered = await ctx.skills.get('skill-creator');
     assert.equal(registered.name, 'skill-creator');
     assert.equal(registered.source, 'bundled');
@@ -29,7 +29,7 @@ test('skills Host owns a disposable manager and official skill registration', as
     assert.match(registered.content, /target already exists/);
     assert.match(registered.content, /Never overwrite an unrelated skill/);
     assert.match(registered.content, /filesystem skill provider and watcher/);
-    assert.equal(registered.content, skillCreatorContent);
+    assert.equal(registered.content, skillsHost.skillCreatorContent);
     assert.equal(typeof ctx.workdshSkills.detail, 'function');
     assert.ok(ctx.tools.get('workdsh_save_skill_draft'));
     assert.ok(ctx.tools.get('workdsh_validate_skill_draft'));

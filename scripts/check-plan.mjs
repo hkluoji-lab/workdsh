@@ -10,6 +10,19 @@ const requirePath = (name) => {
   if (!existsSync(resolve(root, name))) failures.push(`Missing: ${name}`);
 };
 const documents = [
+  'docs/adr/0018-composable-feature-plugins-and-shared-skills.md',
+  'docs/evidence/skills-standalone-package.md',
+  'docs/design/experts/PLUGIN-DELIVERY-REVIEW.md',
+  'docs/adr/0017-expert-definition-and-runtime-binding.md',
+  'docs/design/experts/CONTRACTS.md',
+  'docs/design/experts/EXPERT-TEAMS.md',
+  'docs/design/experts/HLD.md',
+  'docs/design/experts/IMPLEMENTATION-AND-ACCEPTANCE.md',
+  'docs/design/experts/PRD.md',
+  'docs/design/experts/README.md',
+  'docs/design/experts/REFERENCES.md',
+  'docs/design/experts/UX.md',
+  'docs/design/experts/references/README.md',
   'docs/HARNESS-OFFICIAL-DEVELOPMENT.md',
   'docs/MODULE-VERSIONS.md',
   'docs/UI-DESIGN.md',
