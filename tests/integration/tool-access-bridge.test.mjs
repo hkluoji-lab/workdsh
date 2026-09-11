@@ -8,7 +8,7 @@ import Storage from '@deepseek-ai/dsh-storage';
 import * as JsonStorage from '@deepseek-ai/dsh-storage-json';
 import * as StorageDomain from '@deepseek-ai/dsh-storage-domain';
 import Tools from '@deepseek-ai/dsh-tools';
-import { AccessManager, ToolAccessBridge } from '../../packages/plugins/access/dist/index.js';
+import { AccessManager, SessionAccessBridge, ToolAccessBridge } from '../../packages/plugins/access/dist/index.js';
 import { AuditJournal } from '../../packages/plugins/audit/dist/index.js';
 
 const membershipDirectory = new Map([
@@ -184,6 +184,84 @@ test('explicit Session ownership survives restart and cannot be replaced', async
   } finally {
     if (first) await first.fiber.dispose();
     if (second) await second.fiber.dispose();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('trusted Session ingress binds before create, preserves retry ownership and authorizes resume', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workdsh-session-ingress-'));
+  const selected = new Map();
+  const createCalls = [];
+  const resumeCalls = [];
+  const failCreate = new Set(['session-retry']);
+  const existingSessions = new Set(['session-orphan']);
+  let ctx;
+  try {
+    ctx = await boot(root, selected, { autoBindPersonalSessions: false });
+    ctx.provide('sessionController', {
+      async inspect(sessionId) {
+        if (existingSessions.has(String(sessionId))) return { header: { id: sessionId }, events: [] };
+        throw Object.assign(new Error('fixture Session not found'), { code: 'session/not-found' });
+      },
+      async create(request) {
+        const sessionId = String(request.sessionId);
+        assert.equal(ctx.workdshAccess.sessionOwner(sessionId)?.ownerPrincipalId, 'owner-a', 'owner is durable before official create');
+        createCalls.push(sessionId);
+        if (failCreate.delete(sessionId)) throw Object.assign(new Error('fixture create failed'), { code: 'session/create-fixture' });
+        existingSessions.add(sessionId);
+        return { sessionId: request.sessionId };
+      },
+      async resolveAgent(sessionId) {
+        resumeCalls.push(String(sessionId));
+        return { agent: { id: sessionId } };
+      },
+    });
+    await ctx.plugin(SessionAccessBridge, { runtimeId: 'session-ingress-test' });
+
+    await assert.rejects(
+      ctx.workdshSessionAccess.create({ sessionId: 'session-orphan', cwd: '/tmp' }),
+      { code: 'access/unbound-session-adoption' },
+    );
+    assert.equal(ctx.workdshAccess.sessionOwner('session-orphan'), undefined);
+
+    await assert.rejects(ctx.workdshSessionAccess.create({ sessionId: 'session-retry', cwd: '/tmp' }), /fixture create failed/);
+    assert.equal(ctx.workdshAccess.sessionOwner('session-retry')?.ownerPrincipalId, 'owner-a');
+
+    selected.set('session-retry', ['member-a', 'personal-owner']);
+    await assert.rejects(
+      ctx.workdshSessionAccess.create({ sessionId: 'session-retry', cwd: '/tmp' }),
+      { code: 'access/session-owner-conflict' },
+    );
+    assert.deepEqual(createCalls, ['session-retry'], 'an ownership conflict never reaches the official controller');
+
+    selected.set('session-retry', ['owner-a', 'personal-owner']);
+    assert.equal((await ctx.workdshSessionAccess.create({ sessionId: 'session-retry', cwd: '/tmp' })).sessionId, 'session-retry');
+    const generated = await ctx.workdshSessionAccess.create({ cwd: '/tmp' });
+    assert.match(String(generated.sessionId), /^session-/);
+    assert.equal(ctx.workdshAccess.sessionOwner(String(generated.sessionId))?.ownerPrincipalId, 'owner-a');
+
+    selected.set('session-retry', ['member-a', 'personal-owner']);
+    await assert.rejects(ctx.workdshSessionAccess.resolveAgent('session-retry'), { code: 'access/not-granted' });
+    assert.deepEqual(resumeCalls, [], 'unauthorized resume never reaches the official controller');
+    await ctx.workdshAccess.putGrant(
+      { principalId: 'owner-a', organizationId: 'personal-owner', requestId: 'session-grant', resolvedBy: 'test-session-identity' },
+      { organizationId: 'personal-owner', ownerPrincipalId: 'owner-a', scope: 'personal' },
+      {
+        id: 'session-retry-use-member-a', organizationId: 'personal-owner', subjectPrincipalId: 'member-a',
+        resource: { domain: 'session', id: 'session-retry' }, actions: ['use'], revision: 'session-retry-grant-1',
+      },
+    );
+    assert.ok('agent' in await ctx.workdshSessionAccess.resolveAgent('session-retry'));
+    assert.deepEqual(resumeCalls, ['session-retry']);
+
+    await ctx.workdshToolAccess.flush();
+    const events = ctx.workdshAudit.snapshot();
+    assert.ok(events.some((event) => event.action === 'session.create' && event.outcome === 'failed' && event.code === 'session/create-fixture'));
+    assert.ok(events.some((event) => event.action === 'session.create' && event.outcome === 'denied' && event.code === 'access/unbound-session-adoption'));
+    assert.ok(events.some((event) => event.action === 'session.create' && event.outcome === 'succeeded'));
+    assert.ok(events.some((event) => event.action === 'session.resume' && event.outcome === 'succeeded'));
+  } finally {
+    if (ctx) await ctx.fiber.dispose();
     await rm(root, { recursive: true, force: true });
   }
 });

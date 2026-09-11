@@ -28,7 +28,7 @@
 | --- | --- | --- | --- |
 | 领域公开契约 | **0.1** | `workdsh-contracts@0.1.0-alpha.4` | P0-04 实施中；包含 Host identity/access/audit、Session owner/runtime binding 与排空契约 |
 | 本地身份提供方 | **0.1** | `workdsh-provider-identity-local@0.1.0-alpha.3` | P0-05 实施中；官方 Storage Domain 持久化可信单用户 Profile，不用于远程认证 |
-| 资源授权 | **0.1** | `workdsh-plugin-access@0.1.0-alpha.2` | P1-09 实施中；持久 Session owner、RuntimeBinding 与官方工具前置授权/结果审计 |
+| 资源授权 | **0.1** | `workdsh-plugin-access@0.1.0-alpha.3` | P1-09 实施中；持久 Session owner、受控 Session Host 入口、RuntimeBinding 与官方工具授权/审计 |
 | 审计 | **0.1** | `workdsh-plugin-audit@0.1.0-alpha.2` | P1-09 实施中；官方 Storage Domain 持久审计、排空和敏感引用拒绝 |
 | 技能管理 | **0.1** | `workdsh-plugin-skills@0.1.0-alpha.23` | 默认/本地管理闭环完成；公共市场不在当前范围，企业服务端与管理 Web 列入后期 ToDo |
 | 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.8` | 官方 Sidebar/Conversation 组合切片 |

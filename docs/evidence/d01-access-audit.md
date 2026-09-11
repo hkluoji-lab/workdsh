@@ -18,6 +18,7 @@
 - Access 与 Audit 属于不同 Storage Domain，当前后端不提供跨 Domain 事务。grant/revoke 先记录 outcome=unknown 的操作意图，写入授权事实后再记录 succeeded，避免把部分成功伪装成原子成功。
 - Session owner 使用独立 `workdsh_runtime_binding` Domain 持久化，已绑定 owner 不能被另一主体替换；当前 RuntimeBinding 在每次执行时根据最新 membership 与 grant 重新生成。
 - 工具执行按官方扩展点接入：`tools/pre-execute` 完成异步身份解析和授权，`tools/result` 观察不可变最终结果，`session/flush` 与 Cordis disposer 等待排队审计落盘。
+- `workdshSessionAccess` 在调用官方 `sessionController.create()` 前生成稳定 Session id 并持久绑定 owner；显式 id 首次绑定前通过官方 `inspect()` 拒绝已有但无 owner 的 Session，创建失败则保留同一 owner 的可重试预留。恢复 Agent 前先按当前 membership/grant 调用 `resolveRuntime()`，拒绝时不触达官方 Controller。
 
 ## 验证
 
@@ -29,7 +30,8 @@
 - 个人 Profile 的首次官方 Agent 工具调用可以自动绑定 Session；未授权成员的工具正文不会运行，显式取得 Session use grant 后可以运行。
 - 工具成功、工具抛错和策略拒绝分别形成 succeeded、failed 和 denied 审计；最终结果审计携带本次 authorizationRevision。
 - 关闭个人自动绑定时，未在受信入口登记 owner 的 Session 失败关闭；显式绑定经冷重启保持，替换 owner 被拒绝。
+- 已验证未登记 owner 的历史 Session 采用失败、owner 记录先于官方 Session 创建、创建失败后的同 owner 重试、异主体接管拒绝、未授权恢复不激活 Agent，以及 grant 后恢复成功。
 
 ## 尚未完成
 
-该证据覆盖 Host 服务直接调用及官方工具流水线，但尚未让 Session Controller 的创建/恢复入口显式登记 owner，也未接入文件/资产服务、Typert Remote/Connection、订阅和成员撤权后的在途取消。企业身份、服务器端管理 Web、组织目录和审计查询 UI 属于后期范围。D01、P0-04、P0-05 与 P1-09 因此保持进行中。
+该证据覆盖 Host 服务、受控 Session 创建/恢复入口及官方工具流水线。受控 Session 入口仍是内部 Host Service，尚未生成 WorkDSH Remote 并从企业组合中撤下裸 `session` Remote；文件/资产服务、其他 Typert Remote/Connection、订阅和成员撤权后的在途取消也未覆盖。企业身份、服务器端管理 Web、组织目录和审计查询 UI 属于后期范围。D01、P0-04、P0-05 与 P1-09 因此保持进行中。

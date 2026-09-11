@@ -1,7 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Context, Service } from '@deepseek-ai/cordis';
+import type {
+  SessionCreateRequest,
+  SessionCreateValue,
+} from '@deepseek-ai/dsh-api-session-controller';
 import { defineDomain, domainTable, type KvTable } from '@deepseek-ai/dsh-storage-domain';
-import type {} from '@deepseek-ai/dsh-session';
+import type { SessionId } from '@deepseek-ai/dsh-session';
 import type { PreToolDecision, ToolExecution, ToolExecutionResult, ToolExecutionToken } from '@deepseek-ai/dsh-tools';
 import { z } from 'zod';
 import {
@@ -24,6 +28,8 @@ import {
   type RuntimeBindingService,
   type SessionOwnerBinding,
 } from 'workdsh-contracts';
+
+type SessionAgentResult = Awaited<ReturnType<Context['sessionController']['resolveAgent']>>;
 
 const bounded = z.string().min(1).max(256).refine((value) => !/[\u0000-\u001f]/.test(value));
 const resourceRefSchema: z.ZodType<ResourceRef> = z.object({ domain: bounded, id: bounded, revision: bounded.optional() });
@@ -63,6 +69,7 @@ declare module '@deepseek-ai/cordis' {
     workdshIdentity: IdentityService;
     workdshAudit: AuditService;
     workdshAccess: AccessManager;
+    workdshSessionAccess: SessionAccessBridge;
     workdshToolAccess: ToolAccessBridge;
   }
 }
@@ -373,6 +380,114 @@ export interface ToolAccessBridgeConfig {
   readonly isolation?: RuntimeBindingRequest['isolation'];
   /** Personal profiles may bind an unowned Session on its first official Agent tool call. */
   readonly autoBindPersonalSessions?: boolean;
+}
+
+export interface SessionAccessBridgeConfig {
+  readonly runtimeId?: string;
+  readonly isolation?: RuntimeBindingRequest['isolation'];
+}
+
+/** Trusted Host ingress for WorkDSH Session creation and resume. */
+export class SessionAccessBridge extends Service {
+  static inject = ['sessionController', 'workdshIdentity', 'workdshAccess', 'workdshAudit'];
+  private readonly runtimeId: string;
+  private readonly isolation: RuntimeBindingRequest['isolation'];
+
+  constructor(ctx: Context, config: SessionAccessBridgeConfig = {}) {
+    super(ctx, 'workdshSessionAccess');
+    this.runtimeId = config.runtimeId ?? `workdsh-session-runtime-${randomUUID()}`;
+    this.isolation = config.isolation ?? 'local-trusted';
+  }
+
+  async create(request: SessionCreateRequest, signal?: AbortSignal): Promise<SessionCreateValue> {
+    signal?.throwIfAborted();
+    const sessionId = request.sessionId ?? (`session-${randomUUID()}` as SessionId);
+    const actor = await this.ctx.workdshIdentity.resolve({ sessionId: String(sessionId) }, signal);
+    if (request.sessionId !== undefined && !this.ctx.workdshAccess.sessionOwner(String(sessionId))) {
+      let exists = false;
+      try {
+        await this.ctx.sessionController.inspect(sessionId, signal);
+        exists = true;
+      } catch (error) {
+        if (!hasErrorCode(error, 'session/not-found')) throw error;
+      }
+      if (exists) {
+        await this.audit(actor, 'session.create', 'denied', 'access/unbound-session-adoption');
+        throw new GovernanceContractError(
+          'access/unbound-session-adoption',
+          'An existing Session without a trusted owner binding cannot be adopted.',
+        );
+      }
+    }
+    await this.ctx.workdshAccess.bindSession(actor, {
+      sessionId: String(sessionId),
+      ...(request.workspaceId === undefined ? {} : { workspaceId: String(request.workspaceId) }),
+    }, signal);
+    signal?.throwIfAborted();
+    try {
+      const result = await this.ctx.sessionController.create({ ...request, sessionId });
+      if (String(result.sessionId) !== String(sessionId)) {
+        throw new GovernanceContractError('access/session-id-mismatch', 'Session Controller returned a different Session identity.');
+      }
+      await this.audit(actor, 'session.create', 'succeeded', 'session/create-succeeded');
+      return result;
+    } catch (error) {
+      await this.audit(actor, 'session.create', 'failed', errorCode(error, 'session/create-failed'));
+      throw error;
+    }
+  }
+
+  async resolveAgent(sessionId: SessionId, signal?: AbortSignal): Promise<SessionAgentResult> {
+    signal?.throwIfAborted();
+    const id = String(sessionId);
+    const actor = await this.ctx.workdshIdentity.resolve({ sessionId: id }, signal);
+    const owner = this.ctx.workdshAccess.sessionOwner(id);
+    await this.ctx.workdshAccess.resolveRuntime(actor, {
+      sessionId: id,
+      runtimeId: this.runtimeId,
+      isolation: this.isolation,
+      ...(owner?.workspaceId === undefined ? {} : { workspaceId: owner.workspaceId }),
+    }, signal);
+    signal?.throwIfAborted();
+    try {
+      const result = await this.ctx.sessionController.resolveAgent(sessionId);
+      if ('error' in result) {
+        await this.audit(actor, 'session.resume', 'failed', errorCode(result.error, 'session/resume-failed'));
+      } else {
+        await this.audit(actor, 'session.resume', 'succeeded', 'session/resume-succeeded');
+      }
+      return result;
+    } catch (error) {
+      await this.audit(actor, 'session.resume', 'failed', errorCode(error, 'session/resume-failed'));
+      throw error;
+    }
+  }
+
+  private async audit(actor: ActorContext, action: string, outcome: AuditEvent['outcome'], code: string): Promise<void> {
+    await this.ctx.workdshAudit.append({
+      id: randomUUID(),
+      occurredAt: new Date().toISOString(),
+      requestId: actor.requestId,
+      principalId: actor.principalId,
+      organizationId: actor.organizationId,
+      action,
+      target: sessionResource(actor.sessionId ?? 'unknown'),
+      outcome,
+      code,
+      ...(actor.sessionId ? { sessionId: actor.sessionId } : {}),
+    });
+  }
+}
+
+function errorCode(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
+    return safeAuditReference(error.code);
+  }
+  return fallback;
+}
+
+function hasErrorCode(error: unknown, code: string): boolean {
+  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === code);
 }
 
 /** Binds the official tool pipeline to Host identity, Session ownership, Access and Audit. */

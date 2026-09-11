@@ -15,4 +15,4 @@
 
 ## 验收与下一步
 
-本地 identity、access 和 audit 已消费本包接口，并完成官方工具流水线的首个治理接入；下一步接 Session Controller、文件和 Remote。完成对应 PLAN 任务及 [验收矩阵](../../docs/ACCEPTANCE.md) 场景后才完成 P0-04/P0-05。企业 Skill 架构见 [ADR 0015](../../docs/adr/0015-skill-control-plane-and-runtime-projection.md)。
+本地 identity、access 和 audit 已消费本包接口，并完成受控 Session Host 入口和官方工具流水线的首个治理接入；下一步生成受控 Session Remote，再接文件和其他 Remote。完成对应 PLAN 任务及 [验收矩阵](../../docs/ACCEPTANCE.md) 场景后才完成 P0-04/P0-05。企业 Skill 架构见 [ADR 0015](../../docs/adr/0015-skill-control-plane-and-runtime-projection.md)。

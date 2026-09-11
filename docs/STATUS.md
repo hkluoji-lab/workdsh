@@ -12,9 +12,9 @@ D01 当前推进 P0-04/P0-05。`workdsh-contracts@0.1.0-alpha.4` 定义服务端
 
 P0-05 同步推进到 `workdsh-provider-identity-local@0.1.0-alpha.3`。本地 provider 已注册为 Cordis Host Service，通过官方 `ctx.storageDomain` 原子保存主体、个人组织与 owner 成员关系；冷启动保持同一 revision，配置与持久身份冲突时拒绝启动。principal/organization 仍只来自 Host 配置，每次请求生成独立 requestId，输入夹带的伪造身份字段会被忽略。Harness 官方匿名安装 ID 明确只用于遥测关联，未被误用为用户身份。
 
-`workdsh-plugin-audit@0.1.0-alpha.2` 和 `workdsh-plugin-access@0.1.0-alpha.2` 已建立真实 Cordis Host Service。两者使用官方 Storage Domain 分域持久化；Access 只经 IdentityService 查询成员关系，实行组织隔离、资源 owner、显式 grant/revoke、revision 冲突检测，并在返回授权结果前写入审计。新增独立 Session owner Domain 与官方工具流水线桥接：`tools/pre-execute` 做 Host 身份解析和授权，`tools/result` 记录最终成功/失败，`session/flush` 排空审计。个人 Profile 可首次调用自动绑定；关闭自动绑定后未登记 Session 失败关闭，owner 替换被拒绝，冷重启保持绑定。当前尚未接入 Session Controller 创建/恢复、文件、Remote 与成员撤权后的在途取消，因此 D01/P1-09 保持进行中，团队远程入口继续关闭。证据见 [Access 与 Audit 验证](evidence/d01-access-audit.md)。
+`workdsh-plugin-audit@0.1.0-alpha.2` 和 `workdsh-plugin-access@0.1.0-alpha.3` 已建立真实 Cordis Host Service。两者使用官方 Storage Domain 分域持久化；Access 只经 IdentityService 查询成员关系，实行组织隔离、资源 owner、显式 grant/revoke、revision 冲突检测，并在返回授权结果前写入审计。独立 Session owner Domain 与官方工具流水线桥接已生效；新增 `workdshSessionAccess` Host 入口，在调用官方 Session Controller 创建前先保留不可替换的 owner，并在恢复 Agent 前按最新成员关系和 grant 重新授权。个人 Profile 可首次工具调用自动绑定；企业式组合应关闭该回退并只从受控入口创建/恢复。该入口当前是 Host Service，尚未生成并替换外部 Session Remote；文件、其他 Remote 与成员撤权后的在途取消也未接入，因此 D01/P1-09 保持进行中，团队远程入口继续关闭。证据见 [Access 与 Audit 验证](evidence/d01-access-audit.md)。
 
-当前根构建、类型检查、31/31 集成测试、2/2 规划测试、计划清单、版本锁定和补丁格式检查均通过。
+当前根构建、类型检查、32/32 集成测试、2/2 规划测试、计划清单、版本锁定和补丁格式检查均通过。
 
 skills alpha.23 / bundle alpha.35 收口认证 Fetch 的超时与取消。Client 对列表和修改请求设置有界超时，上传打包、流读取、预检和确认安装共用 `AbortSignal`；界面在上传和安装阶段均提供真实取消入口。Host 主动取消阻塞中的流读取并清理私有暂存目录，在文件遍历、摘要、复制及最终原子重命名前检查中止；原子发布完成后按成功结算，避免技能已安装但界面报告取消。中途上传取消与提交前取消/重试已进入 19/19 集成回归。该能力继续使用 Harness Connection 的认证 exact Fetch 扩展面，不增加第二套传输。
 

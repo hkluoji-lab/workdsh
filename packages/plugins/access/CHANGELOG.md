@@ -1,3 +1,10 @@
+# 0.1.0-alpha.3
+
+- 增加 `workdshSessionAccess` 受控 Host 入口，在调用官方 Session Controller 创建前持久绑定稳定 owner。
+- Session 恢复在激活官方 Agent 前重新检查当前成员关系和 grant，拒绝请求不会触达 Controller。
+- 创建失败保留不可替换的 owner 预留，允许同一主体安全重试并阻止其他主体接管 Session id。
+- 显式 Session id 在首次绑定前使用官方冷读 `inspect()` 排除已存在但无 owner 的会话，阻止历史会话被补绑接管。
+
 # 0.1.0-alpha.2
 
 - 增加独立 Storage Domain 保存不可替换的 Session owner binding，冷重启后仍可解析当前 RuntimeBinding。
