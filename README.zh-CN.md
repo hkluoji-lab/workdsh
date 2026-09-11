@@ -25,7 +25,7 @@
 
 ![WorkDSH 原生工作台集成](docs/assets/screenshots/workbench.png)
 
-当前不提供公共 Skill 市场、SkillHub 或套件。企业版规划采用独立服务端、管理 Web 和 Harness 执行节点，详见 [ADR 0015](docs/adr/0015-skill-control-plane-and-runtime-projection.md) 与 [后期 ToDo](docs/TODO.md)。
+当前不提供公共 Skill 市场、SkillHub 或套件。企业版规划采用独立服务端、管理 Web 和 Harness 执行节点；边界与 E01—E05 工作包已记录在[企业版架构说明](docs/ENTERPRISE-EDITION.md)、[ADR 0015](docs/adr/0015-skill-control-plane-and-runtime-projection.md) 与 [后期 ToDo](docs/TODO.md)。
 
 ## 开发入口
 
@@ -37,6 +37,7 @@
 - [公开契约草案](docs/CONTRACTS.md)
 - [首期团队版设计](docs/TEAM-DESIGN.md)
 - [企业管理后台设计](docs/ADMIN-DESIGN.md)
+- [后期企业版架构说明](docs/ENTERPRISE-EDITION.md)
 - [验收矩阵](docs/ACCEPTANCE.md)
 - [开发与环境说明](docs/DEVELOPMENT.md)
 - [官方依据及兼容验证](docs/COMPATIBILITY.md)

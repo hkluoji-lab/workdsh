@@ -26,6 +26,7 @@ const documents = [
   'docs/research/harness-extension-delivery-checklist.md',
   'docs/research/harness-review-closure.md',
   'docs/DEPLOYMENT-AND-STORAGE.md',
+  'docs/ENTERPRISE-EDITION.md',
   'AGENTS.md', 'README.md', 'docs/PLAN.md', 'docs/STATUS.md',
   'docs/ARCHITECTURE.md', 'docs/CONTRACTS.md', 'docs/TEAM-DESIGN.md',
   'docs/research/workbuddy-project-screens.md', 'docs/PROJECT-DESIGN.md', 'docs/research/workbuddy-core-domains.md',

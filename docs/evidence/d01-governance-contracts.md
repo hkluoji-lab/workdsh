@@ -1,6 +1,6 @@
 # D01 / P0-04 治理契约证据
 
-日期：2026-09-11。状态：实施中。
+日期：2026-09-11。状态：本地 0.1 治理契约基线完成。
 
 ## 官方复用与自有差异
 
@@ -22,6 +22,6 @@ Harness 的 User、Permission Preset、Approval、Sandbox、Credentials、Sessio
 - 同一介质使用冲突的 Host 主体配置会以 `identity-local/config-conflict` 拒绝启动，不会静默换人。
 - 未使用 Harness 匿名安装 ID 充当用户；官方包说明该 ID 只用于安装范围遥测/反馈/请求关联，不能识别用户。
 
-## 尚未验证
+## 验收边界与后期项
 
-Session、文件、工具、Remote 入口绑定，成员停用时在途运行取消，以及团队 runtime 失败关闭尚未实现。完成这些证据前 P0-04/P0-05 和 D01 保持进行中，团队远程入口保持关闭。
+本地 Session owner、工具入口和运行恢复已在 Access/Audit 证据中验证。文件与其他 Remote 的企业多人绑定、成员停用后的在途取消、服务器认证及团队 runtime 失败关闭进入[企业版架构说明](../ENTERPRISE-EDITION.md)。团队远程入口继续关闭；这些后期项不阻塞本地 D01，也不能被当前证据扩称为企业能力。

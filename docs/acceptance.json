@@ -15,8 +15,11 @@
       "tasks": [
         "P0-02"
       ],
-      "status": "pending",
-      "evidence": []
+      "status": "passed",
+      "evidence": [
+        "docs/evidence/d01-installation.md",
+        "docs/evidence/d01-client.md"
+      ]
     },
     {
       "id": "A02",
@@ -591,12 +594,14 @@
       "tasks": [
         "P0-03"
       ],
-      "status": "pending",
-      "evidence": []
+      "status": "passed",
+      "evidence": [
+        "docs/evidence/d01-presets.md"
+      ]
     },
     {
       "id": "Q02",
-      "phase": "P0",
+      "phase": "P3",
       "tasks": [
         "P0-05"
       ],
@@ -605,7 +610,7 @@
     },
     {
       "id": "Q03",
-      "phase": "P0",
+      "phase": "P3",
       "tasks": [
         "P0-05"
       ],
@@ -618,8 +623,11 @@
       "tasks": [
         "P0-02"
       ],
-      "status": "pending",
-      "evidence": []
+      "status": "passed",
+      "evidence": [
+        "docs/evidence/d01-installation.md",
+        "docs/evidence/d01-client.md"
+      ]
     }
   ]
 }

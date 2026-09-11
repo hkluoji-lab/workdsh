@@ -1,5 +1,8 @@
 # D01 / P0-02 自有 Remote 与取消探针
 
+> 2026-09-12 收口说明：发布版 Typert 的外部 workspace 生成限制保留为后期兼容项。本地产品已经在官方 Connection 认证 exact Fetch 扩展面完成所需链路，因此该限制不再阻塞本地 D01；企业受控 Remote 见 [企业版架构说明](../ENTERPRISE-EDITION.md)。
+
+
 ## 官方能力复用记录（2026-09-10）
 
 - 任务：P0-02，验证自有 Host Remote 的生成、装配、调用与协作式取消；不启动 D02。

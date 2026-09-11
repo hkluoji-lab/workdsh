@@ -1,5 +1,5 @@
 {
-  "currentStep": "D01",
+  "currentStep": "D02",
   "steps": [
     {
       "id": "D00",
@@ -15,7 +15,7 @@
     },
     {
       "id": "D01",
-      "title": "安装链与公开接口探针",
+      "title": "安装链、官方接口与本地治理基线",
       "tasks": [
         "P0-01",
         "P0-02",
@@ -26,10 +26,12 @@
       "dependsOn": [
         "D00"
       ],
-      "status": "in_progress",
+      "status": "completed",
       "evidence": [
         "docs/evidence/d01-installation.md",
         "docs/evidence/d01-client.md",
+        "docs/evidence/d01-remote.md",
+        "docs/evidence/d01-presets.md",
         "docs/evidence/d01-governance-contracts.md",
         "docs/evidence/d01-access-audit.md"
       ]
@@ -44,8 +46,10 @@
       "dependsOn": [
         "D01"
       ],
-      "status": "todo",
-      "evidence": []
+      "status": "in_progress",
+      "evidence": [
+        "docs/evidence/d02-foundation.md"
+      ]
     },
     {
       "id": "D03",

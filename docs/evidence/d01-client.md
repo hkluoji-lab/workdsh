@@ -1,5 +1,8 @@
 # D01 Client 页面与 Remote 接入验证
 
+> 2026-09-12 收口说明：本文记录的是早期 Client 探针；后续 Skill 与工作台证据已完成本地官方 Slot/Conversation/Connection 组合。生成的企业 Remote、长任务网络取消和多人入口移入 [企业版架构说明](../ENTERPRISE-EDITION.md)，不再阻塞本地 D01。
+
+
 日期：2026-09-11。当前候选包 workdsh-bundle@0.1.0-alpha.14，仅本地预构建 tarball；当前步骤仍为 D01。
 
 ## 已通过

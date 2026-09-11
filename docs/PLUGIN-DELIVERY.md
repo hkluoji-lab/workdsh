@@ -2,12 +2,12 @@
 
 > 当前追加（2026-09-11）：P1-03 当前切片扩展到新增技能闭环。“添加技能”提供查找、上传、创建；创建进入 Harness 原生任务并预填 `/skill-creator`，原生 `/`、`@`、权限、模型与发送保持 Conversation owner。上传使用 Connection 鉴权的流式 exact Fetch route，经 Host 预检和用户确认后写入官方文件技能目录；监听刷新和后续 `/name` 调用仍由 Harness Skill 子系统拥有。SkillHub/套件不在当前产品范围。默认/本地修订、启停、卸载已实现；当前不开发公共市场。企业服务端、管理 Web、组织目录、分类、版本和下发策略按 ADR 0015 进入后期 ToDo。
 
-> 当前追加（2026-09-10）：用户要求先实现原型公共外壳；[ADR 0014](adr/0014-workbench-sidebar-presentation.md) 允许 P1-01 展示切片，保留 D01/D02 业务与授权未完成门槛。
+> 当前追加（2026-09-10）：用户要求先实现原型公共外壳；[ADR 0014](adr/0014-workbench-sidebar-presentation.md) 允许 P1-01 展示切片，该段为当时的展示切片说明；当前 D01 已完成、D02 进行中。
 
-> 当前执行覆盖（2026-09-10）：依据用户确认，按 [ADR 0013](adr/0013-feature-slices-with-pending-gates.md) 提前交付 P1-03 原生任务技能浏览切片。D01 未完成证据保留；下文“只做探针/不得开始业务”不再阻挡此限定范围。其余模块和团队准入不变。
+> 当前执行覆盖（2026-09-10）：依据用户确认，按 [ADR 0013](adr/0013-feature-slices-with-pending-gates.md) 提前交付 P1-03 原生任务技能浏览切片。该段为提前切片时的历史说明；D01 后续已按本地边界完成。其余模块和团队准入不变。
 
 
-状态：执行顺序已确定，D01 安装与 Client 探针进行中，P1-03 按批准切片提前实现新增技能链路。与 PLAN 修订 10 配套。
+状态：D01 已按本地单用户治理边界完成，D02 基础插件与工作台 `0.1` 进行中；P1-03 Skill `0.1` 提前切片已经完成。企业服务器、管理 Web 和多人全路径治理见[企业版架构说明](ENTERPRISE-EDITION.md)，不阻塞当前顺序。
 
 ## 执行规则
 
@@ -22,15 +22,15 @@
 | 步骤 | 交付 | 对应任务 | 退出证据要求 |
 | --- | --- | --- | --- |
 | D00 | 修复设计审查 | DOC-05 | R01—R06 逐项修订，关联决策与可执行验收；需要实测的结论转为明确 P0 探针，不假称已验证。 |
-| D01 | 安装链与公开接口探针 | P0-01,P0-02,P0-03,P0-04,P0-05 | 先环境，再最小 bundle/工作台探针，再能力及授权探针，最后固化契约与兼容报告；仅测试对象，不提前实现全部业务管理。 |
-| D02 | 基础插件与工作台最小版本 | P1-09,P1-01 | identity → provider-identity-local → access → audit，工作台提供真实导航与执行入口；模型策略/用量先完成首期契约及要求的基础行为。 |
+| D01 | 安装链、官方接口与本地治理基线 | P0-01,P0-02,P0-03,P0-04,P0-05 | 环境、最小 bundle/工作台、默认/本地能力消费、可信本机身份、授权、审计与受控 Session Host 入口；企业 Remote 和多人隔离另列后期。 |
+| D02 | 基础插件与工作台最小版本 | P1-09,P1-01 | 复用已完成的 identity → provider-identity-local → access → audit 本地基线，收口工作台真实导航、状态与执行入口。 |
 | D03 | 技能插件 | P1-03 | 导入/创建/修订/启停及原生调用闭环；尚无专家/项目服务时使用契约测试，不搭建假产品服务。 |
 | D04 | 专家插件 | P1-02 | expert-manager 创建、多对象管理、技能绑定、真实任务与同主体专家交接；未到位连接/资料依赖显示未就绪。 |
 | D05 | 连接器插件 | P1-04 | 测试 MCP、个人/公共授权边界、实例身份、查询提交与结果核对；examples/mcp-business-service 随本步提供。 |
 | D06 | 资料库插件 | P1-06 | 导入检索、受控修改审阅、成果保存和后续复用；验证正文写入边界。 |
 | D07 | 项目插件 | P1-11 | 项目四主标签、配置、能力关联、待办评论与资产引用；应用默认尚无提供方时可选缺省，不制造强依赖。 |
 | D08 | 行业应用插件 | P1-05 | 多应用/场景配置，联调项目与应用默认优先级、旧任务绑定保持。 |
-| D09 | 企业后台首期 | P1-10 | 组织/成员基础、对象治理、连接授权和审计入口；复用已完成基础服务，禁止提前宣称 SSO 与完整多人部署。 |
+| D09 | 企业后台首期（后期企业版） | P1-10 | 独立排期建设服务器端与管理 Web；复用已完成的领域契约，但重新验收认证、租户隔离、受控 API 和执行节点。当前本地版本不以此为门槛。 |
 | D10 | 首期集成与组合验收 | P1-07,P1-08 | 关闭前面各插件留存的跨模块待验项；完成 A16 及所有 P1 必测，干净包安装、恢复和示例验证，形成首期组合版本。 |
 | D11 | 专家团 | P2-01,P2-02 | 专家插件新版本：分工、子任务授权、取消、部分失败与汇总。 |
 | D12 | 自动化插件 | P2-03,P2-04 | 持久触发、唯一执行归属、去重、恢复和项目联动；执行生命周期以 D00 修订后的规则为准。 |
@@ -87,14 +87,16 @@ D00 设计处理和用户批准的 Skill 0.1 提前切片均已完成。Skill �
 
 检查命令：node scripts/check-plan.mjs。它检查顺序结构和状态门槛，不能证明产品测试真实通过，证据仍须审阅。
 
-## 当前下一步：D01 / P0-04 与 P0-05 治理边界
+## 当前下一步：D02 / P1-01 工作台与共享 UI 0.1
 
 DOC-06 官方文档审查已完成 127/127；C01 的目录、正文、真实 Agent Session 调用、正常冷恢复和同名技能隔离已经通过。Skill exact Fetch 的认证、超时、传输中取消、原子提交边界与重试也已通过。发布版 Typert 对外部 workspace 的生成限制作为未来通用 Remote 的上游兼容项保留，不再阻塞本地 Skill 0.1。
 
-当前已实施 `workdsh-contracts` 0.1，固化 ActorContext、Organization、Membership、ResourceOwner、AccessGrant、RuntimeBinding、AuditEvent 及 identity/access/audit 服务边界，见 [ADR-0016](adr/0016-governance-contracts-first.md)。该包无 UI、数据库和传输，不复制 Harness User、Permission Preset、Approval、Sandbox 或 Session scope。
+`workdsh-contracts`、local identity、access、audit 和 Session owner/runtime binding 已完成本地 `0.1` 基线，见 [ADR-0016](adr/0016-governance-contracts-first.md) 与 [D01 证据](evidence/d01-access-audit.md)。它们不复制 Harness User、Permission Preset、Approval、Sandbox、Session scope 或执行器。
 
-可信本地 IdentityProvider、Access 和 Audit 的 Host 基础服务已经建立，并以两主体、两组织、管理员访问他人私有资源、显式 grant/revoke、冲突和冷重启负例验证。官方工具流水线已通过 Session owner/runtime binding 接入同一 ActorContext/access/audit guard；受控 Session Host 入口会先绑定 owner 再委托官方 Controller 创建，并在恢复 Agent 前重新授权。下一步为该 Host 入口生成 WorkDSH Remote 并确保企业组合不暴露裸 Session Remote，再接文件、其他 Remote 与成员撤权后的在途取消。团队远程入口继续关闭；企业 SSO、服务端与管理 Web 保留到后期阶段。全路径证据完成后才关闭 D01、进入 D02 基础插件和工作台最小版本。
+当前只继续 P1-01：核对 WorkDSH 工作台的真实业务入口、状态、空态、失败与恢复行为，收口可复用的展示组件，并通过官方 Sidebar、Workspace、Session 和 Conversation 组合完成打包浏览器验收。D02 不复制原生导航、Composer 或 Session 行为。
 
-仍保留的运行差异探针按 [审查收尾清单](research/harness-review-closure.md) 独立执行：Plan 提交时机、Shell/PTY/Code runtime 停稳、feedback/inspect/lookup 主体限制，以及 Subagent/Goal 恢复。它们不能因 Skill 0.1 完成而删除，也不要求为验证创建假业务 UI。
+企业 Session Remote、文件和其他 Remote 的多人授权、成员撤权与在途取消、SSO、服务器端、管理 Web 和隔离 Worker 统一记录在[企业版架构说明](ENTERPRISE-EDITION.md)。团队远程入口保持关闭，这些工作不再阻塞 D02。
+
+Q01 新会话和 Q04 干净安装/重装已由 D01 证据通过。Q02 权威存储隔离和 Q03 完整远程入口主体关联只在不互信多人部署中成立，已调整到 P3 企业阶段；在通过前团队远程入口保持关闭。其他 Harness 运行差异仍作为兼容性回归维护，不作为当前本地模块的人为阻塞项。
 
 正式依赖顺序保持 D01 → D02 → D03 → D04。D03 到达时核对已交付 Skill 0.1 与 D02 的 ActorContext/access/audit 集成，缺少的只是治理适配与组合验收，不重做已安装列表、详情、导入、编辑、启停、卸载或创建流程。

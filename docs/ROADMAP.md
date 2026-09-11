@@ -30,6 +30,7 @@ Clean installation, packaged Web cold-restart acceptance, failure recovery, and 
 - Expert teams, durable automations, and provider SDK examples.
 - Team deployment, shared libraries, online tables, publishable pages, and business scenarios.
 - Enterprise server and administration Web application for organizations, members, authorization, audit, organization Skills, immutable versions, categories, rollout policy, and execution-node synchronization.
+- Enterprise work is recorded as E01-E05 in the [enterprise edition architecture note](ENTERPRISE-EDITION.md). It is not a completion gate for the current trusted-local-user release.
 - A public Skill marketplace is not scheduled. If approved later, it will be implemented as an independent source rather than being mixed into the local Skill registry.
 
 Detailed task IDs, prerequisites, and exit criteria remain authoritative in the [development plan](PLAN.md), [delivery ledger](development-order.json), [plugin delivery guide](PLUGIN-DELIVERY.md), [status ledger](STATUS.md), and [deferred ToDo](TODO.md).
@@ -62,6 +63,7 @@ Skill `0.1` 的干净安装、真实打包 Web 冷重启、失败恢复和认证
 - 专家团、持久自动化和 Provider SDK 示例。
 - 团队部署、共享资料库、在线表格、可发布页面和业务场景。
 - 企业服务端与管理 Web：组织、成员、授权、审计、组织 Skill、不可变版本、分类、下发策略和执行节点同步。
+- 企业工作已按 E01—E05 记录在[企业版架构说明](ENTERPRISE-EDITION.md)，不作为当前可信本机单用户版本的完成门槛。
 - 公共 Skill 市场当前不排期；后续立项时作为独立来源接入，不与本地 Skill Registry 混合。
 
 详细任务编号、前置条件和退出标准以[开发计划](PLAN.md)、[交付顺序台账](development-order.json)、[插件交付规范](PLUGIN-DELIVERY.md)、[状态台账](STATUS.md)和[后期 ToDo](TODO.md)为准。

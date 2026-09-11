@@ -1,6 +1,6 @@
 # WorkDSH 公开契约草案
 
-状态：P0-04 实施中。`workdsh-contracts@0.1.0-alpha.1` 已发布首批治理 TypeScript 契约；未进入该包的领域接口仍是拟定义草案，不是声称已存在的 Harness API。架构决策见 [ADR-0016](adr/0016-governance-contracts-first.md)。
+状态：本地 `0.1` 治理契约基线完成。`workdsh-contracts@0.1.0-alpha.4` 已实现 Host identity/access/audit 与 Session owner/runtime binding 契约；未进入该包的领域接口仍是拟定义草案，不是声称已存在的 Harness API。企业服务器与受控 Remote 见[后期企业版说明](ENTERPRISE-EDITION.md)。架构决策见 [ADR-0016](adr/0016-governance-contracts-first.md)。
 
 ## 首期团队上下文
 

@@ -25,7 +25,7 @@ This preview includes:
 
 ![WorkDSH native workbench integration](docs/assets/screenshots/workbench.png)
 
-The current product does not provide a public Skill marketplace, SkillHub, or bundles. The enterprise edition is planned as a separate server, administration Web application, and Harness execution nodes. See [ADR 0015](docs/adr/0015-skill-control-plane-and-runtime-projection.md) and the [deferred ToDo](docs/TODO.md).
+The current product does not provide a public Skill marketplace, SkillHub, or bundles. The enterprise edition is planned as a separate server, administration Web application, and Harness execution nodes. Its boundaries and E01-E05 work packages are recorded in the [enterprise edition architecture note](docs/ENTERPRISE-EDITION.md), [ADR 0015](docs/adr/0015-skill-control-plane-and-runtime-projection.md), and the [deferred ToDo](docs/TODO.md).
 
 ## Development
 
@@ -37,6 +37,7 @@ The current product does not provide a public Skill marketplace, SkillHub, or bu
 - [Draft public contracts](docs/CONTRACTS.md)
 - [Team design](docs/TEAM-DESIGN.md)
 - [Enterprise administration design](docs/ADMIN-DESIGN.md)
+- [Deferred enterprise edition architecture](docs/ENTERPRISE-EDITION.md)
 - [Acceptance matrix](docs/ACCEPTANCE.md)
 - [Development environment](docs/DEVELOPMENT.md)
 - [Official basis and compatibility evidence](docs/COMPATIBILITY.md)

@@ -4,7 +4,7 @@
     "title": "领域公开契约",
     "phase": "P0",
     "task": "P0-04",
-    "status": "in_progress",
+    "status": "implemented",
     "directories": [
       "src",
       "tests"
@@ -220,7 +220,7 @@
     "title": "资源授权",
     "phase": "P0/P1",
     "task": "P1-09",
-    "status": "in_progress",
+    "status": "implemented",
     "directories": [
       "src/domain",
       "src/services",
@@ -238,7 +238,7 @@
     "title": "审计",
     "phase": "P1",
     "task": "P1-09",
-    "status": "in_progress",
+    "status": "implemented",
     "directories": [
       "src/domain",
       "src/services",
@@ -348,7 +348,7 @@
     "title": "本地身份提供方",
     "phase": "P0/P1",
     "task": "P0-05",
-    "status": "in_progress",
+    "status": "implemented",
     "directories": [
       "src/domain",
       "src/services",

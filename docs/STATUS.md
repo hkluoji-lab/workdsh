@@ -4,15 +4,15 @@
 
 ## 当前模块版本
 
-版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；当前活动工程模块为治理契约、本地身份、资源授权和审计 **0.1**。`workdsh-bundle@0.1.0-alpha.35` 仍表示现有产品组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
+版本规划已固定为“一个模块一条版本线”，详见 [模块版本规划](MODULE-VERSIONS.md)。技能管理模块 **0.1** 已完成当前默认/本地范围，制品为 `workdsh-plugin-skills@0.1.0-alpha.23`；治理契约、本地身份、资源授权和审计的本地 **0.1** 基线已经完成；当前活动工程模块为工作台与共享 UI **0.1**。`workdsh-bundle@0.1.0-alpha.35` 仍表示现有产品组合版本，不代替各模块版本。`modules.json` 与 `check:plan` 已加入版本线和 package major/minor 一致性检查。
 
 Skill 0.1 提前切片现已正式结项：`development-order.activeSlice` 标为 completed，`packages/plugins/skills` 标为 implemented，P1-03 标为 completed。D03 正式阶段仍等待 D02；到达时只补 ActorContext/access/audit 治理适配与组合验收，不重复开发技能页面和管理闭环。
 
-D01 当前推进 P0-04/P0-05。`workdsh-contracts@0.1.0-alpha.4` 定义服务端解析的 ActorContext、IdentityProfile、Organization、Membership、ResourceOwner、AccessGrant、AuthorizationDecision、SessionOwnerBinding、RuntimeBinding、AuditEvent 及 identity/access/audit 提供方接口，并增加审计排空边界。该包无 Cordis、UI、数据库或传输依赖；架构依据见 ADR-0016。
+D01 已按本地单用户范围完成，当前步骤进入 D02。`workdsh-contracts@0.1.0-alpha.4` 定义服务端解析的 ActorContext、IdentityProfile、Organization、Membership、ResourceOwner、AccessGrant、AuthorizationDecision、SessionOwnerBinding、RuntimeBinding、AuditEvent 及 identity/access/audit 提供方接口，并增加审计排空边界。该包无 Cordis、UI、数据库或传输依赖；架构依据见 ADR-0016。
 
-P0-05 同步推进到 `workdsh-provider-identity-local@0.1.0-alpha.3`。本地 provider 已注册为 Cordis Host Service，通过官方 `ctx.storageDomain` 原子保存主体、个人组织与 owner 成员关系；冷启动保持同一 revision，配置与持久身份冲突时拒绝启动。principal/organization 仍只来自 Host 配置，每次请求生成独立 requestId，输入夹带的伪造身份字段会被忽略。Harness 官方匿名安装 ID 明确只用于遥测关联，未被误用为用户身份。
+P0-05 的本地基线交付为 `workdsh-provider-identity-local@0.1.0-alpha.3`。本地 provider 已注册为 Cordis Host Service，通过官方 `ctx.storageDomain` 原子保存主体、个人组织与 owner 成员关系；冷启动保持同一 revision，配置与持久身份冲突时拒绝启动。principal/organization 仍只来自 Host 配置，每次请求生成独立 requestId，输入夹带的伪造身份字段会被忽略。Harness 官方匿名安装 ID 明确只用于遥测关联，未被误用为用户身份。
 
-`workdsh-plugin-audit@0.1.0-alpha.2` 和 `workdsh-plugin-access@0.1.0-alpha.3` 已建立真实 Cordis Host Service。两者使用官方 Storage Domain 分域持久化；Access 只经 IdentityService 查询成员关系，实行组织隔离、资源 owner、显式 grant/revoke、revision 冲突检测，并在返回授权结果前写入审计。独立 Session owner Domain 与官方工具流水线桥接已生效；新增 `workdshSessionAccess` Host 入口，在调用官方 Session Controller 创建前先保留不可替换的 owner，并在恢复 Agent 前按最新成员关系和 grant 重新授权。个人 Profile 可首次工具调用自动绑定；企业式组合应关闭该回退并只从受控入口创建/恢复。该入口当前是 Host Service，尚未生成并替换外部 Session Remote；文件、其他 Remote 与成员撤权后的在途取消也未接入，因此 D01/P1-09 保持进行中，团队远程入口继续关闭。证据见 [Access 与 Audit 验证](evidence/d01-access-audit.md)。
+`workdsh-plugin-audit@0.1.0-alpha.2` 和 `workdsh-plugin-access@0.1.0-alpha.3` 已建立真实 Cordis Host Service。两者使用官方 Storage Domain 分域持久化；Access 只经 IdentityService 查询成员关系，实行组织隔离、资源 owner、显式 grant/revoke、revision 冲突检测，并在返回授权结果前写入审计。独立 Session owner Domain 与官方工具流水线桥接已生效；新增 `workdshSessionAccess` Host 入口，在调用官方 Session Controller 创建前先保留不可替换的 owner，并在恢复 Agent 前按最新成员关系和 grant 重新授权。个人 Profile 可首次工具调用自动绑定；企业式组合应关闭该回退并只从受控入口创建/恢复。该入口当前是 Host Service；企业外部 Session Remote、文件与其他 Remote 的多人治理、成员撤权后的在途取消、服务器端认证和管理 Web 已集中记录到[企业版架构说明](ENTERPRISE-EDITION.md)，不再阻塞本地 D01。团队远程入口继续关闭。证据见 [Access 与 Audit 验证](evidence/d01-access-audit.md)。
 
 当前根构建、类型检查、32/32 集成测试、2/2 规划测试、计划清单、版本锁定和补丁格式检查均通过。
 
@@ -51,6 +51,15 @@ skills alpha.10 将 `skill-creator` Host 贡献从组合包源码迁回技能插
 skills alpha.9、bundle alpha.21 修正技能库筛选语义：官方目录目前只提供已安装技能及说明，没有办公协同、开发工具、数据分析、内容创作、知识学习等分类元数据，也没有未安装集合，因此页面移除这些虚构分类和无动作的“我安装的”按钮。顶部只保留真实搜索、静态“已安装 N”状态与可执行的“添加技能”菜单。分类将在领域契约提供真实字段与有效集合后再开放。Node 22.23.2 下 typecheck、build、check:plan、463 项版本锁定及完整 Chromium 安装/重连/卸载/重装回归通过；18989 人工预览已升级，实测读取当前用户目录的 15 个技能且不存在上述分类按钮。
 
 18989 预览曾误用项目内空的 `.test-runtime/preview/agents`，导致官方文件提供方只发现 bundle 自带的 `skill-creator`；用户原有技能并未删除，仍位于 `/Users/techflag/.agents/skills`。预览已恢复使用当前用户 Agents home；用户新增 `file-count-by-category` 后，实测技能库显示 15 个。新增 `corepack pnpm preview` 固定该启动方式；自动化探针继续隔离，不能把测试目录当成人工预览目录。
+
+
+## 2026-09-12：本地 D01 收口与企业版后置
+
+D01 的完成范围现明确为本地单用户产品基线：锁定 Harness 官方扩展方式，完成干净安装、官方 Client/Host 组合、默认/本地 Skill 消费与恢复、可信 local identity、资源授权、审计、Session owner/runtime binding 和官方工具 guard。发布版 Typert 对外部 workspace 的生成兼容问题不影响当前采用官方 Connection exact Fetch 的本地功能。
+
+企业 Session Remote、服务器认证、组织成员管理、文件与其他 Remote 的全路径多人授权、撤权后的在途取消、隔离 Worker、管理 Web 和组织能力分发均移入[企业版架构说明](ENTERPRISE-EDITION.md)与 [ToDo](TODO.md)。这些能力不会从计划中消失，也不再被写成当前本地版本的伪完成条件。P0-02—P0-05 和 P1-09 的 `completed` 只表示本地基线完成；企业版必须以 E01—E05 重新立项和验收。
+
+结构化顺序台账已把 D01 标为 completed、D02 标为 in_progress。D02 当前只继续工作台和共享 UI 的本地 `0.1` 收口；不会为了推进当前版本提前开发企业服务端。
 
 ## 当前约束：Harness 官方开发规范
 
@@ -206,7 +215,7 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 
 - 最近完成：DOC-05（R01—R06 设计修订及机器验收映射）；已完成发布依赖安装、bundle build/typecheck。此前完成 DOC-04（逐插件顺序及版本规则落盘）。此前完成 DOC-03（修订 7 项目界面补充）。此前完成 DOC-02。项目已提升为首期独立领域；四份官方文档映射已补齐。此前完成 DOC-01。团队身份、权限、审计和运行隔离已前移到首期设计。
 - 下一步：解决 P0-02 隔离用例的 Remote 元数据生成失败，再接自有 Remote/网络取消；随后验证 Session 内 skill 正文与工具隔离。C01 已完成双 Session 目录及发布包正文接口测试，完整绑定/权限仍待验，不跳到 D02。
-- 顺序约束：P1-09 是所有业务模块公开前置；P1-08 必须在 P1-01 至 P1-07、P1-09、P1-10、P1-11 及全部必测项通过后完成。
+- 后续修订：P1-09 本地治理基线是本地业务模块前置；P1-10 已移入后期企业版，不再作为当前本地发布门槛。
 - 环境：默认 shell Node v21 不符合目标；本轮使用已安装 Node v22.23.2 与 pnpm 10.34.5 验证。执行前须切换合规 Node。
 - 禁止推断：Git 初始 main 尚无提交；没有自动提交或发布。
 
@@ -223,10 +232,10 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 | DOC-05 | 修复 R01—R06 设计审查 | 基础 | completed |
 | DOC-06 | DeepSeek Harness 官方文档全量能力审查 | D01 | completed |
 | P0-01 | 环境与发布依赖锁定 | P0 | completed |
-| P0-02 | bundle/Host/Client 安装链探针 | P0 | in_progress |
-| P0-03 | 专家预设、技能与恢复探针 | P0 | in_progress |
-| P0-04 | 契约与兼容门槛 | P0 | in_progress |
-| P0-05 | 团队身份与全路径隔离探针 | P0 | in_progress |
+| P0-02 | bundle/Host/Client 安装链探针 | P0 | completed |
+| P0-03 | 专家预设、技能与恢复探针 | P0 | completed |
+| P0-04 | 契约与兼容门槛 | P0 | completed |
+| P0-05 | 团队身份与全路径隔离探针 | P0 | completed |
 | P1-01 | 契约与工作台 | P1 | in_progress |
 | P1-02 | 专家管理及 expert-manager | P1 | todo |
 | P1-03 | 技能管理及 skill-creator | P1 | completed |
@@ -235,7 +244,7 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 | P1-06 | 资料库与成果 | P1 | todo |
 | P1-07 | 跨插件业务执行 | P1 | todo |
 | P1-08 | P1 发布验收 | P1 | todo |
-| P1-09 | 团队基础实现 | P1 | in_progress |
+| P1-09 | 团队基础实现 | P1 | completed |
 | P1-10 | 企业管理后台基础入口 | P1 | todo |
 | P1-11 | 项目配置、待办、任务、资产与交接 | P1 | todo |
 | P2-01 | 专家团模型及执行映射 | P2 | todo |
