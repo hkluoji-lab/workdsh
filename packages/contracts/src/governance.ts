@@ -34,6 +34,19 @@ export interface Membership {
   readonly revision: string;
 }
 
+export interface IdentityProfile {
+  readonly principalId: string;
+  readonly principalKind: PrincipalKind;
+  readonly organization: Organization;
+  readonly membership: Membership;
+  readonly resolvedBy: string;
+}
+
+export interface IdentityResolutionContext {
+  readonly sessionId?: string;
+  readonly runId?: string;
+}
+
 export interface ResourceRef {
   readonly domain: string;
   readonly id: string;
@@ -98,9 +111,14 @@ export interface AuditEvent {
 }
 
 /** Evidence is transport/provider specific and must be resolved on the Host. */
-export interface IdentityProvider<Evidence = unknown> {
+export interface IdentityProvider<Evidence = IdentityResolutionContext | undefined> {
   readonly id: string;
   resolve(evidence: Evidence, signal?: AbortSignal): Promise<ActorContext>;
+}
+
+export interface IdentityService<Evidence = IdentityResolutionContext | undefined> extends IdentityProvider<Evidence> {
+  /** Trusted profile loaded by the Host. It never accepts client-selected identity. */
+  profile(): IdentityProfile;
 }
 
 export interface AccessService {

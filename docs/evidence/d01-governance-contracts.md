@@ -17,8 +17,11 @@ Harness 的 User、Permission Preset、Approval、Sandbox、Credentials、Sessio
 - sameOrganization 只做显式边界比较，不隐式授予权限。
 - `workdsh-provider-identity-local` 从 Host 固定配置解析唯一主体和个人组织；输入对象夹带的身份字段不会覆盖配置。
 - 每次解析生成独立 requestId，返回只读 ActorContext，并在已取消信号下拒绝解析。
+- Cordis class plugin 注入官方 `storageDomain`，在 `Service.init` 打开自有领域，并由 effect 关闭句柄。
+- 主体、个人组织和 owner 成员关系作为同一 global 记录原子提交；真实 JSON provider 冷重启后快照和 revision 保持一致。
+- 同一介质使用冲突的 Host 主体配置会以 `identity-local/config-conflict` 拒绝启动，不会静默换人。
 - 未使用 Harness 匿名安装 ID 充当用户；官方包说明该 ID 只用于安装范围遥测/反馈/请求关联，不能识别用户。
 
 ## 尚未验证
 
-可信本地 IdentityProvider、Membership 存储、授权决策、审计追加、两主体/两组织负例、撤权、Session/文件/工具入口绑定及团队 runtime 失败关闭均未实现。完成这些证据前 P0-04/P0-05 和 D01 保持进行中，团队远程入口保持关闭。
+授权决策、审计追加、两主体/两组织负例、撤权、Session/文件/工具入口绑定及团队 runtime 失败关闭尚未实现。完成这些证据前 P0-04/P0-05 和 D01 保持进行中，团队远程入口保持关闭。
