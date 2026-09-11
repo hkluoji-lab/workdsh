@@ -94,6 +94,22 @@ export interface RuntimeBinding {
   readonly authorizationRevision: string;
 }
 
+/** Durable owner record for one Harness Session. Runtime instances are derived from it. */
+export interface SessionOwnerBinding {
+  readonly sessionId: string;
+  readonly organizationId: string;
+  readonly ownerPrincipalId: string;
+  readonly workspaceId?: string;
+  readonly revision: string;
+}
+
+export interface RuntimeBindingRequest {
+  readonly sessionId: string;
+  readonly runtimeId: string;
+  readonly isolation: RuntimeIsolation;
+  readonly workspaceId?: string;
+}
+
 export interface AuditEvent {
   readonly id: string;
   readonly occurredAt: string;
@@ -127,8 +143,18 @@ export interface AccessService {
   authorize(request: AuthorizationRequest, signal?: AbortSignal): Promise<AuthorizationDecision>;
 }
 
+export interface RuntimeBindingService {
+  /** Bind a newly created Session to its Host-resolved owner. Existing ownership cannot be replaced. */
+  bindSession(actor: ActorContext, request: Pick<RuntimeBindingRequest, 'sessionId' | 'workspaceId'>, signal?: AbortSignal): Promise<SessionOwnerBinding>;
+  sessionOwner(sessionId: string): SessionOwnerBinding | undefined;
+  /** Re-resolve current authorization for a live or resumed Session runtime. */
+  resolveRuntime(actor: ActorContext, request: RuntimeBindingRequest, signal?: AbortSignal): Promise<RuntimeBinding>;
+}
+
 export interface AuditService {
   append(event: AuditEvent, signal?: AbortSignal): Promise<void>;
+  /** Wait until every append accepted before this call has settled. */
+  flush(): Promise<void>;
 }
 
 export class GovernanceContractError extends Error {

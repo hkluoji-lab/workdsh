@@ -93,7 +93,7 @@ DOC-06 官方文档审查已完成 127/127；C01 的目录、正文、真实 Age
 
 当前已实施 `workdsh-contracts` 0.1，固化 ActorContext、Organization、Membership、ResourceOwner、AccessGrant、RuntimeBinding、AuditEvent 及 identity/access/audit 服务边界，见 [ADR-0016](adr/0016-governance-contracts-first.md)。该包无 UI、数据库和传输，不复制 Harness User、Permission Preset、Approval、Sandbox 或 Session scope。
 
-可信本地 IdentityProvider、Access 和 Audit 的 Host 基础服务已经建立，并以两主体、两组织、管理员访问他人私有资源、显式 grant/revoke、冲突和冷重启负例验证。下一步将同一 ActorContext/access/audit guard 接入 Session、文件、工具、Remote 与取消结算入口。团队远程入口继续关闭；企业 SSO、服务端与管理 Web 保留到后期阶段。全路径证据完成后才关闭 D01、进入 D02 基础插件和工作台最小版本。
+可信本地 IdentityProvider、Access 和 Audit 的 Host 基础服务已经建立，并以两主体、两组织、管理员访问他人私有资源、显式 grant/revoke、冲突和冷重启负例验证。官方工具流水线已通过 Session owner/runtime binding 接入同一 ActorContext/access/audit guard。下一步接 Session Controller 创建/恢复、文件、Remote 与成员撤权后的在途取消。团队远程入口继续关闭；企业 SSO、服务端与管理 Web 保留到后期阶段。全路径证据完成后才关闭 D01、进入 D02 基础插件和工作台最小版本。
 
 仍保留的运行差异探针按 [审查收尾清单](research/harness-review-closure.md) 独立执行：Plan 提交时机、Shell/PTY/Code runtime 停稳、feedback/inspect/lookup 主体限制，以及 Subagent/Goal 恢复。它们不能因 Skill 0.1 完成而删除，也不要求为验证创建假业务 UI。
 

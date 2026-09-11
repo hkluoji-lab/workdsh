@@ -1,6 +1,6 @@
 # D01 / P0-04 Access 与 Audit 验证
 
-日期：2026-09-12。状态：Host 基础服务通过，全路径接入待完成。
+日期：2026-09-12。状态：Host 基础服务及官方工具流水线通过，全路径接入待完成。
 
 ## 官方复用
 
@@ -16,6 +16,8 @@
 - 授权 decision 的 authorizationRevision 由成员修订与相关 grant 修订共同计算。
 - allow 和 deny 均在返回前持久追加 AuditEvent；审计拒绝 secret、token、password、credential 和 prompt 等敏感引用键。
 - Access 与 Audit 属于不同 Storage Domain，当前后端不提供跨 Domain 事务。grant/revoke 先记录 outcome=unknown 的操作意图，写入授权事实后再记录 succeeded，避免把部分成功伪装成原子成功。
+- Session owner 使用独立 `workdsh_runtime_binding` Domain 持久化，已绑定 owner 不能被另一主体替换；当前 RuntimeBinding 在每次执行时根据最新 membership 与 grant 重新生成。
+- 工具执行按官方扩展点接入：`tools/pre-execute` 完成异步身份解析和授权，`tools/result` 观察不可变最终结果，`session/flush` 与 Cordis disposer 等待排队审计落盘。
 
 ## 验证
 
@@ -24,7 +26,10 @@
 - 已验证 owner 管理允许、admin 私有读取拒绝、跨组织拒绝、显式 read grant 生效、未授予 edit 拒绝、revision 冲突、撤权后拒绝。
 - 审计覆盖授权允许/拒绝、grant/revoke 意图及成功结果；重复事件 ID 和敏感引用被拒绝。
 - 冷启动新 Host 后，grant 与审计均从官方 Storage Domain 恢复，成员授权结果保持一致。
+- 个人 Profile 的首次官方 Agent 工具调用可以自动绑定 Session；未授权成员的工具正文不会运行，显式取得 Session use grant 后可以运行。
+- 工具成功、工具抛错和策略拒绝分别形成 succeeded、failed 和 denied 审计；最终结果审计携带本次 authorizationRevision。
+- 关闭个人自动绑定时，未在受信入口登记 owner 的 Session 失败关闭；显式绑定经冷重启保持，替换 owner 被拒绝。
 
 ## 尚未完成
 
-该证据只覆盖 Host 服务直接调用。Session 创建与恢复、文件/资产服务、Agent 工具、Typert Remote/Connection、订阅和运行取消尚未统一绑定 guard 与 audit；企业身份、服务器端管理 Web、组织目录和审计查询 UI 属于后期范围。D01、P0-04、P0-05 与 P1-09 因此保持进行中。
+该证据覆盖 Host 服务直接调用及官方工具流水线，但尚未让 Session Controller 的创建/恢复入口显式登记 owner，也未接入文件/资产服务、Typert Remote/Connection、订阅和成员撤权后的在途取消。企业身份、服务器端管理 Web、组织目录和审计查询 UI 属于后期范围。D01、P0-04、P0-05 与 P1-09 因此保持进行中。

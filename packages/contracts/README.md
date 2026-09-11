@@ -1,6 +1,6 @@
 # 领域公开契约
 
-状态：**0.1 契约实现中**。`0.1.0-alpha.3` 提供身份 Profile/Service、成员查询、组织、资源归属、授权、运行绑定和审计的纯 TypeScript 契约及受信边界校验。
+状态：**0.1 契约实现中**。`0.1.0-alpha.4` 提供身份 Profile/Service、成员查询、组织、资源归属、授权、Session owner、运行绑定和审计的纯 TypeScript 契约及受信边界校验。
 
 - 实现阶段：P0
 - 主任务：P0-04，详见 [开发计划](../../docs/PLAN.md)
@@ -15,4 +15,4 @@
 
 ## 验收与下一步
 
-本地 identity provider 已实现服务端主体解析与官方 Storage Domain 冷启动；下一步由 access 和 audit 分别消费本包接口。完成对应 PLAN 任务及 [验收矩阵](../../docs/ACCEPTANCE.md) 场景后才完成 P0-04/P0-05。企业 Skill 架构见 [ADR 0015](../../docs/adr/0015-skill-control-plane-and-runtime-projection.md)。
+本地 identity、access 和 audit 已消费本包接口，并完成官方工具流水线的首个治理接入；下一步接 Session Controller、文件和 Remote。完成对应 PLAN 任务及 [验收矩阵](../../docs/ACCEPTANCE.md) 场景后才完成 P0-04/P0-05。企业 Skill 架构见 [ADR 0015](../../docs/adr/0015-skill-control-plane-and-runtime-projection.md)。

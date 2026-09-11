@@ -63,6 +63,7 @@ export class AuditJournal extends Service implements AuditService {
     const domain = await this.ctx.storageDomain.open(auditDomainSpec);
     this.ctx.effect(() => () => domain.close(), 'workdshAudit.domainClose');
     this.events = domain.table('events');
+    this.ctx.effect(() => async () => this.flush(), 'workdshAudit.flush');
   }
 
   append(event: AuditEvent, signal?: AbortSignal): Promise<void> {
@@ -81,6 +82,10 @@ export class AuditJournal extends Service implements AuditService {
     return Object.freeze([...this.requireEvents().entries()]
       .map(([, event]) => event)
       .sort((left, right) => left.occurredAt.localeCompare(right.occurredAt) || left.id.localeCompare(right.id)));
+  }
+
+  async flush(): Promise<void> {
+    await this.appendTail;
   }
 
   private requireEvents(): KvTable<string, AuditEvent> {

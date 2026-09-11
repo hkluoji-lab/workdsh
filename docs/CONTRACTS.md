@@ -6,6 +6,8 @@
 
 ActorContext 至少表达 server-resolved principalId、organizationId、requestId，Agent 路径另带 sessionId/runId 和发起主体绑定。身份来自本地可信提供方或经验证的远程身份，不接受模型自填身份。
 
+SessionOwnerBinding 是 Session 的持久业务 owner 事实，创建后不能由另一主体覆盖；RuntimeBinding 是当前运行实例基于该 owner、当前 membership 和 access revision 重新解析出的短期结果。个人本地 Profile 可由 Host 在首次官方 Agent 工具调用时建立 owner；企业组合必须在受信 Session 创建入口显式绑定，不能把浏览器传入的 sessionId/actor 当作 owner 证明。
+
 业务对象保存组织、所有者、作用域（personal/organization/project）、修订与创建者。授权由 access 服务判断 action 与 resource，跨插件保留调用主体，禁止降级为无身份的内部调用。
 
 新增契约：identity（认证与成员关系）、access（资源授权）、audit（追加与受限查询）、runtime（执行归属与隔离能力）、model-policy（可用模型与策略）、usage（使用事实与聚合）。本地模式同样实现身份/授权路径。

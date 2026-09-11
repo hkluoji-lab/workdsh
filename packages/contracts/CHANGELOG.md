@@ -1,3 +1,8 @@
+# 0.1.0-alpha.4
+
+- 增加持久 `SessionOwnerBinding`、运行期 `RuntimeBindingRequest` 与 `RuntimeBindingService`，让 Session 恢复和工具执行使用同一 Host 授权边界。
+- `AuditService.flush()` 明确持久排空契约，供 Session flush 和插件卸载等待最终审计。
+
 # 0.1.0-alpha.3
 
 - `IdentityService` 增加统一成员资格查询，Access 不读取具体身份 Provider 的内部存储。

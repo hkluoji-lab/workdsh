@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Context, Service } from '@deepseek-ai/cordis';
 import { defineDomain, domainTable, type KvTable } from '@deepseek-ai/dsh-storage-domain';
+import type {} from '@deepseek-ai/dsh-session';
+import type { PreToolDecision, ToolExecution, ToolExecutionResult, ToolExecutionToken } from '@deepseek-ai/dsh-tools';
 import { z } from 'zod';
 import {
   assertActorContext,
@@ -17,6 +19,10 @@ import {
   type IdentityService,
   type ResourceOwner,
   type ResourceRef,
+  type RuntimeBinding,
+  type RuntimeBindingRequest,
+  type RuntimeBindingService,
+  type SessionOwnerBinding,
 } from 'workdsh-contracts';
 
 const bounded = z.string().min(1).max(256).refine((value) => !/[\u0000-\u001f]/.test(value));
@@ -30,6 +36,14 @@ const accessGrantSchema: z.ZodType<AccessGrant> = z.object({
   revision: bounded,
 });
 
+const sessionOwnerSchema: z.ZodType<SessionOwnerBinding> = z.object({
+  sessionId: bounded,
+  organizationId: bounded,
+  ownerPrincipalId: bounded,
+  workspaceId: bounded.optional(),
+  revision: bounded,
+});
+
 export const accessDomainSpec = defineDomain({
   name: 'workdsh_access',
   version: 1,
@@ -37,11 +51,19 @@ export const accessDomainSpec = defineDomain({
   tables: { grants: domainTable<string, AccessGrant>(accessGrantSchema) },
 });
 
+export const runtimeBindingDomainSpec = defineDomain({
+  name: 'workdsh_runtime_binding',
+  version: 1,
+  layout: 'per-record',
+  tables: { sessions: domainTable<string, SessionOwnerBinding>(sessionOwnerSchema) },
+});
+
 declare module '@deepseek-ai/cordis' {
   interface Context {
     workdshIdentity: IdentityService;
     workdshAudit: AuditService;
     workdshAccess: AccessManager;
+    workdshToolAccess: ToolAccessBridge;
   }
 }
 
@@ -73,9 +95,10 @@ function authorizationRevision(membershipRevision: string | undefined, grants: r
   return hash.digest('hex');
 }
 
-export class AccessManager extends Service implements AccessService {
+export class AccessManager extends Service implements AccessService, RuntimeBindingService {
   static inject = ['storageDomain', 'workdshIdentity', 'workdshAudit'];
   private grants?: KvTable<string, AccessGrant>;
+  private sessionOwners?: KvTable<string, SessionOwnerBinding>;
   private mutationTail: Promise<void> = Promise.resolve();
 
   constructor(ctx: Context) {
@@ -86,6 +109,97 @@ export class AccessManager extends Service implements AccessService {
     const domain = await this.ctx.storageDomain.open(accessDomainSpec);
     this.ctx.effect(() => () => domain.close(), 'workdshAccess.domainClose');
     this.grants = domain.table('grants');
+    const runtimeDomain = await this.ctx.storageDomain.open(runtimeBindingDomainSpec);
+    this.ctx.effect(() => () => runtimeDomain.close(), 'workdshAccess.runtimeDomainClose');
+    this.sessionOwners = runtimeDomain.table('sessions');
+  }
+
+  bindSession(
+    actor: ActorContext,
+    request: Pick<RuntimeBindingRequest, 'sessionId' | 'workspaceId'>,
+    signal?: AbortSignal,
+  ): Promise<SessionOwnerBinding> {
+    return this.enqueueMutation(async () => {
+      signal?.throwIfAborted();
+      assertActorContext(actor);
+      validateRuntimeRequest({ ...request, runtimeId: 'binding', isolation: 'local-trusted' });
+      const membership = this.ctx.workdshIdentity.membership(actor.organizationId, actor.principalId);
+      if (!membership || membership.state !== 'active') {
+        throw new GovernanceContractError('access/inactive-membership', 'Session owner is not an active member.');
+      }
+      const sessions = this.requireSessionOwners();
+      const current = sessions.get(request.sessionId);
+      if (current) {
+        if (current.organizationId !== actor.organizationId
+          || current.ownerPrincipalId !== actor.principalId
+          || current.workspaceId !== request.workspaceId) {
+          throw new GovernanceContractError('access/session-owner-conflict', 'Session ownership is already bound.');
+        }
+        return current;
+      }
+      const binding = Object.freeze({
+        sessionId: request.sessionId,
+        organizationId: actor.organizationId,
+        ownerPrincipalId: actor.principalId,
+        ...(request.workspaceId ? { workspaceId: request.workspaceId } : {}),
+        revision: `session-owner-${randomUUID()}`,
+      });
+      const target = sessionResource(request.sessionId);
+      const operationId = randomUUID();
+      await this.audit(actor, 'access.session-bind', target, 'unknown', 'access/session-bind-started', { operationId });
+      await sessions.put(request.sessionId, binding);
+      await this.audit(actor, 'access.session-bind', target, 'succeeded', 'access/session-bind-succeeded', {
+        operationId,
+        bindingRevision: binding.revision,
+      });
+      return binding;
+    });
+  }
+
+  sessionOwner(sessionId: string): SessionOwnerBinding | undefined {
+    if (!bounded.safeParse(sessionId).success) {
+      throw new GovernanceContractError('access/invalid-session', 'Session identity is invalid.');
+    }
+    return this.requireSessionOwners().get(sessionId);
+  }
+
+  async resolveRuntime(actor: ActorContext, request: RuntimeBindingRequest, signal?: AbortSignal): Promise<RuntimeBinding> {
+    signal?.throwIfAborted();
+    assertActorContext(actor);
+    validateRuntimeRequest(request);
+    const ownerBinding = this.sessionOwner(request.sessionId);
+    const target = sessionResource(request.sessionId);
+    if (!ownerBinding) {
+      await this.audit(actor, 'access.runtime-resolve', target, 'denied', 'access/runtime-unbound', { runtimeId: request.runtimeId });
+      throw new GovernanceContractError('access/runtime-unbound', 'Session has no trusted owner binding.');
+    }
+    if (request.workspaceId !== undefined && request.workspaceId !== ownerBinding.workspaceId) {
+      await this.audit(actor, 'access.runtime-resolve', target, 'denied', 'access/workspace-mismatch', { runtimeId: request.runtimeId });
+      throw new GovernanceContractError('access/workspace-mismatch', 'Runtime workspace does not match the Session binding.');
+    }
+    const decision = await this.authorize({
+      actor,
+      action: 'use',
+      resource: target,
+      owner: {
+        organizationId: ownerBinding.organizationId,
+        ownerPrincipalId: ownerBinding.ownerPrincipalId,
+        scope: 'personal',
+      },
+    }, signal);
+    if (decision.effect !== 'allow') {
+      throw new GovernanceContractError(decision.code, 'Session runtime access was denied.');
+    }
+    return Object.freeze({
+      sessionId: request.sessionId,
+      organizationId: actor.organizationId,
+      principalId: actor.principalId,
+      requestId: actor.requestId,
+      ...(ownerBinding.workspaceId ? { workspaceId: ownerBinding.workspaceId } : {}),
+      runtimeId: request.runtimeId,
+      isolation: request.isolation,
+      authorizationRevision: decision.authorizationRevision,
+    });
   }
 
   async authorize(request: AuthorizationRequest, signal?: AbortSignal): Promise<AuthorizationDecision> {
@@ -218,10 +332,146 @@ export class AccessManager extends Service implements AccessService {
     return this.grants;
   }
 
+  private requireSessionOwners(): KvTable<string, SessionOwnerBinding> {
+    if (!this.sessionOwners) throw new GovernanceContractError('access/not-ready', 'Runtime binding registry is not ready.');
+    return this.sessionOwners;
+  }
+
   private enqueueMutation<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.mutationTail.then(operation);
     this.mutationTail = result.then(() => undefined, () => undefined);
     return result;
+  }
+}
+
+function validateRuntimeRequest(request: RuntimeBindingRequest): void {
+  if (!bounded.safeParse(request.sessionId).success
+    || !bounded.safeParse(request.runtimeId).success
+    || (request.workspaceId !== undefined && !bounded.safeParse(request.workspaceId).success)
+    || !['local-trusted', 'process', 'container', 'unavailable'].includes(request.isolation)) {
+    throw new GovernanceContractError('access/invalid-runtime', 'Runtime binding request is invalid.');
+  }
+}
+
+function sessionResource(sessionId: string): ResourceRef {
+  return Object.freeze({ domain: 'session', id: sessionId });
+}
+
+function safeAuditReference(value: string): string {
+  return value.length <= 1024 && !/[\u0000-\u001f]/.test(value)
+    ? value
+    : `sha256:${createHash('sha256').update(value).digest('hex')}`;
+}
+
+interface ToolAuthorizationState {
+  readonly actor: ActorContext;
+  readonly binding: RuntimeBinding;
+}
+
+export interface ToolAccessBridgeConfig {
+  readonly runtimeId?: string;
+  readonly isolation?: RuntimeBindingRequest['isolation'];
+  /** Personal profiles may bind an unowned Session on its first official Agent tool call. */
+  readonly autoBindPersonalSessions?: boolean;
+}
+
+/** Binds the official tool pipeline to Host identity, Session ownership, Access and Audit. */
+export class ToolAccessBridge extends Service {
+  static inject = ['tools', 'workdshIdentity', 'workdshAccess', 'workdshAudit'];
+  private readonly runtimeId: string;
+  private readonly isolation: RuntimeBindingRequest['isolation'];
+  private readonly autoBindPersonalSessions: boolean;
+  private readonly authorized = new Map<ToolExecutionToken, ToolAuthorizationState>();
+  private resultAuditTail: Promise<void> = Promise.resolve();
+
+  constructor(ctx: Context, config: ToolAccessBridgeConfig = {}) {
+    super(ctx, 'workdshToolAccess');
+    this.runtimeId = config.runtimeId ?? `workdsh-runtime-${randomUUID()}`;
+    this.isolation = config.isolation ?? 'local-trusted';
+    this.autoBindPersonalSessions = config.autoBindPersonalSessions ?? true;
+    ctx.on('tools/pre-execute', async (exec, next) => this.authorizeTool(exec, next));
+    ctx.on('tools/result', (exec, result) => {
+      this.observeResult(exec, result);
+      return undefined;
+    });
+    ctx.on('session/flush', async () => this.flush());
+    ctx.effect(() => async () => this.flush(), 'workdshToolAccess.flush');
+  }
+
+  async flush(): Promise<void> {
+    await this.resultAuditTail;
+    await this.ctx.workdshAudit.flush();
+  }
+
+  private async authorizeTool(exec: ToolExecution, next: () => Promise<PreToolDecision>): Promise<PreToolDecision> {
+    if (!exec.agent) return next();
+    const sessionId = String(exec.agent.id);
+    let actor: ActorContext | undefined;
+    try {
+      actor = await this.ctx.workdshIdentity.resolve({ sessionId }, exec.signal);
+      if (!this.ctx.workdshAccess.sessionOwner(sessionId)) {
+        const profile = this.ctx.workdshIdentity.profile();
+        if (!this.autoBindPersonalSessions
+          || profile.organization.kind !== 'personal'
+          || profile.principalId !== actor.principalId
+          || profile.organization.id !== actor.organizationId) {
+          throw new GovernanceContractError('access/runtime-unbound', 'Session has no trusted owner binding.');
+        }
+        await this.ctx.workdshAccess.bindSession(actor, { sessionId }, exec.signal);
+      }
+      const binding = await this.ctx.workdshAccess.resolveRuntime(actor, {
+        sessionId,
+        runtimeId: this.runtimeId,
+        isolation: this.isolation,
+      }, exec.signal);
+      this.authorized.set(exec.token, { actor, binding });
+    } catch (error) {
+      const code = error instanceof GovernanceContractError ? error.code : 'access/tool-policy-failed';
+      if (actor) await this.auditTool(actor, exec, 'denied', code);
+      return { kind: 'deny', reason: `WorkDSH denied this tool call (${code}).` };
+    }
+    return next();
+  }
+
+  private observeResult(exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>): void {
+    const state = this.authorized.get(exec.token);
+    this.authorized.delete(exec.token);
+    if (!state) return;
+    const cancelled = result.isError && /ABORTED/.test(result.error.info?.code ?? '');
+    const append = () => this.auditTool(
+      state.actor,
+      exec,
+      cancelled ? 'cancelled' : result.isError ? 'failed' : 'succeeded',
+      cancelled ? 'tool/cancelled' : result.isError ? 'tool/failed' : 'tool/succeeded',
+      state.binding.authorizationRevision,
+    );
+    this.resultAuditTail = this.resultAuditTail.then(append, append);
+  }
+
+  private async auditTool(
+    actor: ActorContext,
+    exec: Readonly<ToolExecution>,
+    outcome: AuditEvent['outcome'],
+    code: string,
+    authorizationRevision?: string,
+  ): Promise<void> {
+    await this.ctx.workdshAudit.append({
+      id: randomUUID(),
+      occurredAt: new Date().toISOString(),
+      requestId: actor.requestId,
+      principalId: actor.principalId,
+      organizationId: actor.organizationId,
+      action: 'tool.execute',
+      target: sessionResource(String(exec.agent?.id ?? 'host')),
+      outcome,
+      code,
+      ...(actor.sessionId ? { sessionId: actor.sessionId } : {}),
+      references: {
+        toolName: safeAuditReference(exec.name),
+        callId: safeAuditReference(String(exec.callId)),
+        ...(authorizationRevision ? { authorizationRevision } : {}),
+      },
+    });
   }
 }
 

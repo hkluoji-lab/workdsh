@@ -10,7 +10,7 @@ import * as StorageDomain from '@deepseek-ai/dsh-storage-domain';
 import { AccessManager } from '../../packages/plugins/access/dist/index.js';
 import { AuditJournal } from '../../packages/plugins/audit/dist/index.js';
 
-const memberships = [
+const membershipDirectory = new Map([
   ['organization-a', 'owner-a', 'owner'],
   ['organization-a', 'admin-a', 'admin'],
   ['organization-a', 'member-a', 'member'],
@@ -18,13 +18,13 @@ const memberships = [
 ].map(([organizationId, principalId, role]) => [
   `${organizationId}:${principalId}`,
   { organizationId, principalId, principalKind: 'human', role, state: 'active', revision: `membership-${principalId}-1` },
-]);
+]));
 
 const identity = {
   id: 'test-identity',
   async resolve() { throw new Error('not used by this Host-side policy test'); },
   profile() { throw new Error('not used by this Host-side policy test'); },
-  membership(organizationId, principalId) { return new Map(memberships).get(`${organizationId}:${principalId}`); },
+  membership(organizationId, principalId) { return membershipDirectory.get(`${organizationId}:${principalId}`); },
 };
 
 const resource = { domain: 'skills', id: 'skill-private-a', revision: 'resource-1' };
@@ -80,6 +80,15 @@ test('access denies cross-organization and admin private reads, grants explicitl
     assert.equal(granted.effect, 'allow');
     assert.equal(granted.code, 'access/explicit-grant');
     assert.deepEqual(granted.grantIds, ['grant-member-a-read']);
+    const activeMembership = membershipDirectory.get('organization-a:member-a');
+    membershipDirectory.set('organization-a:member-a', { ...activeMembership, state: 'suspended', revision: 'membership-member-a-2' });
+    try {
+      const suspended = await ctx.workdshAccess.authorize({ actor: actor('member-a'), action: 'read', resource, owner });
+      assert.equal(suspended.effect, 'deny');
+      assert.equal(suspended.code, 'access/inactive-membership');
+    } finally {
+      membershipDirectory.set('organization-a:member-a', activeMembership);
+    }
     assert.equal((await ctx.workdshAccess.authorize({ actor: actor('member-a'), action: 'edit', resource, owner })).effect, 'deny');
     await assert.rejects(
       ctx.workdshAccess.putGrant(actor('owner-a'), owner, { ...grant, revision: 'grant-revision-2' }),
