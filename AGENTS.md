@@ -30,6 +30,8 @@ WorkDSH 是基于 DeepSeek Harness 公开插件接口的 Web 工作平台，参�
 
 涉及 D04 专家或 D11 专家团时，先读 [专家开发交接包](docs/design/experts/README.md)，按 PRD、UX、HLD、契约草案和验收矩阵实施。拟新增接口不能当作现有 API；必须先完成 G01—G06 的官方公开面验证，并将实际证据回填。单专家 D04 与专家团 D11 分开验收，企业服务器/管理 Web 继续后置。一个专家插件管理多个专家对象；不新增每专家 npm 包或第二套执行器。详情弹框复用公共 UI，原生任务框保留 /、@、附件、模型与权限。完成 EP-07 后按已定义范围收口，不自行无限扩展下一步。
 
+产品语义以 PRD 1.1 为准：Skill 是能力，专家是能力加领域经验/专业判断/完整交付职责，专家团是多专家加 SOP。使用详情与编辑分开；专家选择真实技能对象，不能以手填名称或技能数量装饰代替配备能力。验收包含实际业务成果与必要追问，不只检查 prompt/按钮/工具成功。D04 执行 [有限开发计划](docs/design/experts/DEVELOPMENT-PLAN.md) A～E、AT-01～27；D11 后续执行 TM-01～04、AT-T01～T07，首版必须有 SOP，不另造 Agent loop 或通用流程引擎，不自动起专家 0.2。
+
 ## Harness 优先复用硬约束
 
 - 所有 Harness 集成开发必须先查阅 `docs/deepseek-harness-docs/` 中与锁定版本相符的官方说明，并按 [Harness 官方开发规范](docs/HARNESS-OFFICIAL-DEVELOPMENT.md) 完成扩展面、依赖、生命周期和验收核对。官网用于发现和交叉核对；发布包 exports/types 与锁定版本实测决定可用接口。

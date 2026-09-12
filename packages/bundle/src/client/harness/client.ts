@@ -12,7 +12,7 @@ export const name = 'workdsh-client';
 export const inject = ['slots', 'layout', 'remote', 'remote.pluginInventory', 'theme'];
 
 const productViews: Readonly<Record<string, string>> = {
-  skills: 'workdsh-skills', assistant: 'workdsh-assistant', projects: 'workdsh-projects',
+  experts: 'workdsh-experts', skills: 'workdsh-skills', assistant: 'workdsh-assistant', projects: 'workdsh-projects',
   library: 'workdsh-library', automation: 'workdsh-automation', more: 'workdsh-more',
 };
 

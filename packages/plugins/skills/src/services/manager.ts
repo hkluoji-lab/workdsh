@@ -8,6 +8,7 @@ import { parse } from 'yaml';
 import type { ManagedSkillDetail, ManagedSkillResource, ManagedSkillSummary, SkillBatchRequest, SkillBatchResult, SkillDependency, SkillDependencyImpact, SkillDiagnostic, SkillDraft, SkillDraftWriteRequest, SkillImportInspection, SkillImportRequest, SkillMutationReceipt, SkillResourceWriteRequest, SkillValidationResult, SkillWriteRequest, TrashedSkillSummary } from '../shared.js';
 import { SkillImportStaging } from './import-staging.js';
 import type { SkillManagementService, SkillDependencyInspector } from '../shared.js';
+import type { RetainedSkillRevision, SkillConsumerRef, SkillRevisionCheck, SkillRevisionRef, SkillRevisionStatus } from 'workdsh-contracts';
 
 declare module '@deepseek-ai/cordis' {
   interface Context { workdshSkills: SkillManagementService; }
@@ -22,6 +23,34 @@ const draftIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-
 interface DisabledOrigin { readonly name: string; readonly originalEntry: string; readonly directoryBundle: boolean; }
 interface TrashReceipt extends TrashedSkillSummary { readonly originalEntry: string; readonly trashedEntry: string; readonly directoryBundle: boolean; }
 export type { SkillDependencyInspector } from '../shared.js';
+
+interface RetentionManifest {
+  readonly ref: SkillRevisionRef;
+  readonly contentDigest: string;
+  readonly files: readonly { readonly path: string; readonly byteLength: number; readonly sha256: string }[];
+  readonly retainedBy: readonly SkillConsumerRef[];
+  readonly createdAt: string;
+}
+
+function addConsumer(list: readonly SkillConsumerRef[], consumer: SkillConsumerRef): SkillConsumerRef[] {
+  const filtered = list.filter((entry) => !(entry.domain === consumer.domain && entry.id === consumer.id));
+  return [...filtered, consumer];
+}
+
+/** Frozen-content fingerprint over SKILL.md + resources, plus per-file manifest stats. */
+async function snapshotFiles(directory: string, signal?: AbortSignal): Promise<{ files: { path: string; byteLength: number; sha256: string }[]; contentDigest: string }> {
+  const resources = await resourceFiles(directory);
+  const paths = ['SKILL.md', ...resources].sort();
+  const hash = createHash('sha256');
+  const files: { path: string; byteLength: number; sha256: string }[] = [];
+  for (const path of paths) {
+    signal?.throwIfAborted();
+    const bytes = await readFile(join(directory, path));
+    files.push({ path, byteLength: bytes.byteLength, sha256: createHash('sha256').update(bytes).digest('hex') });
+    hash.update(path); hash.update('\0'); hash.update(bytes); hash.update('\0');
+  }
+  return { files, contentDigest: hash.digest('hex') };
+}
 
 function inside(root: string, target: string): boolean {
   const part = relative(resolve(root), resolve(target));
@@ -671,5 +700,101 @@ export class SkillManager extends Service implements SkillManagementService {
     if (!handle) throw new Error('skill/busy');
     try { return await operation(); }
     finally { await handle.close(); await this.removeJson(lockPath); }
+  }
+
+  // ── Cross-domain revision capability (D04 dependency adaptation) ──────────
+  // Lets an expert freeze an explicit Skill dependency into an immutable snapshot
+  // mounted through the official provider, without the consumer walking this
+  // plugin's private directories. Frozen content does not freeze source state:
+  // checkRevision still reports a disabled/uninstalled source so the expert refuses.
+
+  private retainedRoot(): string { return join(this.stateRoot, 'retained-revisions'); }
+  private retentionManifestPath(revisionId: string): string { return join(this.retainedRoot(), `${revisionId}.manifest.json`); }
+  private snapshotDirFor(revisionId: string): string { return join(this.retainedRoot(), revisionId); }
+
+  private async readRetentionManifest(path: string): Promise<RetentionManifest | undefined> {
+    try { return JSON.parse(await readFile(path, 'utf8')) as RetentionManifest; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error; }
+  }
+
+  async resolveRevision(skillId: string, expectedDigest?: string, signal?: AbortSignal): Promise<SkillRevisionRef> {
+    this.assertName(skillId); signal?.throwIfAborted();
+    const detail = await this.detail(skillId, signal);
+    if (!detail?.directoryPath) throw new Error('skill/revision-source-missing');
+    if (detail.state === 'disabled') throw new Error('skill/revision-source-disabled');
+    if (detail.state === 'invalid') throw new Error('skill/revision-source-invalid');
+    const { contentDigest } = await snapshotFiles(detail.directoryPath, signal);
+    if (expectedDigest && expectedDigest !== contentDigest) throw new Error('skill/revision-drift');
+    return { skillId, revisionId: `rev-${contentDigest.slice(0, 24)}`, name: skillId, contentDigest };
+  }
+
+  async retainRevision(ref: SkillRevisionRef, consumer: SkillConsumerRef, signal?: AbortSignal): Promise<RetainedSkillRevision> {
+    this.assertName(ref.skillId); signal?.throwIfAborted();
+    return this.withSkillLock(ref.skillId, async () => {
+      const snapshotDir = this.snapshotDirFor(ref.revisionId);
+      const manifestPath = this.retentionManifestPath(ref.revisionId);
+      const target = join(snapshotDir, ref.name);
+      const existing = await this.readRetentionManifest(manifestPath);
+      if (existing && existing.contentDigest === ref.contentDigest) {
+        const current = await snapshotFiles(target, signal);
+        if (current.contentDigest !== ref.contentDigest) throw new Error('skill/revision-snapshot-drift');
+        const retainedBy = addConsumer(existing.retainedBy, consumer);
+        await this.writeJson(manifestPath, { ...existing, retainedBy });
+        return { ref, snapshotDir, files: current.files, retainedBy };
+      }
+      const detail = await this.detail(ref.skillId, signal);
+      if (!detail?.directoryPath) throw new Error('skill/revision-source-missing');
+      const source = await snapshotFiles(detail.directoryPath, signal);
+      if (source.contentDigest !== ref.contentDigest) throw new Error('skill/revision-drift');
+      await rm(snapshotDir, { recursive: true, force: true });
+      await mkdir(target, { recursive: true });
+      for (const file of source.files) {
+        const to = join(target, file.path);
+        await mkdir(dirname(to), { recursive: true });
+        await copyFile(join(detail.directoryPath, file.path), to);
+      }
+      const retainedBy = addConsumer(existing?.retainedBy ?? [], consumer);
+      const manifest: RetentionManifest = { ref, contentDigest: ref.contentDigest, files: source.files, retainedBy, createdAt: new Date().toISOString() };
+      await this.writeJson(manifestPath, manifest);
+      return { ref, snapshotDir, files: source.files, retainedBy };
+    });
+  }
+
+  async checkRevision(ref: SkillRevisionRef, _actor: unknown, signal?: AbortSignal): Promise<SkillRevisionCheck> {
+    this.assertName(ref.skillId); signal?.throwIfAborted();
+    const snapshotDir = this.snapshotDirFor(ref.revisionId);
+    const target = join(snapshotDir, ref.name);
+    let retained = false;
+    let status: SkillRevisionStatus;
+    try {
+      const snapshot = await snapshotFiles(target, signal);
+      retained = true;
+      status = snapshot.contentDigest === ref.contentDigest ? 'intact' : 'drifted';
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      status = 'missing';
+    }
+    if (status === 'intact') {
+      const detail = await this.detail(ref.skillId, signal);
+      if (!detail) status = 'source-uninstalled';
+      else if (detail.state === 'disabled') status = 'source-disabled';
+    }
+    return { ref, status, retained, ...(retained ? { snapshotDir } : {}), ...(status === 'intact' ? {} : { reason: status }) };
+  }
+
+  async releaseReference(ref: SkillRevisionRef, consumer: SkillConsumerRef, _signal?: AbortSignal): Promise<void> {
+    this.assertName(ref.skillId);
+    return this.withSkillLock(ref.skillId, async () => {
+      const manifestPath = this.retentionManifestPath(ref.revisionId);
+      const manifest = await this.readRetentionManifest(manifestPath);
+      if (!manifest) return;
+      const retainedBy = manifest.retainedBy.filter((entry) => !(entry.domain === consumer.domain && entry.id === consumer.id));
+      if (retainedBy.length === 0) {
+        await rm(this.snapshotDirFor(ref.revisionId), { recursive: true, force: true });
+        await this.removeJson(manifestPath);
+        return;
+      }
+      await this.writeJson(manifestPath, { ...manifest, retainedBy });
+    });
   }
 }

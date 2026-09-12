@@ -1,5 +1,11 @@
 # 0.1.0-alpha.3
 
+## 0.1.0-alpha.4 — 2026-09-12
+
+- 单个专家 alpha.1 配套：独立 Host 组合、共享 Skill 修订与受控任务入口。
+- Companion for Experts alpha.1: standalone Host composition, shared Skill revisions and governed task entry points.
+
+
 - 实现统一 `IdentityService.membership()` 查询，供 Access 服务检查本地成员资格。
 
 # 0.1.0-alpha.2

@@ -1,0 +1,13 @@
+---
+name: retail-analysis-acceptance
+description: Analyze synthetic retail CSV metrics, reconcile store totals and produce auditable reports. Use for the retail analysis acceptance task.
+---
+# Retail analysis method
+Read the CSV with file tools, then calculate with Python or another available local runtime. Never estimate totals mentally. No package installation or network access is necessary.
+Check duplicate store/month keys, nulls, numeric types, currency and revenue = orders × average_order_value. Do not change the input. For unit changes explain normalization; do not silently impute missing data.
+Compare requested months. Reconcile store revenue changes to total change. Conversion = orders / visitors; average order value = revenue / orders. Percentage change is (target/base - 1) × 100; distinguish relative percent from percentage points.
+Average order value is revenue per order, not an SKU unit price. Stable store-level average order value establishes neither unchanged individual product prices nor unchanged within-store product/order mix; describe aggregate changes as order mix effects without claiming item-level price facts. Unknown requested JSON fields must be null with an explanation in inputIssues, never invented.
+Arithmetic consistency alone cannot determine a currency unit: interpreting both revenue and AOV in the same alternative unit still preserves revenue = orders × AOV. Prefer the labeled unit while recording any required business confirmation; never reject a counterfactual by claiming a mathematically valid identity fails. An unchanged observed subset does not establish an unchanged total when another store has missing data.
+A metric decomposition is evidence about the arithmetic drivers; it does not prove operational causes. Separate supplied facts, plausible hypotheses, needed evidence and follow-up actions.
+Produce analysis-results.json with baseMonth, targetMonth, baseRevenue, targetRevenue, change, changePercent, baseVisitors, targetVisitors, baseOrders, targetOrders, stores (array of {storeId, baseRevenue, targetRevenue, change}), inputIssues (array). All amounts use CNY, percentages use percent units (not ratios).
+Produce analysis-report.md with verified metrics, store decomposition, method, limitations and practical next actions. Before delivery check every copied formula against the actual row, and reconcile all prose/table values with the computed JSON. A higher aggregate average order value must first be decomposed by store order weights; do not recommend protecting it as an improvement without evidence of actual within-store improvement. For insufficient data explain missing fields and ask necessary questions; do not invent a breakdown.

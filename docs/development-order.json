@@ -76,8 +76,13 @@
       "dependsOn": [
         "D03"
       ],
-      "status": "todo",
-      "evidence": []
+      "status": "in_progress",
+      "evidence": [
+        "docs/evidence/d04-experts-g01-g06.md",
+        "docs/evidence/d04-experts-ep07-verification.md",
+        "docs/evidence/d04-experts-review-fixes.md",
+        "docs/adr/0019-installable-host-self-containment-and-governance-assembly.md"
+      ]
     },
     {
       "id": "D05",

@@ -1,3 +1,5 @@
+import type { SkillRevisionProvider } from './skill-revisions.js';
+
 /** Local Host skill management contract. Not an enterprise authorization API. */
 export type ManagedSkillState = 'enabled' | 'disabled' | 'invalid' | 'readonly';
 
@@ -125,8 +127,13 @@ export type SkillManagementResult<T> = { readonly ok: true; readonly value: T } 
 
 export type SkillDependencyInspector = (name: string) => Promise<readonly SkillDependency[]> | readonly SkillDependency[];
 
-/** Provided as ctx.workdshSkills; consumers inject the service, not its implementation. */
-export interface SkillManagementService {
+/**
+ * Provided as ctx.workdshSkills; consumers inject the service, not its implementation.
+ * Extends the cross-domain revision capability so an expert (or other consumer) can
+ * freeze an explicit Skill dependency into an immutable snapshot without walking
+ * another plugin's private directories.
+ */
+export interface SkillManagementService extends SkillRevisionProvider {
   readonly contractVersion: 1;
   list(signal?: AbortSignal): Promise<readonly ManagedSkillSummary[]>;
   detail(name: string, signal?: AbortSignal): Promise<ManagedSkillDetail | undefined>;

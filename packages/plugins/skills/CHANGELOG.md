@@ -1,5 +1,11 @@
 # 0.1.0-alpha.24
 
+## 0.1.0-alpha.25 — 2026-09-12
+
+- 单个专家 alpha.1 配套：独立 Host 组合、共享 Skill 修订与受控任务入口。
+- Companion for Experts alpha.1: standalone Host composition, shared Skill revisions and governed task entry points.
+
+
 - 补齐独立 dsh.bundle/patch 与 dsh.client 浏览器产物，官方 Profile 可单独安装本包；不依赖 WorkDSH 总包或开发 workspace。
 - Host/Client 分别声明依赖与生命周期，技能侧栏入口归本插件所有。取消 Client 请求、撤销 Host 路由并排空在途上传。
 - 本地服务类型移至 workdsh-contracts/skills，两个消费者通过注入共享服务；原有技能文件、草稿和回收数据格式保持兼容。

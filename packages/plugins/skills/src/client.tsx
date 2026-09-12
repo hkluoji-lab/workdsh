@@ -76,7 +76,9 @@ export function apply(ctx: Context): void {
     sessions.open(sessionId);
     ctx.layout.selectPanel(null);
   };
-  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'workdsh-skills', inject: () => ({ toggleNavigation: () => ctx.layout.toggleSidebar(), management, startSkillTask, startSkillTrial }) }, SkillsPanel));
+  const openCapability = (key: string): void => { ctx.layout.selectPanel(key as Parameters<typeof ctx.layout.selectPanel>[0]); };
+  const hasCapability = (key: string): boolean => ctx.slots.entriesOfSlot('main').some(entry => entry.options.key === key);
+  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'workdsh-skills', inject: () => ({ toggleNavigation: () => ctx.layout.toggleSidebar(), management, startSkillTask, startSkillTrial, openCapability, hasCapability }) }, SkillsPanel));
   ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
     name: 'sidebar.panellist', id: 'workdsh-skills', label: '专家 · 技能 · 连接器', order: 30,
   }, SkillNavigationIcon));

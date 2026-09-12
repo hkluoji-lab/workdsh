@@ -1,6 +1,6 @@
 {
   "name": "workdsh-provider-identity-local",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "private": true,
   "type": "module",
   "exports": {
@@ -9,15 +9,24 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "3.18.2",
-    "zod": "4.4.3",
-    "workdsh-contracts": "workspace:*"
+    "zod": "4.4.3"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
@@ -26,6 +35,7 @@
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
     "@deepseek-ai/dsh-storage-domain": "0.1.5-rc.1",
-    "@types/node": "22.19.0"
+    "@types/node": "22.19.0",
+    "workdsh-contracts": "workspace:*"
   }
 }

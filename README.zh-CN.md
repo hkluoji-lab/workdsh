@@ -20,6 +20,20 @@ WorkDSH 在 DeepSeek Harness 上提供可复用技能与面向工作的界面。
 
 *正式打包应用的真实截图，使用隔离的演示技能；示例内容不代表随包提供公共技能目录。*
 
+
+## 单个专家 alpha / Individual Experts alpha
+
+[下载 Experts 0.1.0-alpha.1 / Download](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.1) · [安装说明 / Installation](packages/plugins/experts/README.md)
+
+专家现已作为独立 Harness Host/Client 插件交付：一个插件管理多个专家，专家组合领域经验、专业方法与共享技能。支持对话引导制作、草稿编辑、预览确认发布、固定专家/技能修订，以及原生任务召唤。专家团的多专家＋SOP仍是规划内容。
+
+Experts now ship as an independent Harness Host/Client plugin. One plugin manages multiple experts combining domain experience, methods and shared skills. It supports conversational authoring, drafts, reviewed publication, frozen expert/Skill revisions and native task handoff. Expert teams with SOP remain planned.
+
+**Alpha 边界 / Limits:** 实际模型调用与成果链路已验证，专业报告质量尚未全部验收；请核验业务结论。Requires Harness0.1.5-rc.1 Web and matching companion packages; professional report acceptance is incomplete.
+
+![Expert detail / 专家详情](docs/assets/screenshots/expert-detail-alpha1.png)
+
+
 ## 插件就是架构
 
 WorkDSH 遵循 Harness 自身的扩展方式：官方 **Loader + Profile + Cordis**、标准 Host/Client 入口和公开 UI Slot。工程只使用已发布的 Harness 包，不需要检出上游源码。
@@ -27,7 +41,7 @@ WorkDSH 遵循 Harness 自身的扩展方式：官方 **Loader + Profile + Cordi
 | 特色 | 实际含义 |
 | --- | --- |
 | 按需安装能力 | Skill 自带配置层、Host 服务、Client 模块和预构建 `.tgz`，展示包可选。 |
-| 通过公开契约互通 | 插件经服务注入协作。`workdsh-contracts/skills` 提供技能服务契约，后续专家可引用共享技能。 |
+| 通过公开契约互通 | 插件经服务注入协作。`workdsh-contracts/skills` 提供技能服务契约，专家通过公开契约引用共享技能。 |
 | 保留原生运行底座 | 会话、工作区、模型执行、技能发现与调用、插件加载由 Harness 拥有；WorkDSH 补充管理流程和界面。 |
 | 每个模块独立版本 | Skill 使用自己的 `0.1` 版本线，展示包更新不强制技能模块同步升级。 |
 | 保留用户内容 | 移除技能管理**插件**会保留技能文件和管理数据；卸载某一个**技能对象**则进入可恢复流程。 |
@@ -39,7 +53,7 @@ flowchart TB
   profile --> skills[独立安装的 Skill 插件]
   profile --> presentation[可选的 WorkDSH 展示组合包]
   skills --> service[公开 Skill 管理服务]
-  service -. 后续接入 .-> experts[专家等其他功能插件]
+  service --> experts[独立专家插件]
 ```
 
 **功能插件**是可安装的软件模块；**技能**是用户管理的 `SKILL.md` 及其资源。一个技能管理插件管理多个技能，制作技能不需要发布 npm 包。
@@ -120,7 +134,7 @@ corepack pnpm preview
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
 | Skill 0.1 | 本地技能管理与独立安装交付 | 已在指定 Web 基线上验证。 |
-| 专家 0.1 | 专家定义、草稿、修订、共享技能引用和任务交接 | 设计与开发交接已准备，业务实现待开发。 |
+| 专家 0.1 | 专家定义、草稿、修订、共享技能引用和任务交接 | alpha可安装试用；专业成果质量与稳定性验收尚未完成。 |
 | 后续模块 | 连接器 → 资料库 → 项目 → 行业应用 → 集成 | 按模块逐一交付。 |
 | 企业版 | 服务端 + 管理 Web + Harness 执行节点；组织技能、分类、版本、授权和下发 | 后置。本次没有公共技能市场、SkillHub 或技能套件。 |
 

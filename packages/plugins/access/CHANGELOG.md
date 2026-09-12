@@ -1,5 +1,11 @@
 # 0.1.0-alpha.3
 
+## 0.1.0-alpha.4 — 2026-09-12
+
+- 单个专家 alpha.1 配套：独立 Host 组合、共享 Skill 修订与受控任务入口。
+- Companion for Experts alpha.1: standalone Host composition, shared Skill revisions and governed task entry points.
+
+
 - 增加 `workdshSessionAccess` 受控 Host 入口，在调用官方 Session Controller 创建前持久绑定稳定 owner。
 - Session 恢复在激活官方 Agent 前重新检查当前成员关系和 grant，拒绝请求不会触达 Controller。
 - 创建失败保留不可替换的 owner 预留，允许同一主体安全重试并阻止其他主体接管 Session id。

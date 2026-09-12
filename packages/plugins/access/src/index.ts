@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Context, Service } from '@deepseek-ai/cordis';
+import { ApiSessionNotFound } from '@deepseek-ai/dsh-api-session-controller';
 import type {
   SessionCreateRequest,
   SessionCreateValue,
@@ -12,21 +13,23 @@ import {
   assertActorContext,
   assertResourceOwner,
   GovernanceContractError,
-  type AccessAction,
-  type AccessGrant,
-  type AccessService,
-  type ActorContext,
-  type AuditEvent,
-  type AuditService,
-  type AuthorizationDecision,
-  type AuthorizationRequest,
-  type IdentityService,
-  type ResourceOwner,
-  type ResourceRef,
-  type RuntimeBinding,
-  type RuntimeBindingRequest,
-  type RuntimeBindingService,
-  type SessionOwnerBinding,
+} from './governance.js';
+import type {
+  AccessAction,
+  AccessGrant,
+  AccessService,
+  ActorContext,
+  AuditEvent,
+  AuditService,
+  AuthorizationDecision,
+  AuthorizationRequest,
+  IdentityService,
+  ResourceOwner,
+  ResourceRef,
+  RuntimeBinding,
+  RuntimeBindingRequest,
+  RuntimeBindingService,
+  SessionOwnerBinding,
 } from 'workdsh-contracts';
 
 type SessionAgentResult = Awaited<ReturnType<Context['sessionController']['resolveAgent']>>;
@@ -409,7 +412,7 @@ export class SessionAccessBridge extends Service {
         await this.ctx.sessionController.inspect(sessionId, signal);
         exists = true;
       } catch (error) {
-        if (!hasErrorCode(error, 'session/not-found')) throw error;
+        if (!(error instanceof ApiSessionNotFound) && !hasErrorCode(error, 'session/not-found')) throw error;
       }
       if (exists) {
         await this.audit(actor, 'session.create', 'denied', 'access/unbound-session-adoption');

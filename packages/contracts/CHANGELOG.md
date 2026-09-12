@@ -1,5 +1,11 @@
 # 0.1.0-alpha.5
 
+## 0.1.0-alpha.6 — 2026-09-12
+
+- 单个专家 alpha.1 配套：独立 Host 组合、共享 Skill 修订与受控任务入口。
+- Companion for Experts alpha.1: standalone Host composition, shared Skill revisions and governed task entry points.
+
+
 - 新增领域子路径 ./skills，定义本地 SkillManagementService v1、管理 DTO 和依赖影响检查契约。
 - 类型源与技能运行实现分离，不引入 Cordis、UI 或数据库依赖；不将本地服务宣称为企业鉴权或不可变修订 API。
 

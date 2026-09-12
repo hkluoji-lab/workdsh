@@ -1,7 +1,8 @@
 import { Context, Service } from '@deepseek-ai/cordis';
 import { defineDomain, domainTable, type KvTable } from '@deepseek-ai/dsh-storage-domain';
 import { z } from 'zod';
-import { GovernanceContractError, type AuditEvent, type AuditService } from 'workdsh-contracts';
+import type { AuditEvent, AuditService } from 'workdsh-contracts';
+import { GovernanceContractError } from './governance.js';
 
 const bounded = z.string().min(1).max(256).refine((value) => !/[\u0000-\u001f]/.test(value));
 const resourceRefSchema = z.object({ domain: bounded, id: bounded, revision: bounded.optional() });

@@ -1,26 +1,39 @@
 {
   "name": "workdsh-plugin-access",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "private": true,
   "type": "module",
   "exports": {
+    "./session": {
+      "types": "./dist/session.d.ts",
+      "default": "./dist/session.js"
+    },
+    "./tool": {
+      "types": "./dist/tool.d.ts",
+      "default": "./dist/tool.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
   },
   "files": [
+    "cordis.patch.yml",
     "dist",
     "README.md",
     "CHANGELOG.md"
   ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "zod": "4.4.3",
-    "workdsh-contracts": "workspace:*"
+    "zod": "4.4.3"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
@@ -35,6 +48,7 @@
     "@deepseek-ai/dsh-storage-domain": "0.1.5-rc.1",
     "@types/node": "22.19.0",
     "@deepseek-ai/dsh-session": "0.1.5-rc.1",
-    "@deepseek-ai/dsh-tools": "0.1.5-rc.1"
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.1",
+    "workdsh-contracts": "workspace:*"
   }
 }

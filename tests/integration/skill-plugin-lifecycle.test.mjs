@@ -71,7 +71,7 @@ test('Skill service waits, activates independently, disposes consumers and resto
       start(controller) { controller.enqueue(new TextEncoder().encode('---\nname: pending-upload\n')); },
       pull() { readRequested = true; },
       cancel() { cancelled = true; },
-    });
+    }, { highWaterMark: 0 }); // pull proves the Host reader started, not eager prefetch.
     const uploading = routes.get('/api/workdsh-skills/import').fetch(new Request('http://localhost/api/workdsh-skills/import', {
       method: 'POST', headers: { 'x-workdsh-file-name': 'SKILL.md' }, body, duplex: 'half',
     }));

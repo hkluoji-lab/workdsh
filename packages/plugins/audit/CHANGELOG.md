@@ -1,5 +1,11 @@
 # 0.1.0-alpha.2
 
+## 0.1.0-alpha.3 — 2026-09-12
+
+- 单个专家 alpha.1 配套：独立 Host 组合、共享 Skill 修订与受控任务入口。
+- Companion for Experts alpha.1: standalone Host composition, shared Skill revisions and governed task entry points.
+
+
 - 增加 `flush()`，并在 Cordis 卸载关闭 Storage Domain 前等待已接受追加全部结算。
 
 # 0.1.0-alpha.1

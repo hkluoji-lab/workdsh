@@ -9,6 +9,8 @@ import * as JsonStorage from '@deepseek-ai/dsh-storage-json';
 import * as StorageDomain from '@deepseek-ai/dsh-storage-domain';
 import Tools from '@deepseek-ai/dsh-tools';
 import { AccessManager, SessionAccessBridge, ToolAccessBridge } from '../../packages/plugins/access/dist/index.js';
+import { createRequire } from 'node:module';
+const { ApiSessionNotFound } = await import(createRequire(new URL('../../packages/plugins/access/package.json', import.meta.url)).resolve('@deepseek-ai/dsh-api-session-controller'));
 import { AuditJournal } from '../../packages/plugins/audit/dist/index.js';
 
 const membershipDirectory = new Map([
@@ -201,7 +203,7 @@ test('trusted Session ingress binds before create, preserves retry ownership and
     ctx.provide('sessionController', {
       async inspect(sessionId) {
         if (existingSessions.has(String(sessionId))) return { header: { id: sessionId }, events: [] };
-        throw Object.assign(new Error('fixture Session not found'), { code: 'session/not-found' });
+        throw new ApiSessionNotFound('fixture Session not found');
       },
       async create(request) {
         const sessionId = String(request.sessionId);

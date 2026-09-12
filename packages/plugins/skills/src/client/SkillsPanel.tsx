@@ -13,13 +13,16 @@ type SkillsPanelInjected = {
   management: SkillManagementClient;
   startSkillTask: (kind: SkillTaskKind, name?: string) => Promise<void>;
   startSkillTrial: (name: string) => Promise<void>;
+  /** Switch the shared capability center to another registered panel (e.g. experts). */
+  openCapability: (key: string) => void;
+  hasCapability: (key: string) => boolean;
 };
 type SkillsPanelProps = PropsRuntime<'main'> & InjectFace<SkillsPanelInjected>;
 
 function icon(kind: string) { return <Icon name={kind as IconName} />; }
 function messageOf(cause: unknown): string { return cause instanceof Error ? cause.message : '技能操作失败，请重试。'; }
 
-export function SkillsPanel({ toggleNavigation, management, startSkillTask, startSkillTrial }: SkillsPanelProps) {
+export function SkillsPanel({ toggleNavigation, management, startSkillTask, startSkillTrial, openCapability, hasCapability }: SkillsPanelProps) {
   const [skills, setSkills] = useState<readonly ManagedSkillSummary[]>([]);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(true);
@@ -151,12 +154,20 @@ export function SkillsPanel({ toggleNavigation, management, startSkillTask, star
   const normalized = query.trim().toLowerCase();
   const filtered = skills.filter(skill => `${skill.name} ${skill.description} ${skill.whenToUse ?? ''}`.toLowerCase().includes(normalized));
   const capabilityTabs = [['experts', '专家'], ['skills', '技能'], ['connectors', '连接器'], ['apps', '行业应用']] as const;
+  const capabilityKey: Record<string, string> = { experts: 'workdsh-experts', skills: 'workdsh-skills' };
   const plannedCategories = ['办公协同', '开发工具', '数据分析', '内容创作', '知识学习'] as const;
   return <section className="wd-skills" data-testid="workdsh-skills">
     <style>{skillsCss + skillsActionsCss}</style>
     <header className="cap-header">
       <button className="nav-toggle" onClick={toggleNavigation} aria-label="切换导航">导航</button>
-      {capabilityTabs.map(([key, label]) => <button key={key} className={`cap-tab ${key === 'skills' ? 'active' : ''}`} disabled={key !== 'skills'}>{icon(key)}{label}</button>)}
+      {capabilityTabs.map(([key, label]) => {
+        const active = key === 'skills';
+        const target = capabilityKey[key];
+        const enabled = active || (target !== undefined && hasCapability(target));
+        return <button key={key} className={`cap-tab ${active ? 'active' : ''}`} disabled={!enabled}
+          aria-current={active ? 'page' : undefined}
+          onClick={() => { if (!active && target) openCapability(target); }}>{icon(key)}{label}</button>;
+      })}
       <input ref={search} className="search" aria-label="搜索技能" placeholder="搜索技能" value={query} onChange={event => setQuery(event.currentTarget.value)} />
       <span className="installed-count" role="status" aria-label={`已安装 ${skills.length} 个技能`}>我安装的 {skills.length}</span>
       <button className={batchMode ? 'batch-toggle active' : 'batch-toggle'} onClick={() => { setBatchMode(value => !value); setSelectedNames([]); }}>{batchMode ? '退出批量' : '批量管理'}</button>

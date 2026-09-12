@@ -6,13 +6,15 @@ import { z } from 'zod';
 import {
   assertActorContext,
   GovernanceContractError,
-  type ActorContext,
-  type IdentityProfile,
-  type IdentityProvider,
-  type IdentityResolutionContext,
-  type IdentityService,
-  type Membership,
-  type Organization,
+} from './governance.js';
+import type {
+  ActorContext,
+  IdentityProfile,
+  IdentityProvider,
+  IdentityResolutionContext,
+  IdentityService,
+  Membership,
+  Organization,
 } from 'workdsh-contracts';
 
 export interface LocalIdentityConfig {

@@ -1,6 +1,6 @@
 {
   "name": "workdsh-contracts",
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-alpha.6",
   "private": true,
   "type": "module",
   "exports": {
@@ -11,6 +11,14 @@
     "./skills": {
       "types": "./dist/skills.d.ts",
       "default": "./dist/skills.js"
+    },
+    "./experts": {
+      "types": "./dist/experts.d.ts",
+      "default": "./dist/experts.js"
+    },
+    "./skill-revisions": {
+      "types": "./dist/skill-revisions.d.ts",
+      "default": "./dist/skill-revisions.js"
     }
   },
   "files": [

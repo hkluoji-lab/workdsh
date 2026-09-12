@@ -125,3 +125,7 @@ manifest 包含 `format: workdsh-expert`、`schemaVersion: 1`、expertFile、fil
 所有用户上传先进入私有暂存区，预检输出字段错误和依赖清单；用户确认导入后原子提交草稿，关闭/取消/失败可清理暂存。未知必需 Skill 显示缺失，用户可另行安装；专家包不能携带可执行脚本/npm 包并自动安装。跨设备导入不承诺保留本机 SkillRevision ID，必须重新解析依赖并经发布校验。
 
 导出只包含读取授权内的数据，提供清单与摘要；导入 round-trip 保留专业内容/示例/标签，重新生成身份和版本。上传工具/文件选择复用公共实现时，应抽取无领域语义的校验工具，不能调用 Skill 安装接口来安装专家。
+
+## PRD 1.1 A+B 候选目录契约
+
+当前工作区新增 ExpertSkillOption：skillId/name/description/state/selectable，以及 ExpertsService.listSkills(actor,expertId,scope,signal)。available范围需目标专家可编辑，equipped只返回该可读专家显式配备项，缺目录项记missing；简介/状态来自当前目录，不充当冻结Skill正文。当前本地Skills以唯一名称为稳定ID，不能推断企业多来源目录已支持。页面只获得摘要，不获得路径/正文/凭据；通过已有Connection exact Fetch封装，不新增Remote传输。专家编辑保留skillId，发布依旧使用公共SkillRevisionProvider冻结和校验。

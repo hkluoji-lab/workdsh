@@ -57,9 +57,10 @@
   {
     "path": "packages/plugins/experts",
     "title": "专家管理",
+    "moduleVersion": "0.1",
     "phase": "P1",
     "task": "P1-02",
-    "status": "planned",
+    "status": "in_progress",
     "directories": [
       "src/domain",
       "src/services",

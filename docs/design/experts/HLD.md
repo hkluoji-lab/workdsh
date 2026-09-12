@@ -1,6 +1,6 @@
 # HLD：专家定义、发布与原生执行绑定
 
-基线：PRD-EXPERTS-001 / 1.0。状态：设计方案；公开适配须通过 G01～G06。本文中 `workdshExperts`、修订存储及运行绑定均是拟实现能力，不是当前接口。
+基线：PRD-EXPERTS-001 / 1.1。状态：设计方案；公开适配须通过 G01～G06。原始设计中的服务、修订和绑定已有候选实现；具体公开契约、已验证范围与缺口以 contracts/src/experts.ts、插件 README 和 STATUS 为准，不能将本设计的全部接口当作已有能力。
 
 ## 1. 所有权与技术边界
 
@@ -183,3 +183,13 @@ G02 必须证明：A/B 两个 Session 同名 Skill 的目录、正文和资源�
 | 本地有限闭环 | 可交付且可验收 | 借专家需求提前建设完整企业平台 |
 
 决策记录为 [ADR-0017](../../adr/0017-expert-definition-and-runtime-binding.md)，探针未过的部分仍是拟议方案。
+
+## 12. PRD 1.1 适配约束
+
+专业经验、判断标准与追问先审查当前 ExpertDefinition 的 role/methodology/boundaries/deliverables 内容及 persona 编译，不为体现“专家”而引入第二套执行器。确需新结构化字段时，统一更新公开契约/schema、草稿/发布、摘要、导入导出、迁移和测试。详情的擅长领域来自明确专业内容/标签，不能自动宣称数据访问或工具能力。
+
+技能选择使用公开 workdshSkills 目录与管理能力，Client 显示名称/简介/状态，Host 解析稳定 skillId 和冻结修订。不得导入 Skills 内部实现或直接读表；引用移除不卸载共享技能。配置技能清单与官方动态全局发现范围分开展示；实际调用仍由官方 Skill 执行和 Agent Loop 所有。
+
+自然语言创建与编辑器调用同一 Host 服务，专业内容预览是展示投影而非另一状态真源。冻结绑定的官方 Loop 集成已验证部分配置行；完整安装态 preset Loader 及远程模型交付仍待 AT-27，不能混用证据。
+
+团队 SOP 是不可变业务约束与原生委派关联，运行事实仍由 Harness 所有。首次实现前查锁定版公开 subagent/workflow、成员精确组合、阶段约束、身份和取消能力；未验证接口标候选。必要 SOP 不等于自造通用流程引擎，具体分工与阶段合法性在受控委派入口验证。详见 EXPERT-TEAMS 与 DEVELOPMENT-PLAN。

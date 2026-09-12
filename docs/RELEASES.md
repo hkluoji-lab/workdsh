@@ -1,6 +1,25 @@
 # Module releases / 模块发布与安装
 
-2026-09-12。当前交付 Skill 0.1 的独立插件和可选 WorkDSH 展示组合包。每个模块保留自己的版本，GitHub Release 按模块建立，不再用一个仓库快照版本代替全部模块。
+2026-09-12。当前新增单个专家0.1 alpha及匹配的身份/授权/审计/Skill/展示配套；下方旧Skill发布信息保留为历史基线。每个模块保留自己的版本，GitHub Release 按模块建立，不再用一个仓库快照版本代替全部模块。
+
+## 单个专家首个alpha / Individual Experts first alpha
+
+[experts-v0.1.0-alpha.1](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.1)发布专家插件以及本次验证所用配套包、SHA256SUMS与release-manifest.json。此页聚合配套下载，不意味着模块统一版本。未发布npm注册表，contracts/UI为开发依赖而非用户安装包。
+
+| 包 / Package | Version | 本次用途 / Purpose |
+|---|---|---|
+| workdsh-plugin-experts | 0.1.0-alpha.1 | 单个专家管理、发布与原生任务 / Expert management, publication and native tasks |
+| workdsh-provider-identity-local | 0.1.0-alpha.4 | 本地主体 / Local identity |
+| workdsh-plugin-audit | 0.1.0-alpha.3 | 审计 / Audit |
+| workdsh-plugin-access | 0.1.0-alpha.4 | 授权及Session/Tool桥 / Governed entry points |
+| workdsh-plugin-skills | 0.1.0-alpha.25 | 共享Skill与固定修订 / Shared Skills and retained revisions |
+| workdsh-bundle | 0.1.0-alpha.40 | 可选展示层 / Optional presentation |
+
+安装顺序和具体CLI命令见[专家插件README](../packages/plugins/experts/README.md)。本次基线为Harness0.1.5-rc.1 Web/Cordis4.0.2，旧Desktop及Windows/Linux端到端未验收。实际模型工具/文件/计算/成果与冷重启任务绑定已有证据，但专业报告仍有两项脏数据推断问题；本次是可试用alpha，不整体签收D04/AT-27。专家团SOP、公共市场与企业Web不包含在安装功能中。
+
+See the plugin README for the matching archives and installation order. Native model execution and artifacts have been exercised; professional report acceptance is incomplete. This alpha excludes expert teams and enterprise administration. [验收证据 / Evidence](evidence/d04-experts-review-fixes.md)
+
+## 旧Skill发布基线 / Previous Skill release baseline
 
 ## 可下载模块 / Installable modules
 

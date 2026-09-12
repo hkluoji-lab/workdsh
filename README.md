@@ -12,13 +12,27 @@
 
 WorkDSH brings reusable skills and a work-oriented interface to DeepSeek Harness. Install the **Skill management plugin on its own**, or compose it with the optional **WorkDSH presentation bundle** for the branded workspace.
 
-The current **Skill 0.1 development preview** supports local skill discovery, creation, import, editing, enablement, and recovery. Experts, connectors, projects, and enterprise administration are on the roadmap; their design documents and navigation placeholders do not represent completed features.
+The current **Skill 0.1 development preview** supports local skill discovery, creation, import, editing, enablement, and recovery. Individual Experts are available as an alpha; expert teams, connectors, projects, and enterprise administration are on the roadmap; their design documents and navigation placeholders do not represent completed features.
 
 > **Compatibility:** verified with the official Harness **`0.1.5-rc.1` Web Profile**. Skill alpha.24 has a known missing-navigation issue in DSH Desktop using Harness **`0.1.2-rc.1`**, including after restart. This release **does not fix that issue**. See the [compatibility notes](docs/RELEASES.md).
 
 ![WorkDSH Skill library](docs/assets/screenshots/skill-management.png)
 
 *Actual packaged application with isolated demonstration skills. Example content is not a bundled public catalog.*
+
+
+## 单个专家 alpha / Individual Experts alpha
+
+[下载 Experts 0.1.0-alpha.1 / Download](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.1) · [安装说明 / Installation](packages/plugins/experts/README.md)
+
+专家现已作为独立 Harness Host/Client 插件交付：一个插件管理多个专家，专家组合领域经验、专业方法与共享技能。支持对话引导制作、草稿编辑、预览确认发布、固定专家/技能修订，以及原生任务召唤。专家团的多专家＋SOP仍是规划内容。
+
+Experts now ship as an independent Harness Host/Client plugin. One plugin manages multiple experts combining domain experience, methods and shared skills. It supports conversational authoring, drafts, reviewed publication, frozen expert/Skill revisions and native task handoff. Expert teams with SOP remain planned.
+
+**Alpha 边界 / Limits:** 实际模型调用与成果链路已验证，专业报告质量尚未全部验收；请核验业务结论。Requires Harness0.1.5-rc.1 Web and matching companion packages; professional report acceptance is incomplete.
+
+![Expert detail / 专家详情](docs/assets/screenshots/expert-detail-alpha1.png)
+
 
 ## Plugins are the architecture
 
@@ -39,7 +53,7 @@ flowchart TB
   profile --> skills[Independent Skill plugin]
   profile --> presentation[Optional WorkDSH presentation bundle]
   skills --> service[Public Skill management service]
-  service -. planned integration .-> experts[Experts and other feature plugins]
+  service --> experts[Independent Experts plugin]
 ```
 
 A **feature plugin** is an installable software module. A **skill** is a user-managed `SKILL.md` with optional resources. One Skill plugin manages many skills; creating a skill does not require publishing an npm package.
@@ -120,7 +134,7 @@ The preview runs at `http://127.0.0.1:18989`; use the authenticated URL printed 
 | Stage | Scope | Status |
 | --- | --- | --- |
 | Skill 0.1 | Local skill management and independent package delivery | Available on the verified Web baseline. |
-| Experts 0.1 | Definitions, drafts, revisions, shared skill references, and task handoff | Design handoff prepared; business implementation pending. |
+| Experts 0.1 | Definitions, drafts, revisions, shared skill references, and task handoff | Alpha available; professional quality and final stability acceptance incomplete. |
 | Following modules | Connectors → library → projects → industry applications → integration | Planned, delivered one module at a time. |
 | Enterprise | Server + administration Web + Harness execution nodes; organization skills, categories, versions, access, and rollout | Deferred. No public Skill marketplace, SkillHub, or skill suites in this release. |
 
