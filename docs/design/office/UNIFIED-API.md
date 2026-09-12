@@ -1,6 +1,9 @@
 # 统一内容操作 API：AI、用户与八类编辑器
 
 日期：2026-09-12。设计 v0.4；补齐官方插件装配、生命周期和交付边界，保留HTML/Markdown正式分支；完整八类契约尚未发布；2026-09-12 已落地最小 document 公共类型、五个原生工具与确定性 UI 验收，见 [U1 实施](U1-IMPLEMENTATION.md) / [证据](../../evidence/office-live-u1.md)。
+
+当前实现增量（Office 0.1.0-alpha.2 开发候选）：共享的 block 信封新增 table/image，runs 在这两类必须为空；表格有 rows/cells/colspan/rowspan/colwidth(px)/正文段落，作为单个 blockId 原子替换，尚未开放单独 rowId/cellId 操作。图片为有界嵌入 PNG/JPEG（每张512 KiB），尺寸px/对齐/alt；受管文件资产引用继续作为后续设计，不声称已经实现。AI/页面仍复用三个 block 操作、CAS、幂等收据与人工租约。当前批次1 MiB，文档2 MiB。DOCX 工作副本导入及导出支持该子集，原始文件保留；完整分页、浮动图、嵌套表格和单元格图片不在此增量内。详情与官方复用记录见 [TABLES-IMAGES](TABLES-IMAGES.md)。以下各段保留长期目标，与已发布接口子集区分。
+
 对应 ADR-0024、OFFICE-AI-01。处理 [Review R01—R06](UNIFIED-API-REVIEW.md)，取代原157行方案；实现时同时阅读 [Harness 集成决策](HARNESS-INTEGRATION.md)。
 
 组件决策已按用户后续指令收敛，见[开源组件采用方案](OPEN-SOURCE-STACK.md)：文档Tiptap/ProseMirror、表格Univer、演示与画布Konva、PDF.js/pdf-lib/PDFium、HTML的CodeMirror/隔离预览、Markdown的Tiptap/CodeMirror与Mermaid/KaTeX。公共接口和Host权威提交保持不变。
@@ -285,3 +288,9 @@ U1—U5为有限切片，不另造模块版本。U4因许可/兼容可调整顺�
 ### 2026-09-12 原生文件交付增量
 
 content_export 已注册为受限 DOCX 交付工具：读取已授权保存修订、使用与浏览器下载共用的 DOCX codec，组合官方 bash/present 工具，输出真实路径/revision/status。官方 ui-deliverables 拥有文件卡片及打开菜单。WorkDSH 不新增自绘成果卡，不将 documentId 伪装文件路径。导出为一次保存修订的新文件；后续实时编辑不静默覆盖文件。仅此有限路径已实现，U3 全量导出任务/幂等/中断恢复协议仍待验。
+
+### 已存图片的 AI 引用（alpha.2 开发）
+
+content_open/content_read 的模型快照将图片 src 投影为 `office-image:<sourceDocumentId>:<blockId>:<SHA-256>`，不重复返回 Base64。将该 src 原样放入 content_edit 的 image 载荷，可在同一文档复用或复制到另一个有权限的 Word 工作副本，并调整宽高、对齐或替代文字。Host 分别检查目标编辑和来源读取权限、组织/工作区边界，核对原图哈希，再走既有修订/租约/提交。来源不变，目标独立保存原始图片字节，来源以后修改/删除不会联动目标。旧版不含源 documentId 的短引用仍限定目标文档，保持兼容。
+
+模型快照仅为投影；页面、持久状态、DOCX 保留嵌入图片，未增加资产注册表或文件访问底座。范围仅限可读取的 Office 工作副本文档，尚不支持新文件资料/远程 URL/其余七类编辑器的跨格式制作。失效来源须重新读取；源删除后的旧引用重试仍可能失败，通用资产幂等未完成。新图片仍使用已有 PNG/JPEG 嵌入输入。

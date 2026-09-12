@@ -1,7 +1,5 @@
 import { Editor } from "@tiptap/core";
-import { TextStyleKit } from "@tiptap/extension-text-style";
-import TextAlign from "@tiptap/extension-text-align";
-import StarterKit from "@tiptap/starter-kit";
+import { documentExtensions } from "./extensions.js";
 import type {
   OfficeSnapshot,
   OfficeReceipt,
@@ -9,7 +7,6 @@ import type {
 } from "workdsh-contracts/office";
 import { downloadDocument } from "./docx.js";
 import {
-  BlockIdentity,
   documentDiff,
   editorContent,
   normalizedColor,
@@ -146,19 +143,7 @@ export function createDocumentModel(
       element: mount.current!,
       editable,
       content: editorContent(snapshot.state),
-      extensions: [
-        StarterKit.configure({
-          blockquote: false,
-          code: false,
-          codeBlock: false,
-          horizontalRule: false,
-          link: false,
-          trailingNode: false,
-        }),
-        TextStyleKit.configure({ lineHeight: false }),
-        TextAlign.configure({ types: ["paragraph", "heading"] }),
-        BlockIdentity,
-      ],
+      extensions: documentExtensions(),
       editorProps: {
         attributes: { "aria-label": "文档正文", class: "wd-office-writing" },
         handleDOMEvents: {
@@ -235,7 +220,7 @@ export function createDocumentModel(
         const e = editor.current!,
           tr = e.state.tr;
         e.state.doc.descendants((node, pos) => {
-          if (!["paragraph", "heading"].includes(node.type.name)) return;
+          if (!["paragraph", "heading", "table", "image"].includes(node.type.name)) return;
           const mapped = receipt.ids[String(node.attrs.blockId)];
           if (mapped)
             tr.setNodeMarkup(pos, undefined, {
@@ -431,6 +416,24 @@ export function createDocumentModel(
     return found.length;
   }
   return {
+    canTableAction: (action:"insertTable"|"addRowBefore"|"addRowAfter"|"deleteRow"|"addColumnBefore"|"addColumnAfter"|"deleteColumn"|"mergeCells"|"splitCell"|"toggleHeaderRow"|"deleteTable")=>{
+      const e=editor.current;if(!e)return false;
+      return action==="insertTable" ? !e.isActive("table") && e.can().insertTable({rows:3,cols:3}) : e.can()[action]();
+    },
+    canAlignImage: ()=>editor.current?.isActive("image") ?? false,
+    tableAction: (action:"insertTable"|"addRowBefore"|"addRowAfter"|"deleteRow"|"addColumnBefore"|"addColumnAfter"|"deleteColumn"|"mergeCells"|"splitCell"|"toggleHeaderRow"|"deleteTable") => command(e=>{
+      if(action==="insertTable") {if(!e.isActive("table")) e.commands.insertTable({rows:3,cols:3,withHeaderRow:true});}
+      else e.commands[action]();
+    }),
+    imageAlignment: (alignment:"left"|"center"|"right")=>command(e=>e.commands.updateAttributes("image",{alignment})),
+    insertImage: async(file:File)=>{
+      if(!["image/png","image/jpeg"].includes(file.type) || file.size>524288) throw new Error("请选择不超过512 KiB的PNG或JPEG图片。");
+      const src=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(new Error("图片读取失败。"));reader.readAsDataURL(file);});
+      const image=new window.Image(); image.src=src; await image.decode();
+      const scale=Math.min(1,600/image.naturalWidth,4096/image.naturalHeight);
+      if(image.naturalWidth*scale<24 || image.naturalHeight*scale<24) throw new Error("图片显示尺寸至少24像素。");
+      command(e=>{if(e.isActive("table")) throw new Error("请将光标移到表格外，再插入图片。");e.commands.setImage({src,alt:file.name,width:Math.round(image.naturalWidth*scale),height:Math.round(image.naturalHeight*scale)});});
+    },
     find,
     replace: (query: string, replacement: string, all: boolean) => {
       if (
@@ -512,7 +515,7 @@ export function createDocumentModel(
               e.state.selection.from,
               e.state.selection.to,
               (node, pos) => {
-                if (["paragraph", "heading"].includes(node.type.name))
+                if (["paragraph", "heading", "table", "image"].includes(node.type.name))
                   tr.setNodeMarkup(pos, undefined, {
                     ...node.attrs,
                     indent: Math.max(

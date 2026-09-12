@@ -436,3 +436,83 @@ test("Office Host unload revokes tools and writing guide, and reinstall preserve
     } finally {await restoredFiber.dispose();}
   } finally {await h.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
 });
+
+test("Tables and embedded images share tools, human leases, atomic validation and cold persistence", async () => {
+  const root = await mkdtemp(join(tmpdir(), "office-rich-content-"));
+  let h = await boot(root);
+  try {
+    const first = await create(h.s);
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jf1kAAAAASUVORK5CYII=";
+    const table = {type:"table",runs:[],table:{rows:[{cells:[{colspan:2,rowspan:1,colwidth:[100,140],header:true,paragraphs:[block("汇总")] }]},{cells:[{colspan:1,rowspan:1,paragraphs:[block("门店A")]},{colspan:1,rowspan:1,paragraphs:[block("待填")] }]}]}};
+    const image = {type:"image",runs:[],image:{src:png,width:240,height:180,alignment:"center",alt:"说明图"}};
+    const exec = {agent:{id:"session-a"},signal:new AbortController().signal,callId:"rich-tool"};
+    await h.ctx.tools.get("content_edit").execute({input:{documentId:first.documentId,baseRevision:0,operationId:"rich-insert",operations:[{op:"document.insertBlocks",afterBlockId:first.state.blockIds[0],blocks:[{...table,clientRef:"table"},{...image,clientRef:"image"}]}]}},exec);
+    let saved = await h.ctx.tools.get("content_read").execute({documentId:first.documentId},exec);
+    const key = saved.state.blockIds[1], imageKey=saved.state.blockIds[2];
+    assert.deepEqual(saved.state.blocks[key].table,table.table);
+    const bad=structuredClone(table);bad.table.rows[1].cells.pop();
+    await assert.rejects(h.s.edit(actor(),{documentId:first.documentId,baseRevision:saved.revision,operationId:"bad-grid",operations:[{op:"document.removeBlock",blockId:imageKey,expectedText:"说明图"},{op:"document.replaceBlock",blockId:key,expectedText:"汇总\n门店A\t待填",block:bad}]}),{code:"INVALID_INPUT"});
+    assert.deepEqual(h.s.projectForAgent(await h.s.read(actor(),first.documentId)),saved,"failed batch retains image and revision");
+    const lease=await h.s.lease(actor(),first.documentId,"rich-browser","acquire");
+    const updated=structuredClone(table);updated.table.rows[1].cells[1].paragraphs=[block("人工修改")];
+    const input={documentId:first.documentId,baseRevision:saved.revision,operationId:"rich-human",operations:[{op:"document.replaceBlock",blockId:key,expectedText:"汇总\n门店A\t待填",block:updated}]};
+    await assert.rejects(h.s.edit(actor(),input),{code:"HUMAN_EDITING"});
+    await h.s.editHuman(actor(),input,{token:lease.lease.token,clientId:"rich-browser"});
+    await h.s.lease(actor(),first.documentId,"rich-browser","release",lease.lease.token);
+    saved=await h.s.read(actor(),first.documentId);
+    assert.equal(saved.state.blocks[key].table.rows[1].cells[1].paragraphs[0].runs[0].text,"人工修改");
+    const invalidImage={...image,image:{...image.image,src:"https://external.test/image.png"}};
+    await assert.rejects(h.s.edit(actor(),{documentId:first.documentId,baseRevision:saved.revision,operationId:"bad-image",operations:[{op:"document.replaceBlock",blockId:imageKey,expectedText:"说明图",block:invalidImage}]}),{code:"INVALID_INPUT"});
+    await h.ctx.fiber.dispose();h=await boot(root);
+    assert.deepEqual((await h.s.read(actor(),first.documentId)).state,saved.state);
+  } finally {await h.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
+});
+
+test("AI image references copy across authorized documents and reject changed or unauthorized sources", async () => {
+  const root = await mkdtemp(join(tmpdir(), "office-image-reference-"));
+  const h = await boot(root);
+  try {
+    const doc = await create(h.s);
+    const src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5ZkAAAAASUVORK5CYII=";
+    const image = {type: "image", runs: [], image: {src, width: 100, height: 100, alt: "图片"}};
+    await h.s.edit(actor(), {documentId: doc.documentId, baseRevision: doc.revision, operationId: "seed-image", operations: [{op: "document.insertBlocks", afterBlockId: null, blocks: [{...image, clientRef: "image"}]}]});
+    const snapshot = await h.s.read(actor(), doc.documentId);
+    const exec = {agent: {id: "session-a"}, signal: new AbortController().signal, callId: "image-ref"};
+    const projected = await h.ctx.tools.get("content_read").execute({documentId: doc.documentId}, exec);
+    const imageId = snapshot.state.blockIds.find(id => snapshot.state.blocks[id].type === "image");
+    const reference = projected.state.blocks[imageId].image.src;
+    assert.match(reference, /^office-image:[^:]+:[^:]+:[a-f0-9]{64}$/);
+    assert.equal(snapshot.state.blocks[imageId].image.src, src);
+    const input = {documentId: doc.documentId, baseRevision: snapshot.revision, operationId: "reuse-image", operations: [{op: "document.insertBlocks", afterBlockId: imageId, blocks: [{...image, image: {...image.image, src: reference, alignment: "right"}, clientRef: "copy"}]}]};
+    const receipt = await h.ctx.tools.get("content_edit").execute({input}, exec);
+    assert.deepEqual(await h.s.editForAgent(actor(), input), receipt);
+    assert.equal((await h.s.read(actor(), doc.documentId)).state.blocks[receipt.ids.copy].image.src, src);
+    await assert.rejects(h.s.editForAgent(actor("c"), input), /./);
+    await assert.rejects(h.s.editForAgent(actor(), {...input, operationId: "bad-hash", operations: [{...input.operations[0], blocks: [{...input.operations[0].blocks[0], image: {...image.image, src: reference.slice(0, -1) + (reference.endsWith("0") ? "1" : "0")}}]}]}), /图片引用/);
+    const other = await h.s.open(actor(), {source: "new", title: "另一文档", operationId: "other-document"});
+    const copied = await h.ctx.tools.get("content_edit").execute({input: {...input, documentId: other.documentId, baseRevision: other.revision, operationId: "cross-document-image", operations: [{...input.operations[0], afterBlockId: null}]}}, exec);
+    assert.equal((await h.s.read(actor(), other.documentId)).state.blocks[copied.ids.copy].image.src, src);
+    assert.equal((await h.s.read(actor(), doc.documentId)).revision, receipt.revision, "copy does not edit source");
+    const foreign = await h.s.open(actor("c"), {source: "new", title: "跨组织来源", operationId: "foreign-source"});
+    await h.s.edit(actor("c"), {documentId: foreign.documentId, baseRevision: foreign.revision, operationId: "foreign-seed", operations: [{op: "document.insertBlocks", afterBlockId: null, blocks: [{...image, clientRef: "foreign"}]}]});
+    const foreignProjection = h.s.projectForAgent(await h.s.read(actor("c"), foreign.documentId));
+    const foreignRef = Object.values(foreignProjection.state.blocks).find(b => b.type === "image").image.src;
+    await assert.rejects(h.s.editForAgent(actor(), {...input, operationId: "unauthorized-source", operations: [{...input.operations[0], blocks: [{...image, image: {...image.image, src: foreignRef}, clientRef: "forbidden"}]}]}), {code: "FORBIDDEN"});
+    assert.equal((await h.s.read(actor(), doc.documentId)).revision, receipt.revision);
+    const workspaceActor = {...actor(), sessionId: "session-a-other-workspace"};
+    await h.ctx.workdshAccess.bindSession(workspaceActor, {sessionId: workspaceActor.sessionId, workspaceId: "other-workspace"});
+    const workspaceDoc = await h.s.open(workspaceActor, {source: "new", title: "另工作区来源", operationId: "workspace-source"});
+    await h.s.edit(workspaceActor, {documentId: workspaceDoc.documentId, baseRevision: workspaceDoc.revision, operationId: "workspace-seed", operations: [{op: "document.insertBlocks", afterBlockId: null, blocks: [{...image, clientRef: "workspace-image"}]}]});
+    const workspaceRef = Object.values(h.s.projectForAgent(await h.s.read(workspaceActor, workspaceDoc.documentId)).state.blocks).find(b => b.type === "image").image.src;
+    await assert.rejects(h.s.editForAgent(actor(), {...input, operationId: "workspace-forbidden", operations: [{...input.operations[0], blocks: [{...image, image: {...image.image, src: workspaceRef}, clientRef: "workspace-copy"}]}]}), {code: "FORBIDDEN"});
+    const legacyRef = reference.replace(`office-image:${doc.documentId}:`, "office-image:");
+    assert.deepEqual(await h.s.editForAgent(actor(), {...input, operations: [{...input.operations[0], blocks: [{...input.operations[0].blocks[0], image: {...input.operations[0].blocks[0].image, src: legacyRef}}]}]}), receipt);
+
+    await h.s.edit(actor(), {documentId: doc.documentId, baseRevision: receipt.revision, operationId: "remove-source", operations: [{op: "document.removeBlock", blockId: imageId, expectedText: "图片"}]});
+    await assert.rejects(h.s.editForAgent(actor(), {...input, operationId: "removed-source"}), /来源图片/);
+    assert.equal((await h.s.read(actor(), other.documentId)).state.blocks[copied.ids.copy].image.src, src, "target retains independent bytes after source removal");
+  } finally {
+    await h.ctx.fiber.dispose();
+    await rm(root, {recursive: true, force: true});
+  }
+});

@@ -1,6 +1,9 @@
 # WorkDSH Office 浏览器编辑插件
 
-Word 文本预览版 `0.1.0-alpha.1`，按官方 Loader/Profile 安装。插件接入原生右侧文件 Tab，文件授权读取与刷新继续由 Harness 拥有；不使用服务端 Office 转换，不依赖本机 Office/LibreOffice，不向第三方上传文件。
+Word 预览版 `0.1.0-alpha.2`（表格/图片增量；历史文本预览版为 `0.1.0-alpha.1`），按官方 Loader/Profile 安装。插件接入原生右侧文件 Tab，文件授权读取与刷新继续由 Harness 拥有；不使用服务端 Office 转换，不依赖本机 Office/LibreOffice，不向第三方上传文件。
+
+当前候选复用 Tiptap 3.31.0 MIT 的 TableKit 与 Image 扩展：工具栏靠前提供「表格」「插入图片」，增删行列、标题行、合并/拆分，以及原生列宽拖动和图片缩放；选中图片后可对齐。AI 使用同一个受授权内容服务分批写入，右侧实时显示。保存重开及 DOCX 导入导出保留已支持的表格结构、嵌入图片和文字样式，导入为独立工作副本，原文件字节不变。每张 PNG/JPEG 512 KiB，表格50行/50列且最多500单元格，批次1 MiB、文档2 MiB。嵌套表格、单元格内图片、复杂浮动布局、完整页眉页脚与 Word 分页仍未完成；其他七类实时适配待开发。DOCX 导入的列表编号、复杂样式继承等仍会告知转换限制，不能保证无损往返。历史记录描述 alpha.1 能力时以对应版本为准。
+
 
 后续交付范围已扩展为Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown八类，见[组件采用方案](../../../docs/design/office/OPEN-SOURCE-STACK.md)与[统一AI接口](../../../docs/design/office/UNIFIED-API.md)。HTML源码/实时预览、Markdown正文/源码编辑均须接入同一内容服务。当前原生 document 新建/编辑/修订同步已打通；以下文件表格是原有适配器范围，完整八类统一接口尚未完成。
 
@@ -10,7 +13,7 @@ Word 文本预览版 `0.1.0-alpha.1`，按官方 Loader/Profile 安装。插件�
 
 普通文档写作由本插件通过 Harness `systemPrompt.section` 提供默认实时写作引导：先打开文档再分批写入，已有编辑器提供默认字体/层级样式；不替换专家 persona 或修改用户 Skill。短报告真实模型验证及范围见[U2证据](../../../docs/evidence/office-natural-writing-u2.md)。
 
-该链路暂不导入 DOCX，也未提供 `content_export`；不是文件保真编辑已完成。验证、运行方式和剩余门槛见[证据](../../../docs/evidence/office-live-u1.md)。
+早期 U1 尚未接入 DOCX 导入与导出；当前候选已经提供浏览器 DOCX 工作副本导入和 `content_export`，保留已支持的文字、表格及图片。完整文件保真仍未完成。早期范围见[U1 历史证据](../../../docs/evidence/office-live-u1.md)。
 
 | 格式 | 当前能力 | 当前限制 |
 | --- | --- | --- |
@@ -38,7 +41,7 @@ corepack pnpm preview:install
 
 `node scripts/probe-office-live.mjs --real-model` 显式使用已配置 preview 模型进行隔离真实验收；临时凭据结束清理，不写入制品。默认探针仍不调用模型。
 
-`probe:office:live` 单独安装 Office 与显式治理依赖，通过官方 Tools 和浏览器验证三批提交、人工编辑及重载；不发真实模型请求。构建生成 `dist/THIRD-PARTY-LICENSES.txt`、`dist/bundled-dependencies.json` 和 `dist/license-review.json`。新增 Tiptap 为 MIT；旧依赖仍有许可文本缺口，未完成最终商业分发签收。
+`probe:office:live` 单独安装 Office 与显式治理依赖，通过官方 Tools 和浏览器验证三批提交、人工编辑及重载；不发真实模型请求。构建生成 `dist/THIRD-PARTY-LICENSES.txt`、`dist/bundled-dependencies.json` 和 `dist/license-review.json`。新增 Tiptap 为 MIT；完整实验构建中旧依赖的历史许可缺口不代表Word-only分发。alpha.2独立安装包排除旧适配器并校验实际许可文本齐全。
 
 
 ### U2/U3 原生文件交付与下载
@@ -49,7 +52,7 @@ corepack pnpm preview:install
 
 ### 原生文档常用排版
 
-支持字体/字号、颜色/高亮、标题1—6、对齐、行距/缩进、项目符号与编号列表（最多六级）、撤销重做、全选/清除格式、段内文字查找替换、缩放。人工和 AI 使用同一套语义样式，保存重开与浏览器 DOCX 下载保留上述格式。按钮分组换行；不等同于 Word 完整功能，表格、图片、页眉页脚、分页和旧 DOCX 保真迁移尚待后续。见[工具栏证据](../../../docs/evidence/office-document-toolbar-u2.md)。
+支持字体/字号、颜色/高亮、标题1—6、对齐、行距/缩进、项目符号与编号列表（最多六级）、撤销重做、全选/清除格式、段内文字查找替换、缩放。人工和 AI 使用同一套语义样式，保存重开与浏览器 DOCX 下载保留上述格式。候选 alpha.2 增加表格行列、合并拆分、列宽拖动与图片上传/缩放/对齐，工具栏单行横向滚动；不等同于 Word 完整功能，页眉页脚、分页和完整 DOCX 保真迁移尚待后续。见[工具栏证据](../../../docs/evidence/office-document-toolbar-u2.md)。
 
 工具栏现已复用 Tiptap 官方 MIT UI Components 的 Toolbar/ToolbarGroup、Button 和 SVG（锁定来源及适配差异见 src/live/tiptap-ui/SOURCE.md），44px 单行，窄栏横向滚动。未引入收费 DOCX 模板；文档格式操作继续使用同一实时保存服务。
 
@@ -59,7 +62,7 @@ corepack pnpm preview:install
 
 输入 `@` 时，Office 分组列出当前任务授权可访问的工作副本，每份提供「参考资料」与「修改此文档」两项。参考资料保留原件、生成新文档；修改对象序列化为明确 target，读取最新修订后修改。类型和引用用途直接展示在原生输入标签内，不额外占用一行说明。未选择类型时仍可使用自然语言。原生 `@` 文件和任务引用入口保留；本增量的显式 reference/target 标签针对 Office 工作副本，不宣称已支持任意文件保真导入。
 
-八类输出选择均可用，但当前统一内容工具的实时适配仅 Word 文本工作副本就绪；其余菜单明确显示「实时编辑待接入」，输出意图告知 AI 不得误建为 Word 或假称完成实时编辑。类型和角色经原生 codec 在提交时序列化为模型可见 JSON；这是输入意图，不替代 Host 授权和严格操作校验。文档序列化重新检查访问，切换任务后的旧引用拒绝发送并要求重新选择。多个输出或 target 要求 AI 澄清。
+八类输出选择均可用，但当前统一内容工具的实时适配仅 Word 工作副本就绪；其余菜单明确显示「实时编辑待接入」，输出意图告知 AI 不得误建为 Word 或假称完成实时编辑。类型和角色经原生 codec 在提交时序列化为模型可见 JSON；这是输入意图，不替代 Host 授权和严格操作校验。文档序列化重新检查访问，切换任务后的旧引用拒绝发送并要求重新选择。多个输出或 target 要求 AI 澄清。
 
 
 ## 安装、卸载与内容保留
@@ -70,7 +73,7 @@ corepack pnpm preview:install
 
 ### 安装与卸载 Office 候选包
 
-以下命令用于本仓库已配置的 `preview` Profile，要求完成开发环境准备且本地候选 `.tgz` 已存在；这是[开发预览版本](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1)，可下载附件 `.tgz` 或在本仓库生成候选包。使用 Node.js 22.23.2。先在运行预览的终端按 `Ctrl+C` 停止应用，再执行安装和启动：
+以下命令用于本仓库已配置的 `preview` Profile，要求完成开发环境准备，先运行 `corepack pnpm release:office:pack` 生成本地 alpha.2 候选 `.tgz`。已发布的 [alpha.1](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1) 另有下载附件，能力范围以对应版本为准。使用 Node.js 22.23.2。先在运行预览的终端按 `Ctrl+C` 停止应用，再执行安装和启动：
 
 ```bash
 cd /Users/techflag/project/workdsh
@@ -78,7 +81,7 @@ cd /Users/techflag/project/workdsh
 # 安装本地候选包 / Install the local candidate
 DSH_HOME="$PWD/.test-runtime/preview" \
   corepack pnpm exec dsh plugin --profile preview add \
-  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.1.tgz"
+  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.2.tgz"
 
 # 启动 / Start
 corepack pnpm preview
@@ -91,10 +94,18 @@ DSH_HOME="$PWD/.test-runtime/preview" \
 ```
 请保持安装、卸载和启动使用同一 `DSH_HOME` 与 Profile。卸载撤销 Office 入口及工具，保留已保存文档和原文件；重新安装恢复入口。新建 Word 无需 `@` 引用，在任务输入框选择 `/office` → Word 即可。
 
-生命周期与真实tgz冷启动重装证据见 `docs/evidence/office-word-release-u3.md`；当前Word文本范围见 CHANGELOG.md。完整表格、图片和页面排版仍是后续功能。
+生命周期与真实tgz冷启动重装证据见 `docs/evidence/office-word-release-u3.md`；已发布 alpha.1 与开发候选 alpha.2 的范围分别见 CHANGELOG.md。候选支持有界表格和嵌入图片，完整页面排版仍是后续功能。
 
-## Word alpha.1 分发范围与导出重试
+## Word-only 分发范围与导出重试
 
 运行 `corepack pnpm release:office:pack` 生成 Word-only tgz，许可缺失或未知依赖时打包失败。该制品仅注册 DOCX 文件预览，剔除旧 Univer/Excel/PPT 代码及运行依赖；上面的多格式适配表描述源码中的实验开发形态，不属于本版分发范围。八类输出菜单保留后续路线，其他七类实时适配仍待开发。
 
 同一文档修订与内容产生稳定 DOCX 字节和路径。`content_export` 可传 `baseRevision`（来自 content_read）；文档已更新时拒绝旧修订导出。官方 bash 将完整临时文件独占链接到目标，已存在时核对摘要，不覆盖修改后的文件。写入回执丢失时同一修订重试可复用文件；交付失败/结果未知返回现有路径，先核对原生卡片再重试 present。取消后不继续交付。幂等文件不表示 present 卡片具备跨进程去重，跨 Host/执行世界迁移及掉电恢复尚未验收。
+
+### 已存图片的 AI 引用（alpha.2 开发）
+
+content_open/content_read 的模型快照将图片 src 投影为 `office-image:<sourceDocumentId>:<blockId>:<SHA-256>`，不重复返回 Base64。将该 src 原样放入 content_edit 的 image 载荷，可在同一文档复用或复制到另一个有权限的 Word 工作副本，并调整宽高、对齐或替代文字。Host 分别检查目标编辑和来源读取权限、组织/工作区边界，核对原图哈希，再走既有修订/租约/提交。来源不变，目标独立保存原始图片字节，来源以后修改/删除不会联动目标。旧版不含源 documentId 的短引用仍限定目标文档，保持兼容。
+
+模型快照仅为投影；页面、持久状态、DOCX 保留嵌入图片，未增加资产注册表或文件访问底座。范围仅限可读取的 Office 工作副本文档，尚不支持新文件资料/远程 URL/其余七类编辑器的跨格式制作。失效来源须重新读取；源删除后的旧引用重试仍可能失败，通用资产幂等未完成。新图片仍使用已有 PNG/JPEG 嵌入输入。
+
+下一阶段开发计划：[Word 完善 → PPT 实时制作 → 其他六类](../../../docs/design/office/NEXT-STAGE.md)。各阶段以真实文件、实时编辑和独立插件生命周期验收，规划不代表能力已完成。

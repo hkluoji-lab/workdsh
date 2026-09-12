@@ -1,7 +1,7 @@
 import type { OfficeSnapshot } from "workdsh-contracts/office";
 import type { Context } from "@deepseek-ai/cordis";
 import { defineTool, type ToolRunContext } from "@deepseek-ai/dsh-tools";
-import { capabilities, editInput, openInput, parse } from "./model.js";
+import { capabilities, openInput, parse } from "./model.js";
 import { exportAndPresent } from "./export.js";
 import { registerAuthoringGuide } from "./authoring.js";
 export const name = "workdsh-office-tools";
@@ -76,7 +76,7 @@ const run = {
   },
 } as const;
 const blockProperties = {
-  type: { type: "string", enum: ["paragraph", "heading"], required: true },
+  type: { type: "string", enum: ["paragraph", "heading", "table", "image"], required: true },
   level: {
     type: "integer",
     description: "Required for heading (1–6); omit for paragraph.",
@@ -85,10 +85,15 @@ const blockProperties = {
   style: paragraphStyleSchema,
   list: listSchema,
 } as const;
+const paragraphBlock = {type:"object",additionalProperties:false,properties:{...blockProperties,type:{type:"string",enum:["paragraph","heading"],required:true}}} as const;
+const extendedBlockProperties = {...blockProperties,
+  table:{type:"object",additionalProperties:false,properties:{rows:{type:"array",required:true,items:{type:"object",additionalProperties:false,properties:{cells:{type:"array",required:true,items:{type:"object",additionalProperties:false,properties:{colspan:{type:"integer",required:true},rowspan:{type:"integer",required:true},header:{type:"boolean"},colwidth:{type:"array",items:{type:"integer"}},paragraphs:{type:"array",required:true,items:paragraphBlock}}}}}}}}},
+  image:{type:"object",additionalProperties:false,properties:{src:{type:"string",required:true,description:"Use office-image:sourceDocumentId:blockId:hash returned by content_read to copy an image from an authorized Office document. New image: embedded PNG/JPEG data URL, up to 512 KiB. Remote URLs unsupported."},alt:{type:"string"},width:{type:"number",required:true},height:{type:"number",required:true},alignment:{type:"string",enum:["left","center","right"]}}},
+} as const;
 const block = {
   type: "object",
   additionalProperties: false,
-  properties: blockProperties,
+  properties: extendedBlockProperties,
 } as const;
 const operation = {
   oneOf: [
@@ -106,7 +111,7 @@ const operation = {
           items: {
             type: "object",
             additionalProperties: false,
-            properties: { ...blockProperties, clientRef: string },
+            properties: { ...extendedBlockProperties, clientRef: string },
           },
           required: true,
         },
@@ -170,6 +175,13 @@ async function actor(ctx: Context, exec: ToolRunContext) {
     exec.signal,
   );
 }
+type WireValue = string | number | boolean | null | WireValue[] | {[key:string]:WireValue};
+function jsonValue(value:unknown):WireValue {
+  if(value===null || typeof value==="string" || typeof value==="number" || typeof value==="boolean") return value;
+  if(Array.isArray(value)) return value.map(jsonValue);
+  if(typeof value==="object") return Object.fromEntries(Object.entries(value).filter(([,v])=>v!==undefined).map(([k,v])=>[k,jsonValue(v)]));
+  throw new Error("Invalid Office wire value");
+}
 function wire(s: OfficeSnapshot) {
   return {
     ...s,
@@ -178,7 +190,7 @@ function wire(s: OfficeSnapshot) {
       blocks: Object.fromEntries(
         s.state.blockIds.map((id) => {
           const b = s.state.blocks[id]!;
-          return [id, { ...b, runs: b.runs.map((r) => ({ ...r })) }];
+          return [id,jsonValue(b)];
         }),
       ),
     },
@@ -201,7 +213,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_export",
       description:
-        "Export a committed document as real DOCX through the official present card. Use baseRevision from content_read. Same document/revision/content has a stable path; uncertain-write retries check existing bytes and never overwrite conflicts. Uses official bash approval and requires bash/present in this Session. On delivery-only failure, check the card and retry present for the returned path. The live editor remains editable. No editable tables or lossless DOCX import.",
+        "Export a committed document as real DOCX through the official present card. Use baseRevision from content_read. Same document/revision/content has a stable path; uncertain-write retries check existing bytes and never overwrite conflicts. Uses official bash approval and requires bash/present in this Session. On delivery-only failure, check the card and retry present for the returned path. The live editor remains editable. Tables and embedded PNG/JPEG images are retained; complex Word pagination is not lossless.",
       parameters: { documentId: string, baseRevision: {type: "integer", description: "Latest revision from content_read. Reuse on uncertain-write retries; rejects changed document revisions."} },
       output: {
         schema: {
@@ -261,11 +273,11 @@ export function apply(ctx: Context) {
       output: { schema: snapshot, render },
       execute: async (args, exec) =>
         wire(
-          await ctx.workdshOfficeContent.open(
+          ctx.workdshOfficeContent.projectForAgent(await ctx.workdshOfficeContent.open(
             await actor(ctx, exec),
             parse(openInput, args.input),
             exec.signal,
-          ),
+          )),
         ),
     }),
   ));
@@ -273,16 +285,16 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_read",
       description:
-        "Read the latest committed document, revision and stable block/run IDs. Re-read after a user edit or REVISION_CONFLICT; never guess revision or text.",
+        "Read the latest committed document, revision and stable block/run IDs. Re-read after a user edit or REVISION_CONFLICT; never guess revision or text. Image src values are opaque references, not Base64; copy them exactly into content_edit for the target document; source read access is checked.",
       parameters: { documentId: string },
       output: { schema: snapshot, render },
       execute: async (args, exec) =>
         wire(
-          await ctx.workdshOfficeContent.read(
+          ctx.workdshOfficeContent.projectForAgent(await ctx.workdshOfficeContent.read(
             await actor(ctx, exec),
             args.documentId,
             exec.signal,
-          ),
+          )),
         ),
     }),
   ));
@@ -290,7 +302,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_capabilities",
       description:
-        "Discover implemented operations and limits. Currently native document paragraphs/headings; DOCX export through content_export is available when official bash/present tools are mounted; DOCX import and other editor kinds remain unavailable.",
+        "Discover implemented operations and limits. Currently native document paragraphs/headings/tables/embedded images; DOCX export through content_export is available when official bash/present tools are mounted; Browser DOCX working-copy import is available; other editor kinds remain unavailable.",
       parameters: {},
       output: {
         schema: {
@@ -311,7 +323,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_edit",
       description:
-        "Atomically commit at most 100 typed operations / 128 KiB. Each batch is visible without waiting for the whole answer. Use baseRevision from content_read and a new operationId. Retry uncertain delivery with exactly the same payload and ID. HUMAN_EDITING: user holds the editor; stop writing and wait, do not repeatedly call. A committed receipt is durable content, not an exported Office file.",
+        "Atomically commit at most 100 typed operations / 1 MiB. Each batch is visible without waiting for the whole answer. Use baseRevision from content_read and a new operationId. Retry uncertain delivery with exactly the same payload and ID. HUMAN_EDITING: user holds the editor; stop writing and wait, do not repeatedly call. A committed receipt is durable content, not an exported Office file.",
       parameters: {
         input: {
           type: "object",
@@ -344,9 +356,9 @@ export function apply(ctx: Context) {
         render,
       },
       execute: async (args, exec) =>
-        ctx.workdshOfficeContent.edit(
+        ctx.workdshOfficeContent.editForAgent(
           await actor(ctx, exec),
-          parse(editInput, args.input),
+          args.input,
           exec.signal,
         ),
     }),

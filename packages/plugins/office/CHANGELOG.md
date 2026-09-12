@@ -1,5 +1,16 @@
 # Office release notes
 
+## 0.1.0-alpha.2 — Word tables/images preview (2026-09-12)
+
+- Reuse MIT Tiptap TableKit and Image extensions for table insertion, row/column editing, header rows, merge/split, column dragging and native image resize.
+- Table/image entry points appear near the start of the compact native toolbar.
+- AI tools and human editing use the same validated block model, CAS, receipts and human leases; table/image IDs map after a human commit.
+- DOCX working copies retain supported merged tables, column widths, embedded PNG/JPEG images, sizes/alignment and existing text styles; original bytes remain available.
+- Semantic comparison ignores DTO property order, preventing endless saving after Host validation.
+- Model reads expose opaque image references; the existing content service resolves authorized source images and copies their original bytes into the target working copy. Document understanding stays with the model; no separate agent or reference module is added.
+- PNG/JPEG up to512 KiB per image; 1 MiB batch, 2 MiB document, 50×50 grid/500 cells maximum. Nested tables, cell images, floating-layout fidelity, headers/footers and complete pagination remain unsupported.
+
+
 ## 0.1.0-alpha.1 — Word text preview (2026-09-12)
 
 - Independent Harness Host/Client plugin with six shared content tools and a saved semantic document service.

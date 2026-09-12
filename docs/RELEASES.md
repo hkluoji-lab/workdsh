@@ -2,6 +2,12 @@
 
 2026-09-12。当前新增单个专家0.1 alpha及匹配的身份/授权/审计/Skill/展示配套；下方旧Skill发布信息保留为历史基线。每个模块保留自己的版本，GitHub Release 按模块建立，不再用一个仓库快照版本代替全部模块。
 
+## Word alpha.2 预览版
+
+[office-v0.1.0-alpha.2](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.2)：独立 workdsh-plugin-office@0.1.0-alpha.2，Harness0.1.5-rc.1 Web/Cordis4.0.2。包含实时Word工作副本、MIT Tiptap表格/图片、已支持DOCX导入导出，原件保留，原生文件卡与下载。附件为Word-only tgz、摘要与源提交清单；基础身份/授权/审计配套沿用alpha.1/专家发布版本，不需安装其他编辑器。未发布npm。参阅[安装说明](../packages/plugins/office/README.md)、[验收](evidence/office-word-final-u3.md)及[下一阶段](design/office/NEXT-STAGE.md)。
+
+模型单批或多批取决于任务，提交后页面自动更新；最近长图资料模型行为仍有文件工具绕行，不承诺每次固定分批。完整分页/页眉页脚、嵌套表格、单元格图片与其他七类实时编辑未完成，Microsoft Word/真实IME未验。历史alpha.1保持不变。
+
 ## 单个专家首个alpha / Individual Experts first alpha
 
 [experts-v0.1.0-alpha.1](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.1)发布专家插件以及本次验证所用配套包、SHA256SUMS与release-manifest.json。此页聚合配套下载，不意味着模块统一版本。未发布npm注册表，contracts/UI为开发依赖而非用户安装包。

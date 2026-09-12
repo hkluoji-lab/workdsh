@@ -58,7 +58,7 @@ export const runInput = z
     style: textStyle.optional(),
   })
   .strict();
-export const blockInput = z
+export const paragraphInput = z
   .object({
     type: z.enum(["paragraph", "heading"]),
     level: z.number().int().min(1).max(6).optional(),
@@ -72,6 +72,57 @@ export const blockInput = z
       b.type === "heading" ? b.level !== undefined : b.level === undefined,
     "Only headings have a level",
   );
+export const imageInput = z.object({
+  src: z.string().max(699100).regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/).refine(src => {
+    const data = src.split(",")[1]!;
+    return !!data && data.length % 4 === 0 && data.length * 3 / 4 - (data.endsWith("==") ? 2 : data.endsWith("=") ? 1 : 0) <= 524288 &&
+      (src.startsWith("data:image/png;") ? data.startsWith("iVBORw0KGgo") : data.startsWith("/9j/"));
+  }, "Only embedded PNG/JPEG up to 512 KiB are supported"),
+  alt: z.string().max(500).optional(),
+  width: z.number().min(24).max(4096), height: z.number().min(24).max(4096),
+  alignment: z.enum(["left", "center", "right"]).optional(),
+}).strict();
+function validListOutline(blocks:OfficeBlockInput[]):boolean {
+  const outline:{type:string;start?:number}[]=[];
+  for(const block of blocks){const list=block.list;if(!list){outline.length=0;continue;}
+    if((!list.continuation && block.type!=="paragraph") || list.depth>outline.length)return false;
+    outline.length=Math.min(outline.length,list.depth+1);const previous=outline[list.depth];
+    if(list.continuation && (!previous || previous.type!==list.type || previous.start!==list.start))return false;
+    outline[list.depth]={type:list.type,start:list.start};
+  }
+  return true;
+}
+export const tableInput = z.object({rows:z.array(z.object({cells:z.array(z.object({
+  colspan:z.number().int().min(1).max(50), rowspan:z.number().int().min(1).max(50),
+  colwidth:z.array(z.number().int().min(0).max(2000)).min(1).max(50).optional(),
+  header:z.boolean().optional(), paragraphs:z.array(paragraphInput).min(1).max(100),
+}).strict()).max(50)}).strict()).min(1).max(50)}).strict().refine(table => {
+  const grid:boolean[][] = table.rows.map(() => []); let count=0;
+  for (let row=0; row<table.rows.length; row++) {
+    let col=0;
+    for (const cell of table.rows[row]!.cells) {
+      while (grid[row]![col]) col++;
+      if (++count>500 || row+cell.rowspan>grid.length || col+cell.colspan>50 ||
+          cell.colwidth && cell.colwidth.length!==cell.colspan || !validListOutline(cell.paragraphs)) return false;
+      for(let y=row;y<row+cell.rowspan;y++) for(let x=col;x<col+cell.colspan;x++) {
+        if(grid[y]![x]) return false; grid[y]![x]=true;
+      }
+      col+=cell.colspan;
+    }
+  }
+  const width=grid[0]!.length;
+  return width>0 && grid.every(row=>row.length===width && Array.from({length:width},(_,i)=>row[i]).every(Boolean));
+}, "Table must be a complete rectangular grid without overlapping merges");
+export const blockInput = z.object({
+  type:z.enum(["paragraph","heading","table","image"]),
+  level:z.number().int().min(1).max(6).optional(),
+  runs:z.array(runInput).max(1000), style:paragraphStyle.optional(),list:listStyle.optional(),
+  table:tableInput.optional(), image:imageInput.optional(),
+}).strict().refine(b => {
+  if(b.type==="table" || b.type==="image") return b.runs.length===0 && !b.level && !b.style && !b.list &&
+    (b.type==="table" ? !!b.table && !b.image : !!b.image && !b.table);
+  return !b.table && !b.image && (b.type==="heading" ? b.level!==undefined : b.level===undefined);
+}, "Block payload must match its type");
 export const operation = z.discriminatedUnion("op", [
   z
     .object({
@@ -145,8 +196,9 @@ export function parse<T>(schema: z.ZodType<T>, value: unknown): T {
     );
   return result.data;
 }
-export const textOf = (block: OfficeBlockInput) =>
-  block.runs.map((r) => r.text).join("");
+export const textOf = (block: OfficeBlockInput): string =>
+  block.type === "table" ? block.table!.rows.map(row=>row.cells.map(cell=>cell.paragraphs.map(textOf).join("\n")).join("\t")).join("\n") :
+  block.type === "image" ? block.image!.alt ?? "" : block.runs.map((r) => r.text).join("");
 
 /** Pure bounded block reducer. A failed operation cannot mutate the stored state. */
 export function applyOperations(
@@ -162,6 +214,10 @@ export function applyOperations(
     blockId: string,
     previous?: OfficeBlock,
   ): OfficeBlock {
+    if (input.type === "table" || input.type === "image") {
+      ensure(textOf(input).length <= 20000, "LIMIT_REACHED", "表格文本最多20000字符。");
+      return {blockId,type:input.type,runs:[],...(input.table ? {table:structuredClone(input.table)} : {}),...(input.image ? {image:structuredClone(input.image)} : {})};
+    }
     const reusable = [...(previous?.runs ?? [])];
     const runs = input.runs
       .filter((r) => r.text.length)
@@ -272,7 +328,7 @@ export function applyOperations(
     "文档须保留 1–2000 个段落。",
   );
   ensure(
-    JSON.stringify(next).length <= 2 * 1024 * 1024,
+    new TextEncoder().encode(JSON.stringify(next)).byteLength <= 2 * 1024 * 1024,
     "LIMIT_REACHED",
     "文档内容达到当前 2 MiB 限额。",
   );
@@ -288,16 +344,18 @@ export const capabilities = {
     "document.replaceBlock",
     "document.removeBlock",
   ],
-  blocks: ["paragraph", "heading"],
+  blocks: ["paragraph", "heading", "table", "image"],
+  tables: {maxRows:50,maxColumns:50,maxCells:500,mergedCells:true,columnWidths:true},
+  images: {formats:["png","jpeg"],maxBytes:524288,embedded:true},
   marks: ["bold", "italic", "underline", "strike"],
   textStyle: ["fontFamily", "fontSize", "color", "backgroundColor"],
   paragraphStyle: ["alignment", "lineHeight", "indent"],
   lists: { types: ["bullet", "ordered"], maxDepth: 5, continuation: true },
-  import: false,
+  import: {formats:["docx"],browserWorkingCopy:true,lossless:false},
   export: {formats: ["docx"], requires: ["bash", "present"], frozenRevision: true, maxBytes: 1048576},
   browserRequiredForEdit: false,
   limits: {
-    batchBytes: 131072,
+    batchBytes: 1048576,
     operations: 100,
     blocks: 2000,
     contentBytes: 2097152,

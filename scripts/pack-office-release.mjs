@@ -19,8 +19,8 @@ const manifest = JSON.parse(await readFile(join(plugin, "package.json"), "utf8")
 for (const name of ["@univerjs/preset-sheets-core", "@univerjs/presets", "exceljs", "pptx-preview"]) delete manifest.dependencies[name];
 delete manifest.devDependencies;
 delete manifest.scripts;
-manifest.description = "Independent Harness plugin: live Word text working copies (alpha preview)";
-manifest.workdshRelease = {scope: "word-text-preview", wordOnly: true};
+manifest.description = "Independent Harness plugin: live Word working copies with tables and embedded images (alpha preview)";
+manifest.workdshRelease = {scope: "word-rich-preview", wordOnly: true};
 await writeFile(join(stage, "package.json"), JSON.stringify(manifest, null, 2) + "\n");
 for (const file of manifest.files) await cp(join(plugin, file), join(stage, file), {recursive: true});
 execFileSync("corepack", ["pnpm", "pack", "--pack-destination", destination], {cwd: stage, stdio: "inherit"});
@@ -28,5 +28,5 @@ const filename = `${manifest.name}-${manifest.version}.tgz`;
 const bytes = await readFile(join(destination, filename));
 const sha256 = createHash("sha256").update(bytes).digest("hex");
 await writeFile(join(destination, "SHA256SUMS.txt"), `${sha256}  ${filename}\n`);
-await writeFile(join(destination, "release-manifest.json"), JSON.stringify({name: manifest.name, version: manifest.version, scope: manifest.workdshRelease.scope, harness: "0.1.5-rc.1", filename, sha256, bytes: bytes.length, licenseTextsComplete: true, bundledLicenses: [...new Set(bundled.map(p => p.license))], limitations: ["No editable tables, images, headers/footers or complete pagination", "Other seven live adapters pending", "No Word/WPS or real OS IME acceptance"]}, null, 2) + "\n");
+await writeFile(join(destination, "release-manifest.json"), JSON.stringify({name: manifest.name, version: manifest.version, scope: manifest.workdshRelease.scope, harness: "0.1.5-rc.1", filename, sha256, bytes: bytes.length, licenseTextsComplete: true, bundledLicenses: [...new Set(bundled.map(p => p.license))], limitations: ["No nested tables, images in cells, headers/footers or complete pagination; embedded PNG/JPEG up to 512 KiB", "Other seven live adapters pending", "Microsoft Word, real OS IME and complete pagination not verified; WPS sample checks are partial"]}, null, 2) + "\n");
 console.log(`Word release candidate: ${filename}; ${bytes.length} bytes; licenses complete`);

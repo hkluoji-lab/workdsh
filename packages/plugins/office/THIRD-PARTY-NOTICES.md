@@ -13,3 +13,6 @@ Tiptap UI Components (MIT), commit 799929bea4804c73767562b69f8acc2acdb8ac86; ada
 ## Word-only release variant
 
 `corepack pnpm release:office:pack` builds the Word-only variant. It excludes the experimental Univer/ExcelJS/pptx-preview adapters from code and package dependencies; only DOCX file previews are registered. Both Word text-copy editing and original-layout DOCX viewing remain available. The eight output choices still describe the future roadmap. `dist/release-scope.json` identifies the variant. All actual bundled dependency license texts must be present; unknown licenses block this release build. isarray 1.0.0's MIT text is retained from its packaged README License section, not inferred from metadata. Dual-licensed `(MIT OR GPL-3.0-or-later)` code is distributed under its MIT option; `(MIT AND Zlib)` includes both texts. Experimental full builds remain subject to the legacy review described above.
+
+
+Word alpha.2 adds the MIT-licensed @tiptap/extension-table and @tiptap/extension-image at exactly 3.31.0. Native TableKit commands, column resize/cell selection and Image/ResizableNodeView are reused without copying their implementations. Bundled license texts are included in the generated THIRD-PARTY-LICENSES.txt and verified by the Word-only pack gate.

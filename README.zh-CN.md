@@ -27,7 +27,9 @@ WorkDSH 在 DeepSeek Harness 上提供可复用技能与面向工作的界面。
 | 能力按需组合 | Office 是独立 Host/Client 插件，菜单、工具和编辑入口随插件装配；卸载保留已保存文档。 |
 | 保留 Harness 原生体验 | 原生会话、附件、模型、权限与任务队列照常使用；不另造执行器或输入框。 |
 
-**当前 Word 边界：**支持标题、段落、文字样式、列表、查找替换、缩放、跟随阅读和 DOCX 文本副本导入/下载。表格、图片、页眉页脚及完整分页排版尚未进入统一编辑模型，导入时明确提示并保留原文件。八类类型选择已提供，其余七类实时适配待接入。Word alpha.1 提供独立[预览安装包](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1)。
+**已发布 Word alpha.1 边界：**支持标题、段落、文字样式、列表、查找替换、缩放、跟随阅读和 DOCX 文本副本导入/下载。表格、图片、页眉页脚及完整分页排版尚未进入统一编辑模型，导入时明确提示并保留原文件。八类类型选择已提供，其余七类实时适配待接入。Word alpha.1 提供独立[预览安装包](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1)。
+
+**Word alpha.2：**表格和图片直接复用 MIT Tiptap 扩展，工具栏提供增删行列、合并拆分、列宽拖动、图片插入/缩放/对齐。AI 与页面共享同一文档接口，保存重开及已支持的 DOCX 导入导出保留结构和文字样式。见[范围与限制](packages/plugins/office/README.md)，[下载 alpha.2 预览安装包](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.2)。
 
 > **兼容范围：**已验证官方 Harness **`0.1.5-rc.1` Web Profile**。使用 Harness **`0.1.2-rc.1`** 的 DSH Desktop 存在 Skill alpha.24 安装后无导航入口的问题，重启后也可能不显示。**本次发布未修复该问题。**详见[兼容说明](docs/RELEASES.md)。
 
@@ -57,13 +59,13 @@ Experts now ship as an independent Harness Host/Client plugin. One plugin manage
 
 ![Office output selector / Office 输出类型选择](docs/assets/screenshots/office-output-selector.png)
 
-*在原生任务输入框通过 `/office` 选择输出类型。Word 支持实时写作，其余类型的实时编辑适配仍待接入。
+*在原生任务输入框通过 `/office` 选择输出类型。Word 支持实时写作，其余类型的实时编辑适配仍待接入。*
 
-**Office alpha.1 发布范围：**安装包仅包含 Word 文本编辑与 DOCX 原始排版预览，旧 Excel/PPT 实验文件适配器不随本版交付。执行 `corepack pnpm release:office:pack` 生成候选包，打包时校验实际依赖许可文本，并排除旧适配器依赖。
+**版本与打包范围：**历史 alpha.1 提供 Word 文本编辑与 DOCX 原始排版预览；当前 `corepack pnpm release:office:pack` 生成alpha.2 Word 预览包，新增表格及嵌入图片。两者均为 Word-only，打包校验实际依赖许可文本并排除旧 Excel/PPT 实验适配器及依赖。
 
 ### 安装与卸载 Office 候选包
 
-以下命令用于本仓库已配置的 `preview` Profile，要求完成开发环境准备且本地候选 `.tgz` 已存在；这是[开发预览版本](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1)，可下载附件 `.tgz` 或在本仓库生成候选包。使用 Node.js 22.23.2。先在运行预览的终端按 `Ctrl+C` 停止应用，再执行安装和启动：
+以下命令用于本仓库已配置的 `preview` Profile，要求完成开发环境准备，先运行 `corepack pnpm release:office:pack` 生成本地 alpha.2 候选 `.tgz`。已发布的 [alpha.1](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1) 另有下载附件，能力范围以对应版本为准。使用 Node.js 22.23.2。先在运行预览的终端按 `Ctrl+C` 停止应用，再执行安装和启动：
 
 ```bash
 cd /Users/techflag/project/workdsh
@@ -71,7 +73,7 @@ cd /Users/techflag/project/workdsh
 # 安装本地候选包 / Install the local candidate
 DSH_HOME="$PWD/.test-runtime/preview" \
   corepack pnpm exec dsh plugin --profile preview add \
-  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.1.tgz"
+  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.2.tgz"
 
 # 启动 / Start
 corepack pnpm preview
@@ -215,3 +217,5 @@ corepack pnpm probe:browser
 功能模块位于 `packages/plugins/<domain>`，提供方位于 `packages/providers/<name>`，共享包位于 `packages/{contracts,ui,bundle}`。目录脚手架不等于可安装插件，详见[插件目录说明](packages/plugins/README.md)。
 
 底座采用 [DeepSeek Harness](https://deepseek-harness.github.io/deepseek-harness/)，交互参考包括 [WorkBuddy](https://www.workbuddy.cn/)。WorkDSH 是独立项目，并非上述团队的官方产品。
+
+下一阶段开发计划：[Word 完善 → PPT 实时制作 → 其他六类](docs/design/office/NEXT-STAGE.md)。各阶段以真实文件、实时编辑和独立插件生命周期验收，规划不代表能力已完成。

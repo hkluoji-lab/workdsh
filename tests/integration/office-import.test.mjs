@@ -29,8 +29,8 @@ test('Browser DOCX importer handles rich text and complex-file warnings and reje
     assert.deepEqual(result.value.blocks[0].runs[0].marks,['bold']);
     assert.equal(result.value.blocks[0].runs[0].style.fontSize,18);
     assert.equal(result.value.blocks[0].runs[0].style.color,'#224466');
-    assert.ok(result.value.warnings.includes('表格布局') && result.value.warnings.includes('图片/图表') && result.value.warnings.includes('页眉页脚/注释'));
-    assert.equal(result.value.blocks[1].runs[0].text,'表格文字');
+    assert.ok(!result.value.warnings.includes('表格布局') && result.value.warnings.includes('图片/图表') && result.value.warnings.includes('页眉页脚/注释'));
+    assert.equal(result.value.blocks[1].table.rows[0].cells[0].paragraphs[0].runs[0].text,'表格文字');
     assert.equal((await parse(xml,{'word/header1.xml':'<header/>'})).value.operationId,result.value.operationId);
     assert.match((await parse('<w:document>')).error,/损坏/);
     assert.match((await parse('<!DOCTYPE test>'+open+close)).error,/DTD/);

@@ -20,7 +20,8 @@ import { chromium, expect } from "@playwright/test";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const packageRoundtrip = process.argv.includes("--package-roundtrip");
 const inputOnly = process.argv.includes("--input-only") || packageRoundtrip;
-const realModel = process.argv.includes("--real-model");
+const realRich = process.argv.includes("--real-rich");
+const realModel = process.argv.includes("--real-model") || realRich;
 const artifacts = join(
   root,
   inputOnly ? ".artifacts/office-input" : realModel ? ".artifacts/office-live-real" : ".artifacts/office-live",
@@ -249,7 +250,7 @@ try {
     join(fixture, "index.js"),
     `
 import {assembleContextFor} from '@deepseek-ai/dsh-agent';
-export const inject=['connection','workdshSessionAccess','tools','systemPrompt','workdshIdentity'];
+export const inject=['connection','workdshSessionAccess','tools','systemPrompt','workdshIdentity'${realModel ? ", 'workdshOfficeContent'" : ""}];
 export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/api/office-live-probe',methods:['POST'],requestBody:'buffered',async fetch(request){try{
  const r=await request.json();let value;
  if(r.action==='create'){value=await ctx.workdshSessionAccess.create({workspaceId:${JSON.stringify(workspaceId)}});}
@@ -535,6 +536,78 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
   pass(
     "Creation automatically opens the empty native right Tab without content_present; three committed batches appear incrementally",
   );
+  doc = await tool("content_read", {documentId:doc.documentId});
+  const richP = text=>({type:"paragraph",runs:[{text,marks:[]}]});
+  const richImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jf1kAAAAASUVORK5CYII=";
+  await tool("content_edit",{input:{documentId:doc.documentId,baseRevision:doc.revision,operationId:"rich-table-image",operations:[{op:"document.insertBlocks",afterBlockId:doc.state.blockIds.at(-1),blocks:[
+    {type:"table",runs:[],clientRef:"rich-table",table:{rows:[{cells:[{colspan:2,rowspan:1,colwidth:[120,180],header:true,paragraphs:[richP("表格实时展示")] }]},{cells:[{colspan:1,rowspan:1,colwidth:[120],paragraphs:[richP("门店A")]},{colspan:1,rowspan:1,colwidth:[180],paragraphs:[richP("待填")] }]}]}},
+    {type:"image",runs:[],clientRef:"rich-image",image:{src:richImage,width:120,height:90,alignment:"center",alt:"实时插图"}}
+  ]}]}});
+  await expect(body.locator("table")).toContainText("表格实时展示");
+  await expect(body.locator('th[colspan="2"]')).toBeVisible();
+  await expect(body.locator('img[alt="实时插图"]')).toBeVisible();
+  pass("AI semantic table/image tool batch appears in the native right-hand editor");
+  const sourceSnapshot = await tool("content_read", {documentId: doc.documentId});
+  const sourcePicture = Object.values(sourceSnapshot.state.blocks).find(block => block.type === "image");
+  assert.match(sourcePicture.image.src, /^office-image:[^:]+:[^:]+:[a-f0-9]{64}$/);
+  const imageCopy = await tool("content_open", {input: {source: "new", title: "跨文档图片副本", operationId: "cross-image-create"}});
+  await tool("content_edit", {input: {documentId: imageCopy.documentId, baseRevision: imageCopy.revision, operationId: "cross-image-copy", operations: [{op: "document.insertBlocks", afterBlockId: null, blocks: [{type: "image", runs: [], clientRef: "copy", image: {...sourcePicture.image, width: 240, alignment: "right", alt: "跨文档插图"}}]}]}});
+  await expect(body.locator('img[alt="跨文档插图"]')).toBeVisible();
+  assert.equal(await body.locator('img[alt="跨文档插图"]').getAttribute("src"), richImage);
+  const [crossDownload] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", {name: "下载 Word", exact: true}).click()]);
+  const crossPath = join(artifacts, "cross-document-image.docx");
+  await crossDownload.saveAs(crossPath);
+  const officeRequire = createRequire(
+    join(root, "packages/plugins/office/package.json"),
+  );
+  const CrossZip = officeRequire("jszip");
+  const crossZip = await CrossZip.loadAsync(await readFile(crossPath));
+  const media = Object.keys(crossZip.files).find(name => name.startsWith("word/media/") && !crossZip.files[name].dir);
+  assert.ok(media);
+  assert.deepEqual(await crossZip.file(media).async("nodebuffer"), Buffer.from(richImage.split(",")[1], "base64"));
+  assert.equal((await tool("content_read", {documentId: doc.documentId})).revision, sourceSnapshot.revision);
+  pass("Cross-document image reference opens the target live editor, preserves source and downloads exact image bytes");
+  await tool("content_open", {input: {source: "existing", documentId: doc.documentId}});
+  await expect(body.locator('img[alt="实时插图"]')).toBeVisible();
+
+  await page.getByRole("button",{name:"编辑",exact:true}).click();
+  await expect(body).toHaveAttribute("contenteditable","true");
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await body.getByText("AI 第一批：先说明调研目标。",{exact:true}).click();await page.keyboard.press("End");await page.keyboard.press("Enter");
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await page.getByLabel("表格操作",{exact:true}).selectOption("insertTable");
+  await expect(body.locator("table")).toHaveCount(2);
+  const createdTable=body.locator("table").filter({hasNotText:"表格实时展示"});
+  await createdTable.locator("p").first().click();await page.keyboard.insertText("人工表格内容");
+  await page.getByLabel("表格操作",{exact:true}).selectOption("addRowAfter");
+  await expect(createdTable.locator("tr")).toHaveCount(4);
+  await page.getByRole("button",{name:"完成编辑",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("已保存",{timeout:15000});
+  const manualSaved=await tool("content_read",{documentId:doc.documentId});
+  assert.equal(Object.values(manualSaved.state.blocks).filter(block=>block.type==="table").length,2);
+  assert.ok(manualSaved.state.blockIds.every(id=>!id.startsWith("tmp-")));
+  pass("Native toolbar creates and edits a table; human save remaps its ID and AI reads the saved structure");
+  await page.getByRole("button",{name:"编辑",exact:true}).click();await expect(body).toHaveAttribute("contenteditable","true");
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await body.getByText("AI 第一批：先说明调研目标。",{exact:true}).click();await page.keyboard.press("End");await page.keyboard.press("Enter");
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const manualPng=await page.evaluate(()=>{const canvas=document.createElement("canvas");canvas.width=160;canvas.height=100;const context=canvas.getContext("2d");context.fillStyle="#3159b9";context.fillRect(0,0,160,100);context.fillStyle="#fff";context.font="18px sans-serif";context.fillText("门店分析",22,56);return canvas.toDataURL("image/png").split(",")[1];});
+  // Use the native find command to select a known paragraph before async file selection.
+  await page.getByRole("button", {name: "查找与替换", exact: true}).click();
+  await page.getByLabel("查找文字", {exact: true}).fill("AI 第一批：先说明调研目标。");
+  await page.getByRole("button", {name: "下一处", exact: true}).click();
+  await page.getByRole("button", {name: "查找与替换", exact: true}).click();
+  await body.press("ArrowRight");
+  await expect(page.getByLabel("表格操作", {exact: true}).locator('option[value="insertTable"]')).toBeEnabled();
+  await expect(page.getByLabel("图片对齐", {exact: true})).toBeDisabled();
+  await page.getByLabel("插入图片",{exact:true}).setInputFiles({name:"manual-office.png",mimeType:"image/png",buffer:Buffer.from(manualPng,"base64")});
+  const manualImage=body.locator('img[alt="manual-office.png"]');await expect(manualImage).toBeVisible();await expect(body.locator('img[alt="实时插图"]')).toBeVisible();await manualImage.click();
+  await page.getByLabel("图片对齐",{exact:true}).selectOption("right");
+  await page.getByRole("button",{name:"完成编辑",exact:true}).click();await expect(page.getByRole("status")).toContainText("已保存",{timeout:15000});
+  const imageSaved=await tool("content_read",{documentId:doc.documentId});const savedImage=Object.values(imageSaved.state.blocks).find(block=>block.image?.alt==="manual-office.png");
+  assert.equal(savedImage.image.alignment,"right");assert.ok(imageSaved.state.blockIds.every(id=>!id.startsWith("tmp-")));
+  await page.screenshot({path:join(artifacts,"table-image-toolbar.png")});
+  pass("Native toolbar image upload and alignment save with a stable ID in the same AI-readable working copy");
   const appendLong = async (label) => {
     const latest = await tool("content_read", { documentId: doc.documentId });
     await tool("content_edit", {
@@ -699,9 +772,6 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
   const download = await downloadEvent;
   assert.match(download.suggestedFilename(), /\.docx$/);
   await download.saveAs(join(artifacts, "live-document.docx"));
-  const officeRequire = createRequire(
-    join(root, "packages/plugins/office/package.json"),
-  );
   const JSZip = officeRequire("jszip");
   const zip = await JSZip.loadAsync(
     await readFile(join(artifacts, "live-document.docx")),
@@ -716,6 +786,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
   assert.match(xml, /<w:shd w:val="clear" w:fill="fff2a8"\/>/);
   assert.match(xml, /<w:numPr>/);
   assert.ok(zip.file("word/numbering.xml"));
+  assert.match(xml,/<w:tbl>/);assert.match(xml,/<w:gridSpan w:val="2"/);assert.ok(zip.file("word/media/image1.png"));
   pass(
     "Downloaded DOCX preserves toolbar text styles, paragraph layout and real list numbering",
   );
@@ -802,6 +873,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
   await expect(fileEditor.getByLabel("文档编辑工具")).toBeVisible({timeout:20000});
   assert.ok((await fileEditor.getByLabel("文档编辑工具").boundingBox()).height <= 45,"Imported DOCX toolbar remains one compact row");
   await expect(fileEditor.getByLabel("文档正文")).toContainText("原生加粗", {timeout:20000});
+  await expect(fileEditor.locator("table").filter({hasText:"表格实时展示"})).toBeVisible();await expect(fileEditor.locator('img[alt="实时插图"]')).toBeVisible();
   await fileEditor.getByRole("button", {name:"编辑",exact:true}).click();
   await expect(fileEditor.getByLabel("文档正文")).toHaveAttribute("contenteditable","true");
   await page.screenshot({path:join(artifacts,"docx-import-before-edit.png")});
@@ -840,6 +912,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
       (sid) => window.officeLiveProbe.open(sid),
       real.sessionId,
     );
+    const suppliedPng = realRich ? await page.evaluate(()=>{const c=document.createElement("canvas");c.width=160;c.height=100;const ctx=c.getContext("2d");ctx.fillStyle="#3159b9";ctx.fillRect(0,0,160,100);return c.toDataURL("image/png").split(",")[1];}) : "";
     const baseline = await api(host, {
       action: "real-state",
       sessionId: real.sessionId,
@@ -851,7 +924,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
       sessionId: real.sessionId,
       messageId: randomUUID(),
       prompt:
-        "请写一份门店经营分析报告，约200字，包含分析目标、问题分析和行动建议。没有实际数据的地方标明待确认。",
+        realRich ? "请写一份门店经营分析报告，约200字，包含分析目标、问题分析和行动建议。没有实际数据的地方标明待确认。请在文档中插入一个两列三行表格，表头为问题、行动，列出排队时间和库存管理两项；并插入下面提供的PNG资料图片，图片160×100像素，居中，替代文字为门店分析资料图。请完成文档并交付Word文件。图片资料：data:image/png;base64," + suppliedPng : "请写一份门店经营分析报告，约200字，包含分析目标、问题分析和行动建议。没有实际数据的地方标明待确认。",
     });
     const samples = [];
     let state;
@@ -926,6 +999,15 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
     const exportedXml = await exportedZip.file("word/document.xml").async("string");
     assert.match(exportedXml, /分析目标/);
     assert.match(exportedXml, /行动建议/);
+    if (realRich) {
+      await expect(page.getByLabel("文档正文").locator("table")).toContainText("库存管理");
+      await expect(page.getByLabel("文档正文").locator('img[alt="门店分析资料图"]')).toBeVisible();
+      assert.match(exportedXml, /<w:tbl>/);
+      assert.match(exportedXml, /<w:drawing>/);
+      assert.equal(Object.values(state.documents[0].state.blocks).find(b=>b.type==="image").image.src,"data:image/png;base64,"+suppliedPng,"Real model must retain supplied image bytes exactly");
+      assert.ok(Object.keys(exportedZip.files).some(name=>name.startsWith("word/media/")));
+      pass("Real model creates a semantic table and supplied embedded PNG in the live editor and exported DOCX");
+    }
     await expect(page.getByText(delivery.description, {exact: true})).toBeVisible({timeout:15000});
     await expect(page.getByTestId("office-deliverables")).toHaveCount(0);
     await page.screenshot({ path: join(artifacts, "native-deliverable.png") });
@@ -934,9 +1016,9 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
     await page.getByRole("button",{name:"查看原始排版",exact:true}).click();
     const exportedFrame = page.frameLocator('iframe[title="Office 文档编辑"]');
     await expect(exportedFrame.locator("#preview")).toContainText("分析目标", {timeout:15000});
-    const cardDownload = page.waitForEvent("download");
-    await exportedFrame.getByRole("button", {name: "导出副本", exact:true}).click();
-    await (await cardDownload).saveAs(join(artifacts, "native-card-document.docx"));
+    const [cardDownload] = await Promise.all([page.waitForEvent("download"), page.getByRole("region",{name:"DOCX文档编辑"}).getByRole("button", {name: "下载原文件", exact:true}).click()]);
+    const cardPath=join(artifacts, "native-card-document.docx");await cardDownload.saveAs(cardPath);
+    assert.deepEqual(await readFile(cardPath),exported,"Original download from official delivery must preserve exported bytes");
     pass("Official card opens the real Word file in the Sidebar; the file preview supports browser download");
     await page.reload();
     await expect(page.getByText(delivery.description, {exact: true})).toBeVisible({timeout:15000});
@@ -951,7 +1033,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
   await writeFile(
     join(artifacts, "result.json"),
     JSON.stringify(
-      { checks, browserErrors, documentId: doc.documentId, realModel },
+      { checks, browserErrors, documentId: doc.documentId, realModel, realRich },
       null,
       2,
     ),

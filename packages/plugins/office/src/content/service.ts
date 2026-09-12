@@ -287,7 +287,7 @@ export class ContentService extends Service {
     signal?: AbortSignal,
   ): Promise<OfficeSnapshot> {
     const value = parse(openInput, input);
-    ensure(Buffer.byteLength(JSON.stringify(value)) <= 128 * 1024, "LIMIT_REACHED", "导入正文超过128 KiB。请拆分文档。");
+    ensure(Buffer.byteLength(JSON.stringify(value)) <= 1024 * 1024, "LIMIT_REACHED", "导入正文超过1 MiB。请拆分文档。");
     if (value.source === "existing") {
       const snapshot = await this.read(actor, value.documentId, signal);
       await this.present(actor, value.documentId, signal);
@@ -390,6 +390,59 @@ export class ContentService extends Service {
     signal?.throwIfAborted();
     return this.snapshot(record);
   }
+  /** Model projection only: persisted/UI snapshots retain the original embedded bytes. */
+  projectForAgent(snapshot: OfficeSnapshot): OfficeSnapshot {
+    const projected = structuredClone(snapshot);
+    for (const block of Object.values(projected.state.blocks)) {
+      if (block.type === "image" && block.image) {
+        const digest = createHash("sha256").update(block.image.src).digest("hex");
+        block.image.src = `office-image:${snapshot.documentId}:${block.blockId}:${digest}`;
+      }
+    }
+    return projected;
+  }
+  async editForAgent(actor: ActorContext, input: unknown, signal?: AbortSignal) {
+    ensure(Buffer.byteLength(JSON.stringify(input) ?? "") <= capabilities.limits.batchBytes,
+      "LIMIT_REACHED", "单批编辑不能超过 1 MiB。");
+    const envelope = parse(z.object({documentId: z.string().min(1)}).passthrough(), input);
+    await this.authorize(actor, "edit", this.get(envelope.documentId), signal);
+    // Request-local authorized snapshots; never a persistent asset registry.
+    const sources = new Map<string, Promise<OfficeSnapshot>>();
+    const source = (documentId: string) => {
+      let pending = sources.get(documentId);
+      if (!pending) {
+        ensure(sources.size < 100, "LIMIT_REACHED", "单批图片来源不能超过100份文档。");
+        pending = this.read(actor, documentId, signal);
+        sources.set(documentId, pending);
+      }
+      return pending;
+    };
+    const resolve = async (value: unknown, depth = 0): Promise<unknown> => {
+      signal?.throwIfAborted();
+      ensure(depth < 24, "INVALID_INPUT", "编辑载荷嵌套过深。");
+      if (Array.isArray(value)) return Promise.all(value.map(child => resolve(child, depth + 1)));
+      if (value && typeof value === "object") return Object.fromEntries(await Promise.all(
+        Object.entries(value).map(async ([key, child]) => {
+          if (key === "src" && typeof child === "string" && child.startsWith("office-image:")) {
+            const match = /^office-image:([^:]+):([^:]+):([a-f0-9]{64})$/.exec(child);
+            // Compatibility with already-issued same-document references.
+            const legacy = match ? null : /^office-image:([^:]+):([a-f0-9]{64})$/.exec(child);
+            ensure(match || legacy, "IMAGE_REFERENCE_INVALID", "图片引用格式无效，请重新读取文档。");
+            const snapshot = await source(match ? match[1]! : envelope.documentId);
+            const block = snapshot.state.blocks[match ? match[2]! : legacy![1]!];
+            const digest = match ? match[3] : legacy![2];
+            ensure(block?.type === "image" && !!block.image &&
+              createHash("sha256").update(block.image.src).digest("hex") === digest,
+              "IMAGE_REFERENCE_INVALID", "图片引用失效：来源图片已移除或改变，请重新读取来源文档。");
+            return [key, block.image!.src];
+          }
+          return [key, await resolve(child, depth + 1)];
+        })));
+      return value;
+    };
+    return this.edit(actor, parse(editInput, await resolve(input)), signal);
+  }
+
   async list(actor: ActorContext, signal?: AbortSignal) {
     const binding = this.session(actor);
     const items = [];
@@ -442,7 +495,7 @@ export class ContentService extends Service {
       Buffer.byteLength(JSON.stringify(value)) <=
         capabilities.limits.batchBytes,
       "LIMIT_REACHED",
-      "单批编辑不能超过 128 KiB。",
+      "单批编辑不能超过 1 MiB。",
     );
     return this.enqueue(async () => {
       await this.authorize(actor, "edit", this.get(value.documentId), signal);

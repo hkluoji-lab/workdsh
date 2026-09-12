@@ -49,10 +49,10 @@ export function apply(ctx: Context) {
         const signal = AbortSignal.any([request.signal, lifetime.signal]);
         try {
           signal.throwIfAborted();
-          if (Number(request.headers.get("content-length")) > 150000)
+          if (Number(request.headers.get("content-length")) > 1500000)
             throw new OfficeError("LIMIT_REACHED", "请求过大。");
           const text = await request.text();
-          if (new TextEncoder().encode(text).length > 150000)
+          if (new TextEncoder().encode(text).length > 1500000)
             throw new OfficeError("LIMIT_REACHED", "请求过大。");
           const envelope = parse(
             z.object({ sessionId: id, request: endpoint }).strict(),

@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import type { OfficeSnapshot } from "workdsh-contracts/office";
+import type { OfficeSnapshot, OfficeBlockInput } from "workdsh-contracts/office";
 const xml = (text: string) =>
   text
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "")
@@ -13,10 +13,8 @@ export async function documentDocx(snapshot: OfficeSnapshot): Promise<Blob> {
   const zip = new JSZip();
   const numbers: { abstract: string; num: string }[] = [];
   const listStack: { type: string; start: number; numId: number }[] = [];
-  const body = snapshot.state.blockIds
-    .map((id) => {
-      const block = snapshot.state.blocks[id];
-      if (!block) throw new Error("文档结构不完整，无法下载。");
+  const images: {id:string;extension:string;data:string}[]=[];
+  function paragraphXml(block:OfficeBlockInput):string {
       const paragraph: string[] = [];
       if (block.type === "heading")
         paragraph.push(`<w:pStyle w:val="Heading${block.level}"/>`);
@@ -98,11 +96,35 @@ export async function documentDocx(snapshot: OfficeSnapshot): Promise<Blob> {
         })
         .join("");
       return `<w:p>${paragraph.length ? `<w:pPr>${paragraph.join("")}</w:pPr>` : ""}${runs}</w:p>`;
-    })
-    .join("");
+    }
+  function blockXml(block:OfficeBlockInput):string {
+    if(!block) throw new Error("文档结构不完整，无法下载。");
+    if(block.type==="image") {
+      const image=block.image!, id=`image${images.length+1}`, extension=image.src.startsWith("data:image/png;") ? "png" : "jpeg";
+      images.push({id,extension,data:image.src.split(",")[1]!});
+      const cx=Math.round(image.width*9525),cy=Math.round(image.height*9525),n=images.length;
+      return `<w:p><w:pPr><w:jc w:val="${image.alignment ?? "left"}"/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${n}" name="${id}" descr="${xml(image.alt ?? "")}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${n}" name="${id}" descr="${xml(image.alt ?? "")}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+    }
+    if(block.type!=="table") return paragraphXml(block);
+    listStack.length=0;
+    const rows=block.table!.rows, grid:({cell:typeof rows[number]["cells"][number];origin:boolean}|undefined)[][]=rows.map(()=>[]);
+    rows.forEach((row,y)=>{let x=0;row.cells.forEach(cell=>{while(grid[y]![x]) x++;for(let dy=0;dy<cell.rowspan;dy++)for(let dx=0;dx<cell.colspan;dx++)grid[y+dy]![x+dx]={cell,origin:dy===0};x+=cell.colspan;});});
+    const width=grid[0]!.length, widths=Array.from({length:width},(_,x)=>{
+      for(const row of grid){let col=0;while(col<row.length){const slot=row[col]!;if(x>=col && x<col+slot.cell.colspan && slot.cell.colwidth?.[x-col])return slot.cell.colwidth[x-col]!*15;col+=slot.cell.colspan;}}
+      return Math.floor(9746/width);
+    });
+    return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblLayout w:type="fixed"/><w:tblBorders>${["top","left","bottom","right","insideH","insideV"].map(side=>`<w:${side} w:val="single" w:sz="4" w:color="C7CED8"/>`).join("")}</w:tblBorders></w:tblPr><w:tblGrid>${widths.map(w=>`<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>${grid.map(row=>{
+      const cells:string[]=[];for(let x=0;x<width;){const {cell,origin}=row[x]!;const props=`<w:tcW w:w="${widths.slice(x,x+cell.colspan).reduce((a,b)=>a+b,0)}" w:type="dxa"/>${cell.colspan>1 ? `<w:gridSpan w:val="${cell.colspan}"/>` : ""}${cell.rowspan>1 ? `<w:vMerge${origin ? ' w:val="restart"' : ""}/>` : ""}${cell.header ? '<w:shd w:fill="F0F3F8"/>' : ""}`;
+      listStack.length=0;
+      cells.push(`<w:tc><w:tcPr>${props}</w:tcPr>${origin ? cell.paragraphs.map(paragraphXml).join("") : "<w:p/>"}</w:tc>`);x+=cell.colspan;}
+      return `<w:tr>${row.every(slot=>slot?.cell.header) ? '<w:trPr><w:tblHeader/></w:trPr>' : ""}${cells.join("")}</w:tr>`;
+    }).join("")}</w:tbl>`;
+  }
+  const body = snapshot.state.blockIds.map(id=>blockXml(snapshot.state.blocks[id]!)).join("");
+  for(const image of images) zip.file(`word/media/${image.id}.${image.extension}`,image.data,{base64:true});
   zip.file(
     "[Content_Types].xml",
-    `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>${numbers.length ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' : ""}</Types>`,
+    `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>${numbers.length ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' : ""}</Types>`,
   );
   zip.file(
     "_rels/.rels",
@@ -110,7 +132,7 @@ export async function documentDocx(snapshot: OfficeSnapshot): Promise<Blob> {
   );
   zip.file(
     "word/_rels/document.xml.rels",
-    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${numbers.length ? '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' : ""}</Relationships>`,
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${images.map(image=>`<Relationship Id="${image.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${image.id}.${image.extension}"/>`).join("")}${numbers.length ? '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' : ""}</Relationships>`,
   );
   if (numbers.length)
     zip.file(
@@ -119,7 +141,7 @@ export async function documentDocx(snapshot: OfficeSnapshot): Promise<Blob> {
     );
   zip.file(
     "word/document.xml",
-    `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080"/></w:sectPr></w:body></w:document>`,
+    `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080"/></w:sectPr></w:body></w:document>`,
   );
   zip.file(
     "word/styles.xml",

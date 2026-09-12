@@ -26,8 +26,32 @@ export interface OfficeRunInput {
 export interface OfficeRun extends OfficeRunInput {
   runId: string;
 }
-export interface OfficeBlockInput {
+export interface OfficeTableCell {
+  colspan: number;
+  rowspan: number;
+  colwidth?: number[];
+  header?: boolean;
+  paragraphs: OfficeParagraphInput[];
+}
+export interface OfficeTable { rows: { cells: OfficeTableCell[] }[] }
+export interface OfficeImage {
+  src: string; // bounded embedded PNG/JPEG, never remote URL
+  alt?: string;
+  width: number;
+  height: number;
+  alignment?: "left" | "center" | "right";
+}
+export interface OfficeParagraphInput {
   type: "paragraph" | "heading";
+  level?: number;
+  runs: OfficeRunInput[];
+  style?: OfficeParagraphStyle;
+  list?: OfficeList;
+}
+export interface OfficeBlockInput extends Omit<OfficeParagraphInput, "type"> {
+  type: "paragraph" | "heading" | "table" | "image";
+  table?: OfficeTable;
+  image?: OfficeImage;
   level?: number;
   runs: OfficeRunInput[];
   style?: OfficeParagraphStyle;

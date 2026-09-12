@@ -75,7 +75,7 @@ function ImportedDocument(props: DocumentPreviewProps & {office: OfficeClient}) 
       <button disabled={editing} onClick={() => setOriginal(!original)}>{original ? '返回编辑器' : '查看原始排版'}</button>
       <button onClick={downloadOriginal} disabled={props.content.kind !== 'bytes'}>下载原文件</button>
     </div>
-    <div className="wd-office-import-note" role="note">在副本中编辑正文，自动保存；下载 Word 导出编辑副本，不覆盖原文件。{imported?.warnings.length ? `原文件含${imported.warnings.join('、')}，这些内容尚未完整导入，表格文字按段落显示。请用“查看原始排版”核对，“下载原文件”保留完整原件。` : '原始页面排版可能与编辑器不同。'}</div>
+    <div className="wd-office-import-note" role="note">在副本中编辑文字、表格和嵌入图片，自动保存；下载 Word 导出编辑副本，不覆盖原文件。{imported?.warnings.length ? `原文件含${imported.warnings.join('、')}，这些内容尚未完整导入。请用“查看原始排版”核对，“下载原文件”保留完整原件。` : '原始页面排版可能与编辑器不同。'}</div>
     {error && imported && <div role="alert" className="wd-office-import-note">{error}</div>}
     {original ? <LegacyOfficeDocument {...props} /> : imported ? <LiveDocument key={imported.documentId} documentId={imported.documentId} sessionId={sessionId} office={props.office} visible={info.tab.visible} signal={info.tab.signal} onEditing={setEditing} /> : <div className="wd-office-empty" role={error ? 'alert' : 'status'}>{error || '正在导入DOCX正文…'}{error && <button onClick={() => setAttempt(attempt + 1)}>重试导入</button>}</div>}
   </section>;

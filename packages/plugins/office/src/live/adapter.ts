@@ -15,7 +15,7 @@ export const BlockIdentity = Extension.create({
   addGlobalAttributes() {
     return [
       {
-        types: ["paragraph", "heading"],
+        types: ["paragraph", "heading", "table", "image"],
         attributes: {
           blockId: {
             default: null,
@@ -60,7 +60,7 @@ export const BlockIdentity = Extension.create({
           const seen = new Set<string>(),
             tr = state.tr;
           state.doc.descendants((node, pos) => {
-            if (!["paragraph", "heading"].includes(node.type.name)) return;
+            if (!["paragraph", "heading", "table", "image"].includes(node.type.name)) return;
             let key = node.attrs.blockId as string | null;
             if (!key || seen.has(key)) {
               key = `tmp-${crypto.randomUUID()}`;
@@ -119,6 +119,17 @@ export const editorContent = (state: OfficeDocumentState): JSONContent => {
   const stack: { node: JSONContent; type: string; start: number }[] = [];
   for (const id of state.blockIds) {
     const b = state.blocks[id]!;
+    if (b.type === "table") {
+      stack.length=0;
+      root.content!.push({type:"table",attrs:{blockId:id},content:b.table!.rows.map(row=>({type:"tableRow",content:row.cells.map(cell=>({
+        type:cell.header ? "tableHeader" : "tableCell",attrs:{colspan:cell.colspan,rowspan:cell.rowspan,colwidth:cell.colwidth ?? null},
+        content:editorContent({modelVersion:1,blockIds:cell.paragraphs.map((_,i)=>`cell-${i}`),blocks:Object.fromEntries(cell.paragraphs.map((paragraph,i)=>[`cell-${i}`,{...paragraph,blockId:`cell-${i}`,runs:paragraph.runs.map((r,j)=>({...r,runId:`r-${j}`}))}]))}).content!,
+      }))}))});
+      continue;
+    }
+    if (b.type === "image") {
+      stack.length=0; root.content!.push({type:"image",attrs:{blockId:id,...b.image}}); continue;
+    }
     const paragraph: JSONContent = {
       type: b.type,
       attrs: {
@@ -240,6 +251,18 @@ export function editorBlocks(
             } else visit([child], depth + 1);
           }
         }
+      } else if (node.type === "table") {
+        blocks.push({type:"table",blockId:String(node.attrs?.blockId),runs:[],table:{rows:(node.content ?? []).map(row=>({cells:(row.content ?? []).map(cell=>({
+          colspan:Number(cell.attrs?.colspan ?? 1),rowspan:Number(cell.attrs?.rowspan ?? 1),
+          ...(cell.attrs?.colwidth ? {colwidth:cell.attrs.colwidth} : {}),
+          ...(cell.type === "tableHeader" ? {header:true} : {}),
+          paragraphs:editorBlocks({type:"doc",content:cell.content}).map(({blockId,type,...p})=>{
+            if(type!=="paragraph" && type!=="heading") throw new Error("单元格目前支持正文和标题；请撤销嵌套表格或图片。");
+            return {...p,type};
+          }),
+        }))}))}});
+      } else if (node.type === "image") {
+        const a=node.attrs ?? {}; blocks.push({type:"image",blockId:String(a.blockId),runs:[],image:{src:String(a.src),width:Number(a.width),height:Number(a.height),...(a.alt ? {alt:String(a.alt)} : {}),...(a.alignment ? {alignment:a.alignment} : {})}});
       } else if (["paragraph", "heading"].includes(node.type!)) paragraph(node);
       else throw new Error("当前文档包含尚未支持的内容，请撤销该操作。");
     }
@@ -249,6 +272,8 @@ export function editorBlocks(
 }
 const input = (b: OfficeBlockInput): OfficeBlockInput => ({
   type: b.type,
+  ...(b.table ? {table:{rows:b.table.rows.map(row=>({cells:row.cells.map(cell=>({...cell,paragraphs:cell.paragraphs.map(p=>({...input(p),type:p.type}))}))}))}} : {}),
+  ...(b.image ? {image:b.image} : {}),
   ...(b.level ? { level: b.level } : {}),
   ...(b.style && Object.keys(b.style).length ? { style: b.style } : {}),
   ...(b.list ? { list: b.list } : {}),
@@ -258,6 +283,11 @@ const input = (b: OfficeBlockInput): OfficeBlockInput => ({
     ...(r.style && Object.keys(r.style).length ? { style: r.style } : {}),
   })),
 });
+// DTO property order may change after Host schema validation; compare semantic values.
+const comparable = (value:unknown):string => JSON.stringify(value,(_key,item)=>
+  item && typeof item === "object" && !Array.isArray(item)
+    ? Object.fromEntries(Object.entries(item).sort(([a],[b])=>a.localeCompare(b))) : item);
+export const blockText = (b:OfficeBlockInput):string => b.table ? b.table.rows.map(row=>row.cells.map(cell=>cell.paragraphs.map(blockText).join("\n")).join("\t")).join("\n") : b.image ? b.image.alt ?? "" : b.runs.map(r=>r.text).join("");
 export function documentDiff(
   base: OfficeDocumentState,
   json: JSONContent,
@@ -270,7 +300,7 @@ export function documentDiff(
       operations.push({
         op: "document.removeBlock",
         blockId: key,
-        expectedText: base.blocks[key]!.runs.map((r) => r.text).join(""),
+        expectedText: blockText(base.blocks[key]!),
       });
   let after: string | null = null;
   for (const b of blocks) {
@@ -281,11 +311,11 @@ export function documentDiff(
         afterBlockId: after,
         blocks: [{ ...input(b), clientRef: b.blockId }],
       });
-    else if (JSON.stringify(input(previous)) !== JSON.stringify(input(b)))
+    else if (comparable(input(previous)) !== comparable(input(b)))
       operations.push({
         op: "document.replaceBlock",
         blockId: b.blockId,
-        expectedText: previous.runs.map((r) => r.text).join(""),
+        expectedText: blockText(previous),
         block: input(b),
       });
     after = b.blockId;

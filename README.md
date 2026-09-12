@@ -27,7 +27,9 @@ The current **Skill 0.1 development preview** supports local skill discovery, cr
 | Independently installed capabilities | Office is a Host/Client plugin. Its menus, tools and editor registrations follow plugin installation; saved documents survive removal. |
 | Native Harness workflow | Keep conversations, attachments, models, permissions and queues with the official runtime and composer. |
 
-**Current Word scope:** headings, paragraphs, text formatting, lists, find/replace, zoom, reading follow, and DOCX text-copy import/download. Tables, images, headers/footers and full pagination are outside the unified editing model; imports disclose these limits and retain the original file. All eight output choices are present, while the other seven live adapters remain planned. Word alpha.1 is available as an independent [prerelease package](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1).
+**Released Word alpha.1 scope:** headings, paragraphs, text formatting, lists, find/replace, zoom, reading follow, and DOCX text-copy import/download. Tables, images, headers/footers and full pagination are outside the unified editing model; imports disclose these limits and retain the original file. All eight output choices are present, while the other seven live adapters remain planned. Word alpha.1 is available as an independent [prerelease package](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1).
+
+**Word alpha.2:** Word tables and embedded images reuse native MIT Tiptap extensions. The toolbar offers row/column editing, merge/split, width dragging, image upload/resize/alignment; saved working copies and supported DOCX round trips retain structure and text styles. [Scope and limits](packages/plugins/office/README.md). [Download the alpha.2 preview](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.2).
 
 > **Compatibility:** verified with the official Harness **`0.1.5-rc.1` Web Profile**. Skill alpha.24 has a known missing-navigation issue in DSH Desktop using Harness **`0.1.2-rc.1`**, including after restart. This release **does not fix that issue**. See the [compatibility notes](docs/RELEASES.md).
 
@@ -71,7 +73,7 @@ cd /Users/techflag/project/workdsh
 # 安装本地候选包 / Install the local candidate
 DSH_HOME="$PWD/.test-runtime/preview" \
   corepack pnpm exec dsh plugin --profile preview add \
-  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.1.tgz"
+  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.2.tgz"
 
 # 启动 / Start
 corepack pnpm preview
@@ -215,3 +217,5 @@ Packaged probes exercise actual installation, browser interactions, edits, recov
 Feature modules live in `packages/plugins/<domain>`, providers in `packages/providers/<name>`, and shared packages in `packages/{contracts,ui,bundle}`. Scaffolds do not imply installable plugins. See the [package guide](packages/plugins/README.md).
 
 Built on [DeepSeek Harness](https://deepseek-harness.github.io/deepseek-harness/); interaction references include [WorkBuddy](https://www.workbuddy.cn/). WorkDSH is an independent project, not an official product of either team.
+
+下一阶段开发计划：[Word 完善 → PPT 实时制作 → 其他六类](docs/design/office/NEXT-STAGE.md)。各阶段以真实文件、实时编辑和独立插件生命周期验收，规划不代表能力已完成。
