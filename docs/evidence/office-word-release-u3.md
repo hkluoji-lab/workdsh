@@ -31,3 +31,7 @@ DOCX正文在独立文本副本编辑，文件预览背景的字体和white-spac
 导出固定 ZIP 时间，文档/修订/内容摘要构成稳定路径。官方 bash 完整临时文件后通过独占链接建立最终文件，重试核对已有摘要，修改/冲突不覆盖。写入回执未知不 present，交付未知返回现有路径，取消后不继续交付。baseRevision 可选且 mismatch 拒绝。新增真实命令管线故障测试验证写入已成功但回执丢失、复用唯一文件、人工改文件保护、修订变化、present 回执丢失及取消。
 
 本轮全仓 build/typecheck、65/65集成、check:plan、2/2规划测试通过。最终 Word-only tgz 明确通过12项真实浏览器及6项CLI卸载/重装检查，无pageerror。真实模型不重复执行，沿用此前15项证据；Word/WPS、OS IME、跨执行世界/跨 Host 导出恢复、掉电持久性未执行，不声明完整 U3/U5或Word整体完成。发布标签office-v0.1.0-alpha.1，为预览版。
+
+## 实际发布回执
+
+源码 2c18bd79746381d9febb54ae4ef3f9ac4187d145 已推送 main；office-v0.1.0-alpha.1 指向该提交，GitHub [预览发布](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1) 已公开。6个附件（4个tgz、摘要、manifest）逐一核对上传摘要与本地文件，Office Word-only包558347字节。未发布npm/Desktop，未改用户当前Profile或打断用户应用。

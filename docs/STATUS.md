@@ -2,6 +2,10 @@
 
 更新时间：2026-09-12。
 
+## 本轮：Office Word alpha.1 已发布（2026-09-12）
+
+用户授权的 Word 预览发布已完成。源码提交 2c18bd79746381d9febb54ae4ef3f9ac4187d145 已推送 origin/main，标签 office-v0.1.0-alpha.1 指向该源码提交，GitHub [prerelease](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1) 已公开。附件4个独立插件tgz（Office及配套identity-local/access/audit）、SHA256SUMS与release-manifest，上传返回摘要逐一核对本地SHA-256，Office包558347字节。中英文README特色、Word/选择入口及用户截图随源码提交。仅Word文本预览，其他能力边界与未执行项见上一条；本轮未安装新发行包到用户Profile、未重新启动用户应用，未发布npm/Desktop。下一步按原计划推进文档表格/图片、完整排版与其余七类，不将本次预览发布视为八类完成。
+
 ## 本轮：Word 文本预览发布收口（2026-09-12）
 
 Word-only 打包独立阶段目录，剔除旧 Univer/Excel/PPT 适配器及运行依赖，保留源码实验与八类路线。实际50个打包依赖许可文本齐全，已知双许可按MIT分支，打包失败关闭。导出同修订稳定ZIP与路径，独占链接完整文件、核对已有摘要不覆盖人工修改、写入/交付回执未知及取消保护，新增故障测试。全仓build/typecheck、65项集成、check:plan、2项规划，以及Word-only tgz的12浏览器与6卸载重装通过，均无pageerror。真实模型沿用此前15项，本轮未重复执行；Word/WPS、OS IME、跨Host/掉电恢复未执行。准备office-v0.1.0-alpha.1预览标签，完整Word与八类尚未完成；主线D04/D15保持。发布结果在后续记录。
