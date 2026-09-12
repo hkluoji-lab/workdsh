@@ -1,5 +1,6 @@
 <p align="center"><img src="assets/brand/workdsh-logo.svg" width="104" alt="WorkDSH"></p>
 <h1 align="center">WorkDSH</h1>
+<p align="center"><a href="https://techflag.github.io/workdsh/">Product website ↗</a></p>
 <p align="center"><strong>An AI workspace, composed from plugins.</strong></p>
 <p align="center">DeepSeek Harness · Native conversations · Independently versioned modules</p>
 <p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>

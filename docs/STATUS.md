@@ -1,5 +1,12 @@
 ## 当前：技能弹框与市场卡片对齐 WorkBuddy（2026-09-13）
 
+## 2026-09-13：英文产品网站与 GitHub Pages
+
+- 用户授权参考 Hermes Studio 制作英文产品网站并托管 GitHub。新增独立 `website/` 静态目录及官方 Pages Actions，不运行模型或暴露工作区。
+- 包含当前产品定位、PPT/技能/文档交互截图、独立插件说明、真实预览边界和开源致谢；不复制参考站代码和品牌。
+- 桌面/390px 手机布局、截图加载、tab 切换、无控制台错误/横向溢出已验证。GitHub Pages 部署回执待补。
+
+
 ## 2026-09-13：README 截图与 GitHub 源码预览发布
 
 - 已推送源码 `0b042c5` 与 `office-v0.1.0-alpha.3` tag，并确认 GitHub prerelease 发布（无实验安装包附件）。用户授权推送与发布；中英文 README 增加最新 PPT 应用截图，开源组件、用途、许可和 WorkBuddy/CodeBuddy 致谢。

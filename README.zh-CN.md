@@ -1,5 +1,6 @@
 <p align="center"><img src="assets/brand/workdsh-logo.svg" width="104" alt="WorkDSH"></p>
 <h1 align="center">WorkDSH</h1>
+<p align="center"><a href="https://techflag.github.io/workdsh/">产品网站 ↗</a></p>
 <p align="center"><strong>用插件，组合你的 AI 工作平台。</strong></p>
 <p align="center">DeepSeek Harness · 原生任务体验 · 模块独立版本化</p>
 <p align="center"><a href="README.md">English</a> · <strong>简体中文</strong></p>
