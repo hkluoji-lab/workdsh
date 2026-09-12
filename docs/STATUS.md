@@ -2,7 +2,7 @@
 
 ## 2026-09-13：README 截图与 GitHub 源码预览发布
 
-- 用户授权推送与发布；中英文 README 增加最新 PPT 应用截图，开源组件、用途、许可和 WorkBuddy/CodeBuddy 致谢。
+- 已推送源码 `0b042c5` 与 `office-v0.1.0-alpha.3` tag，并确认 GitHub prerelease 发布（无实验安装包附件）。用户授权推送与发布；中英文 README 增加最新 PPT 应用截图，开源组件、用途、许可和 WorkBuddy/CodeBuddy 致谢。
 - 更新依赖后全量测试发现 ProseMirror model 双版本，统一为 1.25.11；全量类型检查、71 项集成测试、Office 构建和 PPT 浏览器回归已通过。
 - Office alpha.3 本次为源码 GitHub prerelease，完整实验构建的第三方许可正文仍待核验，不上传未清理的实验安装包；npm 发布未执行。真实模型 PPT 视觉质量及新最终文件卡端到端未执行。
 - 宣传文案已准备，Twitter 发送未执行。后续继续当前唯一 PPT 编辑器的品质验收和许可核验。

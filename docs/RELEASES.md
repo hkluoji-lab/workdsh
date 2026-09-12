@@ -136,3 +136,5 @@ This documentation-only receipt follows the release commit. Module tags and rele
 ## 2026-09-13 原生 PPT 源码预览
 
 本次发布 `office-v0.1.0-alpha.3` 为 GitHub 源码开发预览：包含当前原生 PPT 编辑集成、UI 样式隔离与最终 PPTX 文件交付实现及 README 截图。此前已发布 Word alpha.2 安装包不变。完整实验构建仍有第三方 tarball 缺少许可正文的 review 记录，因此本次不上传该完整 `.tgz` 为已审查安装包。源码发布不等同于 npm 发布、完整 Office 交付或 PPT 美观度验收。技能市场当前 alpha.26 工作区改动随源码记录，其独立新安装包不在本次 Office 发布范围。
+
+发布回执：[Office alpha.3 源码预览](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.3)，源码提交 `0b042c5`；tag 与 main 已推送。该 release 标记 prerelease，无实验安装包附件。

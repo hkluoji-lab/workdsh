@@ -230,6 +230,8 @@ corepack pnpm probe:browser
 
 ### 原生 PPT 编辑预览
 
+[Office alpha.3 源码预览发布](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.3) · 本次未附新的可安装包。
+
 ![WorkDSH 原生 PPT 编辑](docs/assets/screenshots/workdsh-ppt-live-preview.png)
 
 用户提供的真实应用截图，展示 AI 逐页修改与原生右侧 PPT 编辑。截图中的旧会话仍提到此前的导出限制；源码已补 PPTX content_export，但真实会话文件卡端到端验收尚未执行。
