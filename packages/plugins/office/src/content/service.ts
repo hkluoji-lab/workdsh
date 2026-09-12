@@ -1,0 +1,661 @@
+import { createHash, randomUUID } from "node:crypto";
+import { Service, type Context } from "@deepseek-ai/cordis";
+import {
+  defineDomain,
+  domainTable,
+  type KvTable,
+} from "@deepseek-ai/dsh-storage-domain";
+import { z } from "zod";
+import type {
+  AccessService,
+  RuntimeBindingService,
+  IdentityService,
+  AuditService,
+  ActorContext,
+  AuditEvent,
+  ResourceOwner,
+} from "workdsh-contracts";
+import type {
+  OfficeSnapshot,
+  OfficeReceipt,
+  OfficeEditInput,
+  OfficeOpenInput,
+} from "workdsh-contracts/office";
+import {
+  applyOperations,
+  capabilities,
+  editInput,
+  openInput,
+  ensure,
+  id,
+  runInput,
+  blockInput,
+  parse,
+} from "./model.js";
+
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    workdshOfficeContent: ContentService;
+    workdshIdentity: IdentityService;
+    workdshAccess: AccessService & RuntimeBindingService;
+    workdshAudit: AuditService;
+  }
+}
+const runSchema = runInput.safeExtend({runId: id});
+const blockSchema = blockInput.safeExtend({blockId: id, runs: z.array(runSchema)});
+const stateSchema = z
+  .object({
+    modelVersion: z.literal(1),
+    blockIds: z.array(id),
+    blocks: z.record(id, blockSchema),
+  })
+  .strict();
+const receiptSchema = z
+  .object({
+    operationId: id,
+    revision: z.number(),
+    status: z.literal("committed"),
+    ids: z.record(z.string(), id),
+  })
+  .strict();
+const ownerSchema = z
+  .object({
+    organizationId: z.string(),
+    ownerPrincipalId: z.string(),
+    scope: z.literal("personal"),
+  })
+  .strict();
+const eventSchema = z
+  .object({
+    id: z.string(),
+    occurredAt: z.string(),
+    requestId: z.string(),
+    principalId: z.string(),
+    organizationId: z.string(),
+    action: z.string(),
+    target: z.object({
+      domain: z.string(),
+      id: z.string(),
+      revision: z.string(),
+    }),
+    outcome: z.literal("succeeded"),
+    code: z.string(),
+    sessionId: z.string(),
+  })
+  .strict();
+const recordSchema = z
+  .object({
+    documentId: id,
+    kind: z.literal("document"),
+    title: z.string(),
+    revision: z.number().int().nonnegative(),
+    state: stateSchema,
+    owner: ownerSchema,
+    workspaceId: z.string().optional(),
+    sessionId: z.string(),
+    createdFingerprint: z.string(),
+    receipts: z.record(
+      z.string(),
+      z
+        .object({
+          fingerprint: z.string(),
+          receipt: receiptSchema,
+          event: eventSchema,
+          audited: z.boolean(),
+        })
+        .strict(),
+    ),
+    lease: z
+      .object({
+        token: id,
+        clientId: id,
+        principalId: z.string(),
+        generation: id,
+        expiresAt: z.number(),
+      })
+      .strict()
+      .nullable(),
+    presentation: z
+      .object({
+        requestId: id,
+        sessionId: z.string(),
+        revision: z.number(),
+        expiresAt: z.number(),
+        clientId: id.nullable(),
+        appliedRevision: z.number().nullable(),
+      })
+      .strict()
+      .nullable(),
+  })
+  .strict();
+type ContentRecord = z.infer<typeof recordSchema>;
+export const contentDomain = defineDomain({
+  name: "workdsh_office",
+  version: 1,
+  layout: "per-record",
+  tables: { documents: domainTable<string, ContentRecord>(recordSchema) },
+});
+const hash = (value: unknown) =>
+  createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const newId = () => randomUUID();
+
+export class ContentService extends Service {
+  static inject = [
+    "storageDomain",
+    "workdshIdentity",
+    "workdshAccess",
+    "workdshAudit",
+  ];
+  readonly generation = newId();
+  private table!: KvTable<string, ContentRecord>;
+  private closed = false;
+  private tail: Promise<unknown> = Promise.resolve();
+  constructor(ctx: Context) {
+    super(ctx, "workdshOfficeContent");
+  }
+  async [Service.init]() {
+    const domain = await this.ctx.storageDomain.open(contentDomain);
+    this.table = domain.table("documents");
+    this.ctx.effect(
+      () => async () => {
+        this.closed = true;
+        await this.tail;
+        await domain.close();
+      },
+      "workdshOfficeContent.close",
+    );
+    // Audit events are an outbox in the same record as the committed state.
+    await this.flushAudit();
+  }
+  private enqueue<T>(
+    operation: () => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    const run = this.tail.then(async () => {
+      ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
+      signal?.throwIfAborted();
+      return operation();
+    });
+    this.tail = run.catch(() => undefined);
+    return run;
+  }
+  private session(actor: ActorContext) {
+    ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
+    ensure(
+      actor.sessionId,
+      "SESSION_REQUIRED",
+      "请在已授权的会话中使用文档工具。",
+    );
+    const binding = this.ctx.workdshAccess.sessionOwner(actor.sessionId);
+    ensure(
+      binding &&
+        binding.organizationId === actor.organizationId &&
+        binding.ownerPrincipalId === actor.principalId,
+      "FORBIDDEN",
+      "会话没有匹配的可信所有权绑定。",
+    );
+    return binding;
+  }
+  private async authorize(
+    actor: ActorContext,
+    action: "read" | "edit",
+    record: ContentRecord,
+    signal?: AbortSignal,
+  ) {
+    const session = this.session(actor);
+    ensure(
+      session.workspaceId === record.workspaceId,
+      "FORBIDDEN",
+      "文档属于另一个工作区。",
+    );
+    const decision = await this.ctx.workdshAccess.authorize(
+      {
+        actor,
+        action,
+        resource: {
+          domain: "office",
+          id: record.documentId,
+          revision: String(record.revision),
+        },
+        owner: record.owner,
+      },
+      signal,
+    );
+    ensure(decision.effect === "allow", "FORBIDDEN", "没有权限操作此文档。");
+  }
+  private get(documentId: string) {
+    const value = this.table.get(parse(id, documentId));
+    ensure(value, "NOT_FOUND", "文档不存在。");
+    return value;
+  }
+  private snapshot(record: ContentRecord): OfficeSnapshot {
+    return structuredClone({
+      documentId: record.documentId,
+      kind: record.kind,
+      title: record.title,
+      revision: record.revision,
+      state: record.state,
+      generation: this.generation,
+    });
+  }
+  private event(
+    actor: ActorContext,
+    documentId: string,
+    operationId: string,
+    revision: number,
+  ): z.infer<typeof eventSchema> {
+    return {
+      id: hash([
+        actor.organizationId,
+        documentId,
+        actor.principalId,
+        operationId,
+      ]),
+      occurredAt: new Date().toISOString(),
+      requestId: actor.requestId,
+      principalId: actor.principalId,
+      organizationId: actor.organizationId,
+      action: "office.commit",
+      target: { domain: "office", id: documentId, revision: String(revision) },
+      outcome: "succeeded",
+      code: "office/committed",
+      sessionId: actor.sessionId!,
+    };
+  }
+  private async flushAudit(documentId?: string) {
+    const records = documentId
+      ? [this.get(documentId)]
+      : [...this.table.entries()].map(([, v]) => v);
+    for (const record of records)
+      for (const [key, item] of Object.entries(record.receipts)) {
+        if (item.audited) continue;
+        try {
+          await this.ctx.workdshAudit.append(item.event as AuditEvent);
+          await this.table.update(record.documentId, (current) => {
+            const next = structuredClone(current);
+            next.receipts[key]!.audited = true;
+            return next;
+          });
+        } catch {
+          /* Durable outbox is retried on the next request or activation. Commit remains committed. */
+        }
+      }
+  }
+  async open(
+    actor: ActorContext,
+    input: OfficeOpenInput,
+    signal?: AbortSignal,
+  ): Promise<OfficeSnapshot> {
+    const value = parse(openInput, input);
+    ensure(Buffer.byteLength(JSON.stringify(value)) <= 128 * 1024, "LIMIT_REACHED", "导入正文超过128 KiB。请拆分文档。");
+    if (value.source === "existing") {
+      const snapshot = await this.read(actor, value.documentId, signal);
+      await this.present(actor, value.documentId, signal);
+      return snapshot;
+    }
+    return this.enqueue(async () => {
+      const binding = this.session(actor);
+      const documentId = hash([
+        actor.organizationId,
+        actor.principalId,
+        binding.workspaceId ?? null,
+        value.operationId,
+      ]);
+      const fingerprint = hash(value),
+        existing = this.table.get(documentId);
+      if (existing) {
+        await this.authorize(actor, "read", existing, signal);
+        ensure(
+          existing.createdFingerprint === fingerprint,
+          "IDEMPOTENCY_MISMATCH",
+          "同一新建操作 ID 不能使用不同参数。",
+        );
+        return this.snapshot(existing);
+      }
+      const owner: ResourceOwner = {
+        organizationId: actor.organizationId,
+        ownerPrincipalId: actor.principalId,
+        scope: "personal",
+      };
+      const decision = await this.ctx.workdshAccess.authorize(
+        {
+          actor,
+          action: "edit",
+          resource: { domain: "office", id: documentId },
+          owner,
+        },
+        signal,
+      );
+      ensure(decision.effect === "allow", "FORBIDDEN", "没有权限创建文档。");
+      const blockId = newId(),
+        key = hash([actor.principalId, value.operationId]);
+      const receipt: OfficeReceipt = {
+        operationId: value.operationId,
+        revision: 0,
+        status: "committed",
+        ids: {},
+      };
+      const record: ContentRecord = {
+        documentId,
+        kind: "document",
+        title: value.title,
+        revision: 0,
+        state: {
+          modelVersion: 1,
+          blockIds: [blockId],
+          blocks: { [blockId]: { blockId, type: "paragraph", runs: [] } },
+        },
+        owner: owner as ContentRecord["owner"],
+        ...(binding.workspaceId ? { workspaceId: binding.workspaceId } : {}),
+        sessionId: actor.sessionId!,
+        createdFingerprint: fingerprint,
+        receipts: {
+          [key]: {
+            fingerprint,
+            receipt,
+            event: this.event(actor, documentId, value.operationId, 0),
+            audited: false,
+          },
+        },
+        lease: null,
+        presentation: {
+          requestId: newId(),
+          sessionId: actor.sessionId!,
+          revision: 0,
+          expiresAt: Date.now() + 300000,
+          clientId: null,
+          appliedRevision: null,
+        },
+      };
+      if (value.source === "import") {
+        const imported = applyOperations({modelVersion: 1, blockIds: [], blocks: {}}, [{op: "document.insertBlocks", afterBlockId: null, blocks: value.blocks.map((block, i) => ({...block, clientRef: `import-${i}`}))}], newId);
+        record.state = imported.state;
+        record.presentation = null; // The file-preview tab already owns display.
+      }
+      signal?.throwIfAborted();
+      ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
+      await this.table.put(documentId, record);
+      await this.flushAudit(documentId);
+      return this.snapshot(record);
+    }, signal);
+  }
+  async read(
+    actor: ActorContext,
+    documentId: string,
+    signal?: AbortSignal,
+  ): Promise<OfficeSnapshot> {
+    ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
+    const record = this.get(documentId);
+    await this.authorize(actor, "read", record, signal);
+    signal?.throwIfAborted();
+    return this.snapshot(record);
+  }
+  async list(actor: ActorContext, signal?: AbortSignal) {
+    const binding = this.session(actor);
+    const items = [];
+    for (const [, record] of this.table.entries()) {
+      if (
+        record.owner.organizationId !== actor.organizationId ||
+        record.workspaceId !== binding.workspaceId
+      )
+        continue;
+      try {
+        await this.authorize(actor, "read", record, signal);
+        items.push({
+          documentId: record.documentId,
+          title: record.title,
+          revision: record.revision,
+        });
+      } catch (e) {
+        signal?.throwIfAborted();
+      }
+    }
+    return items;
+  }
+  capabilities() {
+    ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
+    return capabilities;
+  }
+  edit(
+    actor: ActorContext,
+    input: OfficeEditInput,
+    signal?: AbortSignal,
+  ): Promise<OfficeReceipt> {
+    return this.commit(actor, input, undefined, signal);
+  }
+  editHuman(
+    actor: ActorContext,
+    input: OfficeEditInput,
+    lease: { token: string; clientId: string },
+    signal?: AbortSignal,
+  ) {
+    return this.commit(actor, input, lease, signal);
+  }
+  private async commit(
+    actor: ActorContext,
+    input: OfficeEditInput,
+    human: { token: string; clientId: string } | undefined,
+    signal?: AbortSignal,
+  ): Promise<OfficeReceipt> {
+    const value = parse(editInput, input);
+    ensure(
+      Buffer.byteLength(JSON.stringify(value)) <=
+        capabilities.limits.batchBytes,
+      "LIMIT_REACHED",
+      "单批编辑不能超过 128 KiB。",
+    );
+    return this.enqueue(async () => {
+      await this.authorize(actor, "edit", this.get(value.documentId), signal);
+      const key = hash([actor.principalId, value.operationId]),
+        fingerprint = hash({ value, origin: human ? "human" : "agent" });
+      const next = await this.table.update(value.documentId, (current) => {
+        signal?.throwIfAborted();
+        ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
+        const previous = current.receipts[key];
+        if (previous) {
+          ensure(
+            previous.fingerprint === fingerprint,
+            "IDEMPOTENCY_MISMATCH",
+            "相同操作 ID 的参数不同。",
+          );
+          return current;
+        }
+        const active =
+          current.lease?.generation === this.generation &&
+          current.lease.expiresAt > Date.now();
+        if (human)
+          ensure(
+            active &&
+              current.lease?.token === human.token &&
+              current.lease.clientId === human.clientId &&
+              current.lease.principalId === actor.principalId,
+            "LEASE_EXPIRED",
+            "编辑权已过期，缓冲尚未保存。",
+          );
+        else
+          ensure(
+            !active,
+            "HUMAN_EDITING",
+            "用户正在编辑，请等待用户保存并结束编辑。",
+          );
+        ensure(
+          current.revision === value.baseRevision,
+          "REVISION_CONFLICT",
+          "文档已更新，请读取最新内容后重新编辑。",
+        );
+        ensure(
+          Object.keys(current.receipts).length < 10000,
+          "LIMIT_REACHED",
+          "此工作副本达到操作数限额。",
+        );
+        const result = applyOperations(current.state, value.operations, newId);
+        const revision = current.revision + 1;
+        const receipt: OfficeReceipt = {
+          operationId: value.operationId,
+          revision,
+          status: "committed",
+          ids: result.ids,
+        };
+        const updated = {
+          ...current,
+          state: result.state,
+          revision,
+          ...(!human ? {
+            presentation: {
+              requestId: newId(),
+              sessionId: actor.sessionId!,
+              revision,
+              expiresAt: Date.now() + 300000,
+              clientId: null,
+              appliedRevision: null,
+            },
+          } : {}),
+          receipts: {
+            ...current.receipts,
+            [key]: {
+              fingerprint,
+              receipt,
+              event: this.event(
+                actor,
+                current.documentId,
+                value.operationId,
+                revision,
+              ),
+              audited: false,
+            },
+          },
+        };
+        ensure(
+          Buffer.byteLength(JSON.stringify(updated)) < 30 * 1024 * 1024,
+          "LIMIT_REACHED",
+          "工作副本达到存储限额。",
+        );
+        return updated;
+      });
+      await this.flushAudit(value.documentId);
+      return structuredClone(next.receipts[key]!.receipt);
+    }, signal);
+  }
+  async lease(
+    actor: ActorContext,
+    documentId: string,
+    clientId: string,
+    action: "acquire" | "renew" | "release",
+    token?: string,
+    signal?: AbortSignal,
+  ) {
+    parse(id, clientId);
+    return this.enqueue(async () => {
+      await this.authorize(actor, "edit", this.get(documentId), signal);
+      const next = await this.table.update(documentId, (current) => {
+        signal?.throwIfAborted();
+        const active =
+          current.lease?.generation === this.generation &&
+          current.lease.expiresAt > Date.now();
+        const own =
+          current.lease?.clientId === clientId &&
+          current.lease.principalId === actor.principalId &&
+          current.lease.token === token &&
+          current.lease.generation === this.generation;
+        if (action === "release") {
+          ensure(own, "LEASE_EXPIRED", "编辑权已过期。");
+          return { ...current, lease: null };
+        }
+        if (action === "renew")
+          ensure(active && own, "LEASE_EXPIRED", "编辑权已过期。");
+        else ensure(!active, "HUMAN_EDITING", "另一个页面正在编辑。");
+        return {
+          ...current,
+          lease: {
+            clientId,
+            principalId: actor.principalId,
+            generation: this.generation,
+            token: action === "renew" ? token! : newId(),
+            expiresAt: Date.now() + 30000,
+          },
+        };
+      });
+      return { snapshot: this.snapshot(next), lease: next.lease };
+    }, signal);
+  }
+  async present(actor: ActorContext, documentId: string, signal?: AbortSignal) {
+    return this.enqueue(async () => {
+      await this.authorize(actor, "read", this.get(documentId), signal);
+      const requestId = newId();
+      const next = await this.table.update(documentId, (current) => ({
+        ...current,
+        presentation: {
+          requestId,
+          sessionId: actor.sessionId!,
+          revision: current.revision,
+          expiresAt: Date.now() + 300000,
+          clientId: null,
+          appliedRevision: null,
+        },
+      }));
+      return {
+        requestId,
+        documentId,
+        revision: next.revision,
+        status: "requested" as const,
+      };
+    }, signal);
+  }
+  async pending(actor: ActorContext, signal?: AbortSignal) {
+    this.session(actor);
+    const requests = [];
+    for (const [, record] of this.table.entries()) {
+      const p = record.presentation;
+      if (
+        !p ||
+        p.sessionId !== actor.sessionId ||
+        p.expiresAt < Date.now() ||
+        p.appliedRevision !== null
+      )
+        continue;
+      await this.authorize(actor, "read", record, signal);
+      requests.push({ documentId: record.documentId, ...p });
+    }
+    return requests;
+  }
+  async acknowledge(
+    actor: ActorContext,
+    input: {
+      documentId: string;
+      requestId: string;
+      clientId: string;
+      appliedRevision: number;
+    },
+    signal?: AbortSignal,
+  ) {
+    return this.enqueue(async () => {
+      await this.authorize(actor, "read", this.get(input.documentId), signal);
+      await this.table.update(input.documentId, (current) => {
+        const p = current.presentation;
+        ensure(
+          p &&
+            p.requestId === input.requestId &&
+            p.sessionId === actor.sessionId &&
+            p.expiresAt > Date.now(),
+          "STALE_PRESENTATION",
+          "展示请求已过期。",
+        );
+        ensure(
+          input.appliedRevision >= p.revision &&
+            input.appliedRevision <= current.revision,
+          "INVALID_INPUT",
+          "展示版本无效。",
+        );
+        return {
+          ...current,
+          presentation: {
+            ...p,
+            clientId: input.clientId,
+            appliedRevision: input.appliedRevision,
+          },
+        };
+      });
+      return { status: "displayed" as const };
+    }, signal);
+  }
+}

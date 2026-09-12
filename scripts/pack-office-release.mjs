@@ -1,0 +1,32 @@
+import {execFileSync} from "node:child_process";
+import {cp, mkdir, mkdtemp, readFile, writeFile} from "node:fs/promises";
+import {resolve, join} from "node:path";
+import {createHash} from "node:crypto";
+
+const root = resolve(import.meta.dirname, "..");
+const plugin = join(root, "packages/plugins/office");
+const destination = join(root, ".artifacts/office-release");
+await mkdir(destination, {recursive: true});
+execFileSync(process.execPath, [join(root, "scripts/build-office.mjs"), "--word-only"], {cwd: root, stdio: "inherit"});
+const review = JSON.parse(await readFile(join(plugin, "dist/license-review.json"), "utf8"));
+if (review.missingLicenseTexts.length) throw Error("Incomplete license texts");
+const bundled = JSON.parse(await readFile(join(plugin, "dist/bundled-dependencies.json"), "utf8"));
+const allowed = new Set(["MIT", "ISC", "Apache-2.0", "(MIT AND Zlib)", "(MIT OR GPL-3.0-or-later)"]);
+if (bundled.some(p => !allowed.has(p.license) || p.name.startsWith("@univerjs/") || p.name === "pptx-preview")) throw Error("Unexpected Word release dependency");
+const stage = await mkdtemp(join(destination, "word-package-"));
+const manifest = JSON.parse(await readFile(join(plugin, "package.json"), "utf8"));
+// The release variant contains only Word code. Experimental adapters remain in source.
+for (const name of ["@univerjs/preset-sheets-core", "@univerjs/presets", "exceljs", "pptx-preview"]) delete manifest.dependencies[name];
+delete manifest.devDependencies;
+delete manifest.scripts;
+manifest.description = "Independent Harness plugin: live Word text working copies (alpha preview)";
+manifest.workdshRelease = {scope: "word-text-preview", wordOnly: true};
+await writeFile(join(stage, "package.json"), JSON.stringify(manifest, null, 2) + "\n");
+for (const file of manifest.files) await cp(join(plugin, file), join(stage, file), {recursive: true});
+execFileSync("corepack", ["pnpm", "pack", "--pack-destination", destination], {cwd: stage, stdio: "inherit"});
+const filename = `${manifest.name}-${manifest.version}.tgz`;
+const bytes = await readFile(join(destination, filename));
+const sha256 = createHash("sha256").update(bytes).digest("hex");
+await writeFile(join(destination, "SHA256SUMS.txt"), `${sha256}  ${filename}\n`);
+await writeFile(join(destination, "release-manifest.json"), JSON.stringify({name: manifest.name, version: manifest.version, scope: manifest.workdshRelease.scope, harness: "0.1.5-rc.1", filename, sha256, bytes: bytes.length, licenseTextsComplete: true, bundledLicenses: [...new Set(bundled.map(p => p.license))], limitations: ["No editable tables, images, headers/footers or complete pagination", "Other seven live adapters pending", "No Word/WPS or real OS IME acceptance"]}, null, 2) + "\n");
+console.log(`Word release candidate: ${filename}; ${bytes.length} bytes; licenses complete`);

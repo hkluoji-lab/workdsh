@@ -1,4 +1,47 @@
+2026-09-12 WORD-RELEASE-02：Word 文本预览独立制品排除旧实验适配器，许可无缺项；同修订导出稳定路径及写入回执未知/冲突/取消检查通过。全仓构建/类型、65集成、2规划及Word-only真实制品12浏览器/6生命周期通过，按office-v0.1.0-alpha.1预览发布，八类路线与表格/图片/分页后续不变。
+
+2026-09-12 OFFICE-WORD-RELEASE-01：先收口Word文本工作副本预览与独立tgz安装/卸载/重装。六工具生命周期缺口已修复，12项集成、Word12/真实模型15/制品重装6项验证通过。README突出实时成果、人机接续、原生交付、按需插件，并保留Word表格/图片/分页及其余七类后续。候选制品准备不等于公开发布。
+
+2026-09-12 用户新增 OFFICE-INPUT-01：复用原生输入触发来源和 reference chips，实现 `/office` 八类输出标签及可选 `@` 工作副本参考/修改角色。Word 实时链路复用现有服务，其余七类标注待接入，不扩大已完成范围。
+
+2026-09-12 U2修复：新AI提交刷新同Session右栏展示请求，客户端成功打开后标seen；首次ACK后收起右栏再继续写的浏览器回归通过。人工保存/幂等重放不重开。后续范围不变。
+
+2026-09-12 U2工具栏纠正：采用Tiptap官方MIT Toolbar/ToolbarGroup、Button与SVG的适配组件，单行44px，窄栏按官方方式横向浏览；取代旧多排大按钮。保留富格式与实时保存下载，范围/后续任务不变。证据：[官方工具栏](evidence/office-official-toolbar-u2.md)。
+
+2026-09-12 原生交付增量：已移除自绘成果卡，content_export 组合官方 bash/present 生成真实 DOCX，由 Harness 原生文件卡显示。保留实时工作副本与浏览器下载，导出文件与后续编辑修订分开。当前有限交付路径不代替 U3 全量导出任务/幂等/故障恢复验收，随后继续文档表格/图片与其余七类。
+
+2026-09-12 用户纠正：Office 完成成果必须复用官方文件交付卡。下一项 U2/U3 前置是统一受控文件导出与官方 present 桥接，保留实时工作副本、跟随和下载，完成后删除自绘成果卡；先核对公开文件写入/审批与文件修订关联，不伪造路径或私有导入原生卡。
+
+2026-09-12 U2 工具栏增量：常用文字/段落排版、原生列表、撤销重做、查找替换和缩放接入统一语义服务与浏览器 DOCX 下载，见[验收记录](evidence/office-document-toolbar-u2.md)。下一步文档表格/图片及 U3 文件导入导出与失败恢复；不将常用工具栏视为完整 Word 或八类完成。
+
+2026-09-12 U2追加：Office插件默认写作引导与标准模式短报告真实模型通过，见[evidence/office-natural-writing-u2.md](evidence/office-natural-writing-u2.md)。普通请求首个工具content_open，随后分批content_edit；真实场景保留officecli Skill无文件生成绕行。此有限样本不标Word/八类完成。下一步文档表格与U3 DOCX冻结导出/重开/失败恢复，专家/PTC/长报告继续待验。
+
+2026-09-12 当前实施进展：U1 最小文档插件与 U2 确定性工具/UI 链路已通过，见[证据](evidence/office-live-u1.md)。五个原生工具、内容服务、原生 Tiptap、独立预构建安装已实现；真实模型/PTC、导出/文件保真、未保存缓冲/卸载故障与其余七类仍按 U2—U5 推进，六工具最终目标不变，尚未实现的 content_export 不注册。主线 D04/D15 保持原状态。
+
+2026-09-12 最新插件复审：[OP-R01—06](design/office/ARCHITECTURE-REVIEW.md)已补设计处置；[插件架构](design/office/PLUGIN-ARCHITECTURE.md)固定独立workdsh-plugin-office、官方Host服务/工具/Connection子插件与Client图。U1先验证最小真实插件及预构建包，再做Tiptap闭环；U3验在途卸载/重装，U4逐类codec矩阵，U5完整制品OP-T01—07。Office专项使用顺序台账activeSlice，保留主线D04/D15状态。设计修订不等于运行通过。
+
+2026-09-12 范围与组件决定：正式交付八类：Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown。采用GenOffice使用的上游基础库，[组件方案](design/office/OPEN-SOURCE-STACK.md)固定Tiptap/ProseMirror、Univer、Konva、PDF.js/pdf-lib/PDFium及CodeMirror/Mermaid/KaTeX。HTML提供源码编辑与实时页面预览，Markdown提供正文编辑/源码切换；二者同样支持AI分批写入、人工修改、保存重开。多维表格首版是独立内容文档，不接管tables业务数据；HTML不包含pages发布。U4先扩展Markdown/HTML；停止默认扩展旧候选探针。仅技术路线采纳，尚未安装新增组件或完成产品集成。
+
+2026-09-12 接口修订：[内容API v0.4](design/office/UNIFIED-API.md)已补Review六项设计处置和HTML/Markdown严格分支；[Harness集成决策](design/office/HARNESS-INTEGRATION.md)选定单Agent原生工具、PTC复用、子智能体可选、rc.1官方Connection修订查询。执行有限U1—U5：模型/公开面→文档实时闭环→导出与故障收口→其他七类→八类联合验收。全部八类范围保留，子智能体与专家团SOP不作编辑器前置；该段为设计阶段记录，最新实现以首部 U1 证据为准，不标 D04/D15 完成。
+
+以下保留历史追加记录；与上方当前八类/开源组件/插件专项决定冲突时，以上方及对应最新版设计为准。
+
+历史用户追加（2026-09-12）：六类编辑器必须同时向 AI 暴露结构化操作，页面显示同一文档的实时提交。按 [ADR-0024](adr/0024-ai-visible-browser-editing.md) 和 [AI协作交付计划](design/office/AI-EDITING.md) A—D 执行；内部复用 Harness 原生工具/Remote，MCP 仅作为可选适配。首条实际闭环为文档写作/手动编辑/最新内容读取/保存重开，不把独立编辑器演示当成集成完成。
+
+<!-- 2026-09-12 用户最新选型约束 -->
+
+编辑器范围继续覆盖 Word/PPT/Excel/PDF/画布/多维表格，依赖优先 MIT/Apache-2.0；按[宽松许可候选验证计划](evidence/browser-editors-permissive-selection.md)先做 PPT 真文件直接编辑与导出重开探针，再决定迁移。原 Univer 商业组件装配通过不代表许可或产品验收完成。
+
 # WorkDSH 详细开发计划
+
+2026-09-12 Office U2 增量：成果卡片/右侧 DOCX 下载/自动跟随已完成有限验收，见 [文档交付记录](evidence/office-document-delivery-u2.md)。下载当前保存修订；完整表格、保真导入/导出和八类实时链路仍按既有后续计划推进，主线与 activeSlice 不变。
+
+
+> 2026-09-12 历史范围：用户要求 Univer 截图全部组件类别。统一版本迁移、原生编辑与浏览器约束见 [ADR-0023](adr/0023-univer-complete-browser-component-scope.md)，逐类状态见 [完整组件验证](evidence/univer-complete-components.md)。后续已按用户要求改为上方开源组件路线；此处保留探针历史。
+
+> 用户最新指令：直接集成 Word/PPT/Excel 浏览器编辑，不扩展公式计算。作为已授权 P1-01 右侧产物扩展新增 office 插件；三类 Office 导入和导出分别记录实际范围，不提前声明 D15 完成。
+
+> 用户追加：Office 应可编辑且不采用服务端转换。先在 examples/univer-browser-edit 验证浏览器 Excel 导入、Univer 编辑、导出；这是基础能力兼容探针，不提前完成 D15 在线表格或改动用户 Profile。ADR-0021 服务端方案已被用户否决。
 
 > 2026-09-12 专家设计交接：[文档包](design/experts/README.md) 将 D04 单专家 0.1 固定为 EP-01～EP-07，覆盖制作、发布、召唤、管理和恢复；专家团在 D11 实施，企业服务器/管理 Web 后置。本次仅设计，不修改开发顺序和完成状态。
 
@@ -9,7 +52,7 @@
 > 当前执行覆盖（2026-09-10）：依据用户确认，按 [ADR 0013](adr/0013-feature-slices-with-pending-gates.md) 提前交付 P1-03 原生任务技能浏览切片。该段为提前切片时的历史说明；D01 后续已按本地边界完成。其余模块和团队准入不变。
 
 
-版本：计划修订 13；日期：2026-09-12。状态：D01 本地治理、D02 工作台/共享 UI 与 D03 Skill 0.1 已完成，当前进入 D04 专家模块 0.1。企业服务器、管理 Web 与不互信多人治理独立后置。
+版本：计划修订 14；日期：2026-09-12。主线状态：D01 本地治理、D02 工作台/共享 UI 与 D03 Skill 0.1 已完成，currentStep保留D04专家模块0.1。当前用户专项由activeSlice记录为Office模块0.1 / OFFICE-AI-01，按U1—U5执行，不推进其他主线状态。企业服务器、管理 Web 与不互信多人治理独立后置。
 
 ## 1. 固定目标
 

@@ -12,7 +12,22 @@
 
 WorkDSH 在 DeepSeek Harness 上提供可复用技能与面向工作的界面。你可以**单独安装技能管理插件**，也可以将它与可选的 **WorkDSH 展示组合包**一起使用，获得品牌化工作平台。
 
-当前 **Skill 0.1 开发预览**支持本地技能发现、创建、导入、编辑、启停和恢复。专家、连接器、项目与企业管理仍在路线图中；设计文档和导航占位不代表功能已经完成。
+当前技能管理与单个专家提供独立预览插件；Office 正在收口 **Word 文本工作副本**。专家团、其余 Office 实时编辑器与企业管理按路线推进，下面区分已实现能力与后续计划。
+
+## 我们的特色
+
+**让 AI 的成果在工作区里逐步成形。** 提出需求后，文档自动在右侧打开；AI 分批写入，你边看边读。你可以接手修改，完成编辑后让 AI 读取最新内容继续完善，最后下载 Word 文件。
+
+| 特色 | 你能获得的体验 |
+| --- | --- |
+| 写作实时可见 | 每批提交直接出现在右侧文档，无需等整篇完成再打开文件。 |
+| 人与 AI 接续编辑 | 在同一份工作副本里修改；人工编辑期间暂停 AI 写入，避免互相覆盖。 |
+| 从草稿到文件交付 | 自动保存、重开继续、右侧下载 DOCX；AI 导出后使用 Harness 原生文件产物卡。 |
+| 输出类型显式选择 | `/office` 选择输出类型，`@` 指定参考资料或修改对象；新建文档无需引用。 |
+| 能力按需组合 | Office 是独立 Host/Client 插件，菜单、工具和编辑入口随插件装配；卸载保留已保存文档。 |
+| 保留 Harness 原生体验 | 原生会话、附件、模型、权限与任务队列照常使用；不另造执行器或输入框。 |
+
+**当前 Word 边界：**支持标题、段落、文字样式、列表、查找替换、缩放、跟随阅读和 DOCX 文本副本导入/下载。表格、图片、页眉页脚及完整分页排版尚未进入统一编辑模型，导入时明确提示并保留原文件。八类类型选择已提供，其余七类实时适配待接入。Word alpha.1 提供独立[预览安装包](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1)。
 
 > **兼容范围：**已验证官方 Harness **`0.1.5-rc.1` Web Profile**。使用 Harness **`0.1.2-rc.1`** 的 DSH Desktop 存在 Skill alpha.24 安装后无导航入口的问题，重启后也可能不显示。**本次发布未修复该问题。**详见[兼容说明](docs/RELEASES.md)。
 
@@ -33,6 +48,41 @@ Experts now ship as an independent Harness Host/Client plugin. One plugin manage
 
 ![Expert detail / 专家详情](docs/assets/screenshots/expert-detail-alpha1.png)
 
+
+## Office 开发预览
+
+![WorkDSH Word preview / Word 文档预览](docs/assets/screenshots/office-word-preview.png)
+
+*用户提供的应用截图：右侧 Word 文档预览与原生文件产物卡片。此图不代表完整 Word 排版编辑或所有 Office 编辑器均已完成。*
+
+![Office output selector / Office 输出类型选择](docs/assets/screenshots/office-output-selector.png)
+
+*在原生任务输入框通过 `/office` 选择输出类型。Word 支持实时写作，其余类型的实时编辑适配仍待接入。
+
+**Office alpha.1 发布范围：**安装包仅包含 Word 文本编辑与 DOCX 原始排版预览，旧 Excel/PPT 实验文件适配器不随本版交付。执行 `corepack pnpm release:office:pack` 生成候选包，打包时校验实际依赖许可文本，并排除旧适配器依赖。
+
+### 安装与卸载 Office 候选包
+
+以下命令用于本仓库已配置的 `preview` Profile，要求完成开发环境准备且本地候选 `.tgz` 已存在；这是[开发预览版本](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1)，可下载附件 `.tgz` 或在本仓库生成候选包。使用 Node.js 22.23.2。先在运行预览的终端按 `Ctrl+C` 停止应用，再执行安装和启动：
+
+```bash
+cd /Users/techflag/project/workdsh
+
+# 安装本地候选包 / Install the local candidate
+DSH_HOME="$PWD/.test-runtime/preview" \
+  corepack pnpm exec dsh plugin --profile preview add \
+  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.1.tgz"
+
+# 启动 / Start
+corepack pnpm preview
+```
+卸载也先停止应用，再执行以下命令，随后运行 `corepack pnpm preview` 并刷新页面：
+
+```bash
+DSH_HOME="$PWD/.test-runtime/preview" \
+  corepack pnpm exec dsh plugin --profile preview remove workdsh-plugin-office
+```
+请保持安装、卸载和启动使用同一 `DSH_HOME` 与 Profile。卸载撤销 Office 入口及工具，保留已保存文档和原文件；重新安装恢复入口。新建 Word 无需 `@` 引用，在任务输入框选择 `/office` → Word 即可。
 
 ## 插件就是架构
 

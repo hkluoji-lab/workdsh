@@ -448,5 +448,24 @@
     "directories": [
       "packages/probe/src"
     ]
+  },
+  {
+    "path": "examples/univer-browser-edit",
+    "title": "Office 纯浏览器编辑兼容探针",
+    "phase": "P0",
+    "task": "P0-02",
+    "status": "in_progress",
+    "directories": []
+  },
+  {
+    "path": "packages/plugins/office",
+    "title": "Office 浏览器编辑插件",
+    "phase": "P1",
+    "task": "P1-01",
+    "status": "in_progress",
+    "moduleVersion": "0.1",
+    "directories": [
+      "src"
+    ]
   }
 ]

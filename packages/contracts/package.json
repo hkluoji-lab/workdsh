@@ -19,6 +19,9 @@
     "./skill-revisions": {
       "types": "./dist/skill-revisions.d.ts",
       "default": "./dist/skill-revisions.js"
+    },
+    "./office": {
+      "types": "./dist/office.d.ts"
     }
   },
   "files": [

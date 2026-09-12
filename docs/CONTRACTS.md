@@ -30,6 +30,8 @@ SessionOwnerBinding 是 Session 的持久业务 owner 事实，创建后不能�
 
 ## 分领域接口与消费方
 
+Office已导出`workdsh-contracts/office`的 U1 文档类型，并注册`ctx.workdshOfficeContent`服务。六个工具及原生页面共用文档工作副本，content_export 已支持受限 DOCX 文件交付，其余七类接口仍为后续目标，见[运行证据](evidence/office-live-u1.md)。工作副本的open/read/capabilities/edit/present/export供原生工具与认证Client共同消费，详见[统一接口](design/office/UNIFIED-API.md)和[插件架构](design/office/PLUGIN-ARCHITECTURE.md)。契约不放运行服务或依赖其他插件内部类；Office自有运行校验/实现，Host不裸导入private contracts运行值。现有tables/pages/library领域保留唯一所有权。
+
 | 领域 | 最小能力 | 消费方 |
 | --- | --- | --- |
 | experts | list/get/createDraft/updateDraft/validate/publish/archive/resolveExecution | 专家页面、管理工具、任务入口、应用 |
@@ -137,3 +139,9 @@ Remote 以 Host 的 `TypertRemoteService` 定义为唯一签名来源，Client �
 H09 补充：首期使用 unary 是本项目选择，不表示 Typert 无 stream 能力；镜像中的 stream 描述须经 rc.1 生成器和发布产物验证后使用。无论 transport，领域 baseline/cursor 与授权不省略。取消回执只说明取消请求被处理；外部提交和 Host binding 另行核对。lookup provider 卸载后须明确失败，不把其 wire identity 当普通 JSON 对象放行。
 
 Agent 工具分别定义严格输入 schema、规范 JSON 输出、模型内容与纯 UI presentation。外部写入的权威回执同时进入所属业务 Domain，工具卡片只投影持久事实。工具尊重 `exec.signal`；一旦创建并发布后台 Job，取消和最终结算归 Job 生命周期。原生调用与 PTC 子调用都必须经过同一 guard、approval、审计和结果规范化链。
+
+Office 原生 document 的 run.style 可选字体、点字号、颜色和背景色；block.style 可选对齐、行距与缩进，block.list 表示 bullet/ordered、depth、起始编号及同一条目的后续段落。Host 严格验证范围与层级，旧 modelVersion 1 无可选属性仍可读取。replaceBlock 需要保留完整样式与列表信息，避免丢失人工格式。AI 工具 schema 与 UI 事务使用相同模型；浏览器 DOCX 下载独立于受限 DOCX 文件交付的 content_export。
+
+content_export({documentId}) 读取授权下最新已保存修订，返回 documentId/revision/path/status:presented。共享 DOCX codec 与右侧下载；实际文件写入和交付组合官方 tools.execute(bash/present)，继承调用方 scope/token/signal，不创建第二套文件操作传输。返回成功以官方 present 回执为准。导出文件与工作副本修订分开，当前有限导出不是完整 U3 冻结任务/幂等收据/恢复协议。
+
+WORD-RELEASE-02：content_export 新增可选 baseRevision，授权读取的最新修订不匹配时返回 REVISION_CONFLICT。相同 docId/revision/DOCX 摘要生成稳定路径，已有同字节文件复用，冲突不覆盖；写入回执未知不交付，重试同一修订核对文件。取消信号在写入前与 present 前重验，交付未知返回路径供核对。不是全量导出 Job/跨执行世界协议。

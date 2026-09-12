@@ -225,14 +225,26 @@
     }
   ],
   "activeSlice": {
-    "id": "skill-create-loop",
-    "task": "P1-03",
-    "status": "completed",
-    "decision": "docs/adr/0015-skill-control-plane-and-runtime-projection.md",
-    "scope": "Skill 0.1 使用 Harness 默认/本地技能并完成个人本地管理闭环；当前不开发公共市场、公共目录、SkillHub 或套件。企业服务端、管理 Web、组织目录、分类、版本和下发策略列入后期 ToDo，各模块开始时独立建立 0.1 版本线，不预先建立 Skill 0.2。",
+    "id": "office-ai-editing",
+    "task": "P1-01",
+    "status": "in_progress",
+    "decision": "docs/adr/0024-ai-visible-browser-editing.md",
+    "scope": "用户批准的OFFICE-AI-01 / Office 0.1专项。通过官方Harness插件实现Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown及统一AI实时编辑。按U1—U5与OP-T01—07推进，U1最小新建document插件/五工具/原生Tiptap/独立打包已验证，U2确定性工具/UI链路通过；接续真实模型/PTC及恢复验收，八类与U3-U5未完成。独立Office包、Host服务/工具/Connection与Client官方组合；不改变主线D04/D15状态，不包含tables业务数据库或pages发布。",
     "evidence": [
-      "docs/evidence/skills-browser.md",
-      "docs/releases/v0.1.0-alpha.1.md"
+      "docs/evidence/office-live-u1.md"
     ]
-  }
+  },
+  "completedSlices": [
+    {
+      "id": "skill-create-loop",
+      "task": "P1-03",
+      "status": "completed",
+      "decision": "docs/adr/0015-skill-control-plane-and-runtime-projection.md",
+      "scope": "Skill 0.1 使用 Harness 默认/本地技能并完成个人本地管理闭环；当前不开发公共市场、公共目录、SkillHub 或套件。企业服务端、管理 Web、组织目录、分类、版本和下发策略列入后期 ToDo，各模块开始时独立建立 0.1 版本线，不预先建立 Skill 0.2。",
+      "evidence": [
+        "docs/evidence/skills-browser.md",
+        "docs/releases/v0.1.0-alpha.1.md"
+      ]
+    }
+  ]
 }

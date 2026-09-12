@@ -14,8 +14,8 @@
     "check:acceptance": "node scripts/check-acceptance.mjs",
     "check:env": "node scripts/check-environment.mjs",
     "test:planning": "node --test tests/planning/*.test.mjs",
-    "build": "corepack pnpm --filter workdsh-contracts build && corepack pnpm --filter workdsh-provider-identity-local build && corepack pnpm --filter workdsh-plugin-audit build && corepack pnpm --filter workdsh-plugin-access build && corepack pnpm --filter workdsh-plugin-skills build && corepack pnpm --filter workdsh-plugin-experts build && corepack pnpm --filter workdsh-bundle build",
-    "typecheck": "corepack pnpm --filter workdsh-contracts typecheck && corepack pnpm --filter workdsh-provider-identity-local typecheck && corepack pnpm --filter workdsh-plugin-audit typecheck && corepack pnpm --filter workdsh-plugin-access typecheck && corepack pnpm --filter workdsh-plugin-skills typecheck && corepack pnpm --filter workdsh-plugin-experts typecheck && corepack pnpm --filter workdsh-bundle typecheck",
+    "build": "corepack pnpm --filter workdsh-contracts build && corepack pnpm --filter workdsh-provider-identity-local build && corepack pnpm --filter workdsh-plugin-audit build && corepack pnpm --filter workdsh-plugin-access build && corepack pnpm --filter workdsh-plugin-skills build && corepack pnpm --filter workdsh-plugin-experts build && corepack pnpm --filter workdsh-plugin-office build && corepack pnpm --filter workdsh-bundle build",
+    "typecheck": "corepack pnpm --filter workdsh-contracts typecheck && corepack pnpm --filter workdsh-provider-identity-local typecheck && corepack pnpm --filter workdsh-plugin-audit typecheck && corepack pnpm --filter workdsh-plugin-access typecheck && corepack pnpm --filter workdsh-plugin-skills typecheck && corepack pnpm --filter workdsh-plugin-experts typecheck && corepack pnpm --filter workdsh-plugin-office typecheck && corepack pnpm --filter workdsh-bundle typecheck",
     "probe:install": "node scripts/check-environment.mjs && node scripts/probe-install.mjs",
     "test:integration": "node --test tests/integration/*.test.mjs",
     "check:versions": "node scripts/check-published-versions.mjs",
@@ -27,7 +27,12 @@
     "preview:install": "node scripts/check-environment.mjs && node scripts/install-preview.mjs",
     "probe:skills": "node scripts/check-environment.mjs && node scripts/probe-skills-package.mjs",
     "probe:experts": "node scripts/check-environment.mjs && node scripts/probe-experts-package.mjs",
-    "probe:experts:professional": "node scripts/check-environment.mjs && node scripts/probe-experts-professional.mjs"
+    "probe:experts:professional": "node scripts/check-environment.mjs && node scripts/probe-experts-professional.mjs",
+    "probe:office": "node scripts/probe-office.mjs",
+    "probe:office:native": "node scripts/probe-office-native.mjs",
+    "probe:office:live": "node scripts/probe-office-live.mjs",
+    "test:office:content": "node --test tests/integration/office-content.test.mjs",
+    "release:office:pack": "node scripts/pack-office-release.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
@@ -54,7 +59,9 @@
     "@types/node": "22.19.0",
     "esbuild": "0.25.12",
     "pnpm": "10.34.5",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "docx": "9.6.1",
+    "pptxgenjs": "4.0.1"
   },
   "pnpm": {
     "overrides": {

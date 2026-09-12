@@ -14,6 +14,21 @@ WorkDSH brings reusable skills and a work-oriented interface to DeepSeek Harness
 
 The current **Skill 0.1 development preview** supports local skill discovery, creation, import, editing, enablement, and recovery. Individual Experts are available as an alpha; expert teams, connectors, projects, and enterprise administration are on the roadmap; their design documents and navigation placeholders do not represent completed features.
 
+## What makes WorkDSH useful
+
+**Watch the result take shape in your workspace.** Ask for a document and it opens on the right. AI writes in committed batches as you read. Take over, make changes, then let AI read the latest revision and continue. Download the result as Word when ready.
+
+| Feature | What it means in practice |
+| --- | --- |
+| Visible writing progress | Each committed batch appears in the right-hand document; no need to wait for a finished file. |
+| Human and AI take turns | Edit the same saved working copy. Human editing pauses AI writes to prevent overwrites. |
+| Drafts become deliverables | Autosave, reopen, download DOCX, and use native Harness file cards after AI export. |
+| Explicit output intent | `/office` picks an output type; `@` distinguishes reference material from a document to modify. New documents need no reference. |
+| Independently installed capabilities | Office is a Host/Client plugin. Its menus, tools and editor registrations follow plugin installation; saved documents survive removal. |
+| Native Harness workflow | Keep conversations, attachments, models, permissions and queues with the official runtime and composer. |
+
+**Current Word scope:** headings, paragraphs, text formatting, lists, find/replace, zoom, reading follow, and DOCX text-copy import/download. Tables, images, headers/footers and full pagination are outside the unified editing model; imports disclose these limits and retain the original file. All eight output choices are present, while the other seven live adapters remain planned. Word alpha.1 is available as an independent [prerelease package](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1).
+
 > **Compatibility:** verified with the official Harness **`0.1.5-rc.1` Web Profile**. Skill alpha.24 has a known missing-navigation issue in DSH Desktop using Harness **`0.1.2-rc.1`**, including after restart. This release **does not fix that issue**. See the [compatibility notes](docs/RELEASES.md).
 
 ![WorkDSH Skill library](docs/assets/screenshots/skill-management.png)
@@ -33,6 +48,41 @@ Experts now ship as an independent Harness Host/Client plugin. One plugin manage
 
 ![Expert detail / 专家详情](docs/assets/screenshots/expert-detail-alpha1.png)
 
+
+## Office development preview
+
+![WorkDSH Word preview / Word 文档预览](docs/assets/screenshots/office-word-preview.png)
+
+*User-provided application screenshot showing a Word document preview and the native file deliverable card. This screenshot does not demonstrate full Word layout editing or completion of all Office editors.*
+
+![Office output selector / Office 输出类型选择](docs/assets/screenshots/office-output-selector.png)
+
+*Select an output type with `/office` in the native task input. Word supports live writing; the other live editor adapters are still pending.*
+
+**Office alpha.1 release scope:** the downloadable package contains Word text editing and DOCX original-layout preview only. Experimental Excel/PPT file adapters are excluded from this package. Build the release candidate with `corepack pnpm release:office:pack`; packaging checks bundled license texts and excludes legacy dependencies.
+
+### Install or remove the Office candidate
+
+These commands target this checkout's configured `preview` Profile and require the development setup and local candidate `.tgz` to exist. This is a [development prerelease](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1); download the `.tgz` from its assets or build it locally. Use Node.js 22.23.2. Stop the running preview with `Ctrl+C` in its terminal before installing and starting:
+
+```bash
+cd /Users/techflag/project/workdsh
+
+# 安装本地候选包 / Install the local candidate
+DSH_HOME="$PWD/.test-runtime/preview" \
+  corepack pnpm exec dsh plugin --profile preview add \
+  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.1.tgz"
+
+# 启动 / Start
+corepack pnpm preview
+```
+To remove Office, stop the preview first, run this command, then run `corepack pnpm preview` and refresh the page:
+
+```bash
+DSH_HOME="$PWD/.test-runtime/preview" \
+  corepack pnpm exec dsh plugin --profile preview remove workdsh-plugin-office
+```
+Use the same `DSH_HOME` and Profile for installation, removal and startup. Removal withdraws Office entries and tools while retaining saved documents and original files; reinstallation restores the entries. To create a new Word document, select `/office` → Word in a task; no `@` reference is required.
 
 ## Plugins are the architecture
 

@@ -2,6 +2,218 @@
 
 更新时间：2026-09-12。
 
+## 本轮：Word 文本预览发布收口（2026-09-12）
+
+Word-only 打包独立阶段目录，剔除旧 Univer/Excel/PPT 适配器及运行依赖，保留源码实验与八类路线。实际50个打包依赖许可文本齐全，已知双许可按MIT分支，打包失败关闭。导出同修订稳定ZIP与路径，独占链接完整文件、核对已有摘要不覆盖人工修改、写入/交付回执未知及取消保护，新增故障测试。全仓build/typecheck、65项集成、check:plan、2项规划，以及Word-only tgz的12浏览器与6卸载重装通过，均无pageerror。真实模型沿用此前15项，本轮未重复执行；Word/WPS、OS IME、跨Host/掉电恢复未执行。准备office-v0.1.0-alpha.1预览标签，完整Word与八类尚未完成；主线D04/D15保持。发布结果在后续记录。
+
+## 本轮：Word 条件发布核对（2026-09-12）
+
+用户授权在 Word 开发完成后推送版本。复核实际代码、候选 CHANGELOG 与第三方 notices：当前仅 Word 文本工作副本预览，表格/图片/完整分页仍未完成；dist/license-review.json 有7项缺失许可文本记录，旧适配器仍随候选打包，尚未满足此前无商用限制要求的发布收口。此次 Office typecheck 与内容/输入/导入/下载12项集成测试通过。浏览器、真实模型、全仓构建/检查及新制品验收本轮未执行；此前证据保留。未创建发布标签、提交、推送或发布。下一步先收口可分发的 Word 预览制品依赖/许可及导出故障恢复，完整 Word 后续能力继续保留，不将文本预览声明为 Word 整体完成。
+
+## 本轮：保存 Office 输出选择截图（2026-09-12）
+
+保存用户原始截图为 docs/assets/screenshots/office-output-selector.png，中英文 README 加入引用及当前适配范围说明，截图目录登记来源。原图与副本 SHA-256 一致，图片引用存在，git diff --check 通过。仅文档与图片变更，未运行构建或运行测试；未提交、推送或发布。
+
+## 本轮：重新安装 Office 并记录命令（2026-09-12）
+
+按用户要求使用官方 CLI 将已验收的 alpha.1 本地候选 tgz 安装回当前 preview Profile，验证 dependencies 恢复 Office，随后重新启动18989。中英文 README 及 Office README 补充当前 Profile 的安装、卸载与启动命令，说明先停止应用、保持同一 DSH_HOME/Profile、新建无需引用及卸载保留内容。此轮未修改运行时代码，未额外运行测试；沿用此前候选制品验收。未提交、推送或发布。
+
+## 本轮：用户观察 Office 实际卸载效果（2026-09-12）
+
+按用户要求通过官方CLI从当前preview Profile移除workdsh-plugin-office，已验证Profile dependencies无Office并重新启动18989。保留文档存储及原文件，不自动重装，供用户刷新观察菜单/编辑入口撤销。此轮未执行额外测试，先前安装/卸载验收证据保留；未提交或发布。
+
+## 本轮：Word 预览版与独立插件制品收口（2026-09-12）
+
+验证完整tgz安装生命周期，而非仅开发态卸载。六工具注册的disposer已由Office ctx.effect托管。Host卸载工具及guide、移除服务再装保留内容/修订；实际CLI从隔离Profile移除制品后冷启无content工具/guide、接口404，再装tgz恢复菜单/六工具/已写入文本和修订。Client热卸载撤销类型与文档来源、预览和右栏注册，用户旧草稿标签保留且发送失败。12项内容/输入/导入/下载测试、Word12项、真实模型15项、制品重装6项通过；最终44px DOCX工具栏和宽度约束通过Word浏览器回归。DOCX编辑期间外部文件更新不替换缓冲。证据见[Word发布收口](evidence/office-word-release-u3.md)。
+
+中英文README突出实时写作、人机接续、原生文件交付、插件按需组合；CHANGELOG和候选 `.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.1.tgz`、SHA256与manifest已准备，包内容检查通过。新版安装到preview并重启18989。仍仅Word文本副本预览，表格/图片/页眉页脚/完整分页和七类实时适配待开发；Word/WPS、OS IME、完整U3故障恢复及全仓check未执行。未提交、推送、打tag或发布；主线D04/D15不变。
+
+## 本轮：Office 输入说明行错位修复（2026-09-12）
+
+用户截图确认新增 input.dock 说明行与原生 composer 居中布局不一致且重复标签。已删除 OfficeInputGuide 组件及 dock 注册，不修改官方布局 CSS，直接保留输入框内原生类型/参考/修改标签。Office typecheck/build、2项输入语义测试和4项专项浏览器检查通过；标准宽度和900px窄窗口（右栏收起）截图复核，标签位于输入框内，说明行不存在。新版已安装并重启18989。真实模型和全仓回归未执行；八类后续范围不变，未提交、推送或发布。
+
+## 本轮：Office 原生输入类型选择和文档引用（2026-09-12）
+
+OFFICE-INPUT-01 已接入 `/office` 八类输出选择与可删除原生输入标签、新建无需 `@`；`@` Office 工作副本明确区分参考与修改对象。公开输入触发/codec/原生发送器复用，提交重新核验任务和文档访问。其余七类实时适配标明待接入，原生文件引用入口保留。Office typecheck/build、6项集成及4项专项浏览器检查通过，见[输入验收](evidence/office-input-u2.md)。新版已安装到 preview 并重启18989。真实模型、标签冷刷新和全仓回归未执行。后续按U2—U5完善编辑器和故障收口，主线不变；未提交、推送或发布。
+
+## 本轮：保存 Office Word 发布截图（2026-09-12）
+
+按用户要求将原始截图保存为 `docs/assets/screenshots/office-word-preview.png`，英文及中文 README 已引用，截图目录记录来源与能力边界，供后续发布复用。已验证原图与保存文件 SHA-256 一致，README 图片路径有效。仅文档及图片变更；构建、运行测试未执行；未提交、推送或发布。
+
+## 本轮：后续 AI 写作自动展开右栏修复（2026-09-12）
+
+已修复首次展示ACK后新AI提交不刷新展示请求，以及客户端先标seen导致打开失败不再重试。新的 agent commit 在同一原子记录更新presentation（当前Session、新requestId、当前revision、5分钟有效）；人工保存和幂等重放不制造新请求。Client成功调用官方openTabIn后才标记seen。无第二套布局/传输。
+
+Office typecheck/build、7项集成测试、11项浏览器检查通过；新增ACK→AI提交→新pending、重放不重新揭示、人类保存不重新揭示，以及真实浏览器首次ACK→收起右栏→AI写入→自动展开回归。证据见[右栏修复](evidence/office-sidebar-reveal-u2.md)。新版已安装并重启18989。本轮真实模型、全仓回归未执行；用户截图对应历史Session日志未复现，不能断言此前每次失败均来自这两处。仅文件工具/officecli生成的独立文件不自动变为实时工作副本。主线D04、八类范围不变，未提交/推送/发布。
+
+## 本轮：复用 Tiptap 官方紧凑工具栏（2026-09-12）
+
+用户指出自绘多行工具栏体验差。核对官方 UI Components 与 Simple Editor MIT 文档，复用锁定提交的 Toolbar/ToolbarGroup、Button 无 tooltip 分支和官方 SVG，按现有 Office scoped 样式适配单行44px布局。字体/字号/颜色/列表/查找/缩放功能保留；窄栏横向滚动，键盘焦点自动揭示按钮。原生 select/input 保留键盘行为，Tab 离开工具栏，箭头跳过禁用按钮。没有替换现有 Editor、修订、租约或保存服务，也没有引入收费 DOCX 模板。
+
+Office typecheck/build、7项集成测试和11项确定性浏览器检查通过；截图及官方来源见[复用记录](evidence/office-official-toolbar-u2.md)。新版已安装到 preview 并重启18989。本轮真实模型、Word/WPS和全仓回归未执行，旧原生交付卡链路未修改。后续仍是文档表格/U3故障收口与U4其余七类；未提交/推送/发布，D04不变。
+
+## 本轮：接入 Harness 原生文件交付卡（2026-09-12）
+
+已移除 Office 自绘卡片/Conversation 投影，注册第六个 content_export 工具：读取授权下已保存文档，复用浏览器 DOCX codec，经官方嵌套 bash 和 present 交付实际文件，由官方 ui-deliverables 原生卡显示。作用域工具查找传入实际 agent，继承 token/rootCallId/signal，不绕过沙箱/审批。文件名清理并编码，独占新建，不覆盖用户原件。实时右栏、跟随及最新人工修改下载保留；导出文件代表当时修订，后续编辑不静默改写它。
+
+Office typecheck/build、7 项集成测试通过（含富格式文档 Host 冷启动），真实模型分批写入→官方 present 日志→原生卡→刷新恢复通过；卡片打开/右栏预览下载通过，真实模型模式共14项检查通过，详见[原生文件卡记录](evidence/office-native-delivery-u3.md)。旧文档工作副本数据保留，旧轮次不会自动补造文件交付，可请求 AI 导出已有文档。完整 U3 幂等导出/未知写入恢复、Word/WPS 保真和其余七类仍待开发；全仓回归未执行，新版已安装并重启18989，未提交/推送/发布，主线 D04 不变。
+
+## 本轮：原生产物卡片复用纠正（2026-09-12）
+
+用户指出 Office 自绘成果卡应复用官方文件交付卡，已确认当前确有重复 UI。锁定 rc.1 官方 ui-deliverables 的原生卡由真正文件路径和成功 present 声明驱动；当前实时工作副本只有浏览器 DOCX 下载，尚没有 Host 文件导出桥接。公开 ./client 仅导出 ProducedFiles 文件改动标签，不导出交付卡组件，不能私有导入或照抄外观。官方复用记录已补入 U1-IMPLEMENTATION；下一项是受控 DOCX 文件导出→官方 present→原生卡，并保留实时右栏和修订关联，再移除自绘卡。
+
+本轮只核对公开发布包/镜像文档，未修改运行代码、重启、提交或发布。新原生交付链路测试未执行；不能声称已替换。主线 D04 和八类后续范围不变。
+
+## 本轮：文档常用编辑工具栏（2026-09-12）
+
+原生 Tiptap 文档补齐字体/字号、文字颜色/高亮、标题1—6、四种对齐、行距/缩进、原生项目符号/编号列表、撤销/重做、全选/清除格式、文字查找替换、缩放与字符数。工具栏分组换行，避免窄面板把按钮藏到水平滚动区域。复用 Tiptap 3.31.0 MIT 扩展；Office 独立插件及统一服务架构不变。
+
+可选文字/段落样式和列表层级进入语义契约、Host 校验、AI 工具 schema 与 DOCX 下载；旧记录兼容。6 项集成测试通过，浏览器验证编辑/保存/重开/下载，真实模型继续分批展示并保留成果卡。详细范围及验收见[工具栏记录](evidence/office-document-toolbar-u2.md)。仍未实现文档表格、图片、页眉页脚、分页排版或完整 Word 保真；其余七类继续既有 U3—U5 计划，主线 D04 未改变。未提交/推送/发布。
+
+## 本轮：Office 成果卡片、跟随阅读和下载（2026-09-12）
+
+完成轮次保留原生文档成果卡，可打开、下载并在刷新后恢复；使用独立 Conversation Definition/Chat keyed Node，不替换官方文件卡片。右侧“下载 Word”与卡片下载共用活跃文档事务，先保存人工修改再导出当前修订；保存失败或组合输入未完成时拒绝导出旧内容。浏览器生成段落/标题/文字标记 DOCX，无本地 Office 或服务器转换。追加内容自动跟随到底部，上滚暂停、按钮恢复。
+
+验证：Office typecheck/build、4 项集成用例通过；预构建独立 Profile + 真实模型探针 11 项通过，浏览器异常为空，覆盖最新修改下载、中文/emoji/标记、长内容跟随/暂停、完成卡片打开/下载/刷新恢复。新版已安装到项目 preview，并重启 18989；详见[U2 文档交付记录](evidence/office-document-delivery-u2.md)。未改用户原件，未提交/推送/发布。
+
+下一步为文档表格与 U3 保真导入/导出、失败恢复；本轮浏览器下载不代表完整 Word 分页保真或八类已完成。全仓回归、Word/WPS 分页验收、专家/PTC 全矩阵未执行；主线 D04 不变。
+
+## 本轮：Office 默认写作与真实模型验收（2026-09-12）
+
+新增 lifecycle-managed `workdsh:office-authoring` 提示词工作流，使用 rc.1 systemPrompt.section/公开 TOOL_REPORT placement，通过 Office 工具子插件贡献，不覆盖专家 persona。不改用户 officecli 技能。普通写作先创建右栏，再写首段和小批次；默认样式由现有编辑器提供。明确表格/DOCX 未实现，避免用户误认为工作副本就是 Word 文件。
+
+验证：Office typecheck/build 和 2 项集成测试通过，新增卸载时引导清理检查。隔离预构建 Profile 探针 7 项与真实模型场景通过；测试保留真实 officecli Skill，在合成空工作区发送普通中文报告请求，无工具名称。最新真实样本右侧空文档修订0约3.3秒、首批修订1约5.5秒、修订2约7.6秒、修订3约10.8秒；模型 idle 结束，调用 content_open 和 content_edit，无 Bash/文件工具/skill 绕行。按文档 ID 排除其他测试文档，防止旧工作副本造成误判。凭据仅从已配置 preview 用于临时隔离 Home，已清理，不进入模型输入/制品。
+
+已通过官方CLI安装新版Host/Client到项目preview并重启18989，不改用户原件或其他Profile。证据见[U2真实模型记录](evidence/office-natural-writing-u2.md)。此为标准模式短报告样本，长文/专家/PTC/八类/表格和DOCX导出未验收，不能标 Word 完整交付。下一步补文档表格与 U3 DOCX冻结导出/重开、失败恢复；主线D04/D15未完成。全仓回归/发布未执行，未提交/推送。
+
+## 本轮：Office 创建即展示修正（2026-09-12）
+
+用户真实测试显示旧预览模型没有文档工具并退回 Markdown 文件交付，不能视为实时文档链路验收成功。已修正新建文档原子保存会话定向展示请求，重开现有文档也请求展示；无需额外 content_present。补齐根 Loader 的 tools/connection 载体依赖，工具描述引导分批写作并说明自动展示。
+
+验证：Office typecheck/build、2 项服务集成测试通过；独立预构建包浏览器探针 7 项通过，新增真实 Session prompt assembly 工具可见性检查和首批写入前空文档自动打开；不调用 content_present，三批提交自动显示，人工编辑后 AI 工具读最新内容、重载恢复通过。修正已通过官方 CLI 安装到项目 preview Profile，并重启原 18989 预览服务。没有修改用户原件、其他 Profile，未提交/推送/发布。
+
+实时当前为每个 content_edit 已提交批次自动同步，尚非工具参数逐 token 流式渲染。真实模型自然语言写作与连续生成体验仍需验收；普通文件 Markdown/Word/PPT 导入尚未迁移，八类全部实时链路未完成。下一步仍 U2 真实模型验收和生成节奏，不扩展后续选型。全仓回归/PTC/完整八类未执行。
+
+## 本轮：Office U1 最小文档插件已接通（2026-09-12）
+
+已实现独立 Office Host 内容服务、五个原生 content_* 工具、认证 Connection 与原生右侧 Tiptap 文档页。AI/用户写同一份有修订的内容，人工租约阻止相互覆盖；原子收据支持重复请求与重启恢复。公共 office 类型契约已导出。组件只使用 Client model 的状态/actions，未新增 Agent loop/MCP/插件框架。
+
+验证：contracts build、Office typecheck/build 通过；内容服务 2 个集成用例及干净预构建包 6 项浏览器检查通过，覆盖三批工具写入→原生页面逐次显示→人工改段落/分段/加粗/emoji→工具读最新内容并续写→浏览器重载。中文 composition 保护以浏览器模拟事件通过，未替代系统 IME 测试；未调用真实模型。详见[验收证据](evidence/office-live-u1.md)及[U1 实施记录](design/office/U1-IMPLEMENTATION.md)。
+
+附加检查：9份相关文档的链接/围栏与JSON通过，`node scripts/check-plan.mjs`通过（仅规划完整性），`git diff --check`通过，Host 构建中无 private contracts 运行时导入。
+
+当前是新建原生 document 工作副本链路；旧 Office 文件导入未迁移，content_export 未注册。下一步 U2 真实模型与编辑恢复验收，再 U3 冻结导出/文件重开/在途卸载，之后 U4 其余七类。旧依赖的六项许可文本缺口列入制品报告，最终发布门槛未完成。八类、D04/D15 及总体版本均未标完成；不重复扩展选型。
+
+未执行真实模型/PTC、全仓回归、完整八类/热卸载故障与发布；未修改用户 Profile/原件，未重启、提交、推送或发布。
+
+## 本轮：Office插件架构复审与交付边界修订（2026-09-12）
+
+复审组件方案、统一接口v0.3和U1—U5，静态核对Office manifest/patch/空Host/Client注册/构建脚本、tables/pages/library职责、ADR-0018/0019与官方公开文档/声明。发现[OP-R01—06](design/office/ARCHITECTURE-REVIEW.md)：插件组成未落定、卸载在途提交缺口、跨领域所有权不明、原生Client与制品兼容缺门槛、类型codec/schema生命周期不完整、顺序台账未同步当前专项。
+
+已新增[插件架构与OP-T01—07](design/office/PLUGIN-ARCHITECTURE.md)，统一接口修订为v0.4：独立workdsh-plugin-office包、官方ctx.plugin组合Host服务/工具/Connection、官方Client图与renderer、公开契约、请求运行代/停稳恢复、独立内容多维表格与tables业务库边界、HTML与pages发布边界。同步组件方案、计划、ADR、模块README和公开架构说明。顺序台账使用已有activeSlice机制登记OFFICE-AI-01并保留完成的Skill切片，主线D04/D15未改为完成。
+
+下一步U1以真实最小文档能力验证插件服务/工具/Client与干净预构建包，再U2验证AI写→人工改→AI续写。八类全部保留。此次为设计处置，不是代码修复；新增依赖安装、构建、业务/浏览器/真实模型、插件卸载及制品测试未执行；未改运行代码、用户数据、Profile，未重启、提交、推送或发布。
+
+验证：15份本轮设计/规划/模块说明的相对链接、围栏、JSON与空白检查通过；顺序台账Office专项/旧Skill历史/主线D04保留检查通过；`node scripts/check-plan.mjs`通过（28模块/50文档，仅脚手架完整性），`git diff --check`通过。六项Review是设计已处置、运行门槛待验。
+
+## 本轮：HTML与Markdown纳入八类正式编辑器（2026-09-12）
+
+用户明确要求HTML、Markdown也要集成。已同步[组件方案](design/office/OPEN-SOURCE-STACK.md)、[统一接口v0.3](design/office/UNIFIED-API.md)、AI协作需求、Harness集成、ADR-0024修订3、PLAN及Office README：HTML用CodeMirror源码/隔离预览，Markdown用Tiptap正文/CodeMirror源码与Mermaid/KaTeX。八类共用六个content_*工具；新增严格源码模型、绑定修订的补丁、同文档视图切换、资源导出与独立预览回执。补充Markdown未知语法保留及HTML资源/脚本隔离验收，U4先接Markdown/HTML再推广其余类型。
+
+下一项仍为U1/U2的Tiptap真实文档链路。本轮修改的是需求/设计/计划与模块说明；新增依赖安装、业务构建、浏览器/真实文件/真实模型验收未执行，未修改运行代码或重启、提交、发布。
+
+文档验证：8份文档相对链接、代码围栏、JSON示例及空白检查通过；`node scripts/check-plan.mjs`通过（28模块/50文档，仅规划完整性），`git diff --check`通过。已复查当前设计中的类型计数；六个工具保持不变，编辑器范围为八类。检查不代表产品集成已完成。
+
+## 本轮：采用 GenOffice 使用的上游开源组件（2026-09-12）
+
+用户明确意图是采用同一批开源基础库。已将技术方向落实为[OPEN-SOURCE-STACK](design/office/OPEN-SOURCE-STACK.md)：Tiptap/ProseMirror文档、现有Univer开源表格、Konva演示/画布、PDF.js/pdf-lib/PDFium；Harness运行与统一API不变。多维表格复用网格基础并保持独立字段/记录/关系模型。旧候选探针留存，停止作为默认方向继续扩展。
+
+静态核对GenOffice提交de139a061537bea40f0cc81ef8f09a95f77ac52a的包声明及有关Docs/PPT/PDF编辑源文件，确认Univer声明同为0.25.1族、Tiptap3.31.0、Konva9族等；明确声明范围不是已解析锁定版本。源文件只读快照位于.artifacts/genoffice-reference，不进入产品代码。核对Tiptap/Konva/Univer官方许可证，记录MPL字体部件与ee边界；并未安装或运行GenOffice。
+
+同步统一API、Harness集成决策、ADR、旧选型说明和PLAN。下一项U1/U2使用已选Tiptap完成真实文档链路，不再扩大选型。新增库安装、构建、浏览器/文件往返/真实模型测试未执行；未修改运行代码/依赖、用户文件或应用配置，未重启、提交、推送、发布。
+
+## 本轮：统一接口修订与 Harness 技术方向（2026-09-12）
+
+按用户要求修订 [UNIFIED-API v0.2](design/office/UNIFIED-API.md)，补齐Review六项：富文本权威模型/UI事务映射、单记录原子提交与幂等、已有文件open/reuse/fork、修订恢复与可信会话展示、冻结修订导出、人工lease接手与撤销。新增 [HARNESS-INTEGRATION](design/office/HARNESS-INTEGRATION.md)，核对官方tools/code-runtime/subagent/web-client/storage/sidebar-right/API Gateway/Agent Teams相关说明、官网工具与subagent页面、锁定0.1.5-rc.1公开声明及既有Remote失败证据。结论是单原生Agent+统一工具+Client镜像；PTC复用工具，子智能体仅复杂分工可选。rc.1采用已验证官方Connection领域通道，不假设未验证的自有RemoteStream可用。
+
+同步ADR-0024、AI-EDITING、Review处置与PLAN有限U1—U5。设计问题已答复，故障修复及运行签收仍待实现。下一项为U1/U2文档真实闭环：模型/原生编辑器→Host工具→持久修订→正确会话右侧显示→人工修改→AI续写；其余五类按同接口逐项接入。
+
+本轮仅文档与静态公开面核对，运行代码/依赖未修改。构建、业务/浏览器/真实模型、崩溃恢复与导出测试未执行；未重跑历史Remote探针，未启动子Agent、重启、提交、推送或发布。
+
+文档验证：5份设计/ADR的相对链接、代码围栏、JSON示例与空白检查通过；`node scripts/check-plan.mjs`通过（28模块/50文档，仅规划完整性），`git diff --check`通过。此结果不替代Harness集成或产品验收。
+
+## 本轮：统一接口架构 Review（2026-09-12）
+
+审查 design/office/UNIFIED-API.md 的157行版本，交叉核对AI-EDITING、实际Office空Host入口与Harness storageDomain/sidebar-right文档。记录 [Review](design/office/UNIFIED-API-REVIEW.md)：5项P1（权威模型与UI映射、原子幂等、已有文件入口、订阅/会话路由、修订导出），1项P2（人工输入与持续AI写入冲突）。结论为需修订后再作为实现契约；保留原文便于对照。本轮为静态架构审查，故障场景尚未通过运行复现，业务/浏览器/真实模型测试未执行，未修改运行代码、重启或发布。
+
+## 本轮：统一 AI 内容接口架构（2026-09-12）
+
+用户要求从架构统一六类编辑器。新增 design/office/UNIFIED-API.md：6个content_*工具、严格操作联合、能力查询、有界结构读取、稳定ID、Host统一提交、客户端显示回执与文件导出回执分离、原生适配边界和真实场景。核对现有 tools/storageDomain/Connection/documentPreviews 与 sidebarRight 官方文档及实际代码。用户架构反馈优先，先完成契约收敛，未增加空工具、另一套MCP或执行器。运行代码/依赖未改变；构建、UI、真实模型验收未执行。下一项为Word首条Host工具→持久化→右侧原生编辑器链路。未提交、重启或发布。
+
+## 本轮：六类编辑器 AI 同文档协作设计（2026-09-12）
+
+用户新增 AI API/内部MCP与实时写作可见要求。已核对现有 Office 为 client-only、无Host文档服务或工具，记录 ADR-0024 与 design/office/AI-EDITING.md：AI与UI同领域服务、修订冲突、幂等回执、重连、取消、部分提交、权限和六类操作边界。内部优先官方原生工具，MCP不另起一套状态。实施按 A—D 有限范围推进；首条链路为文档分段写作与人工修改交接。此次为需求/架构落地，工具、Remote、实时显示与六类集成代码尚未实现；构建/浏览器/真实模型测试未执行。未提交、重启、发布。
+
+## 本轮：PPT 候选原生 UI 与 MPL 复核（2026-09-12）
+
+MPL 官方 FAQ 与发布包许可证核对完成：允许商用和专有组合，分发需满足覆盖源码与声明条件。新增隔离 UI 探针；有来源页面加载10页，无来源容器因 localStorage 失败。5次远程字体请求全部拦截；文件首页/工具栏遮挡导致标题双击超时，直接编辑尚未通过，未用强制点击绕过。完整结果见宽松许可选型文档及 .artifacts/pptx-candidate/ui-result.json。下一项处理公开配置下的首页遮挡和字体来源，再验收编辑/撤销/导出。未接入、重启或发布；正式构建/业务测试未执行。
+
+## 本轮：PPT 替代引擎真实浏览器读写（2026-09-12）
+
+隔离安装 pptx-viewer-core@3.14.3；新增 probe-pptx-candidate.mjs。真实10页PPT在浏览器内导入、修改文字、导出副本、重开通过，6个图表对象数量保持；原件不变，外部网络请求/页面错误0。证据在 .artifacts/pptx-candidate/result.json，详细限制见宽松许可选型文档。尚未验收原生UI、视觉保真、撤销及应用集成；正式业务测试未执行，未重启或发布。依赖清单发现 mtx-decompressor 为 MPL-2.0，尚未通过完整许可准入；下一项先核对该依赖许可，再做编辑器UI逐页显示与直接操作验收。
+
+## 本轮：宽松许可浏览器编辑器选型（2026-09-12）
+
+用户确认覆盖六类编辑器并优先 MIT/Apache-2.0。新增[选型证据与有限验证计划](evidence/browser-editors-permissive-selection.md)。PPT 新增 Apache-2.0 的 pptx-viewer 候选；Grist static 官方明确修改不保存、导入导出缺失，不能作为完整多维表格交付。既有 Univer 全组件范围保留，商业 SDK 迁移暂不推进，先按新许可约束验证替代组件。候选实际安装、构建、浏览器与文件回归未执行；未重启、提交或发布。
+
+## 本轮：Univer 完整组件范围与原生编辑兼容探针（2026-09-12）
+
+用户追加截图全类别：Sheets、Modern/Traditional Docs、Slides、Boards、Bases、PDFs、Compose & Embed、Customization & Integration。已记录ADR-0023与PLAN覆盖，不遗漏组件。新族统一1.0.0-rc.0独立安装（30个SDK包），已有应用仍0.25.1；没有服务器转换、上传文件或修改用户Office原件。旧族Docs真实键盘和Slides原生Operation修改通过，开发探针依赖与运行依赖分开。
+
+新版公开preset组合已补Pro公式技术依赖并正确排序license，独立来源测试页8类初始化/canvas/原生Facade修改通过，两类Docs真实键盘通过，外部请求/页面错误0；Embed只验证注册和宿主文字，不签收真实嵌入。授权未配置，官方水印保留。当前opaque srcdoc应用容器的IndexedDB与Bases history兼容失败，因此没有直接替换已运行应用。完整对象编辑、撤销重做、保存重开、所有可选元素、实际Office/PDF转换及官方Tab迁移尚未验收；视觉复核单独登记。[完整证据](evidence/univer-complete-components.md)。
+
+Office类型检查与规划/差异检查通过；正式业务全量、真实模型、新族应用集成未执行。未重装/重启应用，未提交/推送/发布。本轮成果是可复现SDK装配与兼容探针，不能称全组件集成完成。下一步为安全来源资产交付和文件转换公开面，授权问题等待用户回复，凭据不通过聊天获取。
+
+## 本轮：Univer原生编辑需求纠正（2026-09-12）
+
+用户拒绝额外文字片段模块，要求页面直接编辑。官网Sheets/Docs/Slides安装和导入导出已核对；当前Word/PPT预览加表单不符合需求，未签收原生编辑。当前0.25.1与官网1.0.0-rc.0有差异；Docs同版预设存在，pro Slides同版404。官方三类Office转换均要求转换后端，用户无服务器约束保留。此次没有运行代码/依赖修改，详细证据见[evidence](evidence/univer-native-editing-review.md)。
+
+## 本轮：Word/PPT预览布局与实际文件回归（2026-09-12）
+
+默认收起文字片段编辑，明确编辑文字按钮展开，更新按钮仅编辑时显示；Word页面按容器缩放、灰色画布与纸张阴影；PPT列表预览移除单页高度的内部滚动容器，用预览区统一滚动并适配宽度。真实PPT缺少可选defaultTextStyle导致第三方解析Object.keys(undefined)，仅预览内存副本补空默认样式，导出原包不改。真实用户Word/PPT在700px宽度无横向溢出，Word3页/PPT10页DOM及可滚动高度、编辑展开收起、原件hash不变、页面错误/外部请求0通过；截图复核。常规三类编辑/导出回归与类型检查通过。复杂图表/字体/分页完整保真未验收，不能以页面DOM计数宣称内容完整。插件重装，现有应用重启；未提交发布。
+
+## 本轮：WorkDSH 桌面未签名测试版构建与冒烟（2026-09-12）
+
+按用户四项决策（暂缓 Apple 凭据先做未签名测试版、品牌 WorkDSH、预置全部 7 包、应用 ID com.workdsh.app），在锁定 dsh-v0.1.5-rc.1 隔离快照上完成 5 文件 WORKDSH TEST PATCH 并实现全链路贯通：7 包 tarball → 核心包集 248 → unsigned 种子（bundles=内置两层+7 层，integrity 270 文件）→ electron-builder --dir **exit=0**（Electron 44 改走 npmmirror 镜像完成下载）。产物 WorkDSH.app（1.0G，CFBundleIdentifier=com.workdsh.app，adhoc 签名无 quarantine）本机冒烟通过：首启离线安装 248 包至 ~/.dsh/profiles/desktop（7 个 workdsh 全部就位），staging healthCheck 与正式 Host 激活（[workdsh:probe] 生命周期），二次启动快路径，CDP 截图确认 WorkDSH 品牌、侧边导航（新会话/项目/专家·技能·连接器/定时任务/资料库）与真实 session 轨迹完整渲染。旧 desktop profile 残留已备份为重命名目录（保留数据）。Dock 图标已接线：品牌概念图转 10 档 iconset → workdsh-icon.icns，mac.icon 接入后重打包 exit=0，SHA-256 与源一致。窗口壳融合已实施（main.ts hiddenInset 主窗口 + preload-app.ts 注入适配样式）：侧边栏 logoRow 顶部留白 48px（品牌行 y=56，避开红绿灯）、logoRow 与内容 header 为 drag 区、交互控件 no-drag；运行时 CDP 核验 innerHeight=840=outerHeight（原生标题栏已移除）、shellMark=inset、header region=drag；重打包 exit=0（须带 --config electron-builder.config.mjs，首次遗漏误产物 dist/ 已清除）。红绿灯实际落位与窗口拖动、Dock 显示待用户肉眼确认（如 Dock 仍是旧图属缓存，移除重添或 killall Dock）。未执行：正式签名/公证、DMG/ZIP 分发制品、自动更新通道、长会话真实性验收、设置页/全屏视图红绿灯检查；产物仅本机自用不可分发。详见[evidence](evidence/desktop-pack-test.md)。
+
+打包流程已按用户要求固化为可复用入口：新增 `scripts/desktop/pack-desktop.mjs` 一键脚本（Node 22 自举 → 补丁 SHA-256 校验 → build:desktop → electron-builder → 产物断言，支持 `--skip-build/--check-only/--sync-patches/--restart`）、补丁存档 `scripts/desktop/patches/upstream/`（9 文件防漂移比对）、打包指南 `docs/DESKTOP-PACKAGING.md`（用法/补丁表/快照重建/Windows 说明/常见问题，打包资料主体按用户要求集中于此）与技能触发入口 `.qoder/skills/workdsh-desktop-pack/SKILL.md`（指向指南；个人级副本已移除）。测试：`--check-only`（Node 21→22 自举、9 补丁一致）与完整打包均 exit=0，产物断言全过（1.0G）。macOS 不能产出 Windows 版：官方 `package-target.ts` 的 win-x64 硬门槛要求 Windows x64 主机、`prepare-seed` 需目标平台 Node 生成平台专用种子、Windows 强制 EV 签名且无未签名降级；如需 Windows 版须在 Windows x64 真机/虚拟机复刻并新增等价 unsigned 补丁。技能跨会话触发与快照重建未实测；未提交/推送/发布。
+
+## 本轮：修复 Office 工具栏样式污染（2026-09-12）
+
+自定义 header/button/main/label/textarea/h3 规则收敛到直属顶部区与文字编辑区，避免影响 Univer 内部元素。配置公开 ribbonType classic；实际宽度仍受 Univer 自适应布局控制，不保证参考截图的全部菜单。构建、类型检查、真实 XLSX 浏览器回归、截图复核通过；按钮恢复显示，图表限制不变。
+
+## 本轮：Office 顶部空间压缩（2026-09-12）
+
+说明与操作区收为40px单行，小屏不再换行；说明截断，信息按钮展开浮层查看全文，不挤压表格。Office构建/类型检查、真实图表文件浏览器回归与截图复核通过，插件已重新安装。
+
+## 本轮：含原生图表 XLSX 打开错误修复（2026-09-12）
+
+用户文件触发 ExcelJS drawing reconcile 的 undefined.anchors。适配器仅在内存解析副本移除未支持的图表/绘图关系，保留原始高级对象检测与禁止导出规则；源文件不写入。真实用户 XLSX 的 opaque 浏览器探针已通过：表格 canvas 显示、禁止有损导出、原件 SHA256 不变、页面错误和外部请求均为0。原生图表仍未显示，本次只修复表格打开，不签收图表保真。验证脚本 scripts/probe-office-chart-regression.mjs 接收外部 fixture 路径，用户文件不加入仓库。证据见 .artifacts/office-chart-regression/result.json。
+
+## 本轮：Word/PPT/Excel 原生右侧集成（2026-09-12）
+
+用户要求直接集成三类且停止额外公式计算。新增独立 workdsh-plugin-office@0.1.0-alpha.1，通过官方 documentPreviews/Slot 接入原生 Tab，不启动 Office 转换服务；Excel 用 Univer，Word/PPT 用浏览器预览与原包文字片段修改。构建/类型检查/打包、三类实际 fixture 预览/编辑/下载读回、官方七包 Profile＋仅测试诊断插件的原生 Files→右侧三类文件打开均通过，网络请求0，页面错误0，截图已复核。preview:install 已将 Office 加入项目预览 Profile；使用现有预览需重启加载新插件，本轮没有自动启动图形窗口。
+
+[实施证据](evidence/office-integration.md)、[ADR-0022](adr/0022-browser-office-document-extension.md)、模块README明确：Word/PPT不是完整排版编辑器，Excel原生图表尚不显示且含已检测高级对象不能导出；Host覆盖保存与冲突检测、复杂保真、安全硬化未签收。Root Harness精确版本不变，新增依赖锁已更新，D04/D15状态不变。规划检查/2项规划测试通过；正式业务插件全量/真实模型验收未执行，未提交/推送/发布。
+
+## 本轮：Office 纯浏览器编辑验证（2026-09-12）
+
+用户明确禁止服务端转换并要求编辑，ADR-0021 服务端提案已标为 Rejected。新增隔离 examples/univer-browser-edit，不声明假 Harness 插件、不更改 Profile/根锁。Univer 与浏览器 ExcelJS 候选转换完成真实 XLSX 导入 → Facade/双击键盘编辑 → XLSX 导出，独立 XML 和读回确认单元格、两个工作表、原数字格式及公式表达式保留；构建、实际 Chromium 探针通过，无外部网络请求。图表对象反例禁止导出，尚不显示图表；浏览器公式实时重算未验收。视觉1440×1000已复核，小屏/深色/应用侧 Tab 未执行。详见[evidence](evidence/univer-browser-edit.md)。Word/PPT、复杂保真、Host 保存仍未实现，D04/D15 状态不变。探针登记modules并作为独立锁示例排除根workspace，规划检查/2项规划测试通过；正式插件全量集成未执行，未提交/发布。
+
+## 本轮：Office 服务端预览接入调查（2026-09-12）
+
+新增用户要求：客户端不依赖本机 Office/LibreOffice，调查 dsh-univer-office。隔离 npm 包完整性验证通过；严格 peer 安装失败，当前声明范围不覆盖 Harness 0.1.5-rc.1。发布包默认 Viewer URL 指向 Host loopback，远程 Web 尚不满足。已记录[证据与有限实施计划](evidence/univer-office-compatibility.md)及[Proposed ADR-0021](adr/0021-server-office-preview-bridge.md)。未改 Profile、运行代码或依赖锁；未完成运行、远程 Web 与 Office 保真验收，不宣布预览交付。企业后台与专家团阶段不因本次调查自动提前。
+
 ## 本轮：发布单个专家alpha.1（2026-09-12）
 
 用户明确授权提交git并发布版本。本次准备experts-v0.1.0-alpha.1及匹配身份alpha.4/审计alpha.3/授权alpha.4/Skillalpha.25/展示alpha.40；模块各自版本，contracts开发契约alpha.6。中英文README新增专家能力、真实打包截图、安装与专业验收限制。源码包含必要治理与共享Skill配套；团队只保留设计文档，没有开放团队运行。发布验证记录见docs/evidence/experts-alpha1-release.md；D04仍in_progress，专业报告两处语义问题与E收尾保留，不以预发布替代验收完成。

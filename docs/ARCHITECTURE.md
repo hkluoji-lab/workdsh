@@ -20,6 +20,8 @@ flowchart TB
 
 ## 运行与通信
 
+Office是独立`workdsh-plugin-office`功能插件，提供编辑工作副本服务，最终目标为六个content_*工具，Client接官方Tab。U1现已实现五个工具与原生Tiptap文档链路，export及其余七类待后续验收。八类模型共用提交规则，但不形成WorkDSH大核心。Host/工具/Connection通过官方子插件组合，具体[插件边界及生命周期](design/office/PLUGIN-ARCHITECTURE.md)遵循ADR-0018/0019。其多维表格是内容文档，不能接管tables业务数据库；HTML编辑不能接管pages发布；原件和正式资产仍归资源owner/library。
+
 Host 拥有权威数据和变更顺序；Remote 暴露类型化操作；Client model 管理订阅和重连镜像；UI adapter 与 Slots 呈现。官方 Conversation、附件与 Sidebar 优先复用。工作台不直接依赖功能内部 React 实现。
 
 专家任务：解析对象修订与依赖 → 选择已授权连接实例 → 通过原生专业组合创建会话 → 注入受控输入 → 工具执行 → 登记并验证成果。技能是执行指导，不是独立常驻 Agent。

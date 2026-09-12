@@ -1,5 +1,7 @@
 # 逐插件开发顺序与版本交付
 
+> 当前用户授权专项（2026-09-12）：OFFICE-AI-01 / Office模块0.1，覆盖Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown的原生编辑与统一AI工具。依[ADR-0024](adr/0024-ai-visible-browser-editing.md)、[U1—U5](design/office/UNIFIED-API.md)与[插件门槛](design/office/PLUGIN-ARCHITECTURE.md)推进；顺序台账activeSlice为当前专项，currentStep保留主线D04。U1最小插件和U2确定性工具/UI链路已通过，[真实证据](evidence/office-live-u1.md)记录范围；真实模型、完整格式和生命周期门槛待验，不以该专项标记D04/D15完成。下方旧Skill专项及主线说明保留历史；用户此项范围优先。
+
 > 当前追加（2026-09-11）：P1-03 当前切片扩展到新增技能闭环。“添加技能”提供查找、上传、创建；创建进入 Harness 原生任务并预填 `/skill-creator`，原生 `/`、`@`、权限、模型与发送保持 Conversation owner。上传使用 Connection 鉴权的流式 exact Fetch route，经 Host 预检和用户确认后写入官方文件技能目录；监听刷新和后续 `/name` 调用仍由 Harness Skill 子系统拥有。SkillHub/套件不在当前产品范围。默认/本地修订、启停、卸载已实现；当前不开发公共市场。企业服务端、管理 Web、组织目录、分类、版本和下发策略按 ADR 0015 进入后期 ToDo。
 
 > 当前追加（2026-09-10）：用户要求先实现原型公共外壳；[ADR 0014](adr/0014-workbench-sidebar-presentation.md) 允许 P1-01 展示切片，该段为当时的展示切片说明；当前 D01—D03 已完成，开发顺序进入 D04。
