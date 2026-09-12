@@ -1,6 +1,6 @@
 # WorkDSH product website
 
-Static English product showcase at https://techflag.github.io/workdsh/.
+Static English and Chinese product showcase at https://techflag.github.io/workdsh/.
 
 Deploys only `website/` through the official GitHub Pages Actions. No application runtime, model configuration, analytics or local workspace files are served. Screenshots are user-provided development-preview images, already published in the project README; they are examples rather than included default user data. Typography uses Google Fonts with local fallbacks.
 
@@ -9,3 +9,5 @@ Visual reference: https://hermes-studio.ai/ (currently Ekko Studio). Layout and 
 Preview: `python3 -m http.server 19101 --directory website`.
 
 Verification: desktop/mobile geometry, actual image loading, tabs, keyboard navigation, disclosure and console errors. Live GitHub Pages deployment is verified after the publishing workflow.
+
+Languages: `index.html` is the English default; `zh-CN.html` is the complete Chinese page. Each page provides a language switch, and screenshot tabs use localized copy.
