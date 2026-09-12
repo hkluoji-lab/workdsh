@@ -1,3 +1,5 @@
+import './scope-pptx-native.mjs';
+import {nativePptPlugin} from './build-pptx-native.mjs';
 import { build } from "esbuild";
 import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import { dirname, resolve, join } from "node:path";
@@ -5,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const root = new URL("../packages/plugins/office/", import.meta.url);
 const wordOnly = process.argv.includes("--word-only");
 await mkdir(new URL("dist/", root), { recursive: true });
+
+
 const child = await build({
   metafile: true,
   entryPoints: [fileURLToPath(new URL(wordOnly ? "src/editor-word.ts" : "src/editor.ts", root))],
@@ -31,8 +35,10 @@ const client = await build({
   format: "cjs",
   platform: "browser",
   external: ["react", "react-dom", "react/jsx-runtime"],
+  loader:{".css":"text"},
   define: { "process.env.NODE_ENV": '"production"', __WORKDSH_WORD_ONLY__: String(wordOnly) },
   plugins: [
+    nativePptPlugin(),
     {
       name: "editor-html",
       setup(builder) {
@@ -58,6 +64,7 @@ const host = await build({
   bundle: true,
   external: ["@deepseek-ai/*"],
   format: "esm",
+  define:{__WORKDSH_PRESENTATION_ENABLED__:String(!wordOnly)},
   platform: "node",
   outfile: fileURLToPath(new URL("dist/index.js", root)),
 });

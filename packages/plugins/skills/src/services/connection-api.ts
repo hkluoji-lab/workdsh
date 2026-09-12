@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { ConnectionRpcResult, HostConnectionHandle } from '@deepseek-ai/dsh-client-connection';
 import type { SkillInstallScope, SkillManagementEndpoint, SkillManagementService } from '../shared.js';
+import { skillCatalogIconPath } from './catalog.js';
 
 export const skillManagementPath = '/api/workdsh-skills';
 export const skillImportPath = '/api/workdsh-skills/import';
@@ -50,6 +51,9 @@ function publicFailure(error: unknown): ConnectionRpcResult<never> {
     'skill/invalid-batch': '批量操作必须包含 1 至 100 个有效技能。',
     'skill/dependency-impact-changed': '技能依赖关系已变化，请重新确认后再卸载。',
     'skill/dependency-blocked': '仍有对象依赖该技能，解除依赖后才能卸载。',
+    'skill/catalog-entry-unknown': '本地技能目录中没有该技能。',
+    'skill/catalog-entry-over-limit': '该技能的体积或文件数超过导入上限，不能从目录安装。',
+    'skill/catalog-payload-missing': '本地技能目录缺少该技能的安装负载，请重新生成目录。',
   };
   return fail(code, messages[code] ?? '技能操作失败，请重试。');
 }
@@ -59,6 +63,7 @@ async function dispatch(manager: SkillManagementService, rawEndpoint: unknown, p
   const endpoint = rawEndpoint as SkillManagementEndpoint;
   try {
     if (endpoint === 'list') return ok(await manager.list(signal));
+    if (endpoint === 'catalog') return ok(await manager.catalog(signal));
     if (endpoint === 'trash-list') return ok(await manager.listTrash());
     if (endpoint === 'restore') {
       const id = record(payload)?.id;
@@ -109,6 +114,11 @@ async function dispatch(manager: SkillManagementService, rawEndpoint: unknown, p
       const enabled = record(payload)?.enabled;
       if (typeof enabled !== 'boolean') return fail('skill/invalid-request', '启用状态无效。');
       return ok(await manager.setEnabled(name, enabled));
+    }
+    if (endpoint === 'install-catalog') {
+      const scope = record(payload)?.scope;
+      if (scope !== undefined && scope !== 'shared-agents' && scope !== 'profile') return fail('skill/invalid-request', '安装范围无效。');
+      return ok(await manager.installFromCatalog(name, scope as SkillInstallScope | undefined, signal));
     }
     if (endpoint === 'dependency-impact') return ok(await manager.dependencyImpact(name));
     if (endpoint === 'uninstall') {
@@ -165,6 +175,27 @@ export function registerSkillManagementConnection(ctx: Context): void {
         if (error instanceof SyntaxError) return json(fail('skill/invalid-request', '技能管理请求格式无效。'), 400);
         return json(publicFailure(error));
       }
+    }),
+  }));
+  unregister.push(connection.fetch.register({
+    // Browser-native icon delivery: query parameters stay available on the request
+    // URL, and the immutable revision in the URL keeps catalog caching honest.
+    path: skillCatalogIconPath,
+    methods: ['GET'],
+    requestBody: 'buffered',
+    fetch: handle(async request => {
+      const name = new URL(request.url).searchParams.get('name');
+      if (!name) return new Response('缺少技能名称。', { status: 400 });
+      try {
+        const icon = await manager.readCatalogIcon(name);
+        if (!icon) return new Response('未找到图标。', { status: 404 });
+        // A fresh ArrayBuffer-backed view satisfies `BodyInit`.
+        const bytes = new Uint8Array(icon.bytes);
+        return new Response(bytes, {
+          status: 200,
+          headers: { 'content-type': icon.contentType, 'content-length': String(bytes.byteLength), 'cache-control': 'private, max-age=31536000, immutable' },
+        });
+      } catch { return new Response('未找到图标。', { status: 404 }); }
     }),
   }));
   unregister.push(connection.fetch.register({

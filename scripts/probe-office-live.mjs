@@ -8,23 +8,26 @@ import {
   realpath,
   unlink,
   cp,
+  copyFile,
 } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { createRequire } from "node:module";
-import { randomUUID } from "node:crypto";
+import { randomUUID,createHash } from "node:crypto";
 import { chromium, expect } from "@playwright/test";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
+const pptMode=process.argv.includes("--ppt");
+const withPptSkills=process.argv.includes("--with-ppt-skills");
 const packageRoundtrip = process.argv.includes("--package-roundtrip");
 const inputOnly = process.argv.includes("--input-only") || packageRoundtrip;
 const realRich = process.argv.includes("--real-rich");
 const realModel = process.argv.includes("--real-model") || realRich;
 const artifacts = join(
   root,
-  inputOnly ? ".artifacts/office-input" : realModel ? ".artifacts/office-live-real" : ".artifacts/office-live",
+  pptMode ? realModel ? withPptSkills ? ".artifacts/office-ppt-live-real-skills" : ".artifacts/office-ppt-live-real" : ".artifacts/office-ppt-live" : inputOnly ? ".artifacts/office-input" : realModel ? ".artifacts/office-live-real" : ".artifacts/office-live",
 );
 let credential;
 const home = await realpath(
@@ -174,6 +177,7 @@ try {
       join(home, "agents/skills/officecli"),
       { recursive: true },
     );
+    if(withPptSkills)for(const name of ["pptx","elite-powerpoint-designer"])await cp(join(homedir(),".agents/skills",name),join(home,"agents/skills",name),{recursive:true});
     const require = createRequire(
       join(root, "packages/plugins/experts/package.json"),
     );
@@ -299,6 +303,13 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
     "web",
     "--dump-config",
   );
+  const profileManifest=join(home,'profiles/office/package.json');
+  const profileJson=JSON.parse(await readFile(profileManifest,'utf8'));profileJson.packageManager='pnpm@10.34.5';await writeFile(profileManifest,JSON.stringify(profileJson,null,2)+'\n');
+  for(let i=0;i<tarballs.length;i++){
+    const digest=createHash('sha256').update(await readFile(tarballs[i])).digest('hex');
+    const target='/tmp/workdsh-packs';await mkdir(target,{recursive:true});
+    const archive=join(target,digest+'.tgz');await copyFile(tarballs[i],archive);tarballs[i]=archive;
+  }
   await cli("plugin", "--profile", "office", "add", ...tarballs, "--offline");
   pass(
     "Standalone prebuilt Office + explicit governance packages installed outside checkout; no experts/skills/workbench bundle",
@@ -345,11 +356,12 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
   let doc = await tool("content_open", {
     input: {
       source: "new",
-      title: "人和 AI 共写一份文档",
+      title: pptMode ? "门店 PPT 实时制作" : "人和 AI 共写一份文档",
+      ...(pptMode?{kind:"presentation"}:{}),
       operationId: "office-probe-create",
     },
   });
-  const first = doc.state.blockIds[0];
+  const first = pptMode ? undefined : doc.state.blockIds[0];
   pass(
     "Five real native tools register and execute through official Tools + trusted native Session",
   );
@@ -376,6 +388,38 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
       .catch(() => {});
   await page.waitForFunction(() => window.officeLiveProbe, { timeout: 20000 });
   await page.evaluate((sid) => window.officeLiveProbe.open(sid), sid);
+  if(pptMode){
+    if(realModel)throw new Error("Current PPT integration model acceptance must use the new native slide contract; this probe is deterministic only.");
+    const native=page.getByTestId("office-presentation");
+    await expect(native).toBeVisible({timeout:20000});
+    await expect(native.locator("iframe")).toHaveCount(0);
+    await expect(native.locator('[data-pptx-element]')).not.toHaveCount(0,{timeout:20000});
+    pass("PPT content_open opens the official right Tab with the single native editor, no iframe");
+    const chart={id:"native-chart",type:"chart",x:80,y:120,width:500,height:300,chartData:{chartType:"pie",categories:["已完成","待完成"],series:[{name:"功能数",values:[7,3]}],title:"完成情况",hasLegend:true}};
+    await tool("content_edit",{input:{documentId:doc.documentId,baseRevision:0,operationId:"native-chart-seed",operations:[{op:"presentation.updateSlide",slideId:doc.state.deck.slides[0].id,patch:{elements:[chart]}}]}});
+    await native.locator('[data-pptx-element][aria-label^="Chart:"]').click({timeout:20000});
+    const value=native.locator('input[aria-label="功能数 value 1"]');
+    await value.fill("8");await value.blur();
+    await expect.poll(async()=>JSON.stringify((await tool("content_read",{documentId:doc.documentId})).state.deck.slides)).toContain('"values":[8,3]');
+    pass("Native chart data edits persist through the same authorized Host content service");
+    const [download]=await Promise.all([page.waitForEvent("download"),page.getByRole("button",{name:"下载 PPT",exact:true}).click()]);
+    await download.saveAs(join(artifacts,"native-live.pptx"));await page.screenshot({path:join(artifacts,"native-ppt-right.png")});
+    await page.reload();
+    for(const name of ["Continue","Configure later"])await page.getByRole("button",{name,exact:true}).click({timeout:2000}).catch(()=>{});
+    await page.waitForFunction(()=>window.officeLiveProbe,undefined,{timeout:20000});
+    await page.evaluate(async({sid,id})=>{await window.officeLiveProbe.open(sid);window.officeLiveProbe.tab(sid,id);},{sid,id:doc.documentId});
+    await native.locator('[data-pptx-element][aria-label^="Chart:"]').click({timeout:20000});
+    await expect(native.locator('input[aria-label="功能数 value 1"]')).toHaveValue("8");
+    pass("Saved editable native chart reopens after real application refresh");
+    const fixtureBytes=await readFile(join(artifacts,"native-live.pptx"));await writeFile(join(workspace,"imported-native.pptx"),fixtureBytes);
+    const officeRequire=createRequire(new URL('../packages/plugins/office/package.json',import.meta.url));
+    const {fileAddressFor}=createRequire(officeRequire.resolve("@deepseek-ai/dsh-client-ui-sidebar-right"))("@deepseek-ai/dsh-util-workspace-path");
+    const address=fileAddressFor(sid,workspace,"imported-native.pptx");await page.evaluate(({sid,address})=>window.officeLiveProbe.file(sid,address),{sid,address});
+    const imported=page.getByLabel("PPTX 编辑",{exact:true});await expect(imported).toBeVisible({timeout:20000});await expect(imported.locator('iframe')).toHaveCount(0);
+    await imported.locator('[data-pptx-element][aria-label^="Chart:"]').click({timeout:20000});const importedValue=imported.locator('input[aria-label="功能数 value 1"]');await expect(importedValue).toHaveValue("8");await importedValue.fill("9");await importedValue.blur();await expect(importedValue).toHaveValue("9");assert.ok((await readFile(join(workspace,"imported-native.pptx"))).equals(fixtureBytes));
+    pass("Official authorized PPTX file resource opens in native editor, edits chart data and preserves original bytes");
+
+  }else{
   if (inputOnly) {
     await expect.poll(() => page.evaluate(async sid => {
       const response = await fetch('/api/workdsh-office', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sessionId:sid,request:{endpoint:'pending'}})});
@@ -1029,6 +1073,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
     );
   }
   }
+  }
   assert.deepEqual(browserErrors, []);
   await writeFile(
     join(artifacts, "result.json"),
@@ -1057,7 +1102,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
       await page.locator("body").innerText(),
     );
   }
-  throw new Error(String(error).replaceAll(credential || "\0", "[redacted]"));
+  throw new Error((String(error)+"\n"+(error.stdout??"")+"\n"+(error.stderr??"")).replaceAll(credential || "\0", "[redacted]"));
 } finally {
   await browser?.close();
   await stop();

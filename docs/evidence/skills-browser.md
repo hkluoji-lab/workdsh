@@ -109,3 +109,41 @@ Node 22.23.2 / pnpm 10.34.5 下完整 `corepack pnpm probe:browser` 通过。截
 skills alpha.23 / bundle alpha.35 为 Connection exact Fetch 管理调用增加有界超时，并把 `AbortError` 与 `TimeoutError` 映射为稳定客户端错误。上传打包、浏览器流、Host 预检和确认安装共用同一操作信号；上传和安装阶段均提供显式取消入口。
 
 Host 在等待流数据时主动取消 reader，并在异常路径删除该请求的私有暂存目录；目录遍历、内容摘要、复制和安装在最终原子 `rename` 前持续检查信号。原子发布完成后不再因迟到的取消改写结果，而是返回成功并由 Client 重新读取 Host 列表。19/19 集成测试包含传输中途取消后暂存目录无残留、提交前取消不产生目标、原暂存收据仍可重试。此实现复用 Harness Connection 的认证、Host/Origin 校验和 exact Fetch 扩展面，没有新增 transport。发布版 Typert 的外部 workspace 生成限制继续记录在兼容性台账，但不阻塞本地 Skill 0.1。
+
+## 2026-09-13：技能市场（对标 WorkBuddy 图形体验）
+
+skills alpha.26 把技能页从只读技能库升级为与 WorkBuddy 相同形态的一体式技能市场：真实分类标签、「可安装」与「已安装」分区、卡片品牌图标加中文名加中文描述，未安装条目「＋」直接安装。安装仍唯一经过官方 `SkillManager.installImport` 的全局名称锁、目标查重、指纹复核与原子发布，未新增第二套安装路径或 registry。
+
+Host 新增只读本地技能目录 `SkillCatalogStore`（默认 `~/.agents/.workdsh-catalog`，`WORKDSH_SKILL_CATALOG` 可覆盖；schema 1 / kind `workdsh-skill-catalog`）。`catalog` 与 `install-catalog` 复用既有 buffered 管理路由；图标交付为新增 exact Fetch GET 路由 `/api/workdsh-skills/icon`（URL 携带 sha256 前 12 位 revision，响应 private/immutable 缓存头）。目录缺失或损坏返回 `missing`/`invalid` 状态与 `skill/catalog-missing`/`skill/catalog-invalid` 诊断；超限条目保留展示并按生成端 `installLimits` 禁用「＋」，不伪造可安装性。
+
+目录数据由 `scripts/build-skill-catalog.mjs` 从本地市场镜像生成：170 条 / 13 分类 / 76 图标 / 169 可安装（sha256 8bedc968164c）；10 个技能因 frontmatter 非法 YAML 跳过（与官方解析器忽略行为一致），fbs-bookwriter 481 文件超 400 上限标记不可安装。
+
+验证（Node 22.23.2 / pnpm 10.34.5）：技能相关集成 20/20（`skill-plugin-lifecycle` 路由数期望值 2 改 3，即 buffered 管理、目录图标、streaming 导入三条官方路由）；`probe:skills` 7/7 段 PASS，含目录状态/元数据/图标路由/安装资格读真实 Host 事实、浏览器市场真实分类与「＋」安装走受管导入路径、缺失与损坏目录降级为诚实诊断；18989 活预览实测 pageerror 0，`GET /api/workdsh-skills/icon?name=cloudbase` 返回 200 `image/svg+xml`，截图 `.artifacts/skills-market-top.png` 与 `.artifacts/skills-market-installed.png`。
+
+官方能力复用记录：安装写入 = `SkillManager.installImport`；技能发现与重新发现 = `ctx.skills` 与 filesystem provider/watcher；传输与认证 = `dsh-client-connection` exact Fetch（新增一条 GET 路由，未接入 `webServer`）；Client 装配 = 官方 Web module graph；契约 `contractVersion: 1` 不变，仅追加可选字段（`SkillCatalogEntry/Summary/Icon`）与端点（`catalog`、`install-catalog`、icon GET）。
+
+## 2026-09-13：技能弹框紧凑化（公共 Modal 外壳）
+
+用户反馈技能预览弹框过大（宽度近全屏、112px 图标、32px 标题）。WorkDSH 弹框为 `workdsh-ui` 公共 `Modal`（`.wd-dialog` 默认宽度 `min(1120px, calc(100vw - 56px))`，由技能/专家/连接器等面板共用），因此不改公共默认值，仅在技能插件 CSS 内用 `.wd-dialog.skill-detail-dialog`、`.wd-dialog.catalog-dialog` 等高特异性类收窄并紧凑化内部：目录预览 720px、技能详情 820px、确认 480px、回收站 560px、导入 720px；图标 64px、标题 24px、正文 15px、灰卡 padding 20/22、小节标题 16px。预览小节改名「基本信息」对齐 WorkBuddy，并修复「概述」标题使用的缺失图标 `icon('file')`（改为可用图标 `library`）。
+
+回归：`probe:skills` 浏览器段新增弹框断言（`.wd-dialog.catalog-dialog` 宽度 ≤760、图标 64px、标题 24px、「基本信息」可见后关闭），7/7 段 PASS；18989 活预览实测预览弹框 720px、图标 64px、标题 24px、详情弹框 820px、pageerror 0。截图 `.artifacts/skills-market-preview.png`、`.artifacts/skills-market-detail.png`。官方能力复用记录：弹框继续使用 workdsh-ui 公共 `Modal`，焦点陷阱、Esc/遮罩关闭与 ARIA 行为未变，未新增第二套弹框实现；本轮修复仅涉及技能插件自身样式与标题图标。
+
+### 同日追加：市场卡片呼吸感对齐与预览按钮修复
+
+对照 WorkBuddy 技能列表（四列卡片、图标＋大标题＋两行描述＋圆形「＋」）微调卡片密度：网格间距 14→22px、卡片内距 18→22px、圆角 17→18px、最小高 154→190px、品牌图标/字母标记 40→46px、标题 15→17px、描述 12→15px（行高 24px、固定两行）、圆形「＋」36→40px，均只改 `skillsMarketCss` 插件级规则。同时修复预览弹框「＋ 安装」按钮缺陷：`.wd-skills .install` 的 40×40 圆形规则（卡片用小按钮）在同树内殃及弹框内按钮，导致文字换行塌缩，改为弹框级 `.catalog-dialog .install.solid` 显式 `width/height:auto`、inline-flex 与 14px 字号。
+
+验证：重建后 `check-dist` 确认卡片与按钮新规则进入 `client.browser.js`（如 `justify-content:center;gap:6px;width:auto` raw=1）；18989 重装活预览实测卡片间距/图标/标题生效、预览弹框 720px、pageerror 0，截图 `.artifacts/skills-market-top.png`（卡片区）、`.artifacts/skills-market-preview.png`（按钮已正常）；`probe:skills` 7/7 全 PASS（弹框回归断言未回退）。
+
+### 同日追加：卡片高度、分类栏滚动条与弹框细节（用户反馈四则）
+
+用户反馈四项：卡片过高（视觉约 300px，目标 230px）、分类标签栏出现横向滚动条、预览弹框「＋ 安装」文字不全、弹框关闭按钮位置不正。用 Playwright 实测定位（`.migration/measure-ui.mjs`）：卡片 CSS 高 190px（用户 1.5x 缩放下约 285 视觉，即“差不多 300”），按比例目标 ≈152px；分类栏 `scrollWidth 1239 > clientWidth 1184` 溢出 55px；安装按钮 76.7×36 文字完整（用户截图为改名前旧版，「技能信息」文案可证，按钮问题在上一轮已修）；关闭按钮中心 208.7 vs 标题中心 206.7 且右距（28）与内容内距（36）不齐。
+
+修复（仅插件级规则）：卡片 `min-height 190→152px`、内距 `22→18px`、描述上边距 `18→12px`；分类栏加 `scrollbar-width:none` 与 `::-webkit-scrollbar{display:none}`（保留横向滚动）；新增 `.wd-dialog.skill-detail-dialog .wd-dialog-close{top:28px;right:32px;width:40px;height:40px}` 使关闭按钮与标题行垂直居中并与内容内距对齐。
+
+验证：`check-dist` 确认三规则进 `client.browser.js`（`min-height:152px`、`scrollbar-width:none`、`wd-dialog-close{top:28px;right:32px` 各 raw=1）；18989 实测卡片 152px×8、关闭按钮中心 206.73=标题中心 206.73、安装按钮文字完整、预览弹框 720px/pageerror 0；`probe:skills` 7/7 全 PASS。截图 `.artifacts/skills-market-top.png`、`.artifacts/skills-market-preview.png`。
+
+环境阻碍记录：本次 preview 重启被 office 层阻塞（`workdsh_office` 存储中一条旧 deck 模型文档与用户新版 blockIds/blocks schema 不兼容，属用户 PPT 开发中状态，非技能改动）。该记录已备份迁至 `.artifacts/office-documents-quarantine/`（未删除，可直接还原回 `.test-runtime/preview/storages/workdsh_office/documents/`）后预览正常启动。
+
+### 同日追加：卡片再压至内容自然高度（对标 SkillHub）
+
+用户二次反馈卡片仍偏高（对比 SkillHub 更扁的列表）。修复：卡片 `padding 18→14px`、描述上边距 `12→6px`、`min-height 152→128px`，使渲染高度等于内容自然高度（14+47+6+48+14+border=131px），无底部空余，高宽比从 0.54 降到 0.47。验证：`check-dist` 三规则进包（`min-height:128px`、`padding:14px;display:flex;flex-direction:column`、`margin:6px 0 0` 各 raw=1）；18989 实测 8 张卡均 131px、弹框断言未回退（720/64/24px/基本信息/详情 820px）、pageerror 0；`probe:skills` 7/7 全 PASS。截图 `.artifacts/skills-market-top.png`（一屏可见 4 行卡片）。

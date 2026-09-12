@@ -2,7 +2,7 @@ import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-client-connection/client';
 import type {} from '@deepseek-ai/dsh-api-remotes/client';
 import type {} from '@deepseek-ai/dsh-api-session-controller/client';
-import type { ManagedSkillDetail, ManagedSkillResource, ManagedSkillSummary, SkillBatchAction, SkillBatchResult, SkillDependencyImpact, SkillInstallScope, SkillMutationReceipt, SkillResourceWriteRequest, SkillWriteRequest, StagedSkillImport, TrashedSkillSummary } from '../shared.js';
+import type { ManagedSkillDetail, ManagedSkillResource, ManagedSkillSummary, SkillBatchAction, SkillBatchResult, SkillCatalogSummary, SkillDependencyImpact, SkillInstallScope, SkillMutationReceipt, SkillResourceWriteRequest, SkillWriteRequest, StagedSkillImport, TrashedSkillSummary } from '../shared.js';
 
 const path = '/api/workdsh-skills';
 
@@ -38,7 +38,7 @@ async function call<T>(ctx: Context, endpoint: string, payload: unknown, signal?
     credentials: 'same-origin',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ endpoint, payload }),
-  }, endpoint === 'commit-import' ? 60_000 : 30_000, signal);
+  }, endpoint === 'commit-import' || endpoint === 'install-catalog' ? 60_000 : 30_000, signal);
 }
 
 export function createSkillManagementClient(ctx: Context, lifetime?: AbortSignal) {
@@ -46,6 +46,8 @@ export function createSkillManagementClient(ctx: Context, lifetime?: AbortSignal
   const invoke = <T>(endpoint: string, payload: unknown, signal?: AbortSignal) => call<T>(ctx, endpoint, payload, scoped(signal));
   return {
     list: () => invoke<readonly ManagedSkillSummary[]>('list', {}),
+    catalog: () => invoke<SkillCatalogSummary>('catalog', {}),
+    installFromCatalog: (name: string) => invoke<SkillMutationReceipt>('install-catalog', { name }),
     detail: (name: string) => invoke<ManagedSkillDetail>('detail', { name }),
     update: (request: SkillWriteRequest) => invoke<ManagedSkillDetail>('update', request),
     resource: (name: string, resourcePath: string) => invoke<ManagedSkillResource>('resource', { name, path: resourcePath }),

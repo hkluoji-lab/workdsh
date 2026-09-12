@@ -12,3 +12,7 @@ tmp/
 .env
 .env.*
 !.env.example
+/docs/
+/.qoder/
+
+packages/plugins/office/src/presentation/native-react/native.css

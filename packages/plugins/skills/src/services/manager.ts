@@ -5,8 +5,9 @@ import { basename, dirname, extname, join, relative, resolve, sep } from 'node:p
 import { Context, Service } from '@deepseek-ai/cordis';
 import { isSkillName, type SkillDefinition, type SkillSummary } from '@deepseek-ai/dsh-skill';
 import { parse } from 'yaml';
-import type { ManagedSkillDetail, ManagedSkillResource, ManagedSkillSummary, SkillBatchRequest, SkillBatchResult, SkillDependency, SkillDependencyImpact, SkillDiagnostic, SkillDraft, SkillDraftWriteRequest, SkillImportInspection, SkillImportRequest, SkillMutationReceipt, SkillResourceWriteRequest, SkillValidationResult, SkillWriteRequest, TrashedSkillSummary } from '../shared.js';
+import type { ManagedSkillDetail, ManagedSkillResource, ManagedSkillSummary, SkillBatchRequest, SkillBatchResult, SkillCatalogIcon, SkillCatalogSummary, SkillDependency, SkillDependencyImpact, SkillDiagnostic, SkillDraft, SkillDraftWriteRequest, SkillImportInspection, SkillImportRequest, SkillInstallScope, SkillMutationReceipt, SkillResourceWriteRequest, SkillValidationResult, SkillWriteRequest, TrashedSkillSummary } from '../shared.js';
 import { SkillImportStaging } from './import-staging.js';
+import { SkillCatalogStore } from './catalog.js';
 import type { SkillManagementService, SkillDependencyInspector } from '../shared.js';
 import type { RetainedSkillRevision, SkillConsumerRef, SkillRevisionCheck, SkillRevisionRef, SkillRevisionStatus } from 'workdsh-contracts';
 
@@ -154,6 +155,7 @@ export class SkillManager extends Service implements SkillManagementService {
   private readonly originRoot: string;
   private readonly receiptRoot: string;
   private readonly draftRoot: string;
+  private readonly catalogStore: SkillCatalogStore;
   private readonly dependencyInspectors = new Set<SkillDependencyInspector>();
   readonly imports: SkillImportStaging;
 
@@ -169,6 +171,7 @@ export class SkillManager extends Service implements SkillManagementService {
     this.originRoot = join(this.stateRoot, 'disabled-origins');
     this.receiptRoot = join(this.stateRoot, 'trash-receipts');
     this.draftRoot = join(this.stateRoot, 'drafts');
+    this.catalogStore = new SkillCatalogStore(process.env.WORKDSH_SKILL_CATALOG ?? join(agentsHome, '.workdsh-catalog'));
     this.imports = new SkillImportStaging(
       join(this.stateRoot, 'imports'),
       (source, signal) => this.inspectImport(source, signal),
@@ -218,13 +221,22 @@ export class SkillManager extends Service implements SkillManagementService {
     for (const entry of await readdir(this.disabledRoot, { withFileTypes: true })) {
       const name = entry.isDirectory() ? entry.name : entry.isFile() && entry.name.endsWith('.md') ? entry.name.slice(0, -3) : undefined;
       if (!name || rows.some(row => row.name === name)) continue;
-      const disabled = await this.detail(name, signal);
+      const disabled = await this.readDetail(name, signal);
       if (disabled) rows.push(disabled);
     }
-    return rows.sort((a, b) => a.name.localeCompare(b.name));
+    const metadata = await this.catalogStore.metadata(new Set(rows.map(row => row.name)));
+    return rows.map(row => { const entry = metadata.get(row.name); return entry ? { ...row, ...entry } : row; }).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async detail(name: string, signal?: AbortSignal): Promise<ManagedSkillDetail | undefined> {
+    const detail = await this.readDetail(name, signal);
+    if (!detail) return undefined;
+    const metadata = await this.catalogStore.metadata(new Set([detail.name]));
+    const entry = metadata.get(detail.name);
+    return entry ? { ...detail, ...entry } : detail;
+  }
+
+  private async readDetail(name: string, signal?: AbortSignal): Promise<ManagedSkillDetail | undefined> {
     this.assertName(name); signal?.throwIfAborted();
     const definition = await this.ctx.skills.get(name, { signal });
     if (definition) {
@@ -543,6 +555,34 @@ export class SkillManager extends Service implements SkillManagementService {
       await rename(receipt.trashedEntry, receipt.originalEntry); await this.removeJson(this.receiptPath(id));
       return { name: receipt.name, state: 'enabled', path: receipt.originalEntry };
     });
+  }
+
+  /** Local catalog metadata joined with the current discovery state. */
+  async catalog(signal?: AbortSignal): Promise<SkillCatalogSummary> {
+    signal?.throwIfAborted();
+    const rows = await this.list(signal);
+    return this.catalogStore.summary(new Set(rows.map(row => row.name)));
+  }
+
+  /**
+   * Install one catalog payload. The payload copy is inert until this call, and
+   * publication reuses installImport so collision checks, copy verification and
+   * the atomic rename have exactly one implementation.
+   */
+  async installFromCatalog(name: string, scope?: SkillInstallScope, signal?: AbortSignal): Promise<SkillMutationReceipt> {
+    this.assertName(name);
+    signal?.throwIfAborted();
+    const eligibility = await this.catalogStore.eligibility(name);
+    if (!eligibility.known) throw new Error('skill/catalog-entry-unknown');
+    if (!eligibility.installable) throw new Error('skill/catalog-entry-over-limit');
+    const source = await this.catalogStore.payloadPath(name);
+    if (!source) throw new Error('skill/catalog-payload-missing');
+    return this.installImport({ source, scope }, signal);
+  }
+
+  async readCatalogIcon(name: string): Promise<SkillCatalogIcon | undefined> {
+    this.assertName(name);
+    return this.catalogStore.icon(name);
   }
 
   private async fromDefinition(definition: SkillDefinition): Promise<ManagedSkillDetail | undefined> {

@@ -30,13 +30,14 @@ export interface DocumentOptions {
   requestId?: string;
 }
 export interface OfficeClient {
+  createPresentation(options:DocumentOptions):ReturnType<typeof import("../presentation/client-model.js").createPresentationModel>;
   importDocument(sessionId: string, input: Extract<import("workdsh-contracts/office").OfficeOpenInput, {source: "import"}>, signal: AbortSignal): Promise<OfficeSnapshot>;
   download(sessionId: string, documentId: string): Promise<void>;
   open(sessionId: string, documentId: string): void;
   list(
     sessionId: string,
     signal: AbortSignal,
-  ): Promise<{ documentId: string; title: string }[]>;
+  ): Promise<{ documentId: string; title: string; kind?:"document"|"presentation" }[]>;
   createDocument(
     options: DocumentOptions,
   ): ReturnType<typeof createDocumentModel>;

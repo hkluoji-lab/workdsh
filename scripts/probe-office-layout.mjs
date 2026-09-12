@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 const path = process.argv[2];
 if (!path) throw new Error('Provide a read-only XLSX fixture path.');
 const bytes = await readFile(path);
-const kind = path.endsWith('.docx') ? 'docx' : 'pptx';
+if(!path.endsWith('.docx'))throw new Error('PPT layout is covered by probe-office-pptx-native.mjs');
+const kind='docx';
 const hash = data => createHash('sha256').update(data).digest('hex');
 const html = await readFile(new URL('../packages/plugins/office/dist/editor.html', import.meta.url), 'utf8');
 const out = new URL('../.artifacts/office-layout-regression/', import.meta.url);
@@ -32,8 +33,6 @@ try {
  const pages = await frame.locator('#preview').evaluate(el => ({ width: el.clientWidth, scrollWidth: el.scrollWidth, pageCount: el.querySelectorAll('section.docx').length, slides: el.querySelectorAll('.pptx-preview-slide-wrapper').length }));
  assert.ok(pages.scrollWidth <= pages.width + 2, JSON.stringify(pages));
  if (kind === 'docx') assert.ok(pages.pageCount > 1);
- if (kind === 'pptx') assert.equal(pages.slides, 10);
- if (kind === 'pptx') assert.ok(await frame.locator('#preview').evaluate(el => el.scrollHeight > el.clientHeight * 2));
  await frame.getByRole('button', { name: '编辑文字' }).click();
  assert.equal(await frame.locator('#fields').isVisible(), true);
  await frame.getByRole('button', { name: '收起编辑' }).click();

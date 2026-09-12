@@ -1,6 +1,6 @@
 {
   "name": "workdsh-plugin-office",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "private": true,
   "type": "module",
   "exports": {
@@ -41,6 +41,7 @@
     }
   },
   "dependencies": {
+    "@ai-sdk/react": "4.0.76",
     "@tiptap/core": "3.31.0",
     "@tiptap/extension-image": "3.31.0",
     "@tiptap/extension-table": "3.31.0",
@@ -50,12 +51,17 @@
     "@tiptap/starter-kit": "3.31.0",
     "@univerjs/preset-sheets-core": "0.25.1",
     "@univerjs/presets": "0.25.1",
+    "ai": "7.0.0",
     "docx-preview": "0.4.0",
     "exceljs": "4.4.0",
+    "i18next": "26.4.2",
     "jszip": "3.10.1",
-    "pptx-preview": "1.0.7",
+    "lucide-react": "1.45.0",
+    "pptx-react-viewer": "3.16.5",
+    "pptx-viewer-core": "3.14.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-i18next": "17.0.13",
     "zod": "4.4.3"
   },
   "devDependencies": {
@@ -76,6 +82,7 @@
     "@deepseek-ai/dsh-tools": "0.1.5-rc.1",
     "@types/node": "22.19.0",
     "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "@univerjs/docs-ui": "0.25.1",
     "@univerjs/preset-docs-core": "0.25.1",
     "@univerjs/slides": "0.25.1",

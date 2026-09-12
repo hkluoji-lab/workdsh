@@ -1,7 +1,7 @@
-import type { OfficeSnapshot } from "workdsh-contracts/office";
+import type { OfficeContentSnapshot } from "workdsh-contracts/office";
 import type { Context } from "@deepseek-ai/cordis";
 import { defineTool, type ToolRunContext } from "@deepseek-ai/dsh-tools";
-import { capabilities, openInput, parse } from "./model.js";
+import { capabilities, openInput, contentOpenInput, parse } from "./model.js";
 import { exportAndPresent } from "./export.js";
 import { registerAuthoringGuide } from "./authoring.js";
 export const name = "workdsh-office-tools";
@@ -139,32 +139,16 @@ const operation = {
   ],
 } as const;
 const snapshot = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    documentId: string,
-    kind: { type: "string", const: "document", required: true },
-    title: string,
-    revision: { type: "integer", required: true },
-    generation: string,
-    state: {
-      type: "object",
-      required: true,
-      additionalProperties: false,
-      properties: {
-        modelVersion: { type: "integer", const: 1, required: true },
-        blockIds: { type: "array", items: { type: "string" }, required: true },
-        blocks: {
-          type: "object",
-          additionalProperties: true,
-          required: true,
-          description:
-            "Dictionary keyed by blockId; block has type, optional heading level and runs with runId/text/marks.",
-        },
-      },
-    },
-  },
+  type:"object",additionalProperties:false,
+  properties:{documentId:string,kind:{type:"string",enum:["document","presentation"],required:true},title:string,revision:{type:"integer",required:true},generation:string,
+    state:{type:"object",additionalProperties:true,required:true,description:"document: modelVersion/blockIds/blocks; presentation: modelVersion/deck, pptx-viewer-core native slides and PPTX bytes with stable slide IDs and elements."}},
 } as const;
+const pptOperation={oneOf:[
+ {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.updateSlide",required:true},slideId:string,patch:{type:"object",required:true,additionalProperties:false,properties:{elements:{type:"array",items:{type:"object",additionalProperties:true}},name:{type:"string"},backgroundColor:{type:"string"},notes:{type:"string"}}}}},
+ {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.insertSlides",required:true},afterSlideId:{oneOf:[{type:"string"},{type:"null"}],required:true},slides:{type:"array",required:true,items:{type:"object",additionalProperties:true,description:"One pptx-viewer-core native slide: id, slideNumber, elements. Element geometry x,y,width,height; chartData holds chartType,categories,series [{name,values}]."}}}},
+ {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.removeSlide",required:true},slideId:string}},
+ {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.moveSlide",required:true},slideId:string,afterSlideId:{oneOf:[{type:"string"},{type:"null"}],required:true}}},
+]} as const;
 const render = (_args: unknown, value: unknown) => [
   { type: "text" as const, text: JSON.stringify(value) },
 ];
@@ -182,19 +166,8 @@ function jsonValue(value:unknown):WireValue {
   if(typeof value==="object") return Object.fromEntries(Object.entries(value).filter(([,v])=>v!==undefined).map(([k,v])=>[k,jsonValue(v)]));
   throw new Error("Invalid Office wire value");
 }
-function wire(s: OfficeSnapshot) {
-  return {
-    ...s,
-    state: {
-      ...s.state,
-      blocks: Object.fromEntries(
-        s.state.blockIds.map((id) => {
-          const b = s.state.blocks[id]!;
-          return [id,jsonValue(b)];
-        }),
-      ),
-    },
-  };
+function wire(s:OfficeContentSnapshot) {
+ return {...s,state:jsonValue(s.state) as {[key:string]:WireValue}};
 }
 export function apply(ctx: Context) {
   for (const toolName of [
@@ -213,7 +186,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_export",
       description:
-        "Export a committed document as real DOCX through the official present card. Use baseRevision from content_read. Same document/revision/content has a stable path; uncertain-write retries check existing bytes and never overwrite conflicts. Uses official bash approval and requires bash/present in this Session. On delivery-only failure, check the card and retry present for the returned path. The live editor remains editable. Tables and embedded PNG/JPEG images are retained; complex Word pagination is not lossless.",
+        "Export a committed Word document as real DOCX or native presentation as real PPTX through the official present card. Use baseRevision from content_read. Same document/revision/content has a stable path; uncertain-write retries check existing bytes and never overwrite conflicts. Uses official bash approval and requires bash/present in this Session. On delivery-only failure, check the card and retry present for the returned path. The live editor remains editable. Tables and embedded PNG/JPEG images are retained; complex Word pagination is not lossless.",
       parameters: { documentId: string, baseRevision: {type: "integer", description: "Latest revision from content_read. Reuse on uncertain-write retries; rejects changed document revisions."} },
       output: {
         schema: {
@@ -245,7 +218,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_open",
       description:
-        "Create or reopen a document for writing a report, proposal or other document. Automatically opens the live right-hand editor immediately; no content_present call is needed. New documents start with one empty paragraph. Use content_edit in small meaningful batches as you write so the user sees progress in the document, rather than waiting for the whole report. Reuse operationId on retries. This is not DOCX import.",
+        "Create or reopen Word or PPT. For PPT set input.kind=presentation, source=new, title and operationId; optional brief. Automatically opens the live right-hand editor immediately; no content_present call is needed. New documents start with one empty paragraph. Use content_edit in small meaningful batches as you write so the user sees progress in the document, rather than waiting for the whole report. Reuse operationId on retries. This is not DOCX import.",
       parameters: {
         input: {
           oneOf: [
@@ -266,6 +239,7 @@ export function apply(ctx: Context) {
                 documentId: string,
               },
             },
+            ...(ctx.workdshOfficeContent.presentationEnabled?[{type:"object",additionalProperties:false,properties:{source:{type:"string",const:"new",required:true},kind:{type:"string",const:"presentation",required:true},title:string,operationId:string,brief:{type:"string",description:"Optional planning context; opening initializes only one title page. Add/update each slide in a separate content_edit."}}} as const]:[]),
           ],
           required: true,
         },
@@ -275,7 +249,7 @@ export function apply(ctx: Context) {
         wire(
           ctx.workdshOfficeContent.projectForAgent(await ctx.workdshOfficeContent.open(
             await actor(ctx, exec),
-            parse(openInput, args.input),
+            parse(contentOpenInput, args.input),
             exec.signal,
           )),
         ),
@@ -302,7 +276,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_capabilities",
       description:
-        "Discover implemented operations and limits. Currently native document paragraphs/headings/tables/embedded images; DOCX export through content_export is available when official bash/present tools are mounted; Browser DOCX working-copy import is available; other editor kinds remain unavailable.",
+        "Discover implemented operations and limits. Currently native document paragraphs/headings/tables/embedded images; DOCX export through content_export is available when official bash/present tools are mounted; Browser DOCX working-copy import is available; pptx-react-viewer presentations support native slides and editable charts; PPTX download is available in the right-hand editor, content_export delivers the saved PPTX through the official file card. Other editor kinds remain unavailable.",
       parameters: {},
       output: {
         schema: {
@@ -315,7 +289,7 @@ export function apply(ctx: Context) {
       },
       execute: async (_args, exec) => {
         await actor(ctx, exec);
-        return JSON.parse(JSON.stringify(capabilities));
+        return JSON.parse(JSON.stringify(ctx.workdshOfficeContent.capabilities()));
       },
     }),
   ));
@@ -333,7 +307,7 @@ export function apply(ctx: Context) {
             documentId: string,
             baseRevision: { type: "integer", required: true },
             operationId: string,
-            operations: { type: "array", required: true, items: operation },
+            operations: { type: "array", required: true, items: {oneOf:[...operation.oneOf,...(ctx.workdshOfficeContent.presentationEnabled?pptOperation.oneOf:[])]} },
           },
         },
       },

@@ -1,3 +1,4 @@
+import {LivePresentation} from "../presentation/Page.js";
 import React, {
   useEffect,
   useRef,
@@ -20,7 +21,7 @@ export function DocumentPage(props: Props) {
     | undefined;
   const sessionId = String(props.sessionId);
   const [selected, setSelected] = useState(params?.documentId);
-  const [items, setItems] = useState<{ documentId: string; title: string }[]>(
+  const [items, setItems] = useState<{ documentId: string; title: string;kind?:"document"|"presentation" }[]>(
     [],
   );
   const [error, setError] = useState("");
@@ -68,7 +69,7 @@ export function DocumentPage(props: Props) {
           新文档已就绪，完成当前编辑后打开。
         </div>
       )}
-      {selected ? (
+      {selected && !items.some(item=>item.documentId===selected) ? <div className="wd-office-empty">正在打开…</div> : selected ? (items.find(item=>item.documentId===selected)?.kind==="presentation" ? <LivePresentation key={sessionId+selected} documentId={selected} sessionId={sessionId} office={props.office} visible={info.tab.visible} signal={info.tab.signal} requestId={params?.documentId===selected?params.requestId:undefined} onEditing={setBusy}/> :
         <LiveDocument
           key={sessionId + selected}
           documentId={selected}

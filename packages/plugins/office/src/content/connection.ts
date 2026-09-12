@@ -1,19 +1,19 @@
 import type { Context } from "@deepseek-ai/cordis";
 import type { HostConnectionHandle } from "@deepseek-ai/dsh-client-connection";
 import { z } from "zod";
-import { id, editInput, openInput, parse, OfficeError } from "./model.js";
+import { id, editInput, openInput, contentOpenInput, presentationEditInput, parse, OfficeError } from "./model.js";
 export const name = "workdsh-office-connection";
 export const inject = ["connection", "workdshOfficeContent", "workdshIdentity"];
 const endpoint = z.discriminatedUnion("endpoint", [
-  z.object({ endpoint: z.literal("open"), input: openInput }).strict(),
+  z.object({ endpoint: z.literal("open"), input: contentOpenInput }).strict(),
   z.object({ endpoint: z.literal("read"), documentId: id }).strict(),
   z.object({ endpoint: z.literal("list") }).strict(),
   z.object({ endpoint: z.literal("pending") }).strict(),
   z
     .object({
       endpoint: z.literal("edit"),
-      input: editInput,
-      lease: z.object({ token: id, clientId: id }).strict(),
+      input: z.union([editInput,presentationEditInput]),
+      lease: z.object({ token: id, clientId: id }).strict().optional(),
     })
     .strict(),
   z
@@ -79,7 +79,7 @@ export function apply(ctx: Context) {
               value = await s.pending(actor, signal);
               break;
             case "edit":
-              value = await s.editHuman(actor, r.input, r.lease, signal);
+              value = await s.editHuman(actor, r.input, r.lease ?? {token:"",clientId:"direct-presentation"}, signal);
               break;
             case "lease":
               value = await s.lease(

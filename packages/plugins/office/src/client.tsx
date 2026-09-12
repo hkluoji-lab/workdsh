@@ -1,3 +1,4 @@
+import {createPresentationModel} from "./presentation/client-model.js";
 import type {} from "@deepseek-ai/dsh-client-ui-input-trigger/client";
 import { officeInputSources } from "./input.js";
 import type { Context } from "@deepseek-ai/cordis";
@@ -67,6 +68,7 @@ export function apply(ctx: Context): void {
   };
   const activeDocuments = new Map<string, ReturnType<typeof createDocumentModel>>();
   const office: OfficeClient = {
+    createPresentation:options=>createPresentationModel(options,rpc),
     importDocument: (sessionId, input, signal) => rpc(sessionId, {endpoint: "open", input}, signal),
     list: (sessionId, signal) => rpc(sessionId, { endpoint: "list" }, signal),
     download: async (sessionId, documentId) => {
@@ -88,7 +90,7 @@ export function apply(ctx: Context): void {
     const sessions = ctx.sessions as unknown as ISessions;
     const id = sessions.list.getSnapshot().current;
     return id ? String(id) : undefined;
-  })) ctx.effect(() => ctx.inputTriggers.registerSource(source));
+  },!__WORKDSH_WORD_ONLY__)) ctx.effect(() => ctx.inputTriggers.registerSource(source));
   ctx.effect(() =>
     ctx.sidebarRightTabs.register({
       id: "workdsh-office-live",

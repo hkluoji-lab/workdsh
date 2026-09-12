@@ -106,17 +106,17 @@ export interface OfficeSnapshot {
 export interface OfficeContentService {
   open(
     actor: ActorContext,
-    input: OfficeOpenInput,
+    input: OfficeOpenInput|OfficePresentationOpenInput,
     signal?: AbortSignal,
-  ): Promise<OfficeSnapshot>;
+  ): Promise<OfficeContentSnapshot>;
   read(
     actor: ActorContext,
     documentId: string,
     signal?: AbortSignal,
-  ): Promise<OfficeSnapshot>;
+  ): Promise<OfficeContentSnapshot>;
   edit(
     actor: ActorContext,
-    input: OfficeEditInput,
+    input: OfficeEditInput|OfficePresentationEditInput,
     signal?: AbortSignal,
   ): Promise<OfficeReceipt>;
   present(
@@ -129,4 +129,21 @@ export interface OfficeContentService {
     revision: number;
     status: "requested";
   }>;
+}
+
+/** Adapter-owned native JSON, validated by the Office presentation provider. */
+export interface OfficePresentationSnapshot extends Omit<OfficeSnapshot, "kind" | "state"> {
+  kind: "presentation";
+  state: {modelVersion: 1; deck: unknown; focusSlideId?: string};
+}
+export type OfficeContentSnapshot = OfficeSnapshot | OfficePresentationSnapshot;
+export interface OfficePresentationOpenInput {
+  source: "new";
+  kind: "presentation";
+  title: string;
+  operationId: string;
+  brief?: string;
+}
+export interface OfficePresentationEditInput extends Omit<OfficeEditInput, "operations"> {
+  operations: unknown[]; // native adapter validates the exact operation union
 }

@@ -2,7 +2,7 @@
 
 Native document editing uses the MIT-licensed Tiptap core, StarterKit and ProseMirror packages, pinned through the workspace lockfile. No paid Tiptap collaboration, AI, import/export or pagination extension is included.
 
-The existing browser file adapters continue to bundle Univer OSS (Apache-2.0), ExcelJS, docx-preview, pptx-preview and their required dependencies. They are distinct from the new native document working-copy API.
+The existing browser file adapters continue to bundle Univer OSS (Apache-2.0), ExcelJS, docx-preview and their required dependencies. They are distinct from the new native document working-copy API.
 
 Each build writes `dist/THIRD-PARTY-LICENSES.txt` with the license/copyright/notice texts found in every dependency actually bundled by esbuild, and `dist/bundled-dependencies.json` with its exact version. These files travel inside the prebuilt plugin archive. Framework peer dependencies remain owned by the Harness installation. This inventory is not a claim that DOCX/PPTX conversion is lossless or that optional commercial SDKs have been licensed.
 
@@ -16,3 +16,9 @@ Tiptap UI Components (MIT), commit 799929bea4804c73767562b69f8acc2acdb8ac86; ada
 
 
 Word alpha.2 adds the MIT-licensed @tiptap/extension-table and @tiptap/extension-image at exactly 3.31.0. Native TableKit commands, column resize/cell selection and Image/ResizableNodeView are reused without copying their implementations. Bundled license texts are included in the generated THIRD-PARTY-LICENSES.txt and verified by the Word-only pack gate.
+
+## Current native PPT development integration
+
+The current full development build uses pptx-react-viewer 3.16.5 and pptx-viewer-core 3.14.3 from ChristopherVR/pptx-viewer (Apache-2.0). It adapts the toolbar, Chinese localization and Inspector presentation while retaining the native parsing, editing and export implementation. These replace the previous PPT adapters. i18next/react-i18next are MIT-licensed; Lucide icons are ISC-licensed. Exact bundled versions and license texts are recorded in the generated inventories. This development integration does not change the scope of previously published Word-only archives.
+
+WorkBuddy/CodeBuddy product experiences and locally inspected tencent-pptx/ppt-implement design guidance are references, not dependencies of this editor runtime. Their proprietary resources and brand assets are not declared open source by this notice.

@@ -18,11 +18,13 @@ const artifacts = new URL(
 );
 await mkdir(artifacts, { recursive: true });
 await build({
-  entryPoints: [
-    "packages/plugins/office/src/content/service.ts",
-    "packages/plugins/office/src/content/model.ts",
-    "packages/plugins/office/src/content/tools.ts",
-  ],
+  entryPoints: {
+    service:"packages/plugins/office/src/content/service.ts",
+    model:"packages/plugins/office/src/content/model.ts",
+    tools:"packages/plugins/office/src/content/tools.ts",
+    export:"packages/plugins/office/src/content/export.ts",
+    "native-deck":"packages/plugins/office/src/presentation/native-deck.ts",
+  },
   outdir: artifacts.pathname,
   bundle: true,
   platform: "node",
@@ -515,4 +517,81 @@ test("AI image references copy across authorized documents and reject changed or
     await h.ctx.fiber.dispose();
     await rm(root, {recursive: true, force: true});
   }
+});
+
+test('Native PPT shares native tools, pending/ACK, CAS, human leases, ownership and cold storage',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'office-ppt-service-'));let h;
+ try{
+  h=await boot(root);const exec={agent:{id:'session-a'},signal:new AbortController().signal,callId:'ppt-call'};
+  const input={source:'new',kind:'presentation',title:'门店经营汇报',operationId:'ppt-create',brief:'# 门店经营汇报\n\n## 经营概况\n\n- 经营资料待补'};
+  const first=await h.ctx.tools.get('content_open').execute({input},exec);
+  assert.equal(first.kind,'presentation');assert.equal(first.state.deck.slides.length,1);assert.equal(first.state.blocks,undefined);
+  const pending=await h.s.pending(actor());assert.ok(pending.some(item=>item.documentId===first.documentId));
+  const request=pending.find(item=>item.documentId===first.documentId);
+  await h.s.acknowledge(actor(),{documentId:first.documentId,requestId:request.requestId,clientId:'ppt-client',appliedRevision:0});
+  const batch={documentId:first.documentId,baseRevision:0,operationId:'ppt-add-slide',operations:[{op:'presentation.insertSlides',afterSlideId:first.state.deck.slides.at(-1).id,slides:[{id:'new-action-slide',slideNumber:2,elements:[],name:'行动建议'}]}]};
+  await assert.rejects(h.s.editForAgent(actor(),{...batch,operationId:'multi-page-rejected',operations:[{...batch.operations[0],slides:[...batch.operations[0].slides,{id:'second-content-page',slideNumber:3,elements:[]}]}]}),{code:'INVALID_INPUT'});
+  assert.equal((await h.s.read(actor(),first.documentId)).revision,0);
+  const receipt=await h.ctx.tools.get('content_edit').execute({input:batch},exec);assert.equal(receipt.revision,1);
+  assert.equal((await h.s.read(actor(),first.documentId)).state.focusSlideId,'new-action-slide');
+  assert.deepEqual(await h.s.editForAgent(actor(),batch),receipt);
+  assert.ok((await h.s.pending(actor())).some(item=>item.documentId===first.documentId&&item.revision===1));
+  await assert.rejects(h.s.read(actor('b'),first.documentId),{code:'FORBIDDEN'});
+  await assert.rejects(h.s.read(actor('c'),first.documentId),{code:'FORBIDDEN'});
+  await assert.rejects(h.s.editForAgent(actor(),{...batch,operationId:'stale'}),{code:'REVISION_CONFLICT'});
+  const latest=await h.s.read(actor(),first.documentId),lease=await h.s.lease(actor(),first.documentId,'ppt-human','acquire');
+  await assert.rejects(h.s.editForAgent(actor(),{...batch,baseRevision:1,operationId:'blocked'}),{code:'HUMAN_EDITING'});
+  const deck=structuredClone(latest.state.deck);deck.slides.at(-1).name='用户编辑';
+  const manual={documentId:first.documentId,baseRevision:1,operationId:'ppt-human-save',operations:[{op:'presentation.replaceDeck',deck}]};
+  await h.s.editHuman(actor(),manual,{token:lease.lease.token,clientId:'ppt-human'});
+  await h.s.lease(actor(),first.documentId,'ppt-human','release',lease.lease.token);
+  await assert.rejects(h.s.editForAgent(actor(),{...manual,operationId:'whole-deck-agent',baseRevision:2}),{code:'INVALID_INPUT'});
+  await h.s.editHuman(actor(),{...manual,baseRevision:2,operationId:'ppt-direct-save'},{token:'',clientId:'direct-presentation'});
+  await assert.rejects(h.s.editHuman(actor(),{...manual,baseRevision:2,operationId:'ppt-direct-stale'},{token:'',clientId:'direct-presentation'}),{code:'REVISION_CONFLICT'});
+  await h.ctx.fiber.dispose();h=await boot(root);
+  const cold=await h.s.read(actor(),first.documentId);assert.equal(cold.kind,'presentation');assert.equal(cold.revision,3);assert.equal(cold.state.deck.slides.at(-1).name,'用户编辑');
+  assert.equal((await h.s.read(actor(),first.documentId)).state.focusSlideId,'new-action-slide');
+  assert.deepEqual(await h.s.editForAgent(actor(),batch),receipt);
+  await assert.rejects(h.s.editForAgent(actor(),{documentId:first.documentId,baseRevision:3,operationId:'two-update-rejected',operations:cold.state.deck.slides.map(slide=>({op:'presentation.updateSlide',slideId:slide.id,patch:{name:'非法整批内容'}}))}),{code:'INVALID_INPUT'});
+  const structural=await h.s.editForAgent(actor(),{documentId:first.documentId,baseRevision:3,operationId:'structural-batch',operations:[{op:'presentation.moveSlide',slideId:'new-action-slide',afterSlideId:null}]});
+  assert.equal(structural.revision,4);
+  assert.equal((await h.s.read(actor(),first.documentId)).state.focusSlideId,'new-action-slide');
+ }finally{if(h)await h.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
+});
+
+
+test("PPT export delivers committed native bytes, retries safely and rejects changed revisions", async () => {
+  const {exportAndPresent}=await import(new URL("export.js",artifacts));
+  const {createPresentation}=await import(new URL("native-deck.js",artifacts));
+  const {execFile}=await import("node:child_process");
+  const {promisify}=await import("node:util");
+  const {readFile,writeFile}=await import("node:fs/promises");
+  const home=await mkdtemp(join(tmpdir(),"office-ppt-export-"));
+  const deck=await createPresentation("最终交付");
+  const snapshot={documentId:"ppt-export-test",kind:"presentation",title:"最终交付",revision:3,state:{deck},generation:"test"};
+  const calls=[];
+  const ctx={tools:{get:()=>true,execute:async input=>{
+    calls.push(input);
+    if(input.name==="bash"){
+      try{const {stdout}=await promisify(execFile)(process.execPath,["-e",input.arguments.command.slice(9,-1)],{cwd:home});return {content:[{type:"text",text:stdout}]};}
+      catch{return {isError:true,content:[]};}
+    }
+    return {content:[]};
+  }}};
+  const exec={agent:{},signal:new AbortController().signal,callId:"export-test",deferContext:()=>{}};
+  try{
+    const first=await exportAndPresent(ctx,exec,snapshot,3);
+    assert.match(first.path,/\.pptx$/);
+    assert.equal(first.status,"presented");
+    assert.deepEqual(await readFile(join(home,first.path)),Buffer.from(deck.bytes,"base64"));
+    assert.equal(calls.at(-1).name,"present");
+    assert.equal(calls.at(-1).arguments.files[0].path,first.path);
+    assert.equal((await exportAndPresent(ctx,exec,snapshot,3)).path,first.path);
+    const before=calls.length;
+    await assert.rejects(()=>exportAndPresent(ctx,exec,snapshot,2),/REVISION_CONFLICT/);
+    assert.equal(calls.length,before);
+    await writeFile(join(home,first.path),"changed");
+    await assert.rejects(()=>exportAndPresent(ctx,exec,snapshot,3),/未交付文件/);
+    assert.equal(await readFile(join(home,first.path),"utf8"),"changed");
+  }finally{await rm(home,{recursive:true,force:true});}
 });

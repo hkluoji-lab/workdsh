@@ -24,6 +24,11 @@ export interface ManagedSkillSummary {
   readonly state: ManagedSkillState;
   readonly manageable: boolean;
   readonly diagnostics?: readonly SkillDiagnostic[];
+  /** Present only when the local catalog owns richer metadata for this skill. */
+  readonly title?: string;
+  readonly localizedDescription?: string;
+  readonly categories?: readonly string[];
+  readonly iconUrl?: string;
 }
 
 export interface ManagedSkillDetail extends ManagedSkillSummary {
@@ -106,6 +111,41 @@ export interface TrashedSkillSummary {
   readonly previousState: 'enabled' | 'disabled';
 }
 
+/**
+ * One entry of the WorkDSH-owned local skill catalog. Metadata and an inert
+ * payload copy live under the shared Agents home; installation goes through the
+ * existing import path, so the official provider stays the execution owner.
+ */
+export interface SkillCatalogEntry {
+  readonly name: string;
+  readonly title: string;
+  readonly description: string;
+  readonly categories: readonly string[];
+  readonly version?: string;
+  readonly examples?: readonly string[];
+  readonly iconUrl?: string;
+  readonly installed: boolean;
+  readonly installable: boolean;
+  readonly installLimits?: readonly string[];
+}
+
+/** `missing`/`invalid` are reported instead of a fabricated empty catalog. */
+export type SkillCatalogStatus = 'ready' | 'missing' | 'invalid';
+
+export interface SkillCatalogSummary {
+  readonly status: SkillCatalogStatus;
+  readonly entries: readonly SkillCatalogEntry[];
+  readonly categories: readonly string[];
+  readonly generatedAt?: string;
+  readonly diagnostics?: readonly SkillDiagnostic[];
+}
+
+export interface SkillCatalogIcon {
+  readonly bytes: Uint8Array;
+  readonly contentType: string;
+  readonly revision: string;
+}
+
 export type SkillInstallScope = 'shared-agents' | 'profile';
 export interface SkillImportInspection {
   readonly name: string;
@@ -121,7 +161,7 @@ export interface StagedSkillImport {
   readonly expiresAt: string;
 }
 
-export type SkillManagementEndpoint = 'list' | 'detail' | 'update' | 'resource' | 'write-resource' | 'set-enabled' | 'dependency-impact' | 'uninstall' | 'batch' | 'trash-list' | 'restore' | 'commit-import' | 'discard-import';
+export type SkillManagementEndpoint = 'list' | 'detail' | 'update' | 'resource' | 'write-resource' | 'set-enabled' | 'dependency-impact' | 'uninstall' | 'batch' | 'trash-list' | 'restore' | 'commit-import' | 'discard-import' | 'catalog' | 'install-catalog';
 export interface SkillManagementFailure { readonly code: string; readonly message: string; }
 export type SkillManagementResult<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: SkillManagementFailure };
 
@@ -154,6 +194,11 @@ export interface SkillManagementService extends SkillRevisionProvider {
   batch(request: SkillBatchRequest): Promise<SkillBatchResult>;
   listTrash(): Promise<readonly TrashedSkillSummary[]>;
   restore(id: string): Promise<SkillMutationReceipt>;
+  /** Local catalog metadata joined with the current discovery state. */
+  catalog(signal?: AbortSignal): Promise<SkillCatalogSummary>;
+  /** Installs one catalog payload through the shared import verification path. */
+  installFromCatalog(name: string, scope?: SkillInstallScope, signal?: AbortSignal): Promise<SkillMutationReceipt>;
+  readCatalogIcon(name: string): Promise<SkillCatalogIcon | undefined>;
   readonly imports: {
     stage(fileName: string, body: ReadableStream<Uint8Array> | null, signal: AbortSignal): Promise<StagedSkillImport>;
     commit(id: string, scope?: SkillInstallScope, signal?: AbortSignal): Promise<SkillMutationReceipt>;

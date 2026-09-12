@@ -219,3 +219,38 @@ corepack pnpm probe:browser
 底座采用 [DeepSeek Harness](https://deepseek-harness.github.io/deepseek-harness/)，交互参考包括 [WorkBuddy](https://www.workbuddy.cn/)。WorkDSH 是独立项目，并非上述团队的官方产品。
 
 下一阶段开发计划：[PPT 实时制作 → 其他六类（Word 后续暂停）](docs/design/office/NEXT-STAGE.md)。各阶段以真实文件、实时编辑和独立插件生命周期验收，规划不代表能力已完成。
+
+## 当前开发预览
+
+![WorkDSH 技能市场开发预览](docs/assets/screenshots/workdsh-skill-market-preview.png)
+
+用户提供的当前应用截图：技能市场提供分类、搜索、已安装管理及本地目录安装入口。卡片中的第三方技能、图标和名称属于各自提供方，不代表 WorkDSH 拥有这些品牌或已实现全部连接器。截图包含本地任务名称与费用信息；这些是演示时的用户状态，不是随包默认数据。
+
+当前 Office 开发预览仅保留 `pptx-react-viewer` PPT 编辑器，已接入原生右侧成果页与同一 Office 内容服务，支持逐页写入、人工编辑、原生图表数据、保存重开及 PPTX 下载。中文工具栏与设计指导仍在改进，真实模型的美观度尚未完成验收。本地开发候选与上文已发布 Word 安装包的范围不同，详见 [PPT 接入证据](docs/evidence/office-pptx-integration.md)。
+
+### 原生 PPT 编辑预览
+
+![WorkDSH 原生 PPT 编辑](docs/assets/screenshots/workdsh-ppt-live-preview.png)
+
+用户提供的真实应用截图，展示 AI 逐页修改与原生右侧 PPT 编辑。截图中的旧会话仍提到此前的导出限制；源码已补 PPTX content_export，但真实会话文件卡端到端验收尚未执行。
+
+## 开源组件与致谢
+
+感谢以下项目及其维护者。下表列出主要直接依赖和使用范围；完整依赖以各包清单、锁文件及构建产物中的许可清单为准。
+
+| 项目 | 在 WorkDSH 中的用途 | 许可 |
+| --- | --- | --- |
+| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) / Cordis | 原生任务、模型执行、技能发现、插件加载、Profile、服务与 UI 扩展底座 | MIT |
+| [React](https://github.com/facebook/react) | 功能页面和编辑器 UI | MIT |
+| [Tiptap](https://github.com/ueberdosis/tiptap) / [ProseMirror](https://github.com/ProseMirror) | Word 工作副本文本、表格、图片与编辑交互；适配 Tiptap 开源 UI 组件 | MIT |
+| [pptx-viewer](https://github.com/ChristopherVR/pptx-viewer) | `pptx-react-viewer` 3.16.5 与 `pptx-viewer-core` 3.14.3，当前唯一 PPT 编辑、解析和导出实现 | Apache-2.0 |
+| [docx](https://github.com/dolanmiu/docx) | 支持范围内的 DOCX 文件生成 | MIT |
+| [docx-preview](https://github.com/VolodymyrBaydalka/docxjs) | DOCX 原始版式预览 | Apache-2.0 |
+| [Univer OSS](https://github.com/dream-num/univer) / [ExcelJS](https://github.com/exceljs/exceljs) | 开发版已有的实验性表格文件适配，不代表完整在线表格已交付 | Apache-2.0 / MIT |
+| [i18next](https://github.com/i18next/i18next) / [react-i18next](https://github.com/i18next/react-i18next) | PPT 编辑器中文本地化 | MIT |
+| [Lucide](https://github.com/lucide-icons/lucide) | PPT 工具栏图标 | ISC |
+| [dsh-cost-meter](https://github.com/Han-1413141/dsh-cost-meter) | 当前预览 Profile 单独安装的费用统计插件，不内置于 WorkDSH 发布包 | 以其独立项目许可为准 |
+
+特别感谢 **WorkBuddy / CodeBuddy** 团队带来的产品体验和技能设计参考。WorkDSH 的技能市场布局、工具栏分组和 PPT 设计指导参考了这些体验；本机 `tencent-pptx` 与 `ppt-implement` 技能帮助我们分析了叙事、配色和版式方法。这里的致谢不将 WorkBuddy、品牌图标或其技能资源声明为开源组件，也不表示已安装腾讯 PPT 引擎或获得官方合作、背书。WorkDSH 的执行底座仍为 DeepSeek Harness。
+
+第三方技能和素材分别遵循其提供方的许可与使用条件。构建产物保留实际打包依赖的版权和许可文本，见 [Office 第三方声明](packages/plugins/office/THIRD-PARTY-NOTICES.md)。

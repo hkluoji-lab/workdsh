@@ -57,11 +57,12 @@
     "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.1",
     "@playwright/test": "1.58.2",
     "@types/node": "22.19.0",
+    "docx": "9.6.1",
     "esbuild": "0.25.12",
     "pnpm": "10.34.5",
-    "typescript": "5.9.3",
-    "docx": "9.6.1",
-    "pptxgenjs": "4.0.1"
+    "postcss": "8.5.28",
+    "postcss-selector-parser": "7.1.0",
+    "typescript": "5.9.3"
   },
   "pnpm": {
     "overrides": {
@@ -297,7 +298,9 @@
       "@deepseek-ai/dsh-workflow-worker-thread": "0.1.5-rc.1",
       "@deepseek-ai/dsh-workspace": "0.1.5-rc.1",
       "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.1",
-      "@deepseek-ai/dsh-typert-generator": "0.1.5-rc.1"
+      "@deepseek-ai/dsh-typert-generator": "0.1.5-rc.1",
+      "prosemirror-state": "1.4.4",
+      "prosemirror-model": "1.25.11"
     }
   }
 }

@@ -1,4 +1,14 @@
-# Office release notes
+## alpha.3 未发布：当前中文 PPT 编辑器集成
+
+- 唯一 PPT 提供方：pptx-react-viewer 3.16.5 / pptx-viewer-core 3.14.3。
+- 移除其他 PPT 编辑/预览实现及依赖；保留原生编辑、图表数据、同服务修订保存与中文工具栏。
+- PPTX 文件 Tab 直接挂载；服务工作副本采用稳定页 ID。
+
+## 0.1.0-alpha.3 — Unreleased PPT adapter work
+
+- Add a private presentation model and atomic slide/element operations, native Konva10.5.0 canvas interactions and PptxGenJS4.0.1 editable text/image export. Both new components are MIT.
+- This is a tested technical slice, not an installable real-time PPT feature yet. Host service, six tools, right-pane UI, text input and independent package lifecycle validation remain pending. PPT commands remain unavailable.
+- Word development is paused; published alpha.2 remains unchanged.
 
 ## 0.1.0-alpha.2 — Word tables/images preview (2026-09-12)
 

@@ -1,6 +1,166 @@
+## 当前：技能弹框与市场卡片对齐 WorkBuddy（2026-09-13）
+
+## 2026-09-13：README 截图与 GitHub 源码预览发布
+
+- 用户授权推送与发布；中英文 README 增加最新 PPT 应用截图，开源组件、用途、许可和 WorkBuddy/CodeBuddy 致谢。
+- 更新依赖后全量测试发现 ProseMirror model 双版本，统一为 1.25.11；全量类型检查、71 项集成测试、Office 构建和 PPT 浏览器回归已通过。
+- Office alpha.3 本次为源码 GitHub prerelease，完整实验构建的第三方许可正文仍待核验，不上传未清理的实验安装包；npm 发布未执行。真实模型 PPT 视觉质量及新最终文件卡端到端未执行。
+- 宣传文案已准备，Twitter 发送未执行。后续继续当前唯一 PPT 编辑器的品质验收和许可核验。
+
+
+## 2026-09-13：PPT 最终产物与腾讯设计流程适配
+
+- `content_export` 扩展原生 PPTX 分支，复用官方 bash/present 策略链路，直接交付已保存字节，保留组织授权、修订检查、稳定文件名、冲突拒绝与重试。
+- 完整查阅本机 tencent-pptx 主技能及制作、叙事、设计规则，补每页观点、视觉节奏和具体日报版式指导；不重引入腾讯引擎或中间文件构建流程。
+- Office 构建、类型检查已通过；新增文件交付字节/回执、同修订重试、修订冲突、文件覆盖冲突测试。官方真实会话产物卡端到端和模型美观度验证未执行，预览更新需服务重启生效。
+
+
+## 2026-09-13：PPT 集成 UI 样式回归修复
+
+- Word 容器的通用 button/select 样式原先穿透原生 PPT 子树，造成按钮边框和密度变化；现在明确排除 `.workdsh-ppt-editor` 后代。
+- 固定版本构建适配移除重复原生 TitleBar，保留自定义中文文件标题与工具栏；补备注及状态语言文本。
+- Office 构建、类型检查、浏览器回归通过；探针加入真实 Word 祖先样式，验证工具栏按钮无边框、无重复 AutoSave、原生图表数据修改保存及卸载。查看修复后截图确认紧凑灰黑工具栏和侧栏；剩余少量原生英文标签待后续处理。正式应用截图及真实模型视觉验收未执行。
+
+
+## 2026-09-13：README 当前预览与来源致谢
+
+- 中英文 README 新增用户提供的技能市场应用截图、当前原生 PPT 开发集成范围、主要开源依赖用途/许可及 WorkBuddy/CodeBuddy 体验和技能设计参考致谢。品牌、第三方技能及费用插件与随包依赖明确区分。
+- Office 第三方声明移除已删除的旧 PPT 适配器描述，补当前 Apache-2.0 pptx-viewer 与本地化/图标来源。
+- 核对本地包元数据与图片路径；未执行构建、产品测试或发布（仅文档和截图更新）。下一步仍为原生 PPT 实际模型流程与视觉验收。
+
+
+## 2026-09-13：原生 PPT 生成路径与设计指导补强
+
+- 截图对应 preview 会话包含现有原生 PPT 指导和通用 PPT 文件生成技能目录，仍执行了 `build_deck_v4.py`。这说明模型延续了文件生成流程，不能据此判断旧 CreatPPT 在运行；未证明模型实际读取了 `pptx-generator` 技能正文。
+- Office 提示词明确普通制作、重新生成、压缩页数和美化请求默认使用原生 `content_*`，不执行其他 PPT 引擎或文件生成技能的构建命令。既有独立 PPTX 预览与 live working copy 的边界保持明确。
+- 查阅本机 WorkBuddy 的 `ppt-implement`（网页演示模板流程）和 `tencent-pptx`（依赖腾讯 slidep 工具）。只借鉴叙事、字号层级、配色、视觉焦点和布局对齐建议；未安装其运行时或重新引入另一套 PPT 引擎。
+- 已通过 Office 类型检查、构建及 8 项内容服务集成测试。实际模型在新指导下生成的美观度及流程遵循尚未验证；不能将提示词改进等同于视觉验收。
+
+
+技能目录预览/详情弹框继续复用 workdsh-ui 公共 Modal（未改公共默认宽度与无障碍行为），仅经插件级高特异性类名收窄：预览 720px、详情 820px、确认 480px；图标 64px（原 112）、标题 24px（原 32）、关闭按钮 40px 与标题行垂直居中（实测中心 206.73=206.73），小节改名「基本信息」并修复「概述」缺失图标；修复预览弹框「＋ 安装」按钮被卡片圆形样式挤压致文字换行。市场卡片高度 190→152→131px（内容自然高度：内距 14px、描述上边距 6px、无底部空余），对齐 SkillHub 更扁的列表观感；分类标签栏隐藏滚动条（保留横向滚动）。探针弹框回归断言（宽度≤760、图标 64、标题 24px）不变，`probe:skills` 7/7；18989 实测卡片 131px、预览 720px/详情 820px、可安装 33 全图标、pageerror 0。截图 `.artifacts/skills-market-top.png`、`.artifacts/skills-market-preview.png`、`.artifacts/skills-market-detail.png`。注意：preview 的 office 存储中一条旧 schema 文档（用户 PPT 工作遗留）与新版 office 构建不兼容阻塞启动，已备份迁至 `.artifacts/office-documents-quarantine/`（可还原）。
+
+## 当前：技能市场对标 WorkBuddy 完成（2026-09-13）
+
+skills 0.1.0-alpha.26 把技能页升级为与 WorkBuddy 相同体验的一体式技能市场：14 个真实分类标签、「可安装 34」与「已安装 160」分区、卡片品牌图标＋中文名＋中文描述、未安装项「＋」直接安装（复用官方 installImport 名称锁与原子发布，不新增第二套安装路径）。目录为 WorkDSH 自有 `~/.agents/.workdsh-catalog`（170 条/13 分类/76 图标），缺失或损坏时返回 missing/invalid 诊断不造假，超限条目保留展示并禁用安装。验证：技能相关集成 20/20、`probe:skills` 7/7、skills/experts typecheck 通过、18989 活预览实测 pageerror 0（图标路由 200 image/svg+xml）。`check:plan` 失败为未跟踪的 packages/pptist-adapter 未注册，属 PPT 工作遗留，与本次无关。见 [evidence/skills-browser.md](evidence/skills-browser.md)。
+
+PPT体验页恢复单一完整原生编辑器：原生右侧数据配置与画布同屏，撤掉进入返回流程；600px侧栏流布局和修改数据保存重开通过。中文工具栏完整整理仍待完成。
+
+窄屏图表配置修复通过：600px实际点击入口、原生Inspector展开、修改数值与返回保存重开均通过；标题栏避免窄屏面板遮罩拦截。
+
+图表配置试验入口通过：选中图表进入完整原生编辑器，修改后返回并保留内容；数据8/3保存重开通过。原生面板汉化、顶部遮挡及窄屏待完善。
+
+<!-- PPT trial update: 2026-09-13 -->
+中文分组工具栏新增切换、动画：原生 transition/animation callbacks；600px 视觉检查通过；probe-effects 验证应用全部、保存重开、画布选中后移除动画。美化、放映及图片选择仍待组合界面挂载。
+
+## 当前：折线图插入按钮窄窗口可用（2026-09-13）
+
+experience.html加入常驻图表类型与插入入口，复用原生onAddChart；600px折线图插入、保存独立回读、重新打开通过，pageerror0，缩略图同步显示。原下拉只选类型而插入按钮在右侧被挤出视口是本次根因。原生默认插入位置可与现有元素重叠，用户可移动。探针probe-insert-line.mjs，仍为隔离体验。
+
+## 当前：完整原生图表面板修改保存重开通过（2026-09-13）
+
+1400px full-desktop.html人工图表数值7→8、导出独立回读和完整组件重开通过，pageerror0；中文覆盖630/3620。背景与页面设置、放映、窄屏展开面板仍待验，当前experience.html保持组合布局并同步汉化。未接正式产品或发布。
+
+## 当前：第7页缩略图与编辑后同步修复（2026-09-13）
+
+experience.html由静态六图改为按页面ID实时生成预览，新增/修改/调换/删除后同步，生成中显示16:9占位。文字更新、新增第7页、快速调换删除、图片加载和pageerror0通过，视觉复核无破图。探针scripts/pptx-trial/probe-thumbnail-sync.mjs，原体验页刷新可看。全面汉化和完整面板仍继续验收，正式产品未替换。
+
+## 当前：对标完整编辑体验，验证完整原生桌面承载（2026-09-13）
+
+恢复完整PowerPointViewer隔离试验，构建内第三方移动判定桌面适配，700px六页/pageerror0及画布正常；1400px图表属性面板可显示。19093/full-desktop.html仅新隔离对照，展开两侧面板、全汉化、保存编辑与放映尚待验，原experience.html保留。该补丁不是公开SDK配置，正式采用需版本约束与完整回归。Word暂停，不替换18989。
+
+## 当前：对照参考图补常用汉化和文件名（2026-09-13）
+
+PPT体验样板中文词典覆盖507/3620，补设计菜单提示与文件名标题、缩小缩略图标题；隔离构建补6类硬编码英文标签，vendor源文件未改。可见标签浏览器检查及pageerror0通过。组合模式主题编辑及完整属性面板仍缺失，未宣称完整编辑能力，不接正式产品。体验19093/experience.html刷新可看，证据见office-pptx-react-trial。
+
+## 当前：PPT样板补缩略图、缩放与常用汉化（2026-09-13）
+
+复用公开SVG导出生成六张样板缩略图；600px加载、切页、公开缩放/适应窗口通过，pageerror0。中文覆盖372/3620，画布靠上显示。体验URL19093/experience.html不变。缩略图编辑后同步、全面汉化及完整属性弹窗尚未接，仍为隔离体验，不替换18989。
+
+## 当前：600px PPT体验页改为桌面组合布局（2026-09-13）
+
+使用公开Toolbar/SlideCanvas/useViewerBuildingBlocks，保留桌面顶部功能区和左侧页列表；600px六页加载/第三页焦点/画布元素/pageerror0通过。体验19093/experience.html刷新可看，不修改window断点或第三方内部实现。完整属性弹窗和编辑导出回归仍待验，仍为隔离布局原型，未接正式产品。
+
+## 当前：中文PPT体验样板完成，窄侧栏未达标（2026-09-13）
+
+19093/experience.html提供原生完整组件六页中文演示日报，含70%饼图；271/3620项翻译，六页/公开翻页/pageerror0通过。视觉复核宽窗口内容正常，800px窄窗口属性面板挤占画布和功能区截断，仍不满足桌面侧栏编辑要求。下一步验证公开组合组件布局与必要操作，不直接正式接线。详见[evidence/office-pptx-react-trial.md](evidence/office-pptx-react-trial.md)。原18989未替换，Word暂停。
+
+## 当前：React PPT接入前两项边界试验通过（2026-09-13）
+
+五类原生新建图表工作簿导出增强、原生面板修改后同步写回、重复补全及既有工作簿原字节保留通过；OpenXML验证0错误、LibreOffice打开通过。限定容器CSS挂载/卸载保持宿主按钮/边距/输入正常；图表数据面板文字对比度修正并视觉复核。脚本已保留到scripts/pptx-trial，见[evidence/office-pptx-react-trial.md](evidence/office-pptx-react-trial.md)。19093/scoped.html仅独立体验，默认原生下载尚未自动接补全；18989未替换、Word暂停、费用插件保留。下一步正式React Slot与同一Office服务/导出接线，实际AI逐页跟随、完整主题弹窗、PowerPoint/WPS及发布门禁仍待验。
+
+## 当前：React PPT图表面板与导出边界验证（2026-09-13）
+
+用户继续授权pptx-react-viewer候选。原生面板人工修改新建/导入饼图并保存回读通过；导入8图/8工作簿保留且chart缓存与xlsx数值同步；新建图表仍无工作簿。LibreOffice独立打开/导出5页和8页通过，不等于PowerPoint/WPS数据编辑签收。900px宿主外部输入及卸载后输入正常，但原样随包CSS全局重置body/button且卸载后保留，正式接入前必须解决。证据见[evidence/office-pptx-react-trial.md](evidence/office-pptx-react-trial.md)。本轮不替换18989、Word暂停、费用插件保留。下一步样式边界/新建工作簿可用路径→正式React Slot同服务接线；实际Harness联测/完整发布门禁未执行。
+
+## 当前：iOfficeAI/OfficeCLI独立PPT验证（2026-09-13）
+
+按用户指定测试既有officecli1.0.149，五类原生PPT图表创建、数据修改关闭重读、OpenXML验证、watch真实SSE刷新及五图视觉检查通过。导出无嵌入工作簿，Office/WPS数据编辑待验；watch goto不支持PPT元素且第五页修改不自动进入视口，不能视为实时焦点需求完成。19094原生预览供体验，原18989/19093不替换、不新增安装或模型配置。见[evidence/officecli-ppt-trial.md](evidence/officecli-ppt-trial.md)。下一步按用户选择明确文件操作工具/可视化编辑器职责；真实模型及Harness接入、全类型/图片表格、发布门禁未执行，Word暂停、费用插件保留。
+
+## 当前：用户指定React PPT编辑器隔离测试（2026-09-13）
+
+pptx-react-viewer3.16.5/core3.14.3独立测试通过：五种常见图表、多页原生React界面、人工文字编辑及翻页、公开API修改/焦点/撤销重做、PPTX保存重载、组件卸载，无pageerror；导出含5原生图表XML但没有嵌入工作簿，PowerPoint/WPS编辑数据未验证。19093本机试验供体验，不替换18989、Word暂停、费用插件保留。区分用户新发的两个同名OfficeCLI项目，仅核对文档和本机既有1.0.149帮助，不新增生成流程。证据见[evidence/office-pptx-react-trial.md](evidence/office-pptx-react-trial.md)。下一步核验图表手工数据编辑与工作簿导出后再确定接入；真实AI/Harness联测及产品全量门禁未执行。
+
+## 当前：重新调查可嵌入React PPT编辑器（2026-09-13）
+
+按用户要求暂停PPTist接入，调查项目官方文档与npm元数据，找到SlideWise（MIT，发布1.21.1、React19）及pptx-react-viewer（Apache-2.0，发布3.16.5、React18/19）；两者提供正式组件及内容/保存接口。ONLYOFFICE提供正式React集成及全面图表，但需Document Server，外部Automation API为Developer能力。见[候选比较](design/office/PPT-EDITOR-CANDIDATES.md)。建议先隔离验证SlideWise、第二候选pptx-react-viewer；具体图表/新建/UI/导出/焦点/卸载兼容尚未实测，不替换默认编辑器，不改18989。PPTist未完成候选代码保留，Word暂停、费用插件保留；产品全量门禁未执行。
+
+## 当前：暂停PPTist实现，先核对官方接入契约（2026-09-13）
+
+按用户要求只做技术核对，未继续接入代码或安装。核对本地官方Client Modules/Slots/Sidebar Right/Web Client/Resources说明及rc.1发布包公开声明：正式页面扩展为React Slot + Tab；没有找到Vue/iframe专用SDK，不能将浏览器隔离策略当作官方推荐。技术结论见[接入边界](design/office/PPTIST-INTEGRATION.md)，修正ADR-0027。下一步优先限定容器的Vue挂载兼容验证，验证后再确定承载。此前新增适配代码仍为未通过候选：隔离桥接未就绪，ProseMirror类型重复；正式接入/迁移/根全量门禁未执行。18989仍为旧候选加费用插件，19092独立演示；Word暂停。
+
+## 当前：PPTist 直接挂载可行性验证（2026-09-13）
+
+用户要求尽量复用原生能力。独立Vue挂载构建及浏览器探针通过：原生编辑器显示、组件卸载、无pageerror；确认全局CSS改变宿主body overflow，原生App的onbeforeunload卸载后未恢复。源码还存在body Teleport、document查询和全局拖动事件，原样直接挂载不能交付。见ADR-0027和scripts/probe-pptist-mount.mjs；只修改隔离试验，不替换18989。用户已确认商业授权后期付费，接入继续授权；下一步采用最少原生修改的文档隔离适配同一Office服务，或完成直接挂载全部边界改造。正式接入/旧数据转换/根完整门禁未执行。费用插件安装保留，Word暂停。
+
+## 当前：安装第三方费用统计插件（2026-09-13）
+
+按用户要求，暂缓PPTist接入，通过官方 npm 插件命令安装 `dsh-cost-meter`，解析版本1.7.21。实际命令为 `DSH_HOME="$PWD/.test-runtime/preview" node node_modules/@deepseek-ai/dsh/lib/bin.js plugin --profile preview add dsh-cost-meter`；当前18989属于preview，未改其他web Profile或默认产品bundle。已重启人工预览；日志确认Host加载账本，隔离浏览器确认Client资源加载、无pageerror。费用设置页及真实调用金额核对未执行；用户刷新18989后体验。PPTist接入尚未实现，用户已明确后期商业付费，继续保留单编辑器接入任务。
+
+## 当前：PPTist 八类原生图表验证（2026-09-13）
+
+用户要求常见PPT图表，暂停扩大CreatPPT，按ADR-0027验证单一PPTist底座。固定官方提交e4912589ffdbec389fcc1bf25a85852dfe3040a8/package2.0.0，AGPL-3.0，private应用无发布嵌入SDK。原生构建通过，4项浏览器验证通过：8类图表显示、饼图数据编辑、JSON文件保存重开、PPTX包含8个原生图表对象/8个嵌入工作簿。19092独立原生体验已打开，默认8页示例；仅替换公开mock数据，未改编辑器实现。见 evidence/office-pptist-u1.md。
+
+18989仍使用原有候选，旧稿件保留，没有并行默认编辑器。下一步定义PPTist与现有Office服务/AI同一接口的受控接入，核对许可兼容和完整资源。原生AI按钮尚不是WorkDSH AI；完整字体资源、Office/WPS视觉验收、根完整门禁未执行。Word暂停及八类路线保留。
+
+## 当前：PPT 逐页提交与明确制作页（2026-09-12）
+
+按用户要求改为通用逐页制作契约：新建初始化一页；AI每次内容提交最多新增/更新一页，结构操作可以原子批量执行，原生人工整稿保存保持原有能力。快照持久化 focusSlideId，右侧优先展示该页，避免模板归一化错误选封面。CreatPPT statement 只渲染 title/body、agenda 渲染 bullets 的原生限制已进入能力描述。类型检查/构建、8项内容集成（含多页内容拒绝、结构批处理、冷重开焦点）、实际应用9项回归通过。真实模型自然语言“五页PPT”验收通过：约5.48秒建稿，7.64/8.73/9.86/12.04/13.12秒逐页提交，最终6次提交/5页，原日报保留，无脚本绕行，最终画布显示 focusSlideId 对应页。首次模型试验逐页成功但因列表版式说明不足查了本地实现，修正 API 描述后复测通过。
+
+18989候选经官方CLI安装并重启，Host/Client编译字节核对一致；浏览器需刷新加载新版。连续快速提交时轮询可能合并中间帧，不承诺逐字动画。旧会话实际压缩7→5页、PPT文件卡、完整发布检查未执行；PPT未发布，Word暂停及八类路线保留。见 evidence/office-creatppt-u2.md。
+
+## 当前：PPT 跟随实际变更页（2026-09-12）
+
+用户反馈7页成稿但看不到制作变化。先前每次提交固定选最后页，改为对前后已提交DeckSpec比较，选择首个新增/内容变更页，删除/排序时选择受影响位置；初次打开仍从首页开始。仍以真实提交为刷新边界，不伪造逐字/逐页动画。类型检查/构建通过，实际应用9项回归通过（含中间页修改自动展示），18989候选已安装核对Host/Client字节并重启，浏览器需要刷新加载新Client。模型单批提交时不能声称有多个制作阶段；PPT原生文件卡仍未完成，八类范围与Word暂停不变。
+
+## 当前：PPT 直接编辑与中文翻页修复（2026-09-12）
+
+用户日志session.v32确认工作副本已保存多页，文件交付卡缺失因为PPT content_export未实现。中文原生按钮匹配错误导致就绪/翻页失败；全屏不能点击由于只读iframe被inert。按用户决定，PPT默认直接原生编辑，取消页面编辑模式及租约；人工保存仍经同一授权/审计/CAS服务，Word规则保留。页面有未保存输入时阻止AI修订重载，冲突保留缓冲。中文900px/展开1600px原生页面翻页/下载测试已通过；新版实际应用8项回归通过，18989修复候选已通过官方CLI安装、编译字节核对并重启；浏览器旧页需刷新加载新Client。PPT成品受控导出/官方文件卡仍是未完成项，不以浏览器下载替代。见evidence/office-creatppt-u2.md。
+
+## 当前：PPT 原生应用闭环与真实模型验收（2026-09-12）
+
+CreatPPT 0.1.4 已通过同一 Office ContentService/六工具/官方右侧 Tab 接入；采用发布包原生 Vue/SVG 页面与公开 DeckSpec API，不加载其 DSH 插件或另建存储/服务器。12项内容/原生页面集成、Office构建和类型检查通过；PPT实际Harness应用8项（自动打开、两批同步、人工保存、PPTX下载、刷新重开）及Word应用16项回归通过。详细证据见 [office-creatppt-u2](evidence/office-creatppt-u2.md)。
+
+18989 人工预览已通过官方 CLI 安装并重启 alpha.3 本地候选，Host/Client编译字节核对一致；公开Word alpha.2未变，PPT未发布。真实模型新任务自然语言转换已通过：读取Word参考、保留原件、新建6页PPT、自动打开右侧；实际一次内容提交，无脚本/技能绕行。首个PPT约5.46秒、正文约9.81秒。加入全局pptx/elite-powerpoint-designer技能的隔离新任务复测也通过，无脚本/技能绕行；旧会话回放未执行。下一步根据实际工具选择与技能冲突证据收口；不写死“日报转PPT”或新增Agent loop。PPT文件导入、受控文件交付卡、原生浏览器包完整传递许可审查、PPT安装卸载重装全验收与Office/WPS视觉验证未执行；八类路线/D04/D15保留。
+
+## 当前：CreatPPT 单编辑器接入（2026-09-12）
+
+用户在 19091 体验后确认继续。采用 CreatPPT 0.1.4 发布包，停止自建 PPT 画布扩展；依据 [ADR-0026](adr/0026-creatppt-native-editor.md) 接既有 Office 服务与原生页面。独立页面不等于应用接入完成，PPT 菜单暂不启用。Word 与已发布 alpha.2 保持当前范围。
+
+本轮薄适配器与原生保存/重开/PPTX 下载实测完成，10/10 内容回归和 Office 类型检查通过。无图默认封面原生阻止导出，纯文字生成改用原生 statement/planSlide；未关闭质量检查。证据 [office-creatppt-u1.md](evidence/office-creatppt-u1.md)。正式服务类型、六工具、右侧页面同步、真实模型与制品生命周期仍未执行；下一步从既有 ContentService 扩展 presentation 分支，不新建存储。
+
 # 当前状态与任务台账
 
 更新时间：2026-09-12。
+
+## 当前：PPT方案校正与GenOffice源码复核（2026-09-12）
+
+按用户质疑复核固定GenOffice提交de139a061537bea40f0cc81ef8f09a95f77ac52a：生产结构化页面由自研pptx-engine生成/保存，pptx-render负责布局和RenderTree，Konva/react-konva负责交互；不能把开发依赖PptxGenJS当对方完整生产方案。保留PPT-01新建导出探针，但不提前启用菜单。下一步在PPT-02接线前校正OOXML中心旋转语义和codec/画布边界，随后接原统一服务/工具/右栏。对方private源码包不是已核验发行SDK；本轮只静态审阅，未复制到产品，未决定源码分叉。具体见[复核记录](design/office/GENOFFICE-SLIDES-REVIEW.md)。本轮GenOffice构建/运行、导入往返、应用实时PPT和发布均未执行；Word和18989预览不变。
+
+## 当前：PPT-01 原生适配器探针通过（2026-09-12）
+
+Word后续开发暂停。新增独立presentation语义模型、原子幻灯片/文字/图片操作、MIT Konva10.5.0原生拖动与Transformer缩放、MIT PptxGenJS4.0.1可编辑PPTX导出。按用户要求核对Konva公开API，记录文字输入/绝对坐标/缩放/持久化/销毁边界；修正元素ID混入载荷、销毁期间图片decode中断、Konva原点与PPTX中心旋转偏移。源码alpha.3未发布，不启用PPT菜单，不改18989人工预览，不改变已发布alpha.2。
+
+Office类型检查通过；4项PPT浏览器/模型/导出探针及7项既有内容服务回归合计11/11通过，git diff --check通过。实际画布截图已查看，仅是技术探针；样例PPTX XML核对可编辑中文文字、两页、尺寸和原图片字节。证据见[evidence/office-presentation-u1.md](evidence/office-presentation-u1.md)。全仓构建/检查、真实模型、应用右侧PPT、PPT插件制品安装/卸载/重装、Office/WPS视觉核验均未执行。下一步PPT-02扩展既有统一内容服务类型适配、六工具与右侧页面，并按官方示例接入DOM文字编辑；不复制第二套存储/授权/租约，不新增Agent执行框架。D04/D15不变。
 
 ## 最新范围：停止Word后续开发，下一阶段优先PPT（2026-09-12）
 
@@ -862,3 +1022,5 @@ D02 的工作台行为、公共 UI 边界、失败恢复和打包浏览器条件
 ## 2026-09-12 Skill 独立插件改造进行中
 
 用户已授权实施 ADR-0018。当前工作为 D04 的 Skill 0.1 交付前置修正：独立 Host/Client、显式 Profile 组合、公共技能服务契约及制品/生命周期验收。沿用既有业务功能和数据目录，不启动专家业务或公共/企业功能；验证结果写入 skills-standalone-package 证据。此处保留开始时的范围记录；后续完成结果见本文顶部及独立交付验收，不能以原 alpha.23 打包记录代替 alpha.24 运行证据。
+
+安装回执：仅通过官方 dsh plugin --profile preview add 更新 Office 制品，已比对安装后的 Host/Client 与当前 dist 字节完全一致。18989 预览恢复运行，dsh-cost-meter 保留。实际文件资源 Tab 打开导出的 PPTX，修改图表 8→9，原文件字节不变，应用探针通过。未自动提交、推送或发布 npm。

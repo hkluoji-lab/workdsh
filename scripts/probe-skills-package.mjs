@@ -27,6 +27,24 @@ const fixture = 'standalone-skill';
 const skillFile = join(home, 'agents/skills', fixture, 'SKILL.md');
 await mkdir(dirname(skillFile), { recursive: true });
 await writeFile(skillFile, `---\nname: ${fixture}\ndescription: Standalone package fixture\n---\nORIGINAL\n`);
+// WorkDSH-owned local catalog: metadata plus inert payload, installed through
+// the same managed import path the browser upload uses.
+const catalogSkill = 'catalog-fixture';
+const catalogRoot = join(home, 'agents/.workdsh-catalog');
+await mkdir(join(catalogRoot, 'icons'), { recursive: true });
+await mkdir(join(catalogRoot, 'payloads', catalogSkill), { recursive: true });
+await writeFile(join(catalogRoot, 'icons/tiny.svg'), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#3ba55d"/></svg>');
+await writeFile(join(catalogRoot, 'payloads', catalogSkill, 'SKILL.md'), `---\nname: ${catalogSkill}\ndescription: Catalog install fixture\n---\nCATALOG\n`);
+await writeFile(join(catalogRoot, 'catalog.json'), `${JSON.stringify({
+  schema: 1,
+  kind: 'workdsh-skill-catalog',
+  generatedAt: new Date().toISOString(),
+  categories: ['开发工具'],
+  entries: [
+    { name: catalogSkill, title: '目录样例技能', description: '由独立探针生成的目录条目，可通过 ＋ 安装。', categories: ['开发工具'], icon: 'icons/tiny.svg', payload: `payloads/${catalogSkill}`, installable: true },
+    { name: 'catalog-over-limit', title: '超限样例技能', description: '超出安装上限的目录条目。', categories: ['开发工具'], installable: false, installLimits: ['文件 481 个超过 400 上限'] },
+  ],
+}, null, 2)}\n`);
 const workspaceId = randomUUID();
 const now = new Date().toISOString();
 await mkdir(join(home, 'storages'), { recursive: true });
@@ -93,10 +111,66 @@ try {
   const graph = await page.evaluate(() => window.__DSH_BOOT__.entries.map(row => row.id));
   assert.equal(graph.filter(id => id === manifest.name).length, 1);
   assert.ok(!graph.includes('workdsh-bundle'));
+  // Catalog reads: status, metadata merge, icon bytes and eligibility keep
+  // Host as the only reader of catalog files.
+  const catalogSummary = await api(host, 'catalog');
+  assert.equal(catalogSummary.ok, true);
+  assert.equal(catalogSummary.value.status, 'ready');
+  assert.deepEqual(catalogSummary.value.categories, ['开发工具']);
+  const catalogEntry = catalogSummary.value.entries.find(row => row.name === catalogSkill);
+  assert.equal(catalogEntry.title, '目录样例技能');
+  assert.deepEqual(catalogEntry.categories, ['开发工具']);
+  assert.equal(catalogEntry.installed, false);
+  assert.equal(catalogEntry.installable, true);
+  assert.match(catalogEntry.iconUrl, /^\/api\/workdsh-skills\/icon\?name=catalog-fixture&rev=[0-9a-f]{12}$/);
+  const limitedEntry = catalogSummary.value.entries.find(row => row.name === 'catalog-over-limit');
+  assert.equal(limitedEntry.installable, false);
+  assert.deepEqual(limitedEntry.installLimits, ['文件 481 个超过 400 上限']);
+  const iconResponse = await fetch(`${host.address}${catalogEntry.iconUrl}`, { headers: { cookie: host.cookie } });
+  assert.equal(iconResponse.status, 200);
+  assert.equal(iconResponse.headers.get('content-type'), 'image/svg+xml');
+  assert.match(await iconResponse.text(), /<svg/);
+  assert.equal((await api(host, 'install-catalog', { name: 'catalog-unknown' })).error.code, 'skill/catalog-entry-unknown');
+  assert.equal((await api(host, 'install-catalog', { name: 'catalog-over-limit' })).error.code, 'skill/catalog-entry-over-limit');
+  pass('Catalog status, metadata, icon route and install eligibility read real Host facts');
   const nav = page.getByRole('button', { name: '专家 · 技能 · 连接器', exact: true });
   await expect(nav).toHaveCount(1);
   await nav.click();
   await expect(page.getByRole('button', { name: `查看技能 ${fixture}`, exact: true })).toBeVisible();
+  // Marketplace surface: real category tab, branded catalog cards and a direct
+  // "+" install that lands in the installed grid through the managed import path.
+  await expect(page.getByRole('button', { name: '开发工具', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /可安装/ })).toBeVisible();
+  await expect(page.getByText('目录样例技能', { exact: true })).toBeVisible();
+  const catalogInstall = page.getByRole('button', { name: '安装技能 目录样例技能', exact: true });
+  await expect(catalogInstall).toBeVisible();
+  await expect(page.getByRole('button', { name: '安装技能 超限样例技能', exact: true })).toBeDisabled();
+  // The catalog preview rides the shared Modal shell (workdsh-ui) while plugin
+  // classes keep it compact: narrow width, 64px mark and calm 24px title.
+  await page.getByRole('button', { name: `查看技能 ${catalogSkill}`, exact: true }).click();
+  const previewDialog = page.locator('.wd-dialog.catalog-dialog');
+  await expect(previewDialog).toBeVisible();
+  const previewWidth = (await previewDialog.boundingBox())?.width ?? 0;
+  assert.ok(previewWidth <= 760, `catalog dialog stays narrow, got ${previewWidth}px`);
+  const previewMarkWidth = (await previewDialog.locator('.skill-icon.large, .skill-mark.large').first().boundingBox())?.width ?? 0;
+  assert.equal(previewMarkWidth, 64);
+  assert.equal(await previewDialog.locator('.detail-title h1').evaluate(node => getComputedStyle(node).fontSize), '24px');
+  await expect(previewDialog.getByRole('heading', { name: /基本信息/ })).toBeVisible();
+  await previewDialog.getByRole('button', { name: '关闭', exact: true }).click();
+  await expect(previewDialog).toHaveCount(0);
+  await catalogInstall.click();
+  await expect(page.getByRole('button', { name: `查看技能 ${catalogSkill}`, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '安装技能 目录样例技能', exact: true })).toHaveCount(0);
+  const catalogList = (await api(host, 'list')).value;
+  const catalogRow = catalogList.find(row => row.name === catalogSkill);
+  assert.equal(catalogRow.state, 'enabled');
+  assert.equal(catalogRow.title, '目录样例技能');
+  assert.equal(catalogRow.localizedDescription, '由独立探针生成的目录条目，可通过 ＋ 安装。');
+  assert.match(catalogRow.iconUrl, /icon\?name=catalog-fixture&rev=/);
+  // The catalog offers no shortcut around the global name lock.
+  assert.equal((await api(host, 'install-catalog', { name: catalogSkill })).error.code, 'skill/target-exists');
+  await page.screenshot({ path: join(artifacts, 'catalog-marketplace.png'), fullPage: true });
+  pass('Browser marketplace shows real categories and installs a catalog entry through the managed import path');
   assert.equal((await api(host, 'list')).value.filter(row => row.name === 'skill-creator').length, 1);
   await page.getByRole('button', { name: `查看技能 ${fixture}`, exact: true }).click();
   await page.getByRole('button', { name: '编辑', exact: true }).click();
@@ -144,6 +218,25 @@ try {
   await expect(page.getByRole('button', { name: `查看技能 ${fixture}`, exact: true })).toHaveCount(1);
   assert.equal((await api(host, 'detail', { name: fixture })).value.document, modified);
   pass('Reinstall and repeat install activate once and recover edited skill data');
+  await page.close(); await stop();
+  // Absent and corrupted catalogs report honest diagnostics and never break
+  // installed-skill management or fabricate an empty marketplace.
+  env.WORKDSH_SKILL_CATALOG = join(home, 'agents/.workdsh-catalog-absent');
+  host = await start();
+  const missing = await api(host, 'catalog');
+  assert.equal(missing.value.status, 'missing');
+  assert.equal(missing.value.diagnostics[0].code, 'skill/catalog-missing');
+  assert.ok((await api(host, 'list')).value.some(row => row.name === catalogSkill));
+  await stop();
+  delete env.WORKDSH_SKILL_CATALOG;
+  await writeFile(join(catalogRoot, 'catalog.json'), '{ not json');
+  host = await start();
+  const invalid = await api(host, 'catalog');
+  assert.equal(invalid.value.status, 'invalid');
+  assert.equal(invalid.value.diagnostics[0].code, 'skill/catalog-invalid');
+  assert.equal((await api(host, 'install-catalog', { name: catalogSkill })).error.code, 'skill/catalog-entry-unknown');
+  await stop();
+  pass('Absent and corrupted catalogs degrade to honest diagnostics without breaking management');
   await writeFile(join(artifacts, 'result.json'), JSON.stringify({ version: manifest.version, home, results, modelCalls: 0, liveCliRemoval: 'not claimed' }, null, 2));
 } catch (error) {
   console.error(`${String(error)}\n${error.stdout ?? ''}`.replace(/token=[^\s]+/g, 'token=[redacted]'));

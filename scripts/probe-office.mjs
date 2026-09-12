@@ -6,17 +6,15 @@ import { fileURLToPath } from 'node:url';
 const office = createRequire(new URL('../packages/plugins/office/package.json', import.meta.url));
 const ExcelJS = office('exceljs'); const JSZip = office('jszip');
 const bundled = createRequire(new URL('../package.json', import.meta.url));
-const { Document, Packer, Paragraph, TextRun } = bundled('docx'); const PptxGenJS = bundled('pptxgenjs');
+const { Document, Packer, Paragraph, TextRun } = bundled('docx');
 const out = fileURLToPath(new URL('../.artifacts/office-integration/', import.meta.url)); await mkdir(out, { recursive: true });
 const docx = await Packer.toBuffer(new Document({ sections: [{ children: [new Paragraph({ children: [new TextRun({ text: 'Office Word test', bold: true })] })] }] }));
-const ppt = new PptxGenJS(); const slide = ppt.addSlide(); slide.background = { color: 'EAF0F8' }; slide.addText('Office PPT test', { x: 1, y: 1, w: 7, h: 1, fontSize: 28, color: '162A45' });
-const pptx = await ppt.write({ outputType: 'nodebuffer' });
 const workbook = new ExcelJS.Workbook(); workbook.addWorksheet('Sheet1').getCell('A1').value = 'Office Excel test'; const xlsx = await workbook.xlsx.writeBuffer();
 const html = await readFile(new URL('../packages/plugins/office/dist/editor.html', import.meta.url), 'utf8');
 const browser = await chromium.launch({ headless: true });
 const result = [];
 try {
- for (const [kind, bytes] of Object.entries({ docx, pptx, xlsx })) {
+ for (const [kind, bytes] of Object.entries({ docx, xlsx })) {
   await writeFile(out + 'input.' + kind, bytes);
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = []; const external = [];

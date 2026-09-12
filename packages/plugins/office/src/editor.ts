@@ -4,7 +4,6 @@ import ZhCN from '@univerjs/preset-sheets-core/locales/zh-CN';
 import '@univerjs/preset-sheets-core/lib/index.css';
 import JSZip from 'jszip';
 import { renderAsync } from 'docx-preview';
-import { init } from 'pptx-preview';
 import { openTextParts, saveTextParts } from './ooxml.js';
 import { importWorkbook, exportWorkbook } from './excel-adapter.js';
 import './editor.css';
@@ -14,16 +13,12 @@ let kind: string;
 let textParts: Awaited<ReturnType<typeof openTextParts>>;
 let excel: ReturnType<typeof createUniver> | undefined;
 const edits = new Map<string, string>();
-let pptWidth = 0;
 function fitPages() {
   if (kind === 'docx') {
     for (const page of preview.querySelectorAll<HTMLElement>('section.docx')) {
       page.style.zoom = '1';
       page.style.zoom = String(Math.min(1, Math.max(0.1, (preview.clientWidth - 32) / page.offsetWidth)));
     }
-  } else if (kind === 'pptx' && pptWidth) {
-    const stage = preview.firstElementChild as HTMLElement | null;
-    if (stage) stage.style.zoom = String(Math.min(1, Math.max(0.1, (preview.clientWidth - 32) / pptWidth)));
   }
 }
 
@@ -54,29 +49,11 @@ async function bytesForExport() {
 async function renderText(bytes: Uint8Array) {
   preview.replaceChildren();
   if (kind === 'docx') await renderAsync(bytes.slice().buffer, preview, undefined, { renderAltChunks: false });
-  else {
-    const stage = document.createElement('div'); preview.append(stage);
-    pptWidth = Math.max(320, preview.clientWidth - 32);
-    // Normalize an optional OOXML default style for this previewer's parser only.
-    // Export continues to use the original package managed by textParts.
-    const zip = await JSZip.loadAsync(bytes);
-    const presentation = zip.file('ppt/presentation.xml');
-    if (presentation) {
-      const doc = new DOMParser().parseFromString(await presentation.async('string'), 'application/xml');
-      const ns = 'http://schemas.openxmlformats.org/presentationml/2006/main';
-      if (!doc.getElementsByTagNameNS(ns, 'defaultTextStyle').length) {
-        const style = doc.createElementNS(ns, 'p:defaultTextStyle');
-        style.append(doc.createElementNS('http://schemas.openxmlformats.org/drawingml/2006/main', 'a:defPPr'));
-        doc.documentElement.append(style);
-        zip.file('ppt/presentation.xml', new XMLSerializer().serializeToString(doc));
-      }
-    }
-    await init(stage, { width: pptWidth, height: pptWidth * 9 / 16, mode: 'list' }).preview(await zip.generateAsync({ type: 'arraybuffer' }));
-  }
+
   fitPages();
 }
 async function open(bytes: Uint8Array, extension: string) {
-  if (!['xlsx', 'docx', 'pptx'].includes(extension)) throw new Error('仅支持 .xlsx、.docx、.pptx。');
+  if (!['xlsx', 'docx'].includes(extension)) throw new Error('此兼容预览仅支持 .xlsx、.docx。');
   if (bytes.length > 10 * 1024 * 1024) throw new Error('当前文件上限 10 MB。');
   kind = extension; preview.dataset.kind = kind; edits.clear(); save.disabled = true;
   edit.hidden = kind === 'xlsx'; edit.textContent = '编辑文字'; edit.setAttribute('aria-expanded', 'false');
@@ -95,7 +72,7 @@ async function open(bytes: Uint8Array, extension: string) {
     textParts = await openTextParts(bytes, kind);
     for (const part of textParts.parts) {
       const section = document.createElement('section');
-      const heading = document.createElement('h3'); heading.textContent = kind === 'docx' ? '正文文字片段' : '幻灯片 ' + part.name.match(/slide(\d+)/)?.[1]; section.append(heading);
+      const heading = document.createElement('h3'); heading.textContent = '正文文字片段'; section.append(heading);
       part.nodes.forEach((node, index) => {
         if (!node.textContent?.trim()) return;
         const label = document.createElement('label'); label.textContent = '文字 ' + (index + 1);
