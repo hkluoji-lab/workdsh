@@ -235,6 +235,14 @@ The current source candidate can open a self-contained HTML page in the native r
 
 当前源码候选支持自包含 HTML 先展示、AI 更新保存修订；PDF 支持中文新建、分页更新、预览、人工文字修改及真实文件下载/交付。PDF 流程无需用户安装 Python，不支持已有任意 PDF 导入、OCR 或图片编辑。详情见 [HTML working copies](docs/design/office/HTML-LIVE.md) 与 [PDF working copies](docs/design/office/PDF-LIVE.md)。
 
+#### HTML dashboard generation / HTML 看板生成
+
+![WorkDSH HTML dashboard generation and native preview / HTML 看板生成与原生预览](docs/assets/screenshots/workdsh-html-dashboard-preview.png)
+
+Generate a self-contained HTML dashboard from task materials, preview the finished page in the native results panel, and receive the HTML files through native deliverable cards. This user-provided screenshot shows a budget dashboard with parameter cards, section navigation and missing-information notices, alongside the delivered dashboard and `index.html` files. It shows local file preview; conversation names, paths and figures belong to this example.
+
+在对话中根据资料生成自包含 HTML 看板，在右侧成果面板预览成品，并通过原生文件卡片交付。截图展示预算分析看板的参数卡片、章节导航与待确认事项，以及看板 HTML 和 `index.html` 文件交付。用户可保存文件，并自行部署到静态网站托管服务。截图为本地文件预览，其中会话、路径和数字属于该示例。
+
 Public expert creation is reusable across domains, with methods, real Skill selection, explicit UI publication and native task trials. Model-generated content still needs user review; synthetic professional evaluations document limitations rather than guaranteeing every answer. See [current evidence](docs/evidence/d04-experts-review-fixes.md).
 
 公共专家制作按用户需求组织方法、真实技能配备、界面确认发布和原生任务试用。模型成果仍需用户审核；专业样本记录用于说明限制，不代表所有专家每次都能正确回答。
