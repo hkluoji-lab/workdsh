@@ -1,3 +1,17 @@
+## 2026-09-14 公开发布回执
+
+源码发行提交：`557d076f12d8e18003edf6940793acf2055d111c`。main已推送，5个独立模块tag均指向该提交；全部为公开prerelease，未覆盖旧附件。
+
+- [experts-v0.1.0-alpha.2](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.2)，7个附件。
+- [skills-v0.1.0-alpha.28](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28)，4个附件。
+- [activity-v0.1.0-alpha.1](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.1)，4个附件。
+- [office-v0.1.0-alpha.4](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4)，4个附件。
+- [bundle-v0.1.0-alpha.41](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.41)，4个附件。
+
+全部23个公开附件已通过无认证下载，SHA256与本地一致。
+
+每个发行含模块tgz、SHA256SUMS、源提交manifest与隔离Profile安装/冷启动/移除验证清单。专家发行另附原配套身份/审计/授权插件。真实应用截图随源码公开，并嵌入发行说明。未发布npm，未发送Twitter；TM-01和付费长任务状态切换未整体验收。
+
 ## 2026-09-14 Alpha Web release / 最新预览发行
 
 本批通过8个精确安装包的隔离官方Web Profile安装、两次冷启动、匿名401/认证200、活动插件移除及全部模块移除后冷启动。完整构建、115项集成测试、9项活动测试通过。验证环境：Harness 0.1.5-rc.1，Node 22.23.2，macOS。专家团TM-01、真实长任务状态切换及多平台整体验收尚未完成。
@@ -12,7 +26,7 @@
 
 下载所需tgz后，使用官方CLI：`dsh plugin --profile <profile> add /absolute/path/<package>.tgz`。基础身份、审计与授权配套见专家发行附件；各模块独立安装。仅发布GitHub alpha附件，未发布npm注册表。Office依赖引用与声明许可证见下文；现有notice及检查报告保留。
 
-## 2026-09-14 待发布源码候选
+## 2026-09-14 发布准备历史记录
 
 本次提交准备：experts 0.1.0-alpha.2、skills 0.1.0-alpha.28、contracts 0.1.0-alpha.7，新增独立activity 0.1.0-alpha.1。模块分别版本化，不覆盖旧Release包。最新协作栏状态刷新纳入本次源码；本地重打包制品位于.artifacts/release-submit-2026-09-14。未推送/创建公开Release/发布npm；Office文本缺项按用户要求用README引用说明记录，不再作为本次阻塞；新制品完整组合回归仍未执行。Twitter草稿及真实图片见[social draft](social/twitter-2026-09-14.md)。
 

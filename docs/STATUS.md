@@ -1,4 +1,6 @@
-2026-09-14 对外发行：本批新增experts alpha.2、skills alpha.28、activity alpha.1、office alpha.4、bundle alpha.41；8个精确tgz隔离官方Web Profile安装、两次冷启动、匿名401/认证200及活动/全部模块移除后冷启动通过。准备推送并按模块公开alpha Release，不发布npm、不发送Twitter。保留TM-01和真实长任务成员切换未验收范围。
+公开下载回读：5个公开prerelease共23个附件无认证下载成功，SHA256全部一致；源提交557d076，模块tag不随文档回执移动。
+
+2026-09-14 对外发行：本批新增experts alpha.2、skills alpha.28、activity alpha.1、office alpha.4、bundle alpha.41；8个精确tgz隔离官方Web Profile安装、两次冷启动、匿名401/认证200及活动/全部模块移除后冷启动通过。已推送并按模块公开alpha Release，不发布npm、不发送Twitter。保留TM-01和真实长任务成员切换未验收范围。
 
 ## 2026-09-14 发布源码提交与Twitter宣传准备
 
