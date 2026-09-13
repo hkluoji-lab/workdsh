@@ -90,6 +90,12 @@ export interface SkillRequirement {
  * not yet satisfied capabilities.
  */
 export interface ExpertDefinition {
+  /** Complete authored Agent MD; legacy prose fields remain compatible projections. */
+  readonly agentDocument?: string;
+  /** Original package text resources, retained verbatim; never executed on import. */
+  readonly packageDocuments?: Readonly<Record<string, string>>;
+  /** Lossless non-text package resources; executable is file mode, never an execution grant. */
+  readonly packageAssets?: Readonly<Record<string, { readonly base64: string; readonly executable?: boolean }>>;
   readonly name: string;
   readonly description: string;
   readonly avatarRef?: string;
@@ -102,6 +108,20 @@ export interface ExpertDefinition {
   readonly examples: readonly ExpertExample[];
   readonly skillRequirements: readonly SkillRequirement[];
   readonly futureRequirements: readonly FutureRequirement[];
+  /** One authored work: the root is the lead; members are independent content snapshots. */
+  readonly team?: ExpertTeamDefinition;
+}
+
+export interface ExpertTeamDefinition {
+  readonly members: readonly { readonly key: string; readonly definition: Omit<ExpertDefinition, 'team'> }[];
+  readonly workflows: readonly {
+    readonly id: string;
+    readonly title: string;
+    readonly trigger: string;
+    readonly deliverable: string;
+    /** Empty stages means the lead handles this scenario directly. */
+    readonly stages: readonly { readonly id: string; readonly worker: string; readonly reviewer?: string; readonly dependsOn: readonly string[] }[];
+  }[];
 }
 
 // ── Stored / transported objects ────────────────────────────────────────────
@@ -117,6 +137,8 @@ export interface Expert {
   readonly publishedRevisionRef?: ExpertRevisionRef;
   readonly createdAt: string;
   readonly updatedAt: string;
+  /** Internal member snapshot, managed only through its containing team. */
+  readonly teamParentId?: string;
 }
 
 /** The editable draft. May hold an incomplete definition; publish requires a complete one. */
@@ -135,6 +157,7 @@ export interface ExpertRevision {
   readonly definitionDigest: string;
   readonly dependencyLock: readonly SkillRevisionRef[];
   readonly dependencyLockDigest: string;
+  readonly teamMembers?: Readonly<Record<string, ExpertRevisionRef>>;
   readonly presetRevisionRef: string;
   readonly compilerVersion: string;
   /** Digest of the actual frozen native YAML composition. */
@@ -145,6 +168,9 @@ export interface ExpertRevision {
 
 /** List-row projection. Never carries prose bodies. */
 export interface ExpertSummary {
+  readonly expertType?: 'agent' | 'team';
+  readonly profession?: string;
+  readonly tags?: readonly string[];
   readonly id: string;
   readonly name: string;
   readonly description: string;
@@ -182,6 +208,12 @@ export interface ExecutionBinding {
   readonly owner: ResourceOwner;
   readonly workspaceRef?: string;
   readonly createdFrom?: string;
+  /** Host-only one-shot admission; native Session logs own execution status. */
+  readonly delegation?: {
+    readonly parentSessionId: string;
+    readonly parentCompositionDigest: string;
+    readonly admission: 'reserved' | 'claimed';
+  };
   readonly creationOperationId: string;
   readonly createdAt: string;
 }
@@ -214,6 +246,7 @@ export interface Operation {
 // ── Query / result envelopes ────────────────────────────────────────────────
 
 export interface ExpertListQuery {
+  readonly expertType?: 'agent' | 'team';
   readonly search?: string;
   readonly origin?: ExpertOrigin;
   readonly availability?: ExpertAvailability;
@@ -393,6 +426,10 @@ export interface ExpertsService {
   setPreference(actor: ActorContext, expertId: string, pinned: boolean, expectedRevision?: string, signal?: AbortSignal): Promise<ExpertPreference>;
   prepareExecution(actor: ActorContext, expertId: string, revisionId: string | undefined, workspaceRef: string | undefined, modelSelection: ModelSelectionRequest | undefined, draftText: string | undefined, signal?: AbortSignal, workspaceId?: string): Promise<ExecutionPlan>;
   createExecution(actor: ActorContext, executionPlanId: string, context: MutationContext, signal?: AbortSignal): Promise<ExecutionCreation>;
+  /** Reserve one direct expert child. No Agent is started. Not a model/Remote endpoint. */
+  reserveDelegation(actor: ActorContext, parentSessionId: string, target: ExpertRevisionRef, context: MutationContext, signal?: AbortSignal): Promise<ExecutionBinding>;
+  /** Consume one reservation before native creation. Never replays a model invocation. */
+  claimDelegation(actor: ActorContext, sessionId: string, parentSessionId: string, signal?: AbortSignal): Promise<ExecutionBinding>;
   consumeHandoff(actor: ActorContext, handoffId: string, expectedDraftVersion: string, signal?: AbortSignal): Promise<DraftHandoff>;
   prepareHandoff(actor: ActorContext, sourceSessionId: string, targetExpertId: string, sourceEventRef: string | undefined, selectedAssetRefs: readonly string[], signal?: AbortSignal): Promise<HandoffPlan>;
   createHandoff(actor: ActorContext, handoffPlanId: string, reviewedSummary: string, context: MutationContext, signal?: AbortSignal): Promise<ExecutionCreation>;
@@ -409,5 +446,6 @@ export type ExpertAction =
   | 'experts.list' | 'experts.get' | 'experts.create-draft' | 'experts.update-draft'
   | 'experts.copy' | 'experts.validate' | 'experts.publish' | 'experts.set-availability'
   | 'experts.set-preference' | 'experts.prepare-execution' | 'experts.create-execution'
+  | 'experts.reserve-delegation' | 'experts.claim-delegation'
   | 'experts.prepare-handoff' | 'experts.create-handoff' | 'experts.preview-import'
   | 'experts.commit-import' | 'experts.export' | 'experts.operation' | 'experts.verify-binding';

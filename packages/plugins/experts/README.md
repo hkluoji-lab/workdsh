@@ -33,6 +33,8 @@ corepack pnpm probe:experts
 
 ## 当前证据与限制
 
+TM-01开发增量（未发布/未安装preview）：Host增加子任务一次性预留/领取及原生pre-step父关系校验；one-shot委派provider已迁入插件正式生命周期（`runtime/delegation-provider.ts`，`ctx.effect`托管注册/撤销/清理），与六项AI可调用工具（`tools/team-tools.ts`）、团队运行服务（`services/team-runs.ts`+`storage/team-domain.ts`）一起由`applyExpertsHost`装配。隔离探针`--team`已验证：两位已有专家协作生成/评审/交付同一sha256，签收/交接/交付三闸门在文件漂移时拒绝继续，取消弃置尝试且重试可验收，重复调用被拒；内部分支还有依赖准入、指定评审/当前正文版本、尝试上限、取消撤销及受测工具绕行证据。没有团队页面或公共Team契约；完整生产Profile、付费模型与AT-T01～07未执行，TM-01整体退出等待用户验收。完整交接见[TM-01证据](../../../docs/evidence/expert-team-tm01.md)。
+
 真实打包验证覆盖：默认目录、原生任务绑定、示例草稿、制作专家草稿、不覆盖已有输入、不同 Session 隔离、无浏览器错误及两次冷重启。52/52 集成测试通过；测试中的身份、Session/preset 替身与真实打包测试必须分开解读。
 
 UI：详情与编辑器均复用公共弹框，桌面分别限制为 800px/760px，正文内部滚动。示例正文完整显示，编辑输入框铺满卡片，标签两列；三尺寸浏览器验收覆盖八标签、六示例。
@@ -72,3 +74,16 @@ dsh --profile workdsh
 已验证虚构CSV场景中的真实Skill读取、文件读取、Python计算、成果生成和冷重启绑定；不代表任意专业结论可靠。脏数据报告仍有单位假设排除及局部转化率向整体推断两项语义缺口。跨平台、旧Desktop、完整热卸载和团队SOP未验收或未实现。/ Synthetic CSV probes verified actual Skill/file reads, Python execution, artifacts and cold-restart bindings. Two dirty-data interpretation findings remain open; this is not a guarantee of professional conclusions. Teams and enterprise administration are excluded.
 
 创建指南使用 WorkDSH 独立命令，保留用户同名原版技能。多阶段创建要求更新原生任务进度；中断恢复先核对已有草稿与成果。
+
+
+## 完整专家制作文件包（2026-09-13）
+
+制作入口接受 WorkBuddy 风格完整文件包：plugin.json、agents/*.md、团队 settings.json、README，以及按需的 skills/*/SKILL.md 和 references/scripts/templates 文本资源。完整 Markdown 与资源为创作源，旧四段结构只保留已有专家兼容；编辑界面直接编辑原文件，Host 保存时重新解析整个作品。
+
+同一专家服务负责保存、统一确认发布、导入导出及执行绑定。团队发布固定各成员修订，并隐藏内部成员；发布将包资源固定到官方 preset，包内 Skill 经官方 skill-filesystem 挂载。执行前核对资源字节和清单，未发布的修改或附加文件会阻止执行。通过 get_documents 获取内容后仍需实际写入/present；返回内容不等于已经交付文件。
+
+四份原始 WorkBuddy 规范和 Apache-2.0 归属保留在 resources/expert-manager；平台映射单独见 authoring-api.md。完整包支持文本与二进制资源固定、头像展示和可执行 bin 文件；主理人可直接委派单成员，也可从正文选择 Workflow 形成串行或并行计划，评审按场景配置。整包可通过原生工具写入文件并 present。能力覆盖与运行验收见 WORKBUDDY-COVERAGE.md；bin 安装到作品目录，执行路径写入运行说明，仍受原生沙箱约束。尚未安装 preview，也未验证付费模型专业表现。
+
+原生新任务配置与全局默认配置菜单不提供 `wd-exp-*` 内部专家preset。这类preset只能通过专家中心召唤路径和Host绑定创建，不能直接作为普通对话配置。
+
+2026-09-14源码发布候选：0.1.0-alpha.2，包含专家/团队制作交付、原生委派接入及故障恢复、详情页和显示修复。TM-01整体验收及完整生产组合验证仍待完成，版本提升不等于验收通过。

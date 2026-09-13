@@ -19,7 +19,9 @@ export const pendingExpertDraftEvent = 'workdsh:expert-draft-staged';
 
 /** Fixed guide text seeded when the user chooses “制作专家” (UX §4). Never auto-sent. */
 export const expertManagerGuide =
-  '/workdsh-expert-manager 帮我创建一个 XXX 专家，擅长 XXXXX。我的经验是：[请补充你的行业背景、相关经验]。希望解决的问题：[请描述目标任务]。预期交付：[请描述成果]。请根据已有信息先起草，仅对影响专业判断的缺口追问，发布前让我审阅。';
+  '/workdsh-expert-manager 帮我创建一个 XXX 专家，擅长 XXXXX。我的经验是：[请补充你的行业背景、相关经验]';
+export const expertTeamManagerGuide =
+  '/workdsh-expert-manager 帮我创建一个 XXX 专家团，团队成员包括[请补充成员角色]，共同擅长 XXXXX。我的经验是：[请补充你的行业背景、相关经验]';
 
 export function PendingExpertDraft({ inputActions, useSession, useInput }: PropsRuntime<'conversation.input.overlay'>) {
   const sessionId = useSession((session: SessionSnapshot) => session.sessionId);

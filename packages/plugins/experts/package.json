@@ -1,6 +1,6 @@
 {
   "name": "workdsh-plugin-experts",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "private": false,
   "type": "module",
   "description": "Local expert management plugin for DeepSeek Harness (D04 / P1-02, expert module 0.1)",
@@ -31,10 +31,14 @@
     "@deepseek-ai/dsh-agent-presets": "0.1.5-rc.1",
     "@deepseek-ai/dsh-api-session-controller": "0.1.5-rc.1",
     "@deepseek-ai/dsh-client-connection": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-llm": "0.1.5-rc.1",
     "@deepseek-ai/dsh-skill": "0.1.5-rc.1",
     "@deepseek-ai/dsh-storage-domain": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-subagent": "0.1.5-rc.1",
     "@deepseek-ai/dsh-tools": "0.1.5-rc.1",
-    "react": "19.2.4"
+    "react": "19.2.4",
+    "@deepseek-ai/dsh-session-query": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-fs": "0.1.5-rc.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
@@ -49,8 +53,12 @@
     "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.1",
     "@deepseek-ai/dsh-client-ui-sidebar": "0.1.5-rc.1",
     "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-fs": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-llm": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-session-query": "0.1.5-rc.1",
     "@deepseek-ai/dsh-skill": "0.1.5-rc.1",
     "@deepseek-ai/dsh-storage-domain": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-subagent": "0.1.5-rc.1",
     "@deepseek-ai/dsh-tools": "0.1.5-rc.1",
     "@types/node": "22.19.0",
     "@types/react": "19.2.14",

@@ -1,3 +1,4 @@
+import { definitionFromDocuments, parseExpertDocument } from '../authoring/documents.js';
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -5,6 +6,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain';
 import type { SessionCreateRequest, SessionCreateValue } from '@deepseek-ai/dsh-api-session-controller';
+import { writableRoot } from '@deepseek-ai/dsh-agent-presets';
 import {
   EXPERT_LIMITS,
   ExpertsError,
@@ -52,10 +54,10 @@ import type {
 } from 'workdsh-contracts';
 import type { SkillManagementService } from 'workdsh-contracts/skills';
 import { expertsDomainSpec, keys } from '../storage/domain.js';
-import { COMPILER_VERSION, compileExpertPreset, presetIdFor } from '../runtime/preset-compiler.js';
+import { COMPILER_VERSION, compileExpertPreset, presetIdFor, verifyPackageFiles } from '../runtime/preset-compiler.js';
 import { ConfirmationStore } from '../runtime/confirmation.js';
 import { TtlStore } from '../runtime/plans.js';
-import { definitionDigest, normalizeDefinition, validateDefinition } from '../domain/definition.js';
+import { definitionDigest, normalizeDefinition, validateDefinition, teamDefinitionSchema } from '../domain/definition.js';
 import { codePointLength, digestOf, shortDigest, sha256 } from '../domain/digest.js';
 import { DEFAULT_TEMPLATES } from '../domain/templates.js';
 import { assertUploadWithinLimit, buildExport, preflightPackage } from './portability.js';
@@ -160,7 +162,11 @@ function emptyDefinition(): ExpertDefinition {
 
 /** Overlay a partial patch onto a base definition, keeping every required field present. */
 function mergeDefinition(base: ExpertDefinition, patch: Partial<ExpertDefinition>): ExpertDefinition {
+  if (patch.team && !teamDefinitionSchema.safeParse(patch.team).success) throw new ExpertsError('experts/invalid-definition', '团队成员与场景结构无效。');
   return {
+    ...(patch.agentDocument ?? base.agentDocument ? { agentDocument: patch.agentDocument ?? base.agentDocument } : {}),
+    ...(patch.packageAssets ?? base.packageAssets ? { packageAssets: patch.packageAssets ?? base.packageAssets } : {}),
+    ...(patch.packageDocuments ?? base.packageDocuments ? { packageDocuments: patch.packageDocuments ?? base.packageDocuments } : {}),
     name: patch.name ?? base.name,
     description: patch.description ?? base.description,
     ...(patch.avatarRef !== undefined ? { avatarRef: patch.avatarRef } : base.avatarRef !== undefined ? { avatarRef: base.avatarRef } : {}),
@@ -173,6 +179,7 @@ function mergeDefinition(base: ExpertDefinition, patch: Partial<ExpertDefinition
     examples: patch.examples ?? base.examples,
     skillRequirements: patch.skillRequirements ?? base.skillRequirements,
     futureRequirements: patch.futureRequirements ?? base.futureRequirements,
+    ...((patch.team ?? base.team) ? { team: patch.team ?? base.team } : {}),
   };
 }
 
@@ -296,6 +303,13 @@ export class ExpertsManager extends Service implements ExpertsService {
     if (decision.effect !== 'allow') {
       throw new ExpertsError('experts/forbidden', '没有权限对该专家执行此操作。', { reason: decision.code });
     }
+    if (expert.teamParentId) {
+      if (['experts.update-draft', 'experts.publish', 'experts.set-availability'].includes(action)) throw new ExpertsError('experts/forbidden', '请通过专家团整体修改或发布成员。');
+      const parent = this.loadExpert(expert.teamParentId);
+      if (!this.isVisible(actor, parent) || parent.availability !== 'enabled' || !parent.publishedRevisionRef) throw new ExpertsError('experts/disabled', '成员所属专家团未发布、已停用或不可访问。');
+      const attached = [...this.revisionsTable().entries()].some(([, revision]) => revision.expertId === parent.id && Object.values(revision.teamMembers ?? {}).some(ref => ref.expertId === expert.id));
+      if (!attached) throw new ExpertsError('experts/not-published', '该成员尚未随专家团发布。');
+    }
   }
 
   private async audit(
@@ -413,8 +427,8 @@ export class ExpertsManager extends Service implements ExpertsService {
     if (!owned) return { canUse: false, canEdit: false, canManage: false };
     return {
       canUse: expert.availability === 'enabled' && expert.publishedRevisionRef !== undefined,
-      canEdit: expert.origin !== 'default',
-      canManage: true,
+      canEdit: expert.origin !== 'default' && !expert.teamParentId,
+      canManage: !expert.teamParentId,
     };
   }
 
@@ -456,6 +470,14 @@ export class ExpertsManager extends Service implements ExpertsService {
   /** Authoritative readiness for one revision: preset health plus every frozen Skill dependency. */
   private async computeReadiness(revision: ExpertRevision | undefined, actor: ActorContext, signal?: AbortSignal): Promise<ExpertReadiness> {
     if (!revision) return 'unknown';
+    if (revision.definition.packageDocuments) {
+      try { await verifyPackageFiles(join(writableRoot(this.ctx.agentPresets.roots, revision.presetRevisionRef), revision.presetRevisionRef), revision.definition.packageDocuments, revision.definition.packageAssets); }
+      catch { return 'missing-dependency'; }
+    }
+    for (const ref of Object.values(revision.teamMembers ?? {})) {
+      const state = await this.computeReadiness(this.loadRevision(ref.expertId, ref.revisionId), actor, signal);
+      if (state !== 'ready') return state;
+    }
     if (revision.definition.futureRequirements.some((requirement) => requirement.required)) return 'unsupported-capability';
     try {
       const preset = await this.ctx.agentPresets.resolve(revision.presetRevisionRef);
@@ -481,6 +503,9 @@ export class ExpertsManager extends Service implements ExpertsService {
     const definition = draft.definition;
     return {
       id: expert.id,
+      expertType: definition.team ? 'team' : 'agent',
+      profession: definition.role,
+      tags: definition.tags,
       name: definition.name,
       description: definition.description,
       ...(definition.avatarRef === undefined ? {} : { avatarRef: definition.avatarRef }),
@@ -567,11 +592,13 @@ export class ExpertsManager extends Service implements ExpertsService {
     const search = query.search?.trim().toLowerCase();
     const rows: { expert: Expert; draft: ExpertDraft; preference?: ExpertPreference }[] = [];
     for (const [, expert] of this.expertsTable().entries()) {
+      if (expert.teamParentId) continue;
       if (!this.isVisible(actor, expert)) continue;
       if (query.origin !== undefined && expert.origin !== query.origin) continue;
       if (query.availability !== undefined && expert.availability !== query.availability) continue;
       const draft = this.draftsTable().get(keys.draft(expert.id));
       if (!draft) continue;
+      if (query.expertType !== undefined && (draft.definition.team ? 'team' : 'agent') !== query.expertType) continue;
       if (query.categoryId !== undefined && (draft.definition.categoryId ?? null) !== query.categoryId) continue;
       if (search !== undefined && search.length > 0 && !matchesSearch(draft.definition, search)) continue;
       const preference = this.preferenceFor(actor, expert.id);
@@ -715,16 +742,19 @@ export class ExpertsManager extends Service implements ExpertsService {
     const dependencyLock: SkillRevisionRef[] = [];
     const seen = new Set<string>();
     let index = 0;
-    for (const requirement of definition.skillRequirements) {
+    const requirements = [definition, ...(definition.team?.members.map(member => member.definition) ?? [])].flatMap(item => item.skillRequirements);
+    for (const requirement of requirements) {
       const path = `skillRequirements.${index}.name`;
       index += 1;
       const name = requirement.name;
+      if (definition.packageDocuments?.[`skills/${requirement.skillId ?? name}/SKILL.md`]) continue;
       if (name.trim().length === 0) continue;
-      if (seen.has(name)) {
+      if (seen.has(requirement.skillId ?? name) && definition.team) continue;
+      if (seen.has(requirement.skillId ?? name)) {
         issues.push({ code: 'experts/dependency-missing', path, message: `Skill 依赖「${name}」重复声明。`, dependencyRef: name });
         continue;
       }
-      seen.add(name);
+      seen.add(requirement.skillId ?? name);
       signal?.throwIfAborted();
       try {
         dependencyLock.push(await this.ctx.workdshSkills.resolveRevision(requirement.skillId ?? name, undefined, signal));
@@ -747,7 +777,7 @@ export class ExpertsManager extends Service implements ExpertsService {
   ): Promise<ExpertDraft> {
     signal?.throwIfAborted();
     assertActorContext(actor);
-    const candidate = normalizeDefinition(mergeDefinition(emptyDefinition(), definition ?? {}));
+    const candidate = definition?.packageDocuments ? definitionFromDocuments(definition.packageDocuments, definition.packageAssets) : normalizeDefinition(mergeDefinition(emptyDefinition(), definition ?? {}));
     const payloadDigest = digestOf({ action: 'experts.create-draft', definition: candidate });
     try {
       const draft = await this.withOperation(actor, 'experts.create-draft', context, payloadDigest, signal,
@@ -800,7 +830,17 @@ export class ExpertsManager extends Service implements ExpertsService {
             throw new ExpertsError('experts/conflict', '专家已被修改，请刷新后重试。', { expectedRevision: context.expectedRevision, currentRevision: current.revision });
           }
           const base = this.loadDraft(expertId);
-          const candidate = normalizeDefinition(mergeDefinition(base.definition, patch));
+          const candidate = patch.packageDocuments
+            ? definitionFromDocuments(patch.packageDocuments, patch.packageAssets ?? base.definition.packageAssets)
+            : patch.agentDocument ? normalizeDefinition({ ...mergeDefinition(base.definition, patch), ...parseExpertDocument(patch.agentDocument) })
+            : base.definition.packageDocuments || base.definition.agentDocument
+              ? (() => { throw new ExpertsError('experts/invalid-definition', '请修改完整制作文件，不能仅修改摘要字段。'); })()
+              : normalizeDefinition(mergeDefinition(base.definition, patch));
+          if (base.definition.packageDocuments && candidate.packageDocuments) {
+            const identity = (files: Record<string, string>) => JSON.parse(files['.workdsh-expert/plugin.json'] ?? files['.codebuddy-plugin/plugin.json']);
+            const before = identity(base.definition.packageDocuments), after = identity(candidate.packageDocuments);
+            if (before.name !== after.name || before.agentName !== after.agentName) throw new ExpertsError('experts/invalid-definition', '修改必须保留包 name 与默认 agentName；更换身份请创建新作品。');
+          }
           const now = new Date().toISOString();
           const draftRevision = shortDigest({ expertId, definition: candidate, updatedAt: now });
           const nextDraft: ExpertDraft = { expertId, revision: draftRevision, definition: candidate, validationIssues: validateDefinition(candidate) };
@@ -961,6 +1001,36 @@ export class ExpertsManager extends Service implements ExpertsService {
             definitionDigest: validation.definitionDigest,
             dependencyLockDigest: validation.dependencyLockDigest,
           });
+          const teamMembers: Record<string, ExpertRevisionRef> = {};
+          for (const member of draft.definition.team?.members ?? []) {
+            signal?.throwIfAborted();
+            // Content-addressed members are invisible until a parent revision commits.
+            // A failed aggregate retry reuses exactly the same snapshots.
+            const memberId = `member-${shortDigest({ parent: expertId, key: member.key, definition: member.definition, packageDocuments: draft.definition.packageDocuments, packageAssets: draft.definition.packageAssets, dependencies: validation.dependencyLock })}`;
+            const memberDefinition: ExpertDefinition = { ...member.definition, ...(draft.definition.packageAssets ? { packageAssets: draft.definition.packageAssets } : {}), ...(draft.definition.packageDocuments ? { packageDocuments: draft.definition.packageDocuments } : {}) };
+            const lock = member.definition.skillRequirements.filter(req => !draft.definition.packageDocuments?.[`skills/${req.skillId ?? req.name}/SKILL.md`]).map(req => {
+              const target = req.skillId ?? req.name;
+              const ref = validation.dependencyLock.find(ref => ref.skillId === target || ref.name === target);
+              if (!ref) throw new ExpertsError('experts/dependency-missing', `成员 ${member.key} 的技能快照缺失。`);
+              return ref;
+            });
+            const dirs: string[] = [];
+            for (const ref of lock) dirs.push((await this.ctx.workdshSkills.retainRevision(ref, { domain: EXPERT_DOMAIN, id: memberId }, signal)).snapshotDir);
+            const compiledMember = await compileExpertPreset(this.ctx, { expertId: memberId, definition: memberDefinition, snapshotDirs: dirs, basePresetId: await this.resolveBasePreset(signal) });
+            const memberDigest = definitionDigest(memberDefinition);
+            const lockDigest = digestOf(lock);
+            const memberRevisionId = revisionIdFor(memberDigest, lockDigest, compiledMember.presetId);
+            const now = new Date().toISOString();
+            const ref = { expertId: memberId, revisionId: memberRevisionId };
+            if (!this.revisionsTable().get(keys.revision(memberId, memberRevisionId))) {
+              await this.revisionsTable().put(keys.revision(memberId, memberRevisionId), { expertId: memberId, revisionId: memberRevisionId, definition: memberDefinition, definitionDigest: memberDigest, dependencyLock: lock, dependencyLockDigest: lockDigest, presetRevisionRef: compiledMember.presetId, compilerVersion: COMPILER_VERSION, compositionDigest: compiledMember.compositionDigest, publishedAt: now, publishedBy: actor.principalId });
+            }
+            if (!this.expertsTable().get(keys.expert(memberId))) {
+              await this.draftsTable().put(keys.draft(memberId), { expertId: memberId, revision: memberDigest, definition: member.definition, validationIssues: [] });
+              await this.expertsTable().put(keys.expert(memberId), { id: memberId, teamParentId: expertId, owner: current.owner, origin: 'personal', availability: 'enabled', revision: memberDigest, draftRevision: memberDigest, publishedRevisionRef: ref, createdAt: now, updatedAt: now });
+            }
+            teamMembers[member.key] = ref;
+          }
           // Freeze each declared Skill dependency into a retained, managed snapshot.
           const consumer = { domain: EXPERT_DOMAIN, id: expertId };
           const snapshotDirs: string[] = [];
@@ -970,12 +1040,13 @@ export class ExpertsManager extends Service implements ExpertsService {
             snapshotDirs.push(retained.snapshotDir);
           }
           const basePresetId = await this.resolveBasePreset(signal);
-          const compiled = await compileExpertPreset(this.ctx, { expertId, definition: draft.definition, snapshotDirs, basePresetId });
+          const compiled = await compileExpertPreset(this.ctx, { expertId, definition: draft.definition, snapshotDirs, basePresetId, ...(draft.definition.team ? { teamMembers } : {}) });
           const revisionId = revisionIdFor(validation.definitionDigest, validation.dependencyLockDigest, compiled.presetId);
           const now = new Date().toISOString();
           const revision: ExpertRevision = {
             expertId, revisionId, definition: draft.definition, definitionDigest: validation.definitionDigest,
             dependencyLock: validation.dependencyLock, dependencyLockDigest: validation.dependencyLockDigest,
+            ...(draft.definition.team ? { teamMembers } : {}),
             presetRevisionRef: compiled.presetId, compilerVersion: COMPILER_VERSION,
             compositionDigest: compiled.compositionDigest,
             publishedAt: now, publishedBy: actor.principalId,
@@ -1374,6 +1445,99 @@ export class ExpertsManager extends Service implements ExpertsService {
     }
   }
 
+  /** TM-01 Host admission only: execution and its lifecycle remain native. */
+  async reserveDelegation(actor: ActorContext, parentSessionId: string, target: ExpertRevisionRef, context: MutationContext, signal?: AbortSignal): Promise<ExecutionBinding> {
+    assertActorContext(actor);
+    this.assertContext(context);
+    const payloadDigest = digestOf({ parentSessionId, target, organizationId: actor.organizationId });
+    const parent = await this.verifyBinding(actor, parentSessionId, signal);
+    if (parent.delegation) throw new ExpertsError('experts/forbidden', '首版只允许主持人的直接子任务。');
+    if (!parent.workspaceRef) throw new ExpertsError('experts/unsupported-capability', '子任务需要已解析的父任务工作区；当前预留不接受未解析的 workspaceId。');
+    await this.assertDelegationExpert(actor, parent.expertRevisionRef, signal);
+    await this.assertDelegationExpert(actor, target, signal);
+    const revision = this.loadRevision(target.expertId, target.revisionId);
+    if (await this.computeReadiness(revision, actor, signal) !== 'ready') {
+      throw new ExpertsError('experts/dependency-missing', '成员专家的固定组合尚未就绪。');
+    }
+    return this.withOperation(actor, 'experts.reserve-delegation', context, payloadDigest, signal, async record => {
+      signal?.throwIfAborted();
+      // Availability can change while this reservation waits for the domain queue.
+      await this.assertDelegationExpert(actor, parent.expertRevisionRef, signal);
+      await this.assertDelegationExpert(actor, target, signal);
+      const sessionId = `delegation-${digestOf({ organizationId: actor.organizationId, operationId: context.operationId }).slice(0, 32)}`;
+      const binding: ExecutionBinding = {
+        sessionId, expertRevisionRef: { ...target }, presetRevisionRef: revision.presetRevisionRef,
+        compositionDigest: revision.compositionDigest, skillRevisionRefs: revision.dependencyLock,
+        owner: parent.owner, ...(parent.workspaceRef === undefined ? {} : { workspaceRef: parent.workspaceRef }),
+        creationOperationId: context.operationId, createdAt: new Date().toISOString(),
+        delegation: { parentSessionId, parentCompositionDigest: parent.compositionDigest, admission: 'reserved' },
+      };
+      // Never overwrite a prior admission, including an uncertain storage result.
+      const prior = this.bindingsTable().get(keys.binding(sessionId));
+      if (prior) throw new ExpertsError('experts/outcome-unknown', '该子任务已有预留，请先核对原操作。');
+      await this.bindingsTable().put(keys.binding(sessionId), binding);
+      record({ resultRef: sessionId });
+      await this.audit(actor, 'experts.reserve-delegation', target.expertId, 'succeeded', 'experts/delegation-reserved', { sessionId, parentSessionId });
+      return binding;
+    }, operation => {
+      const binding = this.bindingsTable().get(keys.binding(operation.resultRef ?? ''));
+      if (!binding || binding.owner.organizationId !== actor.organizationId) {
+        throw new ExpertsError('experts/outcome-unknown', '无法核对子任务预留。');
+      }
+      return binding;
+    });
+  }
+
+  async claimDelegation(actor: ActorContext, sessionId: string, parentSessionId: string, signal?: AbortSignal): Promise<ExecutionBinding> {
+    assertActorContext(actor);
+    return this.enqueue(async () => {
+      signal?.throwIfAborted();
+      const binding = this.bindingsTable().get(keys.binding(sessionId));
+      if (!binding?.delegation) throw new ExpertsError('experts/not-found', '未找到子任务预留。');
+      if (binding.owner.ownerPrincipalId !== actor.principalId || binding.owner.organizationId !== actor.organizationId
+          || binding.delegation.parentSessionId !== parentSessionId) {
+        throw new ExpertsError('experts/forbidden', '不能领取其他主体或父任务的子任务。');
+      }
+      if (binding.delegation.admission !== 'reserved') {
+        throw new ExpertsError('experts/conflict', '预留已领取；请核对原生日志，不能重复执行。');
+      }
+      await this.verifyDelegationParent(actor, binding, signal);
+      await this.assertDelegationExpert(actor, binding.expertRevisionRef, signal);
+      const revision = this.loadRevision(binding.expertRevisionRef.expertId, binding.expertRevisionRef.revisionId);
+      if (await this.computeReadiness(revision, actor, signal) !== 'ready') {
+        throw new ExpertsError('experts/dependency-missing', '成员专家的固定组合尚未就绪。');
+      }
+      signal?.throwIfAborted();
+      const claimed: ExecutionBinding = { ...binding, delegation: { ...binding.delegation, admission: 'claimed' } };
+      await this.bindingsTable().update(keys.binding(sessionId), current => {
+        if (digestOf(current) !== digestOf(binding)) throw new ExpertsError('experts/conflict', '子任务预留已变化，不能重复领取。');
+        return claimed;
+      });
+      await this.audit(actor, 'experts.claim-delegation', binding.expertRevisionRef.expertId, 'succeeded', 'experts/delegation-claimed', { sessionId, parentSessionId });
+      return claimed;
+    });
+  }
+
+  private async assertDelegationExpert(actor: ActorContext, ref: ExpertRevisionRef, signal?: AbortSignal): Promise<void> {
+    const expert = this.loadExpert(ref.expertId);
+    if (!this.isVisible(actor, expert)) throw new ExpertsError('experts/not-found', '未找到该专家。');
+    await this.authorize(actor, 'experts.claim-delegation', expert, signal);
+    if (expert.availability !== 'enabled') throw new ExpertsError('experts/disabled', '委派引用的专家已停用或归档。');
+  }
+
+  private async verifyDelegationParent(actor: ActorContext, binding: ExecutionBinding, signal?: AbortSignal): Promise<void> {
+    const delegation = binding.delegation!;
+    const parent = this.bindingsTable().get(keys.binding(delegation.parentSessionId));
+    // Bound depth keeps corrupt/cyclic records from recursing through verification.
+    if (!parent || parent.delegation || parent.sessionId === binding.sessionId
+        || parent.compositionDigest !== delegation.parentCompositionDigest
+        || parent.workspaceRef !== binding.workspaceRef) {
+      throw new ExpertsError('experts/conflict', '子任务与主持人的固定绑定不一致。');
+    }
+    await this.verifyBinding(actor, parent.sessionId, signal);
+    await this.assertDelegationExpert(actor, parent.expertRevisionRef, signal);
+  }
+
   async verifyBinding(actor: ActorContext, sessionId: string, signal?: AbortSignal): Promise<ExecutionBinding> {
     signal?.throwIfAborted();
     assertActorContext(actor);
@@ -1383,8 +1547,15 @@ export class ExpertsManager extends Service implements ExpertsService {
     if (binding.owner.ownerPrincipalId !== actor.principalId || binding.owner.organizationId !== actor.organizationId) {
       throw new ExpertsError('experts/forbidden', '没有权限校验该任务的专家绑定。');
     }
+    if (binding.delegation) {
+      if (binding.delegation.admission !== 'claimed') throw new ExpertsError('experts/conflict', '子任务预留尚未领取，不能执行。');
+      await this.verifyDelegationParent(actor, binding, signal);
+      await this.assertDelegationExpert(actor, binding.expertRevisionRef, signal);
+    }
     const revision = this.loadRevision(binding.expertRevisionRef.expertId, binding.expertRevisionRef.revisionId);
+    if (revision.definition.packageDocuments) await verifyPackageFiles(join(writableRoot(this.ctx.agentPresets.roots, revision.presetRevisionRef), revision.presetRevisionRef), revision.definition.packageDocuments, revision.definition.packageAssets);
     if (revision.presetRevisionRef !== binding.presetRevisionRef || revision.compositionDigest !== binding.compositionDigest
+        || digestOf(revision.dependencyLock) !== digestOf(binding.skillRevisionRefs)
         || sha256(await this.ctx.agentPresets.read(binding.presetRevisionRef)) !== binding.compositionDigest) {
       throw new ExpertsError('experts/conflict', '任务绑定与专家修订不一致，可能已被篡改。');
     }

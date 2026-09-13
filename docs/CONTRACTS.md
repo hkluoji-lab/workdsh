@@ -149,3 +149,7 @@ WORD-RELEASE-02：content_export 新增可选 baseRevision，授权读取的最�
 ## PDF 新建工作副本增量（2026-09-13）
 
 Office 契约新增 kind=pdf 的分页/文本/矩形状态及 pdf.insertPage/updatePage/removePage，复用 CAS/回执/授权/人工租约与展示请求。新建工作副本不表示已有 PDF 导入或任意内容对象编辑。PDF 字节由当前修订通过同一编码器派生；Connection pdfBytes 需要授权与明确 baseRevision，文件交付仍走官方 bash/present。
+
+### 活动展示身份（2026-09-14）
+
+workdsh-contracts/activity的ActivityIdentity新增可选teamName及members，只表示绑定固定修订的团队名称和组成，不授予权限、不表示成员执行；活动插件用原生子任务状态单独确定高亮。旧提供方无需实现新字段。

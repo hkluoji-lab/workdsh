@@ -4,6 +4,7 @@ import type { ExpertAvailability, ExpertDefinition, ExpertDetail, ExpertSkillOpt
 import { skillStateLabel } from './SkillPicker.js';
 import type { ExpertManagementClient } from './management.js';
 import { ExpertWorkSummary } from './ExpertWorkSummary.js';
+import { TeamOverview } from './TeamOverview.js';
 
 export type ExpertDetailModalProps = {
   readonly expertId: string;
@@ -12,6 +13,7 @@ export type ExpertDetailModalProps = {
   readonly onClose: () => void;
   /** Seed a fresh bound native Session with an optional example prompt; never auto-sends. */
   readonly onSummon: (expertId: string, revisionId: string | undefined, draftText: string | undefined) => void;
+  readonly onEditTask: (expertId: string) => void;
   readonly onEditDraft: (expertId: string) => void;
   readonly onCopy: (expertId: string, revisionId: string | undefined) => Promise<void>;
   readonly onAvailability: (expertId: string, availability: ExpertAvailability) => Promise<void>;
@@ -36,7 +38,7 @@ function Prose({ title, body }: { title: string; body: string }) {
   return <div className="prose-block"><h4>{title}</h4>{body}</div>;
 }
 
-export function ExpertDetailModal({ expertId, management, acting, onClose, onSummon, onEditDraft, onCopy, onAvailability, onExport, onChanged }: ExpertDetailModalProps) {
+export function ExpertDetailModal({ expertId, management, acting, onClose, onSummon, onEditTask, onEditDraft, onCopy, onAvailability, onExport, onChanged }: ExpertDetailModalProps) {
   const [skills, setSkills] = useState<readonly ExpertSkillOption[]>();
   const [skillsError, setSkillsError] = useState('');
   const [detail, setDetail] = useState<ExpertDetail>();
@@ -79,23 +81,25 @@ export function ExpertDetailModal({ expertId, management, acting, onClose, onSum
   const readiness = READINESS[detail.readiness] ?? READINESS.unknown;
   const revisionId = expert.publishedRevisionRef?.revisionId;
   const canSummon = detail.canUse && !isDraft && expert.availability === 'enabled' && detail.readiness === 'ready';
+  const kindLabel = definition.team ? '专家团' : '专家';
   const versionLabel = revision ? `版本 ${revision.revisionId.slice(0, 10)}` : '草稿';
 
   return <div className="dialog-scroll">
     <header className="detail-header">
-      <span className="detail-avatar" aria-hidden>{definition.name.trim().charAt(0) || '专'}</span>
+      <span className="detail-avatar" aria-hidden>{definition.avatarRef?.startsWith('data:image/') ? <img src={definition.avatarRef} alt="" /> : definition.name.trim().charAt(0) || '专'}</span>
       <div className="detail-title">
         <h1>{definition.name || '（未命名专家）'}</h1>
-        <p className="detail-subtitle">{ORIGIN_LABEL[expert.origin] ?? expert.origin} · {versionLabel} · {isDraft ? '草稿' : AVAILABILITY_LABEL[expert.availability]}</p>
+        <p className="detail-subtitle">{ORIGIN_LABEL[expert.origin] ?? expert.origin} · {kindLabel} · {isDraft ? '草稿' : AVAILABILITY_LABEL[expert.availability]}</p>
       <div className="detail-head-actions">
-        {!isDraft && <button className="summon" disabled={!canSummon || acting} title={canSummon ? '召唤专家' : readiness.hint}
-          onClick={() => { setMenuOpen(false); onSummon(expertId, revisionId, undefined); }}>召唤专家</button>}
-        {isDraft && detail.canEdit && <button className="summon" onClick={() => { onClose(); onEditDraft(expertId); }}>继续编辑</button>}
+        {!isDraft && <button className="summon" disabled={!canSummon || acting} title={canSummon ? `召唤${kindLabel}` : readiness.hint}
+          onClick={() => { setMenuOpen(false); onSummon(expertId, revisionId, undefined); }}>召唤{kindLabel}</button>}
+        {isDraft && detail.canEdit && <button className="summon" onClick={() => { onEditTask(expertId); }}>继续编辑</button>}
         {(detail.canManage || detail.canEdit) && <div ref={menu} style={{ position: 'relative' }}>
           <button aria-label="管理专家" aria-haspopup="menu" aria-expanded={menuOpen} disabled={acting}
             onClick={() => setMenuOpen(open => !open)}>•••</button>
           {menuOpen && <div className="card-menu" role="menu" style={{ right: 0, left: 'auto' }}>
-            {detail.canEdit && <button role="menuitem" onClick={() => { setMenuOpen(false); onClose(); onEditDraft(expertId); }}>编辑草稿</button>}
+            {detail.canEdit && <button role="menuitem" onClick={() => { setMenuOpen(false); onEditTask(expertId); }}>编辑</button>}
+            {detail.canEdit && <button role="menuitem" onClick={() => { setMenuOpen(false); onClose(); onEditDraft(expertId); }}>编辑制作文件</button>}
             <button role="menuitem" disabled={acting} onClick={() => { setMenuOpen(false); void onCopy(expertId, revisionId); }}>复制到我的专家</button>
             <button role="menuitem" disabled={acting} onClick={() => { setMenuOpen(false); void onExport(expertId); }}>导出</button>
             {detail.canManage && !isDraft && expert.availability === 'enabled' && <button role="menuitem" disabled={acting} onClick={() => { setMenuOpen(false); void onAvailability(expertId, 'disabled'); }}>停用</button>}
@@ -109,30 +113,31 @@ export function ExpertDetailModal({ expertId, management, acting, onClose, onSum
 
     {hasUnpublishedChanges && <div className="notice" role="status">
       <div className="notice-body"><strong>草稿有修改，尚未发布</strong><span>当前详情与召唤使用已发布版本。已发布配备 {definition.skillRequirements.length} 个技能，草稿配备 {detail.draft.definition.skillRequirements.length} 个；保存草稿不会更新已发布版本。</span></div>
-      <button disabled={acting} onClick={() => { onClose(); onEditDraft(expertId); }}>查看编辑草稿</button>
+      <button disabled={acting} onClick={() => { onClose(); onEditDraft(expertId); }}>审阅草稿</button>
     </div>}
 
     {definition.description && <p className="detail-desc" style={{ marginTop: 20 }}>{definition.description}</p>}
-    <ExpertWorkSummary definition={definition} />
-    {definition.tags.length > 0 && <h2 className="detail-section-title">擅长领域</h2>}
     {definition.tags.length > 0 && <div className="tag-row">{definition.tags.map(tag => <span className="tag" key={tag}>{tag}</span>)}</div>}
 
-    {!isDraft && <div className={`notice ${readiness.cls === 'bad' ? 'error' : readiness.cls === 'warn' ? 'warn' : 'info'}`} role="status" style={{ marginTop: 20 }}>
+    {!isDraft && detail.readiness !== 'ready' && <div className={`notice ${readiness.cls === 'bad' ? 'error' : readiness.cls === 'warn' ? 'warn' : 'info'}`} role="status" style={{ marginTop: 20 }}>
       <div className="notice-body"><strong>{readiness.label}</strong><span>{readiness.hint}</span></div>
     </div>}
 
     {definition.examples.length > 0 && <>
-      <h2 className="detail-section-title">试试这样问我</h2>
+      <h2 className="detail-section-title">{definition.team ? '团队帮你做' : '试试这样问我'}</h2>
       <div className="example-list">
         {definition.examples.map(example => <button className="example" key={example.id} disabled={!canSummon || acting}
           title={canSummon ? '用此示例召唤专家（仅填入草稿，不会自动发送）' : readiness.hint}
           onClick={() => { setMenuOpen(false); onSummon(expertId, revisionId, example.prompt); }}>
-          <span className="example-text"><strong>{example.title || '示例任务'}</strong><span>{example.prompt}</span></span>
+          <span className="example-text">{example.title && <strong>{example.title}</strong>}<span>{example.prompt}</span></span>
           <span aria-hidden>→</span>
         </button>)}
       </div>
     </>}
 
+    <TeamOverview definition={definition} />
+
+    <details className="expert-settings"><summary>配备技能与能力 · {definition.skillRequirements.length}</summary>
     <h2 className="detail-section-title">配备技能 · {definition.skillRequirements.length}</h2>
     <p className="detail-subtitle">{isDraft ? '以下为已保存草稿配备的技能；发布时会固定技能版本。' : '以下为已发布版本配备的技能；简介和状态来自当前已安装目录，召唤时使用发布时固定的技能版本。'}</p>
     {skillsError && <p role="alert">{skillsError} <button onClick={() => void load()}>重试</button></p>}
@@ -155,8 +160,11 @@ export function ExpertDetailModal({ expertId, management, acting, onClose, onSum
       </div>)}</div>
     </section>}
 
-    <details className="expert-settings"><summary>专家设定</summary>
-    <Prose title="专业角色" body={definition.role} />
+    </details>
+
+    <details className="expert-settings"><summary>完整专业设定</summary>
+    <p className="detail-subtitle">{versionLabel}</p>
+    {definition.agentDocument ? <div className="prose-block" style={{ whiteSpace: 'pre-wrap' }}>{definition.agentDocument}</div> : <><Prose title="专业角色" body={definition.role} /><ExpertWorkSummary definition={definition} /></>}
     </details>
 
     <div className="detail-head-actions" style={{ marginTop: 28, justifyContent: 'flex-end' }}>

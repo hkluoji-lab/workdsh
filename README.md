@@ -255,6 +255,28 @@ Public expert creation is reusable across domains, with methods, real Skill sele
 
 User-provided application screenshot showing incremental AI slide editing in the native results panel. This existing conversation still contains earlier export guidance; the new PPTX content_export implementation is described in the source and has not yet passed a real-session file-card acceptance test.
 
+[2026-09-14 发布候选说明](docs/releases/2026-09-14-development-candidate.md) · 本地制品已准备，公开发布待准入检查。
+
+### Activity and expert teams / 工作动态与专家团
+
+![WorkDSH 工作动态与 HTML 实时制作](docs/assets/screenshots/workdsh-activity-html-preview.png)
+
+A compact activity strip shows the native task state and the current skill, alongside the original conversation and live HTML working copy. Its colored border animates while processing; animations can be disabled and respect reduced-motion preferences. The strip is centered and uses half the available width on wide screens.
+
+工作动态以紧凑居中的单行展示任务状态和当前技能，保留原生对话、工具调用和右侧 HTML 工作副本。运行时彩色边框循环流动；动画可关闭，并遵守系统减少动态效果设置。
+
+![WorkDSH 专家团任务与协作动态](docs/assets/screenshots/workdsh-team-activity-preview.png)
+
+Expert-team sessions carry the team name and activity state. Member activity appears when native child sessions exist; the team label alone does not prove multiple members are executing. This example shows zero child agents at the captured moment.
+
+专家团任务展示团队名称与工作动态；有原生成员子任务时呈现成员状态。截图捕获时为 **0 个子代理**，不能据此宣称多位专家已经并行执行。
+
+![WorkDSH 专家团详情、草稿与成员](docs/assets/screenshots/workdsh-expert-team-detail-preview.png)
+
+Team details show capabilities, starter requests, the lead and members. Saved drafts remain separate from published revisions; summoning uses the published revision until changes are explicitly published. These are user-provided local preview screenshots, including example task names, paths and spending figures; they document the development candidate rather than the older downloadable releases.
+
+专家团详情展示能力、使用示例、主理人和成员。草稿与已发布修订分离，召唤使用已发布版本。这三张用户提供的本地截图用于展示当前开发候选，不代表旧版下载包已包含这些功能，也不代表专家团整体验收完成。
+
 ## Open-source components and acknowledgements
 
 Thank you to these projects and their maintainers. This list covers major direct dependencies; package manifests, the lockfile and generated license inventories describe the full dependency set.
@@ -278,3 +300,22 @@ Thank you to these projects and their maintainers. This list covers major direct
 Special thanks to **WorkBuddy / CodeBuddy** for product experience and skill-design references. Their experiences informed the Skill market layout, grouped toolbars and PPT design guidance. Locally available `tencent-pptx` and `ppt-implement` skills helped us study narrative, palette and layout methods. This acknowledgement does not classify WorkBuddy, its brand assets or skill resources as open source, indicate a Tencent PPT engine integration, or imply an official partnership or endorsement. DeepSeek Harness remains the execution foundation.
 
 Third-party skills and materials retain their providers' terms. Generated archives retain copyright and license texts for dependencies actually bundled; see [Office third-party notices](packages/plugins/office/THIRD-PARTY-NOTICES.md).
+
+### Additional bundled Office dependencies / Office 其他打包依赖
+
+The current build inventory additionally includes the following package versions. Licenses below are the declarations in the installed package metadata. Existing bundled notices are retained.
+
+当前构建另包含下列依赖版本；许可证栏记录安装包元数据的声明，来源链接指向对应项目。完整199项打包依赖见[Office依赖清单](docs/evidence/office-bundled-dependencies-2026-09-14.md)。
+
+| Dependency / 依赖 | Version / 版本 | Declared license / 声明许可证 |
+| --- | --- | --- |
+| [@ai-sdk/provider-utils](https://github.com/vercel/ai) | 5.0.0 | Apache-2.0 |
+| [@ai-sdk/provider-utils](https://github.com/vercel/ai) | 5.0.28 | Apache-2.0 |
+| [@nodable/entities](https://github.com/nodable/val-parsers) | 3.0.0 | MIT |
+| [@pdf-lib/fontkit](https://github.com/Hopding/fontkit) | 1.1.1 | MIT |
+| [franc-min](https://github.com/wooorm/franc/tree/main/packages/franc-min) | 6.2.0 | MIT |
+| [ot-json1](https://github.com/josephg/json1) | 1.0.2 | ISC |
+| [ot-text-unicode](https://github.com/ottypes/text) | 4.0.0 | ISC |
+| [pptx-viewer-mcp](https://github.com/ChristopherVR/pptx-viewer) | 2.5.1 | Apache-2.0 |
+| [react-remove-scroll-bar](https://github.com/theKashey/react-remove-scroll-bar) | 2.3.8 | MIT |
+| [unicount](https://github.com/josephg/unicount) | 1.1.0 | ISC |

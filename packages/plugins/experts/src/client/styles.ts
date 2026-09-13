@@ -30,6 +30,20 @@ export const expertsCss = `${modalCss}
 .wd-experts .section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #303030}
 .wd-experts .section-head h1{font-size:25px;line-height:34px;margin:0;font-weight:600}
 .wd-experts .section-actions{display:flex;gap:8px;align-items:center}
+.wd-experts .back-center{border:0;background:transparent;color:#a5a5a5;margin:0 0 20px;padding-left:0}
+.wd-experts .work-types{display:flex;gap:24px}
+.wd-experts .work-types button{background:transparent;border:0;padding:0;color:#909090;font-size:22px;font-weight:600}
+.wd-experts .work-types button.active{color:#e7e7e7}
+.wd-experts .work-types span{font-size:12px;margin-left:10px;color:#a5a5a5;font-weight:400}
+.wd-experts .create-menu{position:relative}
+.wd-experts .create-menu summary{list-style:none;cursor:pointer;border-radius:8px;padding:9px 14px}
+.wd-experts .create-menu summary::-webkit-details-marker{display:none}
+.wd-experts .create-menu>div{position:absolute;right:0;top:calc(100% + 8px);width:180px;background:#242424;border:1px solid #343434;border-radius:12px;padding:8px;z-index:20;box-shadow:0 12px 28px #0005}
+.wd-experts .create-menu button{display:block;width:100%;text-align:left;border:0;background:transparent}
+.wd-experts .domain-tags{display:flex;gap:6px;flex-wrap:wrap}
+.wd-experts .domain-tags span{background:#343434;color:#b0b0b0;font-size:11px;border-radius:4px;padding:3px 7px}
+.wd-experts .create-card{display:flex;align-items:center;justify-content:center;min-height:220px;gap:12px;color:#a5a5a5;font-size:14px}
+.wd-experts .create-card>span{font-size:46px;font-weight:400;line-height:1}
 .wd-experts .filter-tabs{display:flex;gap:7px;align-items:center;overflow:auto;margin:0 0 18px;padding:0 0 2px}
 .wd-experts .filter-tabs button{border:0;background:transparent;white-space:nowrap}
 .wd-experts .filter-tabs button.active{background:#343434}
@@ -44,12 +58,12 @@ export const expertsCss = `${modalCss}
 .wd-experts .card-top{display:flex;align-items:flex-start;gap:12px;min-width:0}
 .wd-experts .card-open{display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;padding:0;border:0;background:transparent;text-align:left}
 .wd-experts .card-open:hover:not(:disabled){background:transparent}
-.wd-experts .avatar{display:inline-grid;place-items:center;width:46px;height:46px;flex:none;border-radius:50%;background:#4a3c66;color:#d8c5ff;font-weight:700;font-size:18px;overflow:hidden}
+.wd-experts .avatar{display:inline-grid;place-items:center;width:46px;height:46px;flex:none;border-radius:50%;background:#3b3b3b;color:#e7e7e7;font-weight:700;font-size:18px;overflow:hidden}
 .wd-experts .avatar img{width:100%;height:100%;object-fit:cover}
 .wd-experts .card-title{min-width:0;flex:1}
 .wd-experts .card-title strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:15px}
 .wd-experts .card-meta{display:block;font-size:12px;color:#a5a5a5;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wd-experts .card p.desc{font-size:12px;line-height:20px;margin:0;color:#cfcfcf;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.wd-experts .card p.desc{font-size:12px;line-height:20px;margin:0;color:#cfcfcf;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .wd-experts .card-foot{display:flex;align-items:center;gap:8px;margin-top:auto;flex-wrap:wrap}
 .wd-experts .badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid #3a3a3a;background:#1d1d1d;color:#bdbdbd;white-space:nowrap}
 .wd-experts .badge.ready{color:#7fe3d0;border-color:#2c5b53}
@@ -84,7 +98,7 @@ export const expertsCss = `${modalCss}
 .expert-dialog .notice.info strong{display:none}
 .expert-dialog .dialog-scroll{overflow:auto;padding:32px 40px 36px}
 .expert-dialog .detail-header{display:grid;grid-template-columns:80px minmax(0,1fr);gap:22px;align-items:start;padding-right:52px}
-.wd-dialog.expert-dialog .detail-avatar{width:80px;height:80px;border-radius:50%;display:grid;place-items:center;background:#4a3c66;color:#d8c5ff;font-size:34px;font-weight:700;overflow:hidden}
+.wd-dialog.expert-dialog .detail-avatar{width:80px;height:80px;border-radius:50%;display:grid;place-items:center;background:#3b3b3b;color:#e7e7e7;font-size:34px;font-weight:700;overflow:hidden}
 .expert-dialog .detail-avatar img{width:100%;height:100%;object-fit:cover}
 .expert-dialog .detail-title h1{font-size:26px;line-height:34px;margin:0;overflow-wrap:anywhere}
 .expert-dialog .detail-subtitle{color:#a5a5a5;margin:6px 0 0;font-size:13px}
@@ -109,6 +123,20 @@ export const expertsCss = `${modalCss}
 .expert-dialog .cap-row.ok .cap-state{color:#7fe3d0}
 .expert-dialog .cap-row.missing{border-color:#765349;background:#2a211f}
 .expert-dialog .cap-row.missing .cap-state{color:#ff9b95}
+ .expert-dialog .team-member-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 16px;margin:16px 0 24px}
+.expert-dialog .team-person{min-width:0}
+.expert-dialog .team-person summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.expert-dialog .team-person summary::-webkit-details-marker{display:none}
+.expert-dialog .member-avatar{width:38px;height:38px;flex-shrink:0;border-radius:50%;background:#383838;display:grid;place-items:center;overflow:hidden;color:#e7e7e7}
+.expert-dialog .member-avatar img{width:100%;height:100%;object-fit:cover}
+.expert-dialog .member-identity{display:grid;gap:4px;min-width:0;font-size:12px;color:#a5a5a5}
+.expert-dialog .member-identity strong{font-size:14px;font-weight:500;color:#e7e7e7;overflow-wrap:anywhere}
+.expert-dialog .member-lead{font-size:11px;color:#bdbdbd;background:#383838;border-radius:4px;margin-left:6px;padding:2px 5px;white-space:nowrap}
+.expert-dialog .team-person p{font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.expert-dialog .member-responsibility{white-space:pre-wrap;max-height:300px;overflow:auto}
+.expert-dialog .team-workflows article{padding:12px 0;border-bottom:1px solid #343434}
+@media(max-width:900px){.expert-dialog .team-member-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.expert-dialog .team-member-grid{grid-template-columns:1fr}}
 .expert-dialog .expert-settings summary{cursor:pointer;list-style-position:inside;margin:24px 0 12px;font-size:16px;font-weight:600}
 .expert-work-summary{display:grid;gap:12px;margin:20px 0}
 .expert-work-summary>section{border-left:3px solid #3b82f6;padding:2px 0 2px 14px;min-width:0}

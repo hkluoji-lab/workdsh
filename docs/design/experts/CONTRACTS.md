@@ -1,8 +1,10 @@
-# 专家领域契约草案
+# 专家领域契约设计记录
 
-所有类型和方法均为 **WorkDSH 拟新增契约**，不是 Harness 官方 API，也不代表当前 `workdsh-contracts` 已导出。落地时先建 schema 和契约测试，再实现 Host，最后接 UI/工具；不要复制成没有校验的接口声明。
+本文保存单专家最初的契约设计，**不是 Harness 官方 API**。单专家现已实现，实际名称、参数和导出以 [packages/contracts/src/experts.ts](../../../packages/contracts/src/experts.ts) 与对应 Host 测试为准；下文历史“拟新增”不能用于判断功能尚不存在，也不得直接覆盖当前实现。团队新增契约见 [实施入口](TEAM-IMPLEMENTATION-HANDOFF.md)，先建校验和契约测试，再实现 Host，最后接 UI/工具。
 
 ## 1. 对象与字段
+
+TM-01新增已实现Host契约：`reserveDelegation`/`claimDelegation`及ExecutionBinding可选delegation（parentSessionId、parentCompositionDigest、admission=reserved|claimed）。它们只负责一次性业务准入，不是Team/SOP服务，不暴露Remote或模型工具；原生日志拥有执行状态。准确参数与边界见实施入口开头；历史表未重复列出增量。第五批在专家插件内部新增（尚未进入公共契约/Remote）：`workdsh_expert_teams`存储域与TeamRunsManager运行服务（open/delegate/review/abandon/deliver/authorizeDelegation，签收/交接/交付三闸门重读文件字节校验）、六项AI可调用工具`workdsh_expert_team_*`、插件托管的one-shot委派provider；运行事实仍归Harness日志，团队对象仅存业务修订/绑定/尝试/回执。
 
 | 对象 | 必须字段/语义 |
 |---|---|
@@ -129,3 +131,8 @@ manifest 包含 `format: workdsh-expert`、`schemaVersion: 1`、expertFile、fil
 ## PRD 1.1 A+B 候选目录契约
 
 当前工作区新增 ExpertSkillOption：skillId/name/description/state/selectable，以及 ExpertsService.listSkills(actor,expertId,scope,signal)。available范围需目标专家可编辑，equipped只返回该可读专家显式配备项，缺目录项记missing；简介/状态来自当前目录，不充当冻结Skill正文。当前本地Skills以唯一名称为稳定ID，不能推断企业多来源目录已支持。页面只获得摘要，不获得路径/正文/凭据；通过已有Connection exact Fetch封装，不新增Remote传输。专家编辑保留skillId，发布依旧使用公共SkillRevisionProvider冻结和校验。
+
+
+## 专家中心作品类型展示（2026-09-13）
+
+ExpertListQuery 增加可选 expertType=agent|team，由 Host 在分页前按作品定义分类，数量与搜索沿用同一授权目录。ExpertSummary 增加可选 expertType、profession、tags 展示索引；正文不作为新字段传输，旧消费者可忽略新增字段。专家团隐藏成员继续不作为独立作品枚举。专家/专家团自然语言创建是 Client 到官方 Session/input.overlay 的分流，不新增执行或身份接口。

@@ -467,5 +467,17 @@
     "directories": [
       "src"
     ]
+  },
+  {
+    "path": "packages/plugins/activity",
+    "title": "协作与活动展示",
+    "phase": "P1",
+    "task": "P1-01",
+    "status": "in_progress",
+    "moduleVersion": "0.1",
+    "directories": [
+      "src",
+      "tests"
+    ]
   }
 ]

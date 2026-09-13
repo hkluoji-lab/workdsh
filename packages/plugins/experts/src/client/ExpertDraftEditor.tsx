@@ -5,6 +5,7 @@ import { EXPERT_LIMITS, type DomainIssue, type ExpertDefinition, type ExpertVali
 import type { ExpertManagementClient } from './management.js';
 import { SkillPicker } from './SkillPicker.js';
 import { PublishConfirmDialog } from './PublishConfirmDialog.js';
+import { TeamContent } from './TeamContent.js';
 
 export type ExpertDraftEditorProps = {
   readonly expertId: string;
@@ -17,6 +18,10 @@ export type ExpertDraftEditorProps = {
 
 type ExampleRow = { id: string; title: string; prompt: string };
 type FormState = {
+  team?: ExpertDefinition['team'];
+  packageDocuments?: ExpertDefinition['packageDocuments'];
+  packageAssets?: ExpertDefinition['packageAssets'];
+  agentDocument?: string;
   name: string; description: string; role: string; methodology: string;
   boundaries: string; deliverables: string; tags: string[];
   examples: ExampleRow[]; skillRequirements: { name: string; skillId?: string }[];
@@ -27,6 +32,8 @@ function codeOf(cause: unknown): string { const code = (cause as unknown as { co
 
 function fromDefinition(definition: ExpertDefinition): FormState {
   return {
+    packageDocuments: definition.packageDocuments, packageAssets: definition.packageAssets, agentDocument: definition.agentDocument,
+    ...(definition.team ? { team: definition.team } : {}),
     name: definition.name, description: definition.description, role: definition.role,
     methodology: definition.methodology, boundaries: definition.boundaries, deliverables: definition.deliverables,
     tags: [...definition.tags],
@@ -36,8 +43,11 @@ function fromDefinition(definition: ExpertDefinition): FormState {
 }
 
 function buildPatch(form: FormState): Partial<ExpertDefinition> {
+  if (form.packageDocuments) return { packageDocuments: form.packageDocuments, packageAssets: form.packageAssets ?? {} };
+  if (form.agentDocument) return { agentDocument: form.agentDocument };
   let exampleSeq = 0;
   return {
+    ...(form.team ? { team: form.team } : {}),
     name: form.name.trim(),
     description: form.description.trim(),
     role: form.role, methodology: form.methodology, boundaries: form.boundaries, deliverables: form.deliverables,
@@ -56,6 +66,7 @@ function Counter({ value, max }: { value: number; max: number }) {
 
 export function ExpertDraftEditor({ expertId, management, onClose, onSaved, onPublished, onSummon }: ExpertDraftEditorProps) {
   const [form, setForm] = useState<FormState>();
+  const [selectedFile, setSelectedFile] = useState('');
   const [baseline, setBaseline] = useState('');
   const [publishedBaseline, setPublishedBaseline] = useState<string>();
   const [expertRevision, setExpertRevision] = useState('');
@@ -95,7 +106,9 @@ export function ExpertDraftEditor({ expertId, management, onClose, onSaved, onPu
       const fresh = await management.get(expertId);
       setExpertRevision(fresh.expert.revision);
       setDraftRevision(fresh.draft.revision);
-      setBaseline(JSON.stringify(current));
+      const refreshed = fromDefinition(fresh.draft.definition);
+      setForm(refreshed);
+      setBaseline(JSON.stringify(refreshed));
       setIssues(fresh.draft.validationIssues);
       setConflict(undefined);
       setSavedAt(new Date());
@@ -185,6 +198,38 @@ export function ExpertDraftEditor({ expertId, management, onClose, onSaved, onPu
 
       {error && !conflict && <div className="issues"><h4>无法完成操作</h4><ul><li>{error}</li></ul></div>}
 
+      {(form.packageDocuments || form.agentDocument) ? <section className="group">
+        <h3>专家制作文件</h3>
+        <p className="hint">编辑完整角色说明和专业资源；保存时一起校验，发布后作为同一作品使用。</p>
+        {form.packageDocuments && <select aria-label="选择制作文件" value={selectedFile || Object.keys(form.packageDocuments)[0]} onChange={event => setSelectedFile(event.currentTarget.value)}>
+          {Object.keys(form.packageDocuments).map(path => <option key={path} value={path}>{path}</option>)}
+        </select>}
+        {form.packageDocuments && <div>
+          <label>添加或替换资源文件<input type="file" onChange={async event => {
+            const file = event.currentTarget.files?.[0];
+            if (!file) return;
+            const paths = Object.keys(form.packageAssets ?? {}).filter(path => path.split('/').at(-1) === file.name);
+            if (paths.length > 1) { setError('存在多个同名资源，请在制作对话中指定完整路径。'); return; }
+            const resourcePath = paths[0] ?? `${/\.(png|jpg|jpeg|webp)$/i.test(file.name) ? 'avatars' : 'assets'}/${file.name}`;
+            try {
+              if (file.size > 2 * 1024 * 1024) throw new Error('资源不得超过2MiB。');
+              const bytes = new Uint8Array(await file.arrayBuffer());
+              let encoded = '';
+              for (let offset = 0; offset < bytes.length; offset += 8192) encoded += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+              set('packageAssets', { ...form.packageAssets, [resourcePath]: { ...form.packageAssets?.[resourcePath], base64: btoa(encoded) } });
+              setError('');
+            } catch (cause) { setError(messageOf(cause)); }
+          }} /></label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, margin: '20px 0' }}>{Object.entries(form.packageAssets ?? {}).map(([path, asset]) => <div key={path} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 16, border: '1px solid #383838', borderRadius: 12 }}>
+            <span style={{ order: 1, overflowWrap: 'anywhere', fontSize: 12 }}>{path}{asset.executable ? ' · 可执行文件' : ''}</span>
+            {path.startsWith('avatars/') && <img alt={path} src={`data:${path.endsWith('.jpg') || path.endsWith('.jpeg') ? 'image/jpeg' : path.endsWith('.webp') ? 'image/webp' : 'image/png'};base64,${asset.base64}`} style={{ width: 112, height: 112, objectFit: 'cover', borderRadius: 12 }} />}
+          </div>)}</div>
+        </div>}
+        <textarea aria-label="完整制作文件内容" rows={24} style={{ width: '100%', fontFamily: 'monospace' }}
+          value={form.packageDocuments ? form.packageDocuments[selectedFile || Object.keys(form.packageDocuments)[0]] : form.agentDocument}
+          onChange={event => form.packageDocuments ? set('packageDocuments', { ...form.packageDocuments, [selectedFile || Object.keys(form.packageDocuments)[0]]: event.currentTarget.value }) : set('agentDocument', event.currentTarget.value)} />
+      </section> : <>
+      <TeamContent team={form.team} onChange={team => setForm({ ...form, team })} />
       <section className="group">
         <h3>基本信息</h3>
         <div className={`field ${nameInvalid ? 'invalid' : ''}`}>
@@ -258,6 +303,7 @@ export function ExpertDraftEditor({ expertId, management, onClose, onSaved, onPu
           {form.examples.length < EXPERT_LIMITS.examplesMax && <button className="add-row" onClick={() => set('examples', [...form.examples, { id: '', title: '', prompt: '' }])}>+ 添加示例任务</button>}
         </div>
       </section>
+      </>}
     </div>
 
     <div className="editor-foot">

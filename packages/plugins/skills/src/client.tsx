@@ -1,3 +1,6 @@
+import type { ActivityPresentation } from 'workdsh-contracts/activity';
+declare module '@deepseek-ai/cordis' { interface Context { activityPresentation: ActivityPresentation; } }
+import { installSkillCommandMenu } from './client/CommandMenu.js';
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-client-connection/client';
 import type {} from '@deepseek-ai/dsh-api-session-controller/client';
@@ -30,6 +33,12 @@ export function apply(ctx: Context): void {
   // keep browser calls explicitly bound to the Session Controller client face.
   const sessions = ctx.sessions as unknown as ISessions;
   const management = createSkillManagementClient(ctx, lifetime.signal);
+  installSkillCommandMenu(ctx, management);
+  ctx.inject(['activityPresentation'], scope => scope.effect(() => scope.activityPresentation.registerSkillLabels(async () => {
+    const rows = await management.list();
+    return new Map(rows.map(row => [row.name, row.title || row.name]));
+  })));
+
   const startSkillTask = async (kind: SkillTaskKind, name?: string): Promise<void> => {
     lifetime.signal.throwIfAborted();
     const sessionState = sessions.list.getSnapshot();

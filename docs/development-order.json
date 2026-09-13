@@ -225,14 +225,17 @@
     }
   ],
   "activeSlice": {
-    "id": "office-ai-editing",
-    "task": "P1-01",
+    "id": "expert-team-tm01",
+    "task": "P1-02",
     "status": "in_progress",
-    "decision": "docs/adr/0024-ai-visible-browser-editing.md",
-    "scope": "用户批准的OFFICE-AI-01 / Office 0.1专项。通过官方Harness插件实现Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown及统一AI实时编辑。按U1—U5与OP-T01—07推进，U1最小新建document插件/五工具/原生Tiptap/独立打包已验证，U2确定性工具/UI链路通过；接续真实模型/PTC及恢复验收，八类与U3-U5未完成。独立Office包、Host服务/工具/Connection与Client官方组合；不改变主线D04/D15状态，不包含tables业务数据库或pages发布。 2026-09-13 用户最新决定：画布与多维表格不再列入本专项开发，停止这两项占位入口；下一个适配器仅推进 PDF，现有 Word/PPT/Excel/HTML 保持，Markdown 本轮不扩展。PDF 完成须真实文件预览、AI 更新、保存重开与最终 PDF 交付验证，不能将技能指导或静态预览称为已完成。 PDF 首版已实现新建页对象及文本/矩形、真实 PDF.js 预览、按页修订、人工文字保存和 PDF 派生下载；字体完整静态嵌入，既有任意 PDF 导入/OCR/图片编辑未接入。独立安装交付签收以 PDF-LIVE 证据为准，Office 专项仍为 in_progress。",
+    "decision": "docs/adr/0020-expert-team-sop-on-native-workflow.md",
+    "scope": "用户要求由当前设计者先验证SOP。只做TM-01：隔离核对同版本官方运行接点，不实施团队UI、不修改上游、不操作用户preview。专家插件P1-02/0.1拥有业务策略，关联P2-01，主线D04及D11前置保留。第二批one-shot指定专家/冻结Skill与绑定、取消和冷读通过；第三批有限SOP正文版本/指定评审/依赖/预算/取消撤销/并发/受测工具绕行及冷读预算通过；第四批实际Profile工具/权限组合、真实文件版本回执（生成→评审→交接→交付同字节）与取消/不确定派发对账通过（integrationReady=true，10项检查9通过、1项受控委派工具设计缺口）。第五批运行接入完成：one-shot适配迁入专家插件正式生命周期（ctx.effect托管注册/撤销/清理）、六项AI可调用受控委派工具（复用同一TeamRunsManager业务服务，按SOP选择成员/前置验收/尝试限额）、签收/交接/交付三闸门文件版本校验；生产路径--team退出0，7项检查全部通过（teamReady=true、teamNativeChildren=13；正例两位已有专家协作生成/审核/交付同一sha256，反例跳步/文件漂移/取消/重复调用均在预留或签收前被拒，独立进程冷读deliveryArtifactMatch=true、executionResumed=false）。团队创建页面本批明确不做，运行只经AI工具。TM-01仍in_progress：整体退出与TM-02～04准入等待用户验收；团队页面、完整生产Profile安装、付费模型与AT-T01～07未执行。 用户后续授权修正完整专家/专家团制作交付体系：自由Agent Markdown与原包文本为创作源，复用现有Host保存、确认发布、固定成员修订、官方Skill挂载、导入导出；修正制作文件编辑入口。单成员直接委派及二进制资源安装保留未完成边界，不修改上游、不安装preview。 用户要求完整覆盖WorkBuddy专家制作交付体系：继续补齐单成员真实调用、可选评审及串并行完整回传、二进制资源与CLI安装、真实整包交付；保持官方运行/沙箱及统一Host权限，不缩减为文本包范围。 用户截图授权专家中心/我的作品独立分工、专家与专家团类型分类及自然语言创建分流；复用官方原生新任务，不复制编辑器。 用户授权修复实际团队委派悬空：原生等待/启动超时、执行和评审异常结算、官方子会话显式恢复核对已实现；33项管理/故障测试和隔离--team回归通过，保留前置成果和尝试次数。已完成未结算或未知终态不自动重派；实际旧任务续作及真实模型端到端验收仍待执行。 用户授权独立活动展示插件：以官方Session事实覆盖问答/Skill/专家/团队，顶部一行、动画可关闭；不改变原SOP规则。；活动与协作独立插件0.1完成隔离官方Profile/浏览器及停用验证，18989正式preview已更新重启并验证协作栏，不推进TM-01验收。 外观进一步按用户效果图调整为头像与成员状态分段，保持40px；历史固定修订无图片则不读取未发布草稿。 用户授权修复普通对话异常：全局默认误选wd-exp-*内部preset，原生选择与设置菜单统一过滤并拒绝内部操作，恢复preview默认standard；保留专家绑定guard及旧任务历史。 用户要求活动栏对齐认可图并增加Siri式沿边框滚动色条：46px/宽屏1120px/留白、工作时彩边与眨眼三点动画、开关及减少动态效果；不追加模型请求。 用户最新要求活动栏缩减一半并居中：最大560px/可用区域50%，46px及彩边动画保留；隔离浏览器几何和动效验证通过，授权中断后更新preview。 召唤后的hero专家名称从官方已有preset name只读展示，修复过滤后退回内部ID；普通菜单过滤及绑定guard保留。 用户授权保存三张截图、更新README及准备本地发布候选：8包与SHA256清单、发布限制说明完成；未对外发布，不推进TM-01验收。 用户收敛仅改顶部参考图场景栏：团队56px双层/固定修订三成员头像/真实运行高亮，半宽居中和彩边开关保留；没有已验证交接事件不制造动效，原生正文和文件卡不改。 活动栏每3秒刷新官方子任务目录（运行期间），委派/读取失败不兜底为主理人；真实任务已结束，长任务运行切换未付费重验。 用户授权提交发布准备：新模块候选版本、8包重打、真实截图及Twitter草稿；按明确指示Office文本收集缺项用README引用记录，不作为本次阻塞；不代替TM-01验收，不对外发Twitter。",
     "evidence": [
-      "docs/evidence/office-live-u1.md",
-      "docs/design/office/PDF-LIVE.md"
+      "docs/evidence/expert-team-tm01.md"
+    ],
+    "workItem": "TM-01",
+    "relatedTasks": [
+      "P2-01"
     ]
   },
   "completedSlices": [
@@ -246,6 +249,20 @@
         "docs/evidence/skills-browser.md",
         "docs/releases/v0.1.0-alpha.1.md"
       ]
+    }
+  ],
+  "deferredSlices": [
+    {
+      "id": "office-ai-editing",
+      "task": "P1-01",
+      "status": "paused",
+      "decision": "docs/adr/0024-ai-visible-browser-editing.md",
+      "scope": "用户批准的OFFICE-AI-01 / Office 0.1专项。通过官方Harness插件实现Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown及统一AI实时编辑。按U1—U5与OP-T01—07推进，U1最小新建document插件/五工具/原生Tiptap/独立打包已验证，U2确定性工具/UI链路通过；接续真实模型/PTC及恢复验收，八类与U3-U5未完成。独立Office包、Host服务/工具/Connection与Client官方组合；不改变主线D04/D15状态，不包含tables业务数据库或pages发布。 2026-09-13 用户最新决定：画布与多维表格不再列入本专项开发，停止这两项占位入口；下一个适配器仅推进 PDF，现有 Word/PPT/Excel/HTML 保持，Markdown 本轮不扩展。PDF 完成须真实文件预览、AI 更新、保存重开与最终 PDF 交付验证，不能将技能指导或静态预览称为已完成。 PDF 首版已实现新建页对象及文本/矩形、真实 PDF.js 预览、按页修订、人工文字保存和 PDF 派生下载；字体完整静态嵌入，既有任意 PDF 导入/OCR/图片编辑未接入。独立安装交付签收以 PDF-LIVE 证据为准，Office 专项仍为 in_progress。",
+      "evidence": [
+        "docs/evidence/office-live-u1.md",
+        "docs/design/office/PDF-LIVE.md"
+      ],
+      "reason": "2026-09-13 当前优先验证专家团 TM-01；保留 Office 未完成范围与证据，不标完成。"
     }
   ]
 }

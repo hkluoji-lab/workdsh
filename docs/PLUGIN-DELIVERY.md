@@ -1,3 +1,9 @@
+## 当前专项：专家团 TM-01
+
+第五批运行接入已实施并实测通过：one-shot 适配迁入专家插件正式生命周期（`ctx.effect` 托管注册/撤销/清理）、六项 AI 可调用受控委派工具、签收/交接/交付三闸门文件版本校验；生产路径 `--team` 退出0（7 项检查全部通过，正例两位已有专家协作生成/审核/交付同一 sha256，反例跳步/漂移/取消/重复调用均被拒）。团队创建页面本批明确不做，运行只经 AI 工具；TM-01 整体退出（完整生产 Profile 安装、付费模型、AT-T01～07）与 TM-02～04 准入等待用户验收。业务策略与运行服务归专家插件 0.1 内部实现，未发布、未安装 preview。证据见[TM-01](evidence/expert-team-tm01.md)。
+
+按当前用户方向由设计者执行 TM-01 隔离验证，activeSlice 已切换为 expert-team-tm01；原 Office 专项保留在 deferredSlices，未标完成。仅验证官方运行接点，D04主线与D11完整产品验收保持原状态，不据此推进TM-02～04。证据见[TM-01](evidence/expert-team-tm01.md)。
+
 # 逐插件开发顺序与版本交付
 
 > 当前用户授权专项（2026-09-12）：OFFICE-AI-01 / Office模块0.1，覆盖Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown的原生编辑与统一AI工具。依[ADR-0024](adr/0024-ai-visible-browser-editing.md)、[U1—U5](design/office/UNIFIED-API.md)与[插件门槛](design/office/PLUGIN-ARCHITECTURE.md)推进；顺序台账activeSlice为当前专项，currentStep保留主线D04。U1最小插件和U2确定性工具/UI链路已通过，[真实证据](evidence/office-live-u1.md)记录范围；真实模型、完整格式和生命周期门槛待验，不以该专项标记D04/D15完成。下方旧Skill专项及主线说明保留历史；用户此项范围优先。

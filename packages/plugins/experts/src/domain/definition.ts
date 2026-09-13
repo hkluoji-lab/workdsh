@@ -1,3 +1,4 @@
+import { validateResources } from '../authoring/package-resources.js';
 import { z } from 'zod';
 import type {
   DomainIssue,
@@ -8,6 +9,7 @@ import type {
 } from 'workdsh-contracts';
 import { EXPERT_LIMITS } from './values.js';
 import { byteLength, codePointLength, digestOf } from './digest.js';
+import { createSop } from './team-sop.js';
 
 /**
  * Definition validation, normalization and persona-prefix compilation.
@@ -45,7 +47,10 @@ const futureRequirementSchema: z.ZodType<FutureRequirement> = z.object({
  * empty strings so a half-authored draft stays readable. Every business rule
  * (required, length, braces, duplicates, size) is enforced in `validateDefinition`.
  */
-export const expertDefinitionSchema: z.ZodType<ExpertDefinition> = z.object({
+const singleDefinitionSchema = z.object({
+  agentDocument: z.string().optional(),
+  packageDocuments: z.record(z.string(), z.string()).optional(),
+  packageAssets: z.record(z.string(), z.object({ base64: z.string(), executable: z.boolean().optional() }).strict()).optional(),
   name: z.string(),
   description: z.string(),
   avatarRef: z.string().optional(),
@@ -59,6 +64,15 @@ export const expertDefinitionSchema: z.ZodType<ExpertDefinition> = z.object({
   skillRequirements: z.array(skillRequirementSchema),
   futureRequirements: z.array(futureRequirementSchema),
 });
+
+export const teamDefinitionSchema = z.object({
+  members: z.array(z.object({ key: z.string(), definition: singleDefinitionSchema.strict() })),
+  workflows: z.array(z.object({
+    id: z.string(), title: z.string(), trigger: z.string(), deliverable: z.string(),
+    stages: z.array(z.object({ id: z.string(), worker: z.string(), reviewer: z.string().optional(), dependsOn: z.array(z.string()) })),
+  })),
+});
+export const expertDefinitionSchema: z.ZodType<ExpertDefinition> = singleDefinitionSchema.extend({ team: teamDefinitionSchema.optional() });
 
 /** Fields whose text becomes part of the persona prefix and must stay template-safe. */
 const TEMPLATE_TEXT_FIELDS = ['name', 'description', 'role', 'methodology', 'boundaries', 'deliverables'] as const;
@@ -91,6 +105,12 @@ export function validateDefinition(candidate: unknown): readonly DomainIssue[] {
     return issues;
   }
   const definition = parsed.data;
+  try { validateResources(definition.packageDocuments ?? {}, definition.packageAssets); } catch (error) { issues.push({ code: 'definition/package', message: String(error) }); }
+  if (definition.packageDocuments) {
+    const files = Object.entries(definition.packageDocuments);
+    if (files.length > 64 || files.some(([path]) => path.startsWith('/') || path.includes('\\') || path.split('/').some(part => !part || part === '.' || part === '..')) || files.reduce((sum, [, text]) => sum + byteLength(text), 0) > 1_000_000) issues.push({ code: 'definition/package', message: '专家包资源路径、数量或总大小无效。' });
+  }
+  if (definition.agentDocument && (hasTemplateBraces(definition.agentDocument) || byteLength(definition.agentDocument) > 65536)) issues.push({ code: 'definition/document', message: '完整 Agent MD 过大或包含原生模板插值。' });
 
   const required = (path: string, label: string, value: string) => {
     if (value.trim().length === 0) issues.push({ code: 'definition/required', path, message: `${label}不能为空。` });
@@ -114,7 +134,7 @@ export function validateDefinition(candidate: unknown): readonly DomainIssue[] {
   checkLimit(issues, 'name', '名称', definition.name, EXPERT_LIMITS.nameMax);
   checkLimit(issues, 'description', '描述', definition.description, EXPERT_LIMITS.descriptionMax);
   checkLimit(issues, 'role', '角色定位', definition.role, EXPERT_LIMITS.proseMax);
-  checkLimit(issues, 'methodology', '工作方法', definition.methodology, EXPERT_LIMITS.proseMax);
+  checkLimit(issues, 'methodology', '工作方法', definition.methodology, definition.agentDocument ? 65536 : EXPERT_LIMITS.proseMax);
   checkLimit(issues, 'boundaries', '行为边界', definition.boundaries, EXPERT_LIMITS.proseMax);
   checkLimit(issues, 'deliverables', '交付物', definition.deliverables, EXPERT_LIMITS.proseMax);
 
@@ -169,7 +189,25 @@ export function validateDefinition(candidate: unknown): readonly DomainIssue[] {
     seenTags.add(normalized);
   });
 
-  const totalBytes = byteLength(JSON.stringify(definition));
+  if (definition.team) {
+    const { members, workflows } = definition.team;
+    const memberKeys = new Set(members.map(member => member.key));
+    if (members.length < 2 || members.length > 8 || memberKeys.size !== members.length) issues.push({ code: 'team/members', message: '专家团需要 2 至 8 位不同成员，另有主理人。' });
+    members.forEach((member, i) => {
+      if (!/^[a-z][a-z0-9-]{0,39}$/.test(member.key) || member.key === 'lead') issues.push({ code: 'team/member-key', path: `team.members.${i}.key`, message: '成员标识须为小写英文和连字符，lead 保留给主理人。' });
+      issues.push(...validateDefinition(member.definition).map(issue => ({ ...issue, path: `team.members.${i}.definition.${issue.path ?? ''}` })));
+    });
+    if (!workflows.length || workflows.length > 12 || new Set(workflows.map(w => w.id)).size !== workflows.length) issues.push({ code: 'team/workflows', message: '需要 1 至 12 个标识不同的协作场景。' });
+    workflows.forEach((workflow, i) => {
+      for (const [field, value] of Object.entries(workflow)) if (typeof value === 'string' && (!value.trim() || hasTemplateBraces(value) || value.length > 4000)) issues.push({ code: 'team/workflow-text', path: `team.workflows.${i}.${field}`, message: '场景文字不能为空、过长或包含模板插值。' });
+      if (workflow.stages.length) {
+        try { createSop({ stages: workflow.stages.map(stage => ({ ...stage, dependsOn: [...stage.dependsOn], maxAttempts: 2 })), maxTotalAttempts: Math.min(20, workflow.stages.length * 2) }); }
+        catch (error) { issues.push({ code: 'team/workflow-plan', path: `team.workflows.${i}.stages`, message: String(error) }); }
+        for (const stage of workflow.stages) if (!memberKeys.has(stage.worker) || (stage.reviewer && !memberKeys.has(stage.reviewer))) issues.push({ code: 'team/unknown-member', message: `场景 ${workflow.title} 引用了不存在的成员。` });
+      }
+    });
+  }
+  const totalBytes = byteLength(JSON.stringify({ ...definition, team: undefined, packageDocuments: undefined, packageAssets: undefined, agentDocument: undefined }));
   if (totalBytes > EXPERT_LIMITS.publishedDefinitionMaxBytes) {
     issues.push({
       code: 'definition/too-large',
@@ -206,6 +244,9 @@ export function normalizeDefinition(candidate: ExpertDefinition): ExpertDefiniti
     description: trim(requirement.description),
   }));
   return {
+    ...(candidate.agentDocument ? { agentDocument: candidate.agentDocument } : {}),
+    ...(candidate.packageDocuments ? { packageDocuments: candidate.packageDocuments } : {}),
+    ...(candidate.packageAssets ? { packageAssets: candidate.packageAssets } : {}),
     name: trim(candidate.name),
     description: trim(candidate.description),
     ...(candidate.avatarRef === undefined || candidate.avatarRef.trim() === '' ? {} : { avatarRef: candidate.avatarRef }),
@@ -218,6 +259,7 @@ export function normalizeDefinition(candidate: ExpertDefinition): ExpertDefiniti
     examples,
     skillRequirements,
     futureRequirements,
+    ...(candidate.team ? { team: { members: candidate.team.members.map(member => ({ key: member.key, definition: normalizeDefinition(member.definition) })), workflows: candidate.team.workflows } } : {}),
   };
 }
 
@@ -227,6 +269,7 @@ export function normalizeDefinition(candidate: ExpertDefinition): ExpertDefiniti
  * validation already rejected literal braces in authored text.
  */
 export function compilePersonaPrefix(definition: ExpertDefinition): string {
+  if (definition.agentDocument) return definition.agentDocument.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').trim();
   const sections: string[] = [`你是「${definition.name}」。`, '', '## 角色定位', definition.role];
   if (definition.methodology.trim()) sections.push('', '## 工作方法', definition.methodology);
   if (definition.boundaries.trim()) sections.push('', '## 行为边界', definition.boundaries);

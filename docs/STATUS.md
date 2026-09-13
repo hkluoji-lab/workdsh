@@ -1,3 +1,179 @@
+## 2026-09-14 发布源码提交与Twitter宣传准备
+
+本次发布候选版本：experts alpha.2、skills alpha.28、contracts alpha.7、activity alpha.1。完整build、115项集成、9项活动测试、check:plan 29模块/50文档通过；8个独立tgz已重打到.artifacts/release-submit-2026-09-14并带SHA256清单。本次提交包含相关专家/团队/活动与技能展示改动、文档证据和3张原始真实截图；无关scripts/desktop和lefthook保持原状态。
+
+用户明确指示Office文本收集缺项不作为本次阻塞；README列出对应项目、10个版本条目与声明许可证，199项完整打包依赖清单保存在docs/evidence/office-bundled-dependencies-2026-09-14.md，已有notice保留。缺项报告未伪改为通过。Twitter中文主推文/可选跟帖/两张真实配图说明位于docs/social/twitter-2026-09-14.md，未发送。此次未推送/创建公开Release/发布npm；新版本完整组合隔离安装、真实长任务成员状态切换及TM-01整体验收仍未执行。
+
+## 2026-09-14 成员运行状态刷新与兜底修复
+
+用户截图显示4个子任务、真实委派/评审调用，但栏内主理人处理中。代码发现只读缓存catalog，未主动刷新采样状态；新增公开ISessions.refreshSubagents每3秒刷新（只在父任务运行时），首次与结束刷新，组件清理计时器。委派调用未返回且没有运行成员时展示“正在委派或等待成员结果”，读取加载/失败不再误归主理人。保持driver running/inactive语义，不据此宣称成功验收。定向build含TypeScript通过；实际任务复核时已完成，不能回溯证明当时子任务running状态。无付费重跑/真实长任务切换验收；隔离浏览器验证记录于/tmp/activity-catalog-browser.log。任务结束后经官方CLI安装新版，preview重启；不影响原生团队执行/SOP和文件卡。
+
+## 2026-09-14 顶部专家团场景栏
+
+按最新参考图只改顶部栏：团队56px双层文字、团队名称与真实执行动作、三人36px头像组、实际运行成员青色光圈，保留半宽居中/Siri彩边/动画开关；普通栏46px。专家经公开可选ActivityIdentity.members提供固定绑定修订组成及头像，缺图保留首字，不使用草稿。未核实真实交接事件，未制造交接箭头、光点或文案。原生正文/工具/文件卡保留。
+
+专家与活动定向build（含TypeScript）通过；12项相关测试、隔离官方Profile浏览器通过（普通46px/团队56px布局、半宽/中心、动效关闭持久化/减少动态效果/原生正文）。日志/tmp/team-strip-browser.log、/tmp/team-strip-tests.log。官方CLI安装两插件并核对browser字节，preview已重启；真实浏览器复核当前团队任务：3个头像、560×56px、中心一致、无pageerror，截图.artifacts/activity/live-team-scene.png，日志/tmp/team-scene-live.log。该固定修订缺图片，呈现郑/钱/甄首字。付费模型/真实交接、多平台本批未执行；TM-01未推进。此前.artifacts/release-candidate-2026-09-14早于这次修改，不含新场景栏，正式发布需重新版本化/打包。
+
+## 2026-09-14 README截图与发布候选准备
+
+3张用户PNG原图保存至docs/assets/screenshots并核对字节一致；README补充工作动态、HTML实时制作、专家团详情与草稿/修订说明。发布候选说明位于docs/releases/2026-09-14-development-candidate.md。完整build通过；集成回归115项、活动投影9项通过，check:plan 29模块/50文档通过。首轮集成发现测试新增react-dom/server未声明依赖，已移除不必要SSR依赖并重新执行全套集成成功。8个当前工作区版本tgz及SHA256SUMS/release-manifest位于.artifacts/release-candidate-2026-09-14，摘要逐一核对。未提交/推送/建tag/发布npm或GitHub Release，未重启用户preview。
+
+此前候选记录（后续版本与用户决定见顶部）：源码固定与版本准备当时尚未完成，Office报告10项许可证文本收集缺项；新制品完整隔离Profile安装/冷启动/移除、付费模型、多平台本批未执行，TM-01未整体验收。候选包不等于已具备完整公开发布准入。
+
+## 2026-09-13 召唤后专家名称显示修复
+
+普通preset列表过滤误删hero当前已绑定专家的名称行，原生组件找不到chosen.name退回内部wd-exp ID。已召唤专家单独显示只读名称，从官方当前preset roster的已有name读取；未加载显示“已召唤专家”，不构造名称、不提供内部preset切换。普通菜单与设置过滤、绑定guard保持。定向build（含TypeScript）及3项菜单回归通过；官方CLI安装并核对browser字节，preview更新重启。日志 /tmp/expert-seat-name-tests.log、/tmp/expert-seat-name-install.log。
+
+## 2026-09-13 活动栏半宽居中
+
+按用户最新截图缩减至此前宽度一半：可用区域50%、最大560px，水平居中；46px高度与Siri式彩边动画保持。窄屏保持可读宽度，按容器宽度收敛成员信息。局部头像显式corner-shape:round避免官方全局squircle影响圆形。定向build与隔离官方Profile真实浏览器通过：半宽/中心位置、圆形头像、旋转彩边、动画开关持久化、系统减少动态效果及原生正文保留。日志 /tmp/activity-half-browser.log。用户明确授权打断当前任务后，preview已通过官方CLI安装新版并重启；未新增模型请求或推进TM-01验收。
+
+## 2026-09-13 按认可图校准活动栏与Siri式动态边框
+
+用户要求：保持单行、宽屏收敛宽度、留白与圆形头像；边框四周柔和彩色色条循环，动画可关闭。实现46px单行/最大1120px/标签下12px留白、轻边框、普通助理去双轮廓、工作时眨眼/三点波动；局部mask伪元素配conic-gradient角度旋转，working且动效开启时每5秒一周，终态不滚动。暂停按钮悬停/键盘聚焦可见，关闭状态保留开启动效入口；系统减少动态效果覆盖伪元素。官方Session与Header utilities Slot保持，未新增执行器。隔离浏览器已验证彩边角度随时间改变、暂停及系统减少动态效果停止；当前继续验证用户要求的半宽居中。
+
+## 2026-09-13 普通对话误用专家默认配置修复
+
+用户截图排查：preview settings.yaml 的 agent-presets.default 为 wd-exp-work-retrospective-advisor-020c83907b5a，普通会话 session-6cb6ee80-98ee-4eee-878e-4af6305588b1 挂载该preset却无绑定。原生执行guard拒绝符合预期；此前新任务菜单允许公开专家preset、设置页面未过滤专家内部preset导致错误创建。修正两个公开Slot的呈现与操作：普通配置菜单/全局默认设置排除所有wd-exp-*，专家从绑定感知召唤路径创建。官方复用记录：锁定ui-agent-preset公开AgentPresetSeat/AgentPresetSection注入load/select/makeDefault与快照，ui-slots StoredEntry.options及同cell shadow；不改上游/执行器，不跳过专家绑定guard。当前默认已恢复官方standard，原设置已备份 /tmp/workdsh-settings-before-native-default.yaml；23项相关测试及typecheck通过。真实浏览器确认设置内容排除内部专家preset、新任务默认Standard mode、普通hero菜单不出现专家。用户随后普通新闻查询已正常完成，未额外发送模型测试。原生Settings导航基于raw ledger而非shadow winners，设置分类重复显示的UI缺口另记，未宣称已修复。
+
+## 2026-09-13 活动栏外观修订
+
+单行40px保持；成员姓名/职责/真实运行状态分段、重叠头像、渐变与SVG图标。固定修订头像资源读取已补；旧会话缺少头像时不借用未发布草稿。根build/typecheck与9项投影测试通过；preview已安装重启，真实浏览器复核通过：两位成员、40px、无pageerror；原生正文保留、动画关闭刷新保留、系统减少动态效果与Escape收起通过。证据 /tmp/activity-ui-live.json 与 /tmp/activity-ui-browser.log，截图 .artifacts/activity/live-ui-strip.png。
+
+## 2026-09-13：独立活动与协作展示插件0.1完成
+
+用户授权需求与实现位于 packages/plugins/activity/DESIGN.md、packages/plugins/activity。覆盖普通问答、技能、专家、团队的紧凑40px单行呈现，展开浮层展示原生子任务状态/查看过程；助手表情、呼吸/完成点头及长任务节奏可关闭，偏好持久化并遵守系统减少动态效果。只使用结构化原生Session事件、子会话目录，专家/技能经公开可选契约提供固定修订身份与已有标题；不增加模型请求、任务执行器或任务真源。使用官方Header utilities附加Slot+只匹配插件所在header的局部布局CSS；原Header、正文、工具调用、Composer所有权保留。初版Header包装的声明时序/子Slot所有权问题已通过真实浏览器发现并移除。
+
+验证：根build/typecheck、112项现有集成回归及9项活动状态测试通过；check:plan（29模块/50文档）、git diff --check通过。独立目录官方CLI安装tgz与字节核对通过；真实浏览器确认单40px栏、保留正文、动画关闭刷新持久化、系统减少动态效果、Escape、无pageerror。独立Profile停用插件后组件和局部CSS消失、原生会话正文/header恢复。安装包 .artifacts/workdsh-plugin-activity-0.1.0-alpha.1.tgz，截图 .artifacts/activity/browser.png；日志 /tmp/workdsh-activity-browser-final.log、/tmp/workdsh-activity-disabled.log、/tmp/workdsh-activity-regression.log、/tmp/workdsh-activity-typecheck-final.log。
+
+边界：浏览器使用独立原生历史夹具，不是付费模型/真实专家团端到端验收；成员执行中来自原生目录，未伪造待评审/SOP已签收。后续用户反馈未显示，已更新18989正式preview并重启。在原1000万预算会话真实浏览器确认团队协作栏出现、固定修订主理人郑守衡及成员甄有据/钱日清加载、原生终态为本轮结束/文件已交付、无pageerror。未重新执行模型任务。截图 .artifacts/activity/live-preview.png，证据 /tmp/workdsh-activity-live-browser.json。启动时用量账本仍有已知EMFILE重试，不宣称修复。未提交推送，TM-01整体状态不因此推进。
+
+## 2026-09-13：修复专家委派悬空
+
+用户授权修复 session-561c400bfdca87cf336dfb9fbb63305a 暴露的阶段等待/异常收尾问题。未能从导出日志判定原始中断触发源，已修复应用层悬空：官方原生子任务等待增加5分钟无进展/30分钟最长等待；启动准备3分钟上限及取消后迟到句柄释放。阶段执行和评审准备、创建、结果/回执异常统一结束当前尝试；保留文件、前置验收和尝试预算。显式 workdsh_expert_team_recover 通过官方 sessionQuery 核对原子会话，仅确认中断且无活跃成员时作废当前尝试；已完成未结算、未知状态不盲目重派/签收。status 显示待恢复，团队主理人 Markdown 增加续作规范，不修改上游执行器。
+
+验证：专家构建/typecheck通过；故障恢复12项及专家管理21项测试共33项全部通过。生产路径隔离确定性 --team 探针退出0、outcome=expert-team-verified，含真实子会话、取消后重试、文件漂移拒绝及独立进程冷读；check:plan与git diff --check通过。日志 /tmp/workdsh-recovery-tests.log、/tmp/workdsh-recovery-team.log。preview正式Profile安装通过并重启；浏览器读取原生输入框/侧栏通过（首次Standard mode定位超时，实际选中工作复盘顾问，复核DOM确认可用）；启动时用量账本出现EMFILE，即便调整本次启动文件句柄上限仍短暂出现；未将该独立插件问题宣称修复。未调用付费模型、未改用户历史日志/已发布作品、未提交推送。旧预算任务并未自动生成最终Excel：应在原会话显式恢复第三阶段，保留前两阶段；整体TM-01验收及真实模型端到端结果未执行。
+
+## 2026-09-13：筛选专家模式与中文指令展示
+
+通过官方Slot低优先级展示覆层复用原组件和控制器。仅显示当前可用独立作品preset，内部成员和历史修订不进入模式选择。指令列表读取已有中文title，并为自有技能补充产品中文标题；第三方无中文标题保持原名，调用标识及pick索引不变。experts/skills构建、preview安装通过并重启。实际浏览器验证模式菜单无内部会计/出纳、表格分析单行；六个自有技能中文名称出现，无页面错误。首次验证因浏览器默认英文误用中文按钮定位，改用实际按钮后通过。未发送模型请求，未提交推送。
+
+## 2026-09-13：修改提示词展示作品名称
+
+移除可见存储ID与中文名称的JSON引号；保留中文名称，英文名称仅从作品manifest的displayName.en/name或单专家Agent MD的displayName.en/name读取，缺失或无效时省略，不翻译、不构造。用户追加要求采用WorkBuddy句式：帮我修改专家：[名称]，增加/优化[请补充你希望新增/优化的技能或知识领域等]方面的能力。构建、preview安装通过；实际浏览器验证中文及已有英文Corporate Finance Team正确、无ID、原生输入预填通过。未发送、未发布、未提交推送。
+
+## 2026-09-13：专家编辑转入原生对话
+
+默认编辑与继续编辑改为原生Session对话，预填选中作品名称、类型与稳定ID的修改请求；文件编辑留为“编辑制作文件”高级入口，不自动发送或发布。资源图片改为网格、统一112px预览。experts build、preview:install通过并重启18989；实际浏览器验证公司财务专家团的“编辑”进入原生输入、提示词及ID正确、未打开原始文件编辑器通过，截图.artifacts/expert-pages/edit-conversation.png。图片网格仅经构建验证，未执行付费模型或全量回归，未提交推送。
+
+## 2026-09-13：专家团使用详情重排
+
+用户要求参考WorkBuddy截图完善：使用页以用途、快捷提问、主理人/成员与协作场景为主，原始MD收进专业设定。复用既有已发布ExpertDetail与召唤草稿管线，不更改修订内容，不编造头像/使用次数。experts build与git diff --check通过，preview更新并重启，实际浏览器验证快捷提问/三个成员/原文默认隐藏通过，截图.artifacts/expert-pages/team-detail.png。发现四张头像在工作区与ZIP中存在但发布团队未保存：管理资源工具缺fs注入，现已补齐。编辑页新增资源支持；通过真实UI保存四张头像及头像引用进已有团队草稿，读回确认团队与两成员头像存在，未发布（保持旧修订）。草稿截图team-avatar-draft.png。未执行付费模型或全量回归，未提交推送。
+
+## 2026-09-13：分析 WorkBuddy 技能可复用性
+
+盘点 docs/workbuddyskills 的26个顶层技能与3个嵌套技能，重点比较创建器、Office路由、设计参考与平台依赖。分析与实施建议见 design/WORKBUDDY-SKILLS-AUDIT.md，文件数量与入口哈希见 design/WORKBUDDY-SKILLS-INVENTORY.json。发现我方创建器仍为TS正文且自然语言工具仅支持SKILL.md；原始创建器隔离实测错误YAML/空描述/缺引用误通过、打包包含dummy .env与缓存。仅运行临时目录本地校验/打包函数，无远端调用或用户技能安装；未验证付费模型/金融算法/腾讯服务。建议先增强整包制作能力，后续技能按真实工具契约适配；本轮不改运行代码、不改路线状态、不重启preview、不提交推送。
+
+## 2026-09-13：专家中心直接区分专家与专家团
+
+用户反馈中心无法区分类型。将类型切换从我的作品扩展到中心，复用现有 Host expertType 查询；来源筛选与类型组合，搜索/空态/创建按钮同步类型，卡片显式类型标签。类型保留到 URL。加载序号阻止快速切换时旧响应覆盖当前目录。experts build、git diff --check、preview:install 通过并重启18989。实际 preview 的 Playwright 验证中心两种类型切换、列表隔离、类型标签及刷新保持通过；截图 .artifacts/expert-pages/center-{agent,team}.png。首次自动化误停在默认技能页，改为点击专家入口后通过。未执行付费模型测试或全量回归，未提交推送。
+
+## 2026-09-13：更新并重启 preview
+
+用户授权安装当前插件并重启。首次实际启动发现专家 Host integration 未声明官方 agents/subagents/sessionQuery 服务注入，隔离探针此前未覆盖正式 Loader 消费者的声明。补齐现有公开服务 inject，不修改上游或用户数据；experts build 与 preview:install 退出0，官方 Loader 实际启动成功并监听18989；已打开认证预览页面。未认证请求401符合本地认证要求。未执行付费模型测试、未提交推送。官方复用依据：deepseek-harness-docs/config-catalog.zh.md 的服务 Requires 与锁定 Cordis 运行时报错。
+
+## 2026-09-13：按 WorkBuddy 截图拆分专家作品浏览与创建入口
+
+专家中心与“我的专家”分工明确；我的作品独立提供专家/专家团标签、各自数量、搜索、状态过滤、创建卡片及返回中心入口，分类保留到 URL，刷新不丢。制作菜单区分创建专家/专家团，均经原有官方 Session 与原生输入草稿交接，填入不同自然语言提示词，不自动发送。完整文件编辑仍单独打开。卡片突出职业、领域标签、两行简介和真实头像，默认头像改中性灰。
+
+Host 同一 list 增加 expertType 条件，在授权目录分页前分类；摘要增加类型/职业/标签，隐藏成员不重复列为作品。没有新增作品存储、原生编辑器或运行器。公共契约与覆盖矩阵回填。
+
+验证：experts build、根 typecheck、集成100/100、check:plan（28模块/50文档）、git diff --check通过；隔离 Playwright 浏览器实际 React 面板通过类型数量/显示隔离、两种创建分流、刷新分类保持、返回中心及创建菜单（CSS视口1440x900），截图 .artifacts/expert-pages/mine.png，日志 /tmp/workdsh-expert-pages-ui.log；该浏览器数据为隔离fixture，不是用户Profile。Host集成新增团队分类/计数/搜索断言。未安装preview、未启动用户应用、未提交推送；原生创建全链路及实际模型体验尚未在本轮验收。
+
+## 2026-09-13：补齐 WorkBuddy 专家制作与交付能力范围
+
+用户明确要求覆盖完整 expert-manager 体系，取消此前将单成员直调与二进制资源列为范围排除项。覆盖矩阵见 [WORKBUDDY-COVERAGE](design/experts/WORKBUDDY-COVERAGE.md)。完整 MD 是源，补齐转换/批量制作纪律、稳定身份检查、成员展示信息与真实头像；二进制原资源和可执行 bin 保存、固定安装、字节与目录漂移核对、原包导入导出。save_resources 从绑定工作区实际读取文件；export_file 经官方 Bash 沙箱写真实 ZIP、读回核对并原生 present，含空格/引号路径通过。
+
+团队增加单成员 team_ask：固定成员真实子 Session，完整输出中转给主理人，不强制独立评审。team_open 可按完整正文 Workflow 形成计划，由 Host 解析当前固定成员；评审可选，无依赖阶段并发预留保留两条绑定，后序收到完整前序产出。未修改上游、未另建执行器；仍复用官方 provider/AgentLoop/Session/StorageDomain/SkillFilesystem/原生沙箱。
+
+验证：根 build/typecheck、最终 experts build；集成100/100（含长正文、较大二进制清单、CLI安装/资源漂移、稳定身份、并发阶段与可选评审），规划2/2，check:plan 28模块/50文档，git diff --check。原生 --team 退出0，outcome=expert-team-verified、teamReady=true，10项检查通过，14个真实子 Session，独立进程读回4个运行；普通单成员没有评审子任务。证据 .artifacts/expert-team-probe/team-result.json；日志 /tmp/workdsh-coverage-{tests,native,root-build,typecheck,plan}.log。
+
+回归：--adapter/--sop/--integration 三模式退出全0，分别 one-shot-adapter-verified/sop-policy-verified/expert-integration-verified（integrationReady=true）；冻结锁文件安装检查通过。
+
+边界：这是代码能力与隔离确定性组合验证；integrationReady=false 在 --team 模式中表示没有运行 --integration 模式，不是 teamReady 失败。未安装 preview、未做浏览器视觉验收，未运行付费模型专业质量与模型同时派发多个阶段的验收，不宣称完整商业体验已经通过。bin 安装在固定作品目录，以运行说明中的绝对路径执行，不改宿主全局 PATH。未提交推送，保留其他 AI 共享改动。
+
+## 2026-09-13：完整专家/专家团制作文件作为创作源
+
+按用户“修改吧”授权修正文件包模型。四份 WorkBuddy 原始规范原样保留（agent-md-spec/team-spec/plugin-json-spec/avatar-spec），Apache-2.0 归属及平台差异分开记录。完整 Agent MD 与包内文本资源作为创作源，保存时重新解析身份、成员、依赖与兼容索引；编辑界面直接编辑原文件，拒绝仅修改旧摘要造成不同真相。导入导出保留原包文本；get_documents 返回内容后仍需 write/present 才是实际文件交付。
+
+发布复用同一 Host 服务和统一确认，固定隐藏成员修订；完整资源固定于官方 preset 的 expert-package，包内 Skill 经官方 skill-filesystem customSkillDirs 挂载。就绪检查及执行绑定校验逐字节与目录清单，修改、额外文件或软链接漂移拒绝执行；脚本不因保存而自动执行。
+
+验证：根 build、typecheck、最终 experts build；集成测试95/95，规划测试2/2，check:plan（28模块/50文档），git diff --check 均通过。新增验证覆盖自由MD/完整资源往返、官方preset挂载、原文件编辑重新解析、旧发布版本保持不变、资源漂移拒绝、团队一次发布固定成员与冷启动绑定。发现并修复旧专家空资源重复编译兼容问题。证据日志 /tmp/workdsh-expert-package-integration.log；复现 corepack pnpm build / typecheck / test:integration / test:planning / check:plan（Node22.23.2）。
+
+边界：已保存文件包的团队协作复用现有受控 SOP；单成员直接委派、自然语言 Workflow 自动编译、二进制头像/bin PATH 安装尚未完成。未安装 preview、未运行付费模型、未做浏览器视觉验收，不能据此宣称达到全部 WorkBuddy 体验。ADR-0021与工作范围已回填；未提交推送，保留其他AI的共享改动。
+
+## 2026-09-13：Skill 开发规范纳入工程约束
+
+按用户要求新增 [Skill 开发规范](SKILL-DEVELOPMENT-STANDARD.md)，并在根 AGENTS.md 的“指令与技能质量”中加入强制引用。覆盖 Markdown 内容源、按需资源、真实工具、运行依赖、发布资源、产物交付、验证和许可证。规范适用于内置技能及创建器生成的技能；此次仅加入开发约束，不宣称现有技能已全面符合，也未实现自动检查器。
+
+验证：文档引用和本次 diff 空白检查通过。未执行：build、typecheck、运行测试（仅文档变更）。后续在具体技能开发与审查时执行本规范；不改变当前开发顺序，未安装 preview、未提交推送。
+
+## 2026-09-13：TM-01 运行接入实测通过（生产工具、插件托管 provider、三闸门）
+
+按用户“运行接入”指令完成 TM-01 收口切片：one-shot 适配迁入专家插件正式生命周期、六项 AI 可调用受控委派工具、签收/交接/交付三闸门文件版本校验。`probe-expert-team.mjs --team`退出0，`outcome=expert-team-verified`、`teamReady=true`、`teamNativeChildren=13`；7项检查全部通过，机器证据在`.artifacts/expert-team-probe/team-result.json`。
+
+实际组合：隔离 home 加载与目标 Profile 相同的官方行，按生产入口装载插件——`TeamRunsManager`子Fiber + 六项`workdsh_expert_team_*`工具 + 专家插件自有one-shot委派provider（`ctx.effect`托管注册/撤销/清理，启动授权统一走`ctx.workdshTeamRuns.admission`）。正例：两位已有专家在真实host会话中经工具6次委派完成draft/publish两阶段生成与交叉评审，三处pin（draft输出、publish输出、交付）sha256等于盘上字节（`15c02643…`）；重复交付与已验收重派被拒（`already-delivered`/`sop/attempt-not-retryable`）、跳步在预留前拒（`sop/predecessor-not-accepted`）。反例：外部改写文件后在签收/交接/交付三处均被`stale-artifact`拒绝（交接拒绝不留尝试与预留），回写同字节后复过，最终`acceptedVersion===deliveredVersion`（`96cf23a8…`）；用户取消主持人回合后host/成员原生aborted、尝试弃置、重试新尝试评审accepted。独立进程冷读3运行/2交付/2含弃置尝试，`deliveryArtifactMatch=true`、`executionResumed=false`。
+
+新增代码（专家插件内部，未发布未安装preview）：`runtime/delegation-provider.ts`、`tools/team-tools.ts`、`services/team-runs.ts`、`storage/team-domain.ts`、`domain/team-sop.ts`、`scripts/probe-expert-production.mjs`，以及`execution-guard`/`experts-manager`/contracts的delegation扩展。探针暴露并修复一个真实产品缺陷：`open`工具输出schema缺`delivered`/`max_total_attempts`被官方`additionalProperties:false`拒绝。
+
+回归（Node 22.23.2）：根build、typecheck、集成88/88、规划测试2/2、check:plan（28模块/50文档）通过；`--adapter`/`--sop`/`--integration`回归退出0不变。注意：本机shell默认Node v21.0.0，`Promise.withResolvers`缺失导致部分测试挂起/失败，须显式使用仓库要求的v22.23.2（`.node-version`）复跑。
+
+未执行：团队创建/编辑页面（本批明确不做）、完整生产Profile安装、付费模型自主编排与专业判断、进程kill中途恢复、Windows/Linux沙箱差异、完整AT-T01～07。**TM-01整体退出与TM-02～04准入等待用户验收，未标记完成；**未修改Harness、未改用户preview或根依赖、未提交推送，新证据与交接位于忽略目录，提交须显式纳入。
+
+## 2026-09-13：TM-01 目标 Profile 组合、文件成果版本与中断对账通过
+
+按交接包第0节完成TM-01剩余三项应用集成验证。`probe-expert-team.mjs --integration`退出0，`outcome=expert-integration-verified`、`integrationReady=true`；10项检查9通过、1项设计性缺口，机器证据在`.artifacts/expert-team-probe/integration-result.json`。
+
+实际组合：加载与preview一致的21项官方模块；工作区工具15个（核心10个全在）；静态盘点实际安装专家preset（31行）与dsh-base补丁；`sandboxPolicy.defaultMode=workspace-write`且session级resolve一致；工作区内fs/bash写入真实成功、工作区外fs拒绝（isError）、bash以seatbelt非零退出拒绝。缺口：stock原生委派工具被专家guard在子模型前拦截（子任务0请求/0输出，父任务3请求含官方`subagent-settled`唤醒），拦截符合绕行防护；受控委派工具接入不在本批。
+
+文件版本：真实文件v1（`15c02643…`）经指定评审返工（意见文件同pin）→v2（`c3f99a97…`）→publish经官方`present`真实交付并pin同一v2字节→发布评审accepted；两阶段全部pin由Host重读同字节；漂移后`stale-artifact`拒绝、回写同字节复过。中断对账：取消（写入副作用已存在时abort）后同label重跑拒绝（`experts/conflict`）、同operation重放同binding、异载荷`experts/idempotency-conflict`、`abandon`后补记拒绝（`output-immutable`）且请求数不变，新operation第2次尝试复评审accepted；不确定派发先重放对账（不重派）再记录一次、二次拒绝。独立进程冷读14份session/10份专家子历史，8项restored全true、`executionResumed=false`不自动恢复。
+
+新增代码仅`team-sop.ts`的`SopReceipt.artifacts`/`verifySopArtifacts`、`scripts/probe-expert-integration.mjs`、主探针`--integration`分支；文件读写/present/沙箱/审批仍归官方。回归：三模式退出全0；根build、typecheck、88项测试、check:plan（28模块/50文档）通过。未执行：crash mid-write对账、Windows/Linux沙箱差异、workflow/ralph动态行、生产Profile安装、付费模型、团队UI及完整AT-T01～07。`integrationReady=true`仅指本隔离组合通过，不等于生产接入或D04/D11完成；provider与Host装配暂仅在隔离探针；未提交推送，新证据与交接位于忽略目录，提交须显式纳入。
+
+## 2026-09-13：TM-01 有限 SOP 验证通过
+
+交接补充：已在[实施入口第0节](design/experts/TEAM-IMPLEMENTATION-HANDOFF.md#0-发给接手-ai-的指令)整理可复制的接手指令、剩余有限范围、最小回归命令及本地未提交/忽略文件的移交说明。其他AI可在同一workdsh工作区接手；尚未创建其他任务、派发执行或提交推送。此次补充仅文档，不新增运行验证结论。
+
+按用户“SOP你先验证”完成内部业务策略与真实原生子任务探针。`probe-expert-team.mjs --sop`退出0，8组SOP检查（总11组）通过：未验收不放行、指定评审/当前正文版本、有限返工、评审取消不签收不重置预算、单Host存储CAS、执行前撤销复查、provider及真实可见原生工具绕行拒绝。独立Node进程冷读11份one-shot子历史及业务记录，验收版本和预算仍保留，没有恢复执行。
+
+新增专家内部`team-sop.ts`，只拥有业务准入与验收；原生Loop、工具、Session与Storage继续复用官方。Host装配和provider仍仅在隔离脚本中，未安装人工preview、未修改Harness。既有专家18项+SOP5项测试共23/23、专家包build、根typecheck、`--adapter`回归通过。详见[第三批证据](evidence/expert-team-tm01.md)。
+
+规划完整性28模块/50文档、规划测试2/2、三份探针语法及git diff --check通过。当前任务仍TM-01，下一步验证目标Profile工具/权限组合与真实文件版本回执，再迁入专家正式Host生命周期。未执行：完整Profile/浏览器、任意shell/HTTP绕行、跨进程派发对账、真实模型专业判断、文件字节存证、外部写入取消、冷恢复执行、完整AT-T01～07。`sopPolicyReady=true`不等于`integrationReady=true`，D04/D11未标完成；未提交推送。新证据/交接仍位于忽略目录，提交时必须显式纳入。
+
+## 2026-09-13：TM-01 精确专家子任务最小适配通过
+
+实际补了专家Host的`reserveDelegation`/`claimDelegation`、可选子绑定字段与pre-step父关系/工作区/深度校验。固定依赖锁也与专家修订比对；没有新增模型委派工具。测试provider仅在隔离脚本注册，使用公开Agent创建/setup/mount与原生Loop，未接入preview或修改Harness。
+
+`probe-expert-team.mjs --adapter` 6组检查通过/退出0：同一主持人下两个子任务分别读到A/B冻结Skill并completed；错误父任务、重复领取/重放、persona覆盖和continuable启动拒绝；交付前取消无模型调用且清理；活动子任务取消不影响同父另一个活动任务；独立进程读取4份one-shot历史。新增Host测试包含两主体/两组织、并发领取、停用、header不符和冷重启防重复领取，专家集成18/18；专家包build与根typecheck通过。
+
+原Teams基线复跑保持9组观测通过/3缺口/退出2；混装Teams服务及工具时，B子任务读完Skill后被其成员检查拒绝，因此本次明确分开运行组合。**最小适配通过不等于TM-01或专家团整体完成。**下一步只补SOP准入/指定评审/有限返工/工具绕行验证，再冻结生产适配。详见[证据](evidence/expert-team-tm01.md)及[接手顺序](design/experts/TEAM-IMPLEMENTATION-HANDOFF.md)。
+
+规划检查28模块/50文档、规划测试2/2、两份探针脚本语法与git diff --check通过。未执行：生产Profile安装/浏览器、付费模型、真实审批沙箱、外部写入取消、冷恢复执行及完整AT-T01～07。仅workspaceId而无已解析workspaceRef的父binding明确拒绝；不得猜目录。D04/D11和Office延期范围保持，未提交推送。新证据/交接位于忽略目录，提交时需显式纳入。
+
+## 2026-09-13：TM-01 原生团队第一批验证
+
+由当前设计者执行 [TM-01 探针](evidence/expert-team-tm01.md)，实际加载同版本官方 Agent Teams 服务/工具，创建真实子 Agent，运行确定性模型与 Skill 工具。9项观测通过，3项缺口复现；退出码2明确表示默认集成不通过，不能写成团队上线。
+
+两位单专家发布/固定Skill快照、原生任务依赖/CAS、活动成员局部取消、独立进程读取持久历史通过。默认team成员和默认one-shot+persona均继承主持人preset且缺自身绑定，被现有guard在模型调用前拒绝。公开Agent setup能选另一preset，但还需要专家域子绑定及受控provider；全局setFactory不能用于覆盖原生owner。原生task completed不等于专业验收。
+
+台账activeSlice切换为expert-team-tm01；原Office专项保留在deferredSlices，D04/D11未标完成。下一项仍TM-01：最小公开provider+业务绑定适配的完整生命周期验证；完整生产Profile/跨组织E2E/真实模型/外部写入取消/团队UI未执行。未修改产品runtime、上游、用户preview或根依赖；未提交推送。规划检查通过（28模块/50已登记文档），规划测试2/2、脚本语法及git diff --check通过。完整产品build/typecheck未重跑，因为产品源码未变；--prepare下载装配路径与缓存复跑均执行，默认集成仍以退出码2拒绝签收。
+
+## 2026-09-13：专家团设计收敛为实施交接
+
+按用户“设计应能交给一般 AI 开发”的要求，新增 [TEAM-IMPLEMENTATION-HANDOFF](design/experts/TEAM-IMPLEMENTATION-HANDOFF.md)：固定首版产品范围、现有服务复用位置、拟新增领域字段/方法、整团部分发布回执、阶段准入/评审、取消与未知结果规则，以及 TM-01～04 文件级顺序和12条验收场景。TM-01 明确先验证官方 Agent Teams 的两位专家精确组合与自身绑定；公开接点不支持时给出失败证据和有限备选，不虚构 API。
+
+交接索引、方案、契约历史说明、计划和 ADR 已同步，旧 workflow/one-shot 唯一路线不再作为实施要求。当前仅文档，D04/D11台账未修改；启动优先实施时先记录顺序例外，保留未完成模块。规划完整性检查通过（28模块/50已登记文档），规划测试2/2通过，新交接4个相对链接及12条验收场景核对通过，git diff --check通过；运行构建、团队探针、真实模型和浏览器验证均未执行，未安装 Profile、未提交推送。新交接文件位于仓库忽略的 docs 目录，后续提交须显式纳入，不能只提交引用它的已跟踪文件。
+
 ## 2026-09-13：我安装的独立页面（入口导航，参考 WorkBuddy）
 
 用户反馈「我安装的 N」不可点击、已安装技能只内联在市场页。skills 0.1.0-alpha.27 / ui 0.1.0-alpha.5 把市场头部「我安装的 N」改为可点击入口，进入同一面板内的独立安装页：顶部「全部技能」返回链接、计数标题、右上「批量管理」与「搜索已安装的技能」页内搜索；卡片、启停、详情、安装与批量选择复用市场同一实现，不新增第二个 main 注册、URL 映射或安装路径。进入与返回重置面板滚动，焦点分别迁移到返回链接与入口按钮；ui 包新增 back 图标（alpha.5）。
@@ -1209,3 +1385,17 @@ PDF 当前候选已通过官方 CLI 安装到人工 Preview Profile，并核对 
 ### 2026-09-13：README 补充 HTML 成品截图
 
 按用户提供的截图补充中英文 HTML 看板生成/本地原生预览/文件卡片交付说明，新增 docs/assets/screenshots/workdsh-html-dashboard-preview.png。截图不改动，示例路径/会话/数据不作为内置默认值。仅文档与图片变更；不修改网页源码或继续专业样本优化，不运行无关产品构建/模型测试。
+
+### 2026-09-13：下一步专家团规划
+
+读取WorkBuddy expert-manager及team-spec，细化EXPERT-TEAMS第10节：真实成员、唯一主持人、固定SOP、受控交接、原生进度与实际文件汇总。四包TM-01～04保持，首项为锁定公开能力探针；无团队代码、安装或模型调用，D11仍todo，主线前置未改变。专业效果另列评测，不把当前样本逐个修好作为无限平台发布前置。
+
+### 2026-09-13：专家团设计 review
+
+对照官方subagent/workflow在线文档、本地Agent Teams/core镜像、锁定0.1.5-rc.1公开声明及现有专家guard/compiler/service。发现设计接点：普通子代理继承父组合且缺自身专家绑定会被现有守卫拒绝；等待workflow返回的主持人不能被该流程反向等待；工作项、成员和原生会话需分开；取消须限定本次成员。已修订EXPERT-TEAMS、ADR-0020与TM-01要求：有限workflow段在主持人判断前返回、独立子绑定、分别验证one-shot/continuable、按真实句柄及selected-child drain清理。Skill冻结保留公共目录，不宣称技能白名单隔离。规划完整性检查（28模块/50文档）与git diff --check通过；团队运行探针/真实模型测试未执行，无产品代码或依赖变更，下一步仍TM-01。
+
+### 2026-09-13：WorkBuddy整团创建与官方Agent Teams发布核对
+
+用户提供Downloads/workbuddy及创建专家团截图；读取expert-manager与team/agent/plugin refs，四文件与此前project目录对应版本一致。补两条制作路径：复用已发布专家，或从需求同时生成成员和团队草稿；经验进入专业方法，单问题可路由单成员。
+
+纠正Agent Teams选型前置：npm已确认@deepseek-ai/dsh-experimental-agent-team及dsh-experimental-tool-agent-team均有0.1.5-rc.1；当前项目未安装，不能以此认定不可用或必须升级。曾查询不带experimental短名得到404，已通过官方manifest纠正。服务包仅npm pack --ignore-scripts下载临时目录并读取公开声明，SpawnTeammateRequest仍无preset/setup，精确专家绑定待验证。方案/ADR改为TM-01优先评估官方Team名册/消息/任务能力，workflow保留固定段候选；未安装Profile、未改锁文件、未运行团队模型。规划完整性检查（28模块/50文档）与git diff --check通过；公开声明核对不替代运行验收。

@@ -1,3 +1,4 @@
+import { assetBytes, validateResources, packagePath, type PackageAssets } from '../authoring/package-resources.js';
 import { strFromU8, strToU8, unzipSync, zipSync, type Unzipped, type Zippable } from 'fflate';
 import type {
   DomainIssue,
@@ -7,6 +8,7 @@ import type {
 import { ExpertsError } from '../domain/values.js';
 import { byteLength, digestOf, sha256Bytes } from '../domain/digest.js';
 import { normalizeDefinition, validateDefinition } from '../domain/definition.js';
+import { authoringDocuments, definitionFromDocuments } from '../authoring/documents.js';
 
 /**
  * Local expert package portability (EP-06, CONTRACTS §6, AT-21).
@@ -37,7 +39,7 @@ const MAX_ZIP_BYTES = 10 * 1024 * 1024;
 const MAX_UNCOMPRESSED_BYTES = 20 * 1024 * 1024;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 const MAX_FILES = 64;
-const MAX_DEPTH = 3;
+const MAX_DEPTH = 8;
 /** Permitted avatar image magic bytes; SVG is text and never accepted here. */
 const IMAGE_SIGNATURES: readonly { readonly bytes: readonly number[] }[] = [
   { bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
@@ -49,6 +51,7 @@ interface ManifestFile {
   readonly path: string;
   readonly size: number;
   readonly sha256: string;
+  readonly executable?: boolean;
 }
 
 interface ExpertPackageManifest {
@@ -216,7 +219,14 @@ export function preflightPackage(zipBytes: Uint8Array): {
   if (byteCount(zipBytes) > MAX_ZIP_BYTES) invalid(`专家包超过 ${MAX_ZIP_BYTES / (1024 * 1024)} MiB 上限。`);
   let entries: Unzipped;
   try {
-    entries = unzipSync(zipBytes);
+    let declaredTotal = 0, declaredCount = 0;
+    entries = unzipSync(zipBytes, { filter(file) {
+      if (file.name.endsWith('/') && !file.originalSize) return false;
+      declaredTotal += file.originalSize; declaredCount++;
+      if (declaredCount > MAX_FILES || declaredTotal > 48 * 1024 * 1024 || file.originalSize > (file.name === EXPERT_FILE ? 32 * 1024 * 1024 : MAX_FILE_BYTES)) invalid('专家包单文件、数量或总大小过大。');
+      return true;
+    } });
+    for (const path of Object.keys(entries)) if (path.endsWith('/') && !entries[path].length) delete entries[path];
   } catch {
     invalid('专家包不是有效的 zip 压缩包或使用了不支持的压缩格式。');
   }
@@ -229,11 +239,22 @@ export function preflightPackage(zipBytes: Uint8Array): {
   let totalUncompressed = 0;
   for (const path of paths) {
     const size = byteCount(entries[path]);
-    if (size > MAX_FILE_BYTES) invalid(`专家包文件 "${path}" 超过 ${MAX_FILE_BYTES / (1024 * 1024)} MiB 单文件上限。`);
+    if (size > (path === EXPERT_FILE ? 32 * 1024 * 1024 : MAX_FILE_BYTES)) invalid(`专家包文件 "${path}" 超过 ${MAX_FILE_BYTES / (1024 * 1024)} MiB 单文件上限。`);
     totalUncompressed += size;
   }
-  if (totalUncompressed > MAX_UNCOMPRESSED_BYTES) invalid('专家包总解压大小超过 20 MiB 上限。');
+  if (totalUncompressed > (entries[EXPERT_FILE] ? 48 * 1024 * 1024 : MAX_UNCOMPRESSED_BYTES)) invalid('专家包总解压大小超过 20 MiB 上限。');
 
+  if (!paths.includes(MANIFEST_FILE) && (paths.includes('.workdsh-expert/plugin.json') || paths.includes('.codebuddy-plugin/plugin.json'))) {
+    const documents: Record<string, string> = {};
+    const assets: Record<string, PackageAssets[string]> = {};
+    for (const path of paths) {
+      packagePath(path);
+      if (/^(avatars|assets|bin)\//.test(path)) assets[path] = { base64: Buffer.from(entries[path]).toString('base64'), ...(path.startsWith('bin/') ? { executable: true } : {}) };
+      else { try { documents[path] = new TextDecoder('utf-8', { fatal: true }).decode(entries[path]); } catch { assets[path] = { base64: Buffer.from(entries[path]).toString('base64') }; } }
+    }
+    const candidate = definitionFromDocuments(documents, assets);
+    return { candidate, issues: validateDefinition(candidate), previewDigest: digestOf({ candidate, sourceAttribution: null }) };
+  }
   if (!paths.includes(MANIFEST_FILE)) invalid('专家包缺少 manifest.json。');
   if (!paths.includes(EXPERT_FILE)) invalid('专家包缺少 expert.json。');
 
@@ -252,15 +273,19 @@ export function preflightPackage(zipBytes: Uint8Array): {
     if (!bytes) invalid(`manifest 列出的文件 "${file.path}" 在压缩包中缺失。`);
     if (byteCount(bytes) !== file.size) invalid(`文件 "${file.path}" 大小与 manifest 不符。`);
     if (sha256Bytes(bytes) !== file.sha256) invalid(`文件 "${file.path}" 摘要与 manifest 不符，可能已被篡改。`);
-    if (file.path !== EXPERT_FILE && !(file.path.startsWith('assets/') && isPermittedImage(bytes))) {
-      invalid(`文件 "${file.path}" 不是许可的图片资源，已拒绝。`);
-    }
+    if (file.path !== EXPERT_FILE) packagePath(file.path);
   }
 
   const payload = assertExpertPayload(
     parseJsonRejectingDuplicateKeys(strFromU8(entries[EXPERT_FILE]), 'expert.json'),
   );
   const candidate = normalizeDefinition(payload.definition);
+  if (paths.some(path => path.startsWith('agents/'))) {
+    const assets = candidate.packageAssets ?? {};
+    const documents = Object.fromEntries(paths.filter(path => path !== MANIFEST_FILE && path !== EXPERT_FILE && !(path in assets)).map(path => [path, strFromU8(entries[path])]));
+    for (const [path, asset] of Object.entries(assets)) if (!Buffer.from(entries[path] ?? []).equals(assetBytes(path, asset))) invalid('二进制资源与作品内容不一致。');
+    if (digestOf(definitionFromDocuments(documents, assets)) !== digestOf(candidate)) invalid('Markdown 制作稿与 expert.json 内容不一致，请从保存后的草稿重新导出。');
+  }
   const issues = validateDefinition(candidate);
   const previewDigest = digestOf({ candidate, sourceAttribution: payload.sourceAttribution ?? null });
   return {
@@ -281,19 +306,21 @@ export function buildExport(definition: ExpertDefinition, sourceAttribution?: st
   archive: Uint8Array;
 } {
   const normalized = normalizeDefinition(definition);
+  validateResources(normalized.packageDocuments ?? {}, normalized.packageAssets);
   const expertPayload: ExpertFilePayload = {
     definition: normalized,
     ...(sourceAttribution === undefined ? {} : { sourceAttribution }),
   };
   const expertBytes = strToU8(`${JSON.stringify(expertPayload, null, 2)}\n`);
+  const documents = { ...Object.fromEntries(Object.entries(authoringDocuments(normalized)).map(([path, content]) => [path, strToU8(content)])), ...Object.fromEntries(Object.entries(normalized.packageAssets ?? {}).map(([path, asset]) => [path, assetBytes(path, asset)])) };
   const manifest: ExpertPackageManifest = {
     format: EXPERT_FORMAT,
     schemaVersion: EXPERT_SCHEMA_VERSION,
     expertFile: EXPERT_FILE,
-    files: [{ path: EXPERT_FILE, size: byteCount(expertBytes), sha256: sha256Bytes(expertBytes) }],
+    files: [{ path: EXPERT_FILE, size: byteCount(expertBytes), sha256: sha256Bytes(expertBytes) }, ...Object.entries(documents).map(([path, bytes]) => ({ path, size: byteCount(bytes), sha256: sha256Bytes(bytes) }))],
   };
   const manifestBytes = strToU8(`${JSON.stringify(manifest, null, 2)}\n`);
-  const archive = zipSync({ [MANIFEST_FILE]: manifestBytes, [EXPERT_FILE]: expertBytes } satisfies Zippable, { level: 9 });
+  const archive = zipSync({ [MANIFEST_FILE]: manifestBytes, [EXPERT_FILE]: expertBytes, ...documents } satisfies Zippable, { level: 9 });
   const descriptor: ExpertExport = {
     fileName: `${slugify(normalized.name)}.expert.zip`,
     bytes: byteCount(archive),

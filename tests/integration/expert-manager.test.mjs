@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { readFile, stat, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -18,9 +18,58 @@ import * as presets from '@deepseek-ai/dsh-agent-presets';
 import { AccessManager } from '../../packages/plugins/access/dist/index.js';
 import { AuditJournal } from '../../packages/plugins/audit/dist/index.js';
 import { SkillManager } from '../../packages/plugins/skills/dist/index.js';
-import { ExpertsManager } from '../../packages/plugins/experts/dist/index.js';
+import { ExpertsManager, TeamRunsManager } from '../../packages/plugins/experts/dist/index.js';
 import { registerExpertExecutionGuard } from '../../packages/plugins/experts/dist/runtime/execution-guard.js';
 import { compileExpertPreset } from '../../packages/plugins/experts/dist/runtime/preset-compiler.js';
+import { definitionFromDocuments } from '../../packages/plugins/experts/dist/authoring/documents.js';
+
+test('authored expert package publishes complete MD and mounts retained bundled Skill resources', async () => {
+  const h = await boot();
+  try {
+    const a = actor('owner-a');
+    const files = { '.workdsh-expert/plugin.json': JSON.stringify({ name: 'package-expert', expertType: 'agent', agentName: 'package-expert', agents: ['./agents/package-expert.md'], skills: ['./skills/bundled-method'] }), 'agents/package-expert.md': '---\nname: package-expert\ndescription: Package expert\nskills: [bundled-method]\n---\n# Professional framework\n\nComplete independent Agent Markdown.', 'skills/bundled-method/SKILL.md': '---\nname: bundled-method\ndescription: A retained method\n---\nRead references/domain.md.', 'skills/bundled-method/references/domain.md': 'Domain method preserved.' };
+    const assets = { 'bin/inspect': { base64: Buffer.from('#!/bin/sh\necho inspect\n').toString('base64'), executable: true }, 'assets/table.bin': { base64: Buffer.from([0, 255, 1, 7]).toString('base64') } };
+    const draft = await h.experts.createDraft(a, definitionFromDocuments(files, assets), { operationId: 'package-create' });
+    const validation = await h.experts.validate(a, draft.expertId, draft.revision);
+    assert.equal(validation.publishable, true, JSON.stringify(validation.issues));
+    const request = await h.experts.requestPublishConfirmation(a, draft.expertId, draft.revision);
+    const proof = await h.experts.confirmPublish(a, request.confirmationToken);
+    const receipt = await h.experts.publish(a, draft.expertId, draft.revision, validation.dependencyLockDigest, proof, { operationId: 'package-publish' });
+    const composition = await h.ctx.agentPresets.read(receipt.presetRevisionRef);
+    assert.match(composition, /Complete independent Agent Markdown/);
+    assert.match(composition, /expert-package\/skills\/bundled-method/);
+    const published = await h.experts.get(a, draft.expertId);
+    assert.deepEqual(published.revision.definition.packageDocuments, files);
+    assert.equal(published.readiness, 'ready');
+    await assert.rejects(h.experts.updateDraft(a, draft.expertId, { methodology: 'Ignored replacement' }, { operationId: 'package-summary-edit', expectedRevision: published.expert.revision }), error => error.code === 'experts/invalid-definition');
+    const edited = { ...files, 'agents/package-expert.md': files['agents/package-expert.md'].replace('Complete independent', 'Updated independent') };
+    const updated = await h.experts.updateDraft(a, draft.expertId, { packageDocuments: edited }, { operationId: 'package-files-edit', expectedRevision: published.expert.revision });
+    const changedIdentity = { ...edited, '.workdsh-expert/plugin.json': JSON.stringify({ ...JSON.parse(edited['.workdsh-expert/plugin.json']), name: 'replacement-package' }) };
+    await assert.rejects(h.experts.updateDraft(a, draft.expertId, { packageDocuments: changedIdentity }, { operationId: 'package-identity-rejected' }), error => error.code === 'experts/invalid-definition');
+    assert.match(updated.definition.agentDocument, /Updated independent/);
+    assert.match(updated.definition.methodology, /Updated independent/);
+    assert.match((await h.experts.get(a, draft.expertId)).revision.definition.agentDocument, /Complete independent/);
+    const root = h.ctx.agentPresets.roots.find(root => root.trust === 'user').path;
+    const cli = join(root, receipt.presetRevisionRef, 'expert-package/bin/inspect');
+    assert.deepEqual(await readFile(cli), Buffer.from(assets['bin/inspect'].base64, 'base64'));
+    assert.ok((await stat(cli)).mode & 0o111);
+    const asset = join(root, receipt.presetRevisionRef, 'expert-package/assets/table.bin');
+    await writeFile(asset, Buffer.from([0, 255, 2, 7]));
+    assert.notEqual((await h.experts.get(a, draft.expertId)).readiness, 'ready');
+    await writeFile(asset, Buffer.from(assets['assets/table.bin'].base64, 'base64'));
+    assert.equal((await h.experts.get(a, draft.expertId)).readiness, 'ready');
+    const resource = join(root, receipt.presetRevisionRef, 'expert-package/skills/bundled-method/references/domain.md');
+    await writeFile(resource, 'Unexpected edited method');
+    assert.notEqual((await h.experts.get(a, draft.expertId)).readiness, 'ready');
+    await writeFile(resource, files['skills/bundled-method/references/domain.md']);
+    assert.equal((await h.experts.get(a, draft.expertId)).readiness, 'ready');
+    const added = join(root, receipt.presetRevisionRef, 'expert-package/skills/bundled-method/references/extra.md');
+    await writeFile(added, 'Unpublished content');
+    assert.notEqual((await h.experts.get(a, draft.expertId)).readiness, 'ready');
+    await rm(added);
+    assert.equal((await h.experts.get(a, draft.expertId)).readiness, 'ready');
+  } finally { await h.cleanup(); }
+});
 
 // ── Host integration for the experts domain service (D04 / P1-02) ──────────────
 //
@@ -187,6 +236,79 @@ async function publishCopyOfDefault(h, a, opPrefix, overrides = {}) {
 }
 
 // ── AT-01: catalog read, search, filters, pagination, visibility ────────────────
+
+test('TM-01 delegation reservation is fixed, owner-scoped and consumed only once across restart', async () => {
+  const h = await boot();
+  let cold;
+  try {
+    const a = actor('owner-a');
+    const alpha = await publishCopyOfDefault(h, a, 'team-alpha');
+    const beta = await publishCopyOfDefault(h, a, 'team-beta', { skillRequirements: [{ name: 'sample-skill' }] });
+    const plan = await h.experts.prepareExecution(a, alpha.expertId, undefined, h.root);
+    const parent = await h.experts.createExecution(a, plan.executionPlanId, { operationId: 'team-parent' });
+    const target = (await h.experts.get(a, beta.expertId)).expert.publishedRevisionRef;
+    const reserve = who => h.experts.reserveDelegation(who, parent.sessionId, target, { operationId: 'team-child' });
+    const binding = await reserve(a);
+    assert.deepEqual(await reserve(a), binding);
+    assert.equal(h.createCalls.length, 1, 'reservation never creates another root task');
+    assert.notEqual(binding.presetRevisionRef, parent.binding.presetRevisionRef);
+    assert.equal(binding.workspaceRef, h.root);
+    assert.equal(binding.delegation.admission, 'reserved');
+    await assert.rejects(h.experts.verifyBinding(a, binding.sessionId), e => e.code === 'experts/conflict');
+    await assert.rejects(reserve(actor('member-a')), e => e.code === 'experts/forbidden');
+    await assert.rejects(reserve(actor('owner-b', 'organization-b')), e => e.code === 'experts/forbidden');
+    await assert.rejects(h.experts.reserveDelegation(a, parent.sessionId, parent.binding.expertRevisionRef, { operationId: 'team-child' }), e => e.code === 'experts/idempotency-conflict');
+    await assert.rejects(h.experts.claimDelegation(a, binding.sessionId, 'wrong-parent'), e => e.code === 'experts/forbidden');
+    const claims = await Promise.allSettled([
+      h.experts.claimDelegation(a, binding.sessionId, parent.sessionId),
+      h.experts.claimDelegation(a, binding.sessionId, parent.sessionId),
+    ]);
+    assert.equal(claims.filter(r => r.status === 'fulfilled').length, 1);
+    assert.equal(claims.find(r => r.status === 'rejected').reason.code, 'experts/conflict');
+    const verified = await h.experts.verifyBinding(a, binding.sessionId);
+    assert.equal(verified.skillRevisionRefs.length, 1);
+    await assert.rejects(h.experts.reserveDelegation(a, binding.sessionId, target, { operationId: 'nested-child' }), e => e.code === 'experts/forbidden');
+    // Dispose first; a second real storage owner reads the durable admission.
+    await h.ctx.fiber.dispose();
+    cold = await boot(h.root);
+    assert.deepEqual(await cold.experts.verifyBinding(a, binding.sessionId), verified);
+    await assert.rejects(cold.experts.claimDelegation(a, binding.sessionId, parent.sessionId), e => e.code === 'experts/conflict');
+  } finally { await cold?.cleanup(); await h.cleanup(); }
+});
+
+test('TM-01 child admission rejects cancellation, revoked experts/skills and native lineage mismatch', async () => {
+  const h = await boot();
+  try {
+    const a = actor('owner-a');
+    const alpha = await publishCopyOfDefault(h, a, 'guard-alpha');
+    const beta = await publishCopyOfDefault(h, a, 'guard-beta', { skillRequirements: [{ name: 'sample-skill' }] });
+    const target = (await h.experts.get(a, beta.expertId)).expert.publishedRevisionRef;
+    const plan = await h.experts.prepareExecution(a, alpha.expertId, undefined, h.root);
+    const parent = await h.experts.createExecution(a, plan.executionPlanId, { operationId: 'guard-parent' });
+    const binding = await h.experts.reserveDelegation(a, parent.sessionId, target, { operationId: 'guard-child' });
+    await assert.rejects(h.experts.claimDelegation(a, binding.sessionId, parent.sessionId, AbortSignal.abort()));
+    await h.experts.claimDelegation(a, binding.sessionId, parent.sessionId);
+    h.ctx.workdshIdentity.resolve = async () => a;
+    registerExpertExecutionGuard(h.ctx);
+    const header = { agentPreset: binding.presetRevisionRef, parentSession: parent.sessionId, delegationDepth: 1, origin: 'subagent', cwd: h.root };
+    const admit = overrides => h.ctx.waterfall('agent/pre-step', {
+      agent: { session: { id: binding.sessionId, header: { ...header, ...overrides } } },
+      messages: [], turn: 1, step: 1, signal: new AbortController().signal,
+    }, async () => ({ kind: 'enter', messages: [] }));
+    assert.equal((await admit({})).kind, 'enter');
+    for (const mismatch of [{ parentSession: 'other' }, { cwd: '/other' }, { delegationDepth: 0 }, { agentPreset: parent.binding.presetRevisionRef }, { origin: undefined }]) {
+      await assert.rejects(admit(mismatch), e => e.code === 'experts/conflict');
+    }
+    await h.experts.setAvailability(a, alpha.expertId, 'disabled', { operationId: 'disable-parent' });
+    await assert.rejects(admit({}), e => e.code === 'experts/disabled');
+    await h.experts.setAvailability(a, alpha.expertId, 'enabled', { operationId: 'enable-parent' });
+    await h.experts.setAvailability(a, beta.expertId, 'disabled', { operationId: 'disable-child' });
+    await assert.rejects(admit({}), e => e.code === 'experts/disabled');
+    await h.experts.setAvailability(a, beta.expertId, 'enabled', { operationId: 'enable-child' });
+    await h.ctx.workdshSkills.setEnabled('sample-skill', false);
+    await assert.rejects(admit({}), e => e.code === 'experts/dependency-disabled');
+  } finally { await h.cleanup(); }
+});
 
 test('AT-01 experts list seeds defaults, searches, filters, pages and stays ownership-scoped', async () => {
   const h = await boot();
@@ -771,5 +893,79 @@ test('disabled equipped Skill blocks new expert tasks and existing native pre-st
       agent: { session: { id: created.sessionId, header: { agentPreset: created.binding.presetRevisionRef } } },
       messages: [], turn: 1, step: 1, signal: new AbortController().signal,
     }, async () => ({ kind: 'enter', messages: [] })), error => error.code === 'experts/dependency-disabled');
+  } finally { await h.cleanup(); }
+});
+
+
+test('complete authored team publishes once with fixed hidden member revisions', async () => {
+  const h = await boot();
+  try {
+    const a = actor('owner-a');
+    const doc = name => `---\nname: ${name}\ndescription: Team professional\n---\n# ${name}\n\nFull domain reasoning and professional delivery.`;
+    const files = {
+      '.workdsh-expert/plugin.json': JSON.stringify({ name: 'public-team', expertType: 'team', agentName: 'public-team-team-lead', agents: ['./agents/public-team-team-lead.md', './agents/analyst.md', './agents/reviewer.md'], teamInfo: { leadAgent: 'public-team-team-lead', memberAgents: ['analyst', 'reviewer'] }, workflows: [{ id: 'report', title: 'Report', trigger: 'Produce a report', deliverable: 'Verified report', stages: [{ id: 'draft', worker: 'analyst', reviewer: 'reviewer', dependsOn: [] }] }] }),
+      'settings.json': JSON.stringify({ agent: 'public-team-team-lead' }),
+      'agents/public-team-team-lead.md': doc('public-team-team-lead'),
+      'agents/analyst.md': doc('analyst'), 'agents/reviewer.md': doc('reviewer'),
+      'README.md': 'Complete reusable team.'
+    };
+    const draft = await h.experts.createDraft(a, definitionFromDocuments(files), { operationId: 'authored-team-create' });
+    const check = await h.experts.validate(a, draft.expertId, draft.revision);
+    assert.equal(check.publishable, true, JSON.stringify(check.issues));
+    const request = await h.experts.requestPublishConfirmation(a, draft.expertId, draft.revision);
+    const proof = await h.experts.confirmPublish(a, request.confirmationToken);
+    await h.experts.publish(a, draft.expertId, draft.revision, check.dependencyLockDigest, proof, { operationId: 'authored-team-publish' });
+    const detail = await h.experts.get(a, draft.expertId);
+    assert.equal(detail.readiness, 'ready');
+    assert.deepEqual(Object.keys(detail.revision.teamMembers).sort(), ['analyst', 'reviewer']);
+    for (const [key, ref] of Object.entries(detail.revision.teamMembers)) {
+      const member = await h.experts.get(a, ref.expertId);
+      assert.equal(member.revision.revisionId, ref.revisionId);
+      assert.equal(member.revision.definition.agentDocument, files[`agents/${key}.md`]);
+      assert.deepEqual(member.revision.definition.packageDocuments, files);
+    }
+    const catalog = await h.experts.list(a, {});
+    assert.equal(JSON.stringify(catalog).includes('member-'), false);
+    const teams = await h.experts.list(a, { expertType: 'team', origin: 'personal', limit: 1 });
+    assert.equal(teams.total, 1);
+    assert.equal(teams.items[0].id, draft.expertId);
+    assert.equal(teams.items[0].expertType, 'team');
+    assert.equal((await h.experts.list(a, { expertType: 'agent', origin: 'personal' })).total, 0);
+    assert.equal((await h.experts.list(a, { expertType: 'team', search: 'not-found' })).total, 0);
+    const cold = await boot(h.root);
+    try { assert.deepEqual((await cold.experts.get(a, draft.expertId)).revision.teamMembers, detail.revision.teamMembers); }
+    finally { await cold.cleanup(); }
+  } finally { await h.cleanup(); }
+});
+
+
+test('independent team stages admit concurrently without dropping either fixed member binding', async () => {
+  const h = await boot();
+  try {
+    const a = actor('owner-a');
+    const alpha = await publishCopyOfDefault(h, a, 'parallel-alpha');
+    const beta = await publishCopyOfDefault(h, a, 'parallel-beta');
+    const plan = await h.experts.prepareExecution(a, alpha.expertId, undefined, h.root);
+    const parent = await h.experts.createExecution(a, plan.executionPlanId, { operationId: 'parallel-parent' });
+    await h.ctx.plugin(TeamRunsManager);
+    const ref = async (id, key) => ({ key, ...(await h.experts.get(a, id)).expert.publishedRevisionRef });
+    const run = await h.ctx.workdshTeamRuns.open(a, {
+      hostSessionId: parent.sessionId,
+      members: [await ref(alpha.expertId, 'alpha'), await ref(beta.expertId, 'beta')],
+      plan: { maxTotalAttempts: 2, stages: [
+        { id: 'a', worker: 'alpha', dependsOn: [], maxAttempts: 1 },
+        { id: 'b', worker: 'beta', dependsOn: [], maxAttempts: 1 },
+      ] },
+    }, { operationId: 'parallel-run' });
+    const [first, second] = await Promise.all([
+      h.ctx.workdshTeamRuns.beginWork(a, parent.sessionId, run.runId, 'a', { operationId: 'parallel-a' }),
+      h.ctx.workdshTeamRuns.beginWork(a, parent.sessionId, run.runId, 'b', { operationId: 'parallel-b' }),
+    ]);
+    assert.notEqual(first.binding.sessionId, second.binding.sessionId);
+    const saved = await h.ctx.workdshTeamRuns.get(a, run.runId);
+    assert.equal(saved.state.attempts.a.length, 1);
+    assert.equal(saved.state.attempts.b.length, 1);
+    assert.equal(saved.state.attempts.a[0].workSessionId, first.binding.sessionId);
+    assert.equal(saved.state.attempts.b[0].workSessionId, second.binding.sessionId);
   } finally { await h.cleanup(); }
 });

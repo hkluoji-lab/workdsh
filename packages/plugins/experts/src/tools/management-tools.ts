@@ -1,8 +1,14 @@
+import type {} from '@deepseek-ai/dsh-fs';
+import { dirname } from 'node:path';
+import { assetBytes, packagePath, type PackageAssets } from '../authoring/package-resources.js';
+import { buildExport } from '../services/portability.js';
 import type { Context } from '@deepseek-ai/cordis';
 import { defineTool, type ToolRunContext } from '@deepseek-ai/dsh-tools';
 import type { ActorContext, DomainIssue, ExpertDefinition, ExpertDetail, ExpertListQuery } from 'workdsh-contracts';
 import type { ExpertsManager } from '../services/experts-manager.js';
 import { expertDraftUrl } from '../domain/navigation.js';
+import { authoringDocuments, definitionFromDocuments } from '../authoring/documents.js';
+import { ExpertsError } from '../domain/values.js';
 
 /**
  * Model-facing expert authoring tools (D04 / P1-02).
@@ -17,11 +23,12 @@ import { expertDraftUrl } from '../domain/navigation.js';
  * model restatement or `confirmed:true` can never authorise a publish.
  */
 
-const definitionParameters = {
+const singleDefinitionParameters = {
   type: 'object' as const,
   additionalProperties: false,
   description: '专家定义的可编辑字段；未提供的字段保持不变。文本不能包含字面量 {{ 或 }}。',
   properties: {
+    agent_document: { type: 'string' as const, description: '完整 Agent MD；包创作优先使用 save_documents。' },
     name: { type: 'string' as const, description: '专家名称，最多 80 个字符。' },
     description: { type: 'string' as const, description: '一句话描述用途，最多 300 个字符。' },
     role: { type: 'string' as const, description: '角色定位（prose）。' },
@@ -71,7 +78,22 @@ const definitionParameters = {
   },
 };
 
+const definitionParameters = { ...singleDefinitionParameters, properties: { ...singleDefinitionParameters.properties,
+  team: { type: 'object' as const, additionalProperties: false, description: '整团制作；根定义是主理人。成员内容一起保存，一次预览发布。', properties: {
+    members: { type: 'array' as const, required: true as const, items: { type: 'object' as const, additionalProperties: false, properties: {
+      key: { type: 'string' as const, required: true as const }, definition: { ...singleDefinitionParameters, required: true as const },
+    } } },
+    workflows: { type: 'array' as const, required: true as const, items: { type: 'object' as const, additionalProperties: false, properties: {
+      id: { type: 'string' as const, required: true as const }, title: { type: 'string' as const, required: true as const }, trigger: { type: 'string' as const, required: true as const }, deliverable: { type: 'string' as const, required: true as const },
+      stages: { type: 'array' as const, required: true as const, description: '空数组表示主理人直接处理。协作阶段需要不同的执行者与评审者。', items: { type: 'object' as const, additionalProperties: false, properties: {
+        id: { type: 'string' as const, required: true as const }, worker: { type: 'string' as const, required: true as const }, reviewer: { type: 'string' as const }, dependsOn: { type: 'array' as const, required: true as const, items: { type: 'string' as const } },
+      } } },
+    } } },
+  } },
+} };
+
 type DefinitionArg = {
+  agent_document?: string;
   name?: string;
   description?: string;
   role?: string;
@@ -82,6 +104,7 @@ type DefinitionArg = {
   examples?: { id: string; title?: string; prompt: string }[];
   skill_requirements?: { name: string; skill_id?: string }[];
   future_requirements?: { kind: string; key: string; required: boolean; description: string }[];
+  team?: { members: { key: string; definition: DefinitionArg }[]; workflows: NonNullable<ExpertDefinition['team']>['workflows'] };
 };
 
 const listOutput = {
@@ -183,6 +206,8 @@ function operationIdOf(exec: ToolRunContext): string {
 function toDefinitionPatch(input: DefinitionArg | undefined): Partial<ExpertDefinition> {
   if (!input) return {};
   const patch: Record<string, unknown> = {};
+  if (input.agent_document !== undefined) patch.agentDocument = input.agent_document;
+  if (input.team) patch.team = { members: input.team.members.map(member => ({ key: member.key, definition: { tags: [], examples: [], skillRequirements: [], futureRequirements: [], ...toDefinitionPatch(member.definition) } })), workflows: input.team.workflows };
   for (const field of ['name', 'description', 'role', 'methodology', 'boundaries', 'deliverables'] as const) {
     if (typeof input[field] === 'string') patch[field] = input[field];
   }
@@ -205,8 +230,18 @@ function toDefinitionPatch(input: DefinitionArg | undefined): Partial<ExpertDefi
   return patch as Partial<ExpertDefinition>;
 }
 
+function definitionProjection(input: ExpertDefinition) {
+  const { skillRequirements, futureRequirements, avatarRef, categoryId, team, agentDocument, packageDocuments, packageAssets, ...definition } = input;
+  return {
+    ...(input.agentDocument ? { agent_document: input.agentDocument } : {}),
+    ...definition, tags: [...definition.tags], examples: definition.examples.map(example => ({ ...example })),
+    ...(avatarRef ? { avatar_ref: avatarRef } : {}), ...(categoryId ? { category_id: categoryId } : {}),
+    skill_requirements: skillRequirements.map(({ name, skillId }) => ({ name, ...(skillId ? { skill_id: skillId } : {}) })),
+    future_requirements: futureRequirements.map(requirement => ({ ...requirement })),
+    ...(team ? { team: { members: team.members.map(member => { const { skillRequirements: skills, futureRequirements: future, agentDocument: memberDocument, packageDocuments: memberPackage, packageAssets: memberAssets, ...fields } = member.definition; return { key: member.key, definition: { ...fields, ...(memberDocument ? { agent_document: memberDocument } : {}), tags: [...fields.tags], examples: fields.examples.map(example => ({ ...example })), skill_requirements: skills.map(req => ({ name: req.name, ...(req.skillId ? { skill_id: req.skillId } : {}) })), future_requirements: future.map(req => ({ ...req })) } }; }), workflows: team.workflows.map(workflow => ({ ...workflow, stages: workflow.stages.map(stage => ({ ...stage, dependsOn: [...stage.dependsOn] })) })) } } : {}),
+  };
+}
 function detailProjection(detail: ExpertDetail) {
-  const { skillRequirements, futureRequirements, avatarRef, categoryId, ...definition } = detail.draft.definition;
   return {
     id: detail.expert.id,
     name: detail.draft.definition.name,
@@ -217,15 +252,7 @@ function detailProjection(detail: ExpertDetail) {
     revision: detail.expert.revision,
     draft_revision: detail.draft.revision,
     draft_url: expertDraftUrl(detail.expert.id),
-    definition: {
-      ...definition,
-      tags: [...definition.tags],
-      examples: definition.examples.map(example => ({ ...example })),
-      ...(avatarRef ? { avatar_ref: avatarRef } : {}),
-      ...(categoryId ? { category_id: categoryId } : {}),
-      skill_requirements: skillRequirements.map(({ name, skillId }) => ({ name, ...(skillId ? { skill_id: skillId } : {}) })),
-      future_requirements: futureRequirements.map(requirement => ({ ...requirement })),
-    },
+    definition: definitionProjection(detail.draft.definition),
     published: detail.expert.publishedRevisionRef !== undefined,
     can_use: detail.canUse,
     can_edit: detail.canEdit,
@@ -240,9 +267,102 @@ function renderResult(summary: string, value: unknown, draftUrl?: string) {
   return [{ type: 'text' as const, text: `${summary}\n${JSON.stringify(value, null, 2)}${draftUrl ? `\n[打开专家草稿](${draftUrl})` : ''}` }];
 }
 
+function shellQuote(value: string): string { return "'" + value.replaceAll("'", "'\\''") + "'"; }
+async function nativeTool(ctx: Context, exec: ToolRunContext, name: string, args: object, suffix: string) {
+  const result = await ctx.tools.execute({ name, arguments: args, agent: exec.agent, signal: exec.signal, parent: exec.token, rootCallId: exec.rootCallId, callId: `${exec.callId}-${suffix}` as ToolRunContext['callId'] });
+  if (result.isError) throw new ExpertsError('experts/forbidden', `原生工具${name}拒绝操作：${result.error.message}`);
+  for (const context of result.additionalContexts ?? []) exec.deferContext(context);
+  return result;
+}
+async function workspaceTarget(ctx: Context, exec: ToolRunContext, path: string) {
+  const cwd = exec.agent?.session.header.cwd;
+  if (!cwd || !ctx.fs) throw new ExpertsError('experts/unavailable', '此操作需要原生工作区和文件服务。');
+  const root = await ctx.fs.resolve(cwd, { signal: exec.signal });
+  const target = await ctx.fs.resolve(path, { cwd, signal: exec.signal });
+  if (!ctx.fs.contains(root, target) || root.targetKey === target.targetKey) throw new ExpertsError('experts/forbidden', '文件必须位于当前工作区内。');
+  return target;
+}
+
 /** Register the model-facing expert management tools against the same Host authority as the UI. */
 export function registerExpertManagementTools(ctx: Context): void {
   const manager: ExpertsManager = ctx.workdshExperts;
+
+  ctx.tools.register(defineTool({
+    name: 'workdsh_expert_save_resources',
+    description: '从当前工作区的真实文件保存完整专家资源。支持头像、程序、二进制参考文件；与Markdown制作稿统一保存及校验。修改已有作品时保留未改文件、带expected_revision；保存不等于执行授权。',
+    parameters: { expert_id: { type: 'string' }, expected_revision: { type: 'string' }, documents: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { path: { type: 'string', required: true }, content: { type: 'string', required: true } } } }, resources: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { path: { type: 'string', required: true }, source_path: { type: 'string', required: true }, executable: { type: 'boolean' } } } }, remove_paths: { type: 'array', items: { type: 'string' } } },
+    output: { schema: detailOutput, render: (_args, value) => renderResult('完整作品与真实资源已保存。', value, value.draft_url) },
+    async execute(args, exec) {
+      const actor = await resolveActor(ctx, exec);
+      if (args.expert_id && !args.expected_revision) throw new ExpertsError('experts/conflict', '修改作品需要expected_revision。');
+      const prior = args.expert_id ? (await manager.get(actor, args.expert_id, undefined, exec.signal)).draft.definition : undefined;
+      const documents = { ...(prior?.packageDocuments ?? {}) };
+      const assets: Record<string, PackageAssets[string]> = { ...(prior?.packageAssets ?? {}) };
+      const changed = [...(args.documents ?? []).map(file => file.path), ...(args.resources ?? []).map(file => file.path), ...(args.remove_paths ?? [])];
+      if (new Set(changed).size !== changed.length) throw new ExpertsError('experts/invalid-definition', '修改路径重复。');
+      for (const path of args.remove_paths ?? []) { packagePath(path); delete documents[path]; delete assets[path]; }
+      for (const file of args.documents ?? []) { packagePath(file.path); documents[file.path] = file.content; delete assets[file.path]; }
+      for (const file of args.resources ?? []) {
+        packagePath(file.path);
+        const target = await workspaceTarget(ctx, exec, file.source_path);
+        const bytes = await ctx.fs.readBytes(target, exec.signal, 2 * 1024 * 1024);
+        const asset = { base64: Buffer.from(bytes).toString('base64'), ...(file.executable ? { executable: true } : {}) };
+        assetBytes(file.path, asset); assets[file.path] = asset; delete documents[file.path];
+      }
+      const definition = definitionFromDocuments(documents, assets);
+      const context = { operationId: operationIdOf(exec), ...(args.expected_revision ? { expectedRevision: args.expected_revision } : {}) };
+      const draft = args.expert_id ? await manager.updateDraft(actor, args.expert_id, definition, context, exec.signal) : await manager.createDraft(actor, definition, context, exec.signal);
+      return detailProjection(await manager.get(actor, draft.expertId, undefined, exec.signal));
+    },
+  }));
+  ctx.tools.register(defineTool({
+    name: 'workdsh_expert_export_file',
+    description: '实际生成并呈现完整.expert.zip文件，包含角色MD、原资源和二进制文件。所有文件写入与展示经过原生bash/present及沙箱；不是仅返回下载说明。已有不同内容的文件不会覆盖。',
+    parameters: { expert_id: { type: 'string', required: true }, revision_id: { type: 'string' }, file_path: { type: 'string', required: true, description: '当前工作区内的目标ZIP文件路径。' } },
+    output: { schema: { type: 'object', additionalProperties: false, properties: { path: { type: 'string', required: true }, bytes: { type: 'integer', required: true }, digest: { type: 'string', required: true }, presented: { type: 'boolean', required: true } } }, render: (_args, value) => renderResult('完整专家文件包已生成并展示。', value) },
+    async execute(args, exec) {
+      const descriptor = await manager.export(await resolveActor(ctx, exec), args.expert_id, args.revision_id, exec.signal);
+      const { archive } = buildExport(descriptor.definition, descriptor.sourceAttribution);
+      const target = await workspaceTarget(ctx, exec, args.file_path);
+      const path = ctx.fs.processPath(target);
+      const existing = await ctx.fs.stat(target, exec.signal);
+      if (existing) {
+        const bytes = await ctx.fs.readBytes(target, exec.signal, 10 * 1024 * 1024);
+        if (Buffer.from(bytes).compare(Buffer.from(archive)) !== 0) throw new ExpertsError('experts/conflict', '目标文件存在且内容不同，请使用新文件名。');
+      } else {
+        const command = `umask 077; mkdir -p ${shellQuote(dirname(path))} && printf %s ${shellQuote(Buffer.from(archive).toString('base64'))} | base64 -d > ${shellQuote(path)}`;
+        await nativeTool(ctx, exec, 'bash', { command, description: '生成完整专家交付包' }, 'package-write');
+      }
+      const actual = await ctx.fs.readBytes(target, exec.signal, 10 * 1024 * 1024);
+      if (Buffer.from(actual).compare(Buffer.from(archive)) !== 0) throw new ExpertsError('experts/conflict', '交付文件字节与专家包不一致。');
+      await nativeTool(ctx, exec, 'present', { files: [{ path, description: '完整专家/专家团作品包' }] }, 'package-present');
+      return { path, bytes: actual.length, digest: descriptor.digest, presented: true };
+    },
+  }));
+  ctx.tools.register(defineTool({
+    name: 'workdsh_expert_save_documents', description: '将单专家或整个专家团的 Markdown 制作稿保存为一个作品草稿。读取并提交 agents/*.md 与 team.md 的内容；不会发布、授权或执行脚本。',
+    parameters: { expert_id: { type: 'string' }, expected_revision: { type: 'string' }, documents: { type: 'array', required: true, items: { type: 'object', additionalProperties: false, properties: { path: { type: 'string', required: true }, content: { type: 'string', required: true } } } } },
+    output: { schema: detailOutput, render: (_args, value) => renderResult('整套制作稿已保存，可打开预览。', value, value.draft_url) },
+    async execute(args, exec) {
+      if (new Set(args.documents.map(file => file.path)).size !== args.documents.length) throw new ExpertsError('experts/invalid-definition', '制作文件路径重复。');
+      const actor = await resolveActor(ctx, exec);
+      const prior = args.expert_id ? await manager.get(actor, args.expert_id, undefined, exec.signal) : undefined;
+      const definition = definitionFromDocuments(Object.fromEntries(args.documents.map(file => [file.path, file.content])), prior?.draft.definition.packageAssets);
+      if (args.expert_id && !args.expected_revision) throw new ExpertsError('experts/conflict', '修改制作稿需要 expected_revision。');
+      const context = { operationId: operationIdOf(exec), ...(args.expected_revision ? { expectedRevision: args.expected_revision } : {}) };
+      const draft = args.expert_id ? await manager.updateDraft(actor, args.expert_id, definition, context, exec.signal) : await manager.createDraft(actor, definition, context, exec.signal);
+      return detailProjection(await manager.get(actor, draft.expertId, undefined, exec.signal));
+    },
+  }));
+  ctx.tools.register(defineTool({
+    name: 'workdsh_expert_get_documents', description: '读取已保存作品的 Markdown 制作稿，用于修改或通过原生 write/present 交付文件。返回内容不代表已经写入工作区。',
+    parameters: { expert_id: { type: 'string', required: true } },
+    output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { path: { type: 'string', required: true }, content: { type: 'string', required: true } } } }, render: (_args, value) => renderResult('制作稿内容：', value) },
+    async execute(args, exec) {
+      const detail = await manager.get(await resolveActor(ctx, exec), args.expert_id, undefined, exec.signal);
+      return Object.entries(authoringDocuments(detail.draft.definition)).map(([path, content]) => ({ path, content }));
+    },
+  }));
 
   ctx.tools.register(defineTool({
     name: 'workdsh_expert_list_skills',

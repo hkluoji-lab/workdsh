@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { assetBytes, validateResources, type PackageAssets } from '../authoring/package-resources.js';
+import { mkdir, readFile, writeFile, readdir, lstat, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Context } from '@deepseek-ai/cordis';
@@ -10,7 +11,8 @@ import {
   writableRoot,
 } from '@deepseek-ai/dsh-agent-presets';
 import { YAMLMap, YAMLSeq, parseDocument } from 'yaml';
-import type { ExpertDefinition } from 'workdsh-contracts';
+import type { ExpertDefinition, ExpertRevisionRef } from 'workdsh-contracts';
+import { readFileSync } from 'node:fs';
 import { compilePersonaPrefix, compilePersonaSuffix } from '../domain/definition.js';
 import { sha256, shortDigest } from '../domain/digest.js';
 
@@ -50,6 +52,8 @@ export interface CompileInput {
   /** Absolute managed snapshot directories, one per retained Skill revision. */
   readonly snapshotDirs: readonly string[];
   readonly basePresetId: string;
+  readonly packageRoot?: string;
+  readonly teamMembers?: Readonly<Record<string, ExpertRevisionRef>>;
 }
 
 /** Lowercase kebab segment safe for `PRESET_ID = /^[a-z0-9][a-z0-9-]*$/`. */
@@ -69,6 +73,7 @@ export function presetIdFor(input: CompileInput): string {
     base: input.basePresetId,
     definition: input.definition,
     snapshotDirs: [...input.snapshotDirs].sort(),
+    ...(input.teamMembers ? { teamMembers: input.teamMembers } : {}),
   });
   return `wd-exp-${kebab(input.expertId)}-${digest}`;
 }
@@ -88,6 +93,10 @@ export async function compileExpertPreset(ctx: Context, input: CompileInput): Pr
   const presetDir = join(writable, presetId);
   const compositionPath = join(presetDir, COMPOSITION_FILE);
   const manifestPath = join(presetDir, 'workdsh-expert-manifest.json');
+  const files = input.definition.packageDocuments ?? {};
+  const assets = input.definition.packageAssets ?? {};
+  validateResources(files, assets);
+  const rootsInPackage = Object.keys(files).filter(path => /^skills\/[a-z][a-z0-9-]+\/SKILL\.md$/.test(path)).map(path => join(presetDir, 'expert-package', path.slice(0, -9)));
 
   const expected = renderComposition(input);
   const expectedDigest = sha256(expected);
@@ -99,6 +108,7 @@ export async function compileExpertPreset(ctx: Context, input: CompileInput): Pr
     if (manifest.inputDigest !== expectedDigest || manifest.compositionDigest !== sha256(existing)) {
       throw Object.assign(new Error('已发布专家 preset 已变化，拒绝覆盖。'), { code: 'experts/preset-broken' });
     }
+    await verifyPackageFiles(presetDir, files, assets);
     return { presetId, presetDir, compositionDigest: sha256(existing), created: false };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
@@ -118,10 +128,23 @@ export async function compileExpertPreset(ctx: Context, input: CompileInput): Pr
     throw Object.assign(new Error('已有专家 preset 缺少可验证清单，拒绝覆盖。'), { code: 'experts/preset-broken' });
   }
   await mkdir(presetDir, { recursive: true });
+  for (const [path, text] of Object.entries(files)) {
+    if (path.startsWith('/') || path.includes('\\') || path.split('/').some(part => !part || part === '.' || part === '..')) throw new Error('experts/invalid-package-path');
+    const target = join(presetDir, 'expert-package', path);
+    await mkdir(join(target, '..'), { recursive: true });
+    await writeFile(target, text, 'utf8');
+  }
+
+  for (const [path, asset] of Object.entries(assets)) {
+    const target = join(presetDir, 'expert-package', path);
+    await mkdir(join(target, '..'), { recursive: true });
+    await writeFile(target, assetBytes(path, asset));
+    if (asset.executable) await chmod(target, 0o755);
+  }
 
   // Rewrite only the persona and skill-filesystem rows; preserve everything else.
   const baseText = await readFile(compositionPath, 'utf8');
-  const composed = rewriteComposition(baseText, input);
+  const composed = rewriteComposition(baseText, { ...input, packageRoot: Object.keys(files).length ? join(presetDir, 'expert-package') : undefined, snapshotDirs: [...input.snapshotDirs, ...rootsInPackage] });
   await writeFile(compositionPath, composed, 'utf8');
   await writeFile(
     join(presetDir, METADATA_FILE),
@@ -142,7 +165,37 @@ function renderComposition(input: CompileInput): string {
     prefix: compilePersonaPrefix(input.definition),
     suffix: compilePersonaSuffix(input.definition),
     snapshotDirs: [...input.snapshotDirs].sort(),
+    packageDocuments: input.definition.packageDocuments ?? null,
+    ...(input.definition.packageAssets ? { packageAssets: input.definition.packageAssets } : {}),
+    teamMembers: input.teamMembers ?? null,
   });
+}
+
+export async function verifyPackageFiles(presetDir: string, files: Readonly<Record<string, string>>, assets: PackageAssets = {}): Promise<void> {
+  validateResources(files, assets);
+  if (!Object.keys(files).length && !Object.keys(assets).length) return;
+  const root = join(presetDir, 'expert-package');
+  const found: string[] = [];
+  async function inventory(dir: string, prefix = ''): Promise<void> {
+    for (const name of await readdir(dir)) {
+      const path = prefix ? `${prefix}/${name}` : name;
+      const info = await lstat(join(dir, name));
+      if (info.isSymbolicLink()) throw new Error('experts/package-drift');
+      if (info.isDirectory()) await inventory(join(dir, name), path);
+      else if (info.isFile()) found.push(path);
+      else throw new Error('experts/package-drift');
+    }
+  }
+  await inventory(root);
+  if (JSON.stringify(found.sort()) !== JSON.stringify([...Object.keys(files), ...Object.keys(assets)].sort())) throw new Error('experts/package-drift');
+  for (const [path, text] of Object.entries(files)) {
+    if (path.startsWith('/') || path.includes('\\') || path.split('/').some(part => !part || part === '.' || part === '..')) throw new Error('experts/invalid-package-path');
+    if (await readFile(join(presetDir, 'expert-package', path), 'utf8') !== text) throw new Error('experts/package-drift');
+  }
+  for (const [path, asset] of Object.entries(assets)) {
+    const target = join(root, path);
+    if (!(await readFile(target)).equals(assetBytes(path, asset)) || asset.executable && ((await lstat(target)).mode & 0o111) === 0) throw new Error('experts/package-drift');
+  }
 }
 
 /**
@@ -156,7 +209,10 @@ function rewriteComposition(baseText: string, input: CompileInput): string {
     throw Object.assign(new Error('基础 preset 组合不是插件行列表，无法编译专家。'), { code: 'experts/preset-broken' });
   }
 
-  const prefix = compilePersonaPrefix(input.definition);
+  const prefix = [compilePersonaPrefix(input.definition), ...(input.packageRoot ? [`专家作品资源目录：${input.packageRoot}。bin 下的工具已随发布版本安装；用原生 bash 按此路径调用，仍遵守沙箱和审批。`] : []), ...(input.teamMembers ? [
+    readFileSync(new URL('../../resources/expert-manager/runtime/team-lead.md', import.meta.url), 'utf8'),
+    JSON.stringify({ members: input.teamMembers, workflows: input.definition.team?.workflows }),
+  ] : [])].join('\n\n');
   const suffix = compilePersonaSuffix(input.definition);
   const personaConfig = doc.createNode({ prefix, suffix, complete: false, includeRuntimeContext: true });
   const skillConfig = doc.createNode({

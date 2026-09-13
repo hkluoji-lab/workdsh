@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { ExpertDefinition, SkillRevisionRef } from '../shared.js';
 import { ExpertWorkSummary } from './ExpertWorkSummary.js';
+import { TeamContent } from './TeamContent.js';
 
 export type ExpertUsagePreviewProps = {
   readonly definition: ExpertDefinition;
@@ -10,8 +11,9 @@ export type ExpertUsagePreviewProps = {
 /** Read-only review of the exact saved definition; does not prepare or run a task. */
 export function ExpertUsagePreview({ definition, dependencyLock }: ExpertUsagePreviewProps) {
   return <section className="usage-preview" aria-label="专家使用预览">
-    <header><span className="preview-avatar" aria-hidden>{definition.name.trim().charAt(0) || '专'}</span><div><h3>{definition.name}</h3><p>{definition.description}</p></div></header>
-    <ExpertWorkSummary definition={definition} />
+    <header><span className="preview-avatar" aria-hidden>{definition.avatarRef?.startsWith('data:image/') ? <img src={definition.avatarRef} alt="" /> : definition.name.trim().charAt(0) || '专'}</span><div><h3>{definition.name}</h3><p>{definition.description}</p></div></header>
+    {definition.agentDocument ? <div className="prose-block" style={{ whiteSpace: 'pre-wrap' }}>{definition.agentDocument}</div> : <ExpertWorkSummary definition={definition} />}
+    <TeamContent team={definition.team} />
     {definition.tags.length > 0 && <><h3>擅长领域</h3><div className="preview-tags">{definition.tags.map(tag => <span key={tag}>{tag}</span>)}</div></>}
     <h3>试试这样问我</h3>
     <p>示例仅供审阅；发布后由你选择试用，不会自动发送任务。</p>

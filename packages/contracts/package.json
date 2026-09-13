@@ -1,6 +1,6 @@
 {
   "name": "workdsh-contracts",
-  "version": "0.1.0-alpha.6",
+  "version": "0.1.0-alpha.7",
   "private": true,
   "type": "module",
   "exports": {
@@ -22,6 +22,10 @@
     },
     "./office": {
       "types": "./dist/office.d.ts"
+    },
+    "./activity": {
+      "types": "./dist/activity.d.ts",
+      "default": "./dist/activity.js"
     }
   },
   "files": [

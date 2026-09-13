@@ -22,7 +22,8 @@ type ExpertsPanelInjected = {
   /** Summon a published expert into a fresh bound native Session; never auto-sends. */
   summon: (expertId: string, revisionId: string | undefined, draftText: string | undefined) => Promise<void>;
   /** Open a new native task seeded with the `/workdsh-expert-manager` guide draft. */
-  createExpertTask: () => Promise<void>;
+  createExpertTask: (kind?: 'agent' | 'team') => Promise<void>;
+  editExpertTask: (expertId: string) => Promise<void>;
 };
 export type ExpertsPanelProps = PropsRuntime<'main'> & InjectFace<ExpertsPanelInjected>;
 
@@ -46,11 +47,13 @@ const READINESS: Record<string, { label: string; cls: string }> = {
 };
 
 function Avatar({ summary }: { summary: ExpertSummary }) {
-  return <span className="avatar" aria-hidden>{summary.name.trim().charAt(0) || '专'}</span>;
+  return <span className="avatar" aria-hidden>{summary.avatarRef?.startsWith('data:image/') ? <img src={summary.avatarRef} alt="" /> : summary.name.trim().charAt(0) || '专'}</span>;
 }
 
-export function ExpertsPanel({ toggleNavigation, management, openCapability, hasCapability, summon, createExpertTask }: ExpertsPanelProps) {
-  const [view, setView] = useState<View>(() => expertDraftId(window.location.search) ? 'mine' : 'center');
+export function ExpertsPanel({ toggleNavigation, management, openCapability, hasCapability, summon, createExpertTask, editExpertTask }: ExpertsPanelProps) {
+  const [view, setView] = useState<View>(() => expertDraftId(window.location.search) || new URLSearchParams(window.location.search).get('expert-library') === 'mine' ? 'mine' : 'center');
+  const [kind, setKind] = useState<'agent' | 'team'>(() => new URLSearchParams(window.location.search).get('expert-kind') === 'team' ? 'team' : 'agent');
+  const [typeCounts, setTypeCounts] = useState({ agent: 0, team: 0 });
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [originFilter, setOriginFilter] = useState<OriginFilter>('all');
@@ -69,40 +72,52 @@ export function ExpertsPanel({ toggleNavigation, management, openCapability, has
   const [actionMenu, setActionMenu] = useState<string>();
   const [acting, setActing] = useState(false);
   const search = useRef<HTMLInputElement>(null);
+  const loadSequence = useRef(0);
+  const kindLabel = kind === 'team' ? '专家团' : '专家';
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (view === 'mine') { url.searchParams.set('expert-library', 'mine'); url.searchParams.set('expert-kind', kind); }
+    else { url.searchParams.delete('expert-library'); url.searchParams.set('expert-kind', kind); }
+    window.history.replaceState(window.history.state, '', url);
+  }, [view, kind]);
 
   useEffect(() => { const timer = window.setTimeout(() => setDebounced(query.trim()), 300); return () => window.clearTimeout(timer); }, [query]);
 
   const buildQuery = useCallback(() => {
     const search_ = debounced || undefined;
     if (view === 'center') {
-      return { ...(search_ ? { search: search_ } : {}), ...(originFilter === 'all' ? {} : { origin: originFilter as 'default' | 'personal' }), availability: 'enabled' as const, limit: 100 };
+      return { expertType: kind, ...(search_ ? { search: search_ } : {}), ...(originFilter === 'all' ? {} : { origin: originFilter as 'default' | 'personal' }), availability: 'enabled' as const, limit: 100 };
     }
     const availability = stateFilter === 'disabled' || stateFilter === 'archived' || stateFilter === 'published'
       ? (stateFilter === 'published' ? 'enabled' : stateFilter) as ExpertAvailability : undefined;
-    return { ...(search_ ? { search: search_ } : {}), origin: 'personal' as const, ...(availability ? { availability } : {}), limit: 100 };
-  }, [view, debounced, originFilter, stateFilter]);
+    return { expertType: kind, ...(search_ ? { search: search_ } : {}), origin: 'personal' as const, ...(availability ? { availability } : {}), limit: 100 };
+  }, [view, kind, debounced, originFilter, stateFilter]);
 
   const load = useCallback(async (cursor?: string) => {
+    const sequence = ++loadSequence.current;
     const appending = cursor !== undefined;
     if (appending) setLoadingMore(true); else { setBusy(true); setNotice(undefined); }
     setError('');
     try {
       const base = buildQuery();
       const result = await management.list(cursor ? { ...base, cursor } : base);
+      if (sequence !== loadSequence.current) return;
       setItems(prev => (appending ? [...prev, ...result.items] : result.items));
       setTotal(result.total);
       setNextCursor(result.nextCursor);
     } catch (cause) {
+      if (sequence !== loadSequence.current) return;
       if (codeOf(cause) === 'experts/cursor-stale') {
         setNotice({ kind: 'warn', text: '目录已变化，分页游标失效，已为你重新加载第一页。' });
         setItems([]); setNextCursor(undefined);
         try { const fresh = await management.list(buildQuery()); setItems(fresh.items); setTotal(fresh.total); setNextCursor(fresh.nextCursor); } catch { /* surfaced below */ }
       } else setError(messageOf(cause));
-    } finally { setBusy(false); setLoadingMore(false); }
+    } finally { if (sequence === loadSequence.current) { setBusy(false); setLoadingMore(false); } }
   }, [buildQuery, management]);
 
   const loadMineCount = useCallback(async () => {
-    try { const result = await management.list({ origin: 'personal', limit: 1 }); setMineCount(result.total); } catch { /* non-fatal badge */ }
+    try { const [agent, team] = await Promise.all([management.list({ origin: 'personal', expertType: 'agent', limit: 1 }), management.list({ origin: 'personal', expertType: 'team', limit: 1 })]); setTypeCounts({ agent: agent.total, team: team.total }); setMineCount(agent.total + team.total); } catch { /* non-fatal badge */ }
   }, [management]);
 
   useEffect(() => { void load(); }, [load]);
@@ -139,9 +154,9 @@ export function ExpertsPanel({ toggleNavigation, management, openCapability, has
     catch (cause) { setError(messageOf(cause)); }
     finally { setActing(false); }
   };
-  const createExpert = async () => {
+  const createExpert = async (type: 'agent' | 'team' = kind) => {
     setActing(true); setError('');
-    try { await createExpertTask(); } catch (cause) { setError(messageOf(cause)); } finally { setActing(false); }
+    try { await createExpertTask(type); } catch (cause) { setError(messageOf(cause)); } finally { setActing(false); }
   };
   const setPreference = async (summary: ExpertSummary, pinned: boolean) => {
     setActionMenu(undefined);
@@ -170,6 +185,13 @@ export function ExpertsPanel({ toggleNavigation, management, openCapability, has
   const isDraft = (summary: ExpertSummary) => summary.publishedRevisionRef === undefined;
   const stateLabel = (summary: ExpertSummary) => isDraft(summary) ? '草稿' : AVAILABILITY_LABEL[summary.availability];
 
+  const editInConversation = async (id: string) => {
+    setActing(true); setActionMenu(undefined);
+    try { await editExpertTask(id); setDetailId(undefined); }
+    catch (cause) { setError(messageOf(cause)); }
+    finally { setActing(false); }
+  };
+
   return <section className="wd-experts" data-testid="workdsh-experts">
     <style>{expertsCss}</style>
     <header className="cap-header">
@@ -182,15 +204,19 @@ export function ExpertsPanel({ toggleNavigation, management, openCapability, has
           aria-current={active ? 'page' : undefined}
           onClick={() => { if (!active && target) openCapability(target); }}>{icon(key)}{label}</button>;
       })}
-      <input ref={search} className="search" aria-label="搜索专家" placeholder="搜索专家" value={query}
+      <input ref={search} className="search" aria-label="搜索专家" placeholder={view === 'mine' ? `搜索我创建的${kind === 'team' ? '专家团' : '专家'}` : `搜索${kindLabel}`} value={query}
         onChange={event => setQuery(event.currentTarget.value)} />
       <button className={`mine-toggle ${view === 'mine' ? 'active' : ''}`} aria-pressed={view === 'mine'}
-        onClick={() => setView(value => (value === 'mine' ? 'center' : 'mine'))}>我的专家 {mineCount}</button>
-      <button className="create-expert" disabled={acting} onClick={() => void createExpert()}>制作专家</button>
+        onClick={() => { setView('mine'); setQuery(''); }}>我的专家 {mineCount}</button>
+      <details className="create-menu"><summary className="create-expert">制作专家</summary><div role="menu">
+        <button role="menuitem" disabled={acting} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); void createExpert('agent'); }}>创建专家</button>
+        <button role="menuitem" disabled={acting} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); void createExpert('team'); }}>创建专家团</button>
+      </div></details>
     </header>
 
+    {view === 'mine' && <button className="back-center" onClick={() => { setView('center'); setQuery(''); setStateFilter('all'); }}>‹ 全部专家</button>}
     <div className="section-head">
-      <h1>{view === 'center' ? '专家中心' : '我的专家'}</h1>
+      <nav className="work-types" aria-label={view === 'mine' ? '我的作品类型' : '专家中心类型'}>{([['agent', '专家'], ['team', '专家团']] as const).map(([type, label]) => <button key={type} className={kind === type ? 'active' : ''} aria-pressed={kind === type} onClick={() => { setKind(type); setQuery(''); }}>{label}{view === 'mine' && <span>{typeCounts[type]}</span>}</button>)}</nav>
       <div className="section-actions">
         <button onClick={() => setImportOpen(true)}>导入</button>
         <button onClick={refresh} disabled={busy}>刷新</button>
@@ -211,18 +237,18 @@ export function ExpertsPanel({ toggleNavigation, management, openCapability, has
 
     {notice && <div className={`notice ${notice.kind}`} role="status"><div className="notice-body"><span>{notice.text}</span></div><button onClick={() => setNotice(undefined)} aria-label="关闭提示">×</button></div>}
     <div role="status" aria-live="polite" className={error ? 'error counts' : 'counts'}>
-      {busy ? '正在读取专家目录…' : error || `目录共 ${total} 个专家 · 当前显示 ${visible.length} 个${debounced ? `（搜索“${debounced}”）` : ''}`}
+      {busy ? '正在读取专家目录…' : error || `目录共 ${total} 个${kindLabel} · 当前显示 ${visible.length} 个${debounced ? `（搜索“${debounced}”）` : ''}`}
     </div>
 
     {busy
       ? <div className="grid" aria-hidden>{Array.from({ length: 8 }, (_, index) => <div className="skeleton" key={index} />)}</div>
       : !error && !visible.length
         ? <div className="empty">
-          <strong>{debounced ? '没有匹配的专家' : view === 'mine' ? '还没有自己的专家' : '暂无可用专家'}</strong>
+          <strong>{debounced ? `没有匹配的${kindLabel}` : view === 'mine' ? `还没有自己的${kind === 'team' ? '专家团' : '专家'}` : `暂无可用${kindLabel}`}</strong>
           <span className="muted">{debounced ? '保留搜索词，可清除后重试。' : view === 'mine' ? '从默认模板复制，或直接制作一个属于你的专家。' : '默认模板尚未就绪，请稍后重试或制作专家。'}</span>
           <div className="empty-actions">
             {debounced && <button onClick={() => { setQuery(''); search.current?.focus(); }}>清除搜索</button>}
-            <button className="create-expert" disabled={acting} onClick={() => void createExpert()}>制作专家</button>
+            <button className="create-expert" disabled={acting} onClick={() => void createExpert()}>创建{kindLabel}</button>
             {view === 'mine' && <button onClick={() => setView('center')}>浏览专家中心</button>}
           </div>
         </div>
@@ -235,16 +261,16 @@ export function ExpertsPanel({ toggleNavigation, management, openCapability, has
               <button className="card-open" aria-label={`查看专家 ${summary.name}`} onClick={() => setDetailId(summary.id)}>
                 <Avatar summary={summary} />
                 <span className="card-title"><strong title={summary.name}>{summary.name}</strong>
-                  <span className="card-meta">{ORIGIN_LABEL[summary.origin] ?? summary.origin} · {stateLabel(summary)}</span></span>
+                  <span className="card-meta">{summary.profession || (summary.expertType === 'team' ? '专家团' : '专家')}{view === 'mine' && <span> · {stateLabel(summary)}</span>}</span></span>
               </button>
               {summary.canManage && <div className="card-actions">
                 <button className="more-button" aria-label={`管理专家 ${summary.name}`} aria-haspopup="menu" aria-expanded={actionMenu === summary.id}
                   onClick={() => setActionMenu(current => (current === summary.id ? undefined : summary.id))}>•••</button>
                 {actionMenu === summary.id && <div className="card-menu" role="menu">
                   {draft
-                    ? <button role="menuitem" onClick={() => { setActionMenu(undefined); setEditorId(summary.id); }}>继续编辑</button>
+                    ? <button role="menuitem" onClick={() => { void editInConversation(summary.id); }}>继续编辑</button>
                     : <button role="menuitem" disabled={!usable || acting} onClick={() => void runSummon(summary.id, summary.publishedRevisionRef?.revisionId, undefined)}>召唤专家</button>}
-                  {summary.canEdit && !draft && <button role="menuitem" onClick={() => { setActionMenu(undefined); setEditorId(summary.id); }}>编辑</button>}
+                  {summary.canEdit && !draft && <button role="menuitem" onClick={() => { void editInConversation(summary.id); }}>编辑</button>}
                   <button role="menuitem" disabled={acting} onClick={() => void copyToMine(summary)}>复制到我的专家</button>
                   <button role="menuitem" disabled={acting} onClick={() => void exportExpert(summary)}>导出</button>
                   {summary.canManage && !draft && summary.availability === 'enabled' && <button role="menuitem" disabled={acting} onClick={() => void setAvailability(summary, 'disabled')}>停用</button>}
@@ -254,7 +280,9 @@ export function ExpertsPanel({ toggleNavigation, management, openCapability, has
               </div>}
             </div>
             <p className="desc">{summary.description || <span className="muted">（暂无简介）</span>}</p>
+            <div className="domain-tags">{(summary.tags ?? []).slice(0, 3).map(tag => <span key={tag}>{tag}</span>)}</div>
             <div className="card-foot">
+              <span className="badge">{summary.expertType === 'team' ? '专家团' : '专家'}</span>
               {!draft && <span className={`badge ${readiness.cls}`}>{readiness.label}</span>}
               {draft && <span className="badge">未发布</span>}
               {summary.origin === 'default' && <span className="badge">默认</span>}
@@ -263,7 +291,7 @@ export function ExpertsPanel({ toggleNavigation, management, openCapability, has
                 onClick={() => void setPreference(summary, !summary.pinned)}>★</button>
             </div>
           </article>;
-        })}</div>}
+        })}{view === 'mine' && <button className="card create-card" disabled={acting} onClick={() => void createExpert()}><span aria-hidden>＋</span>创建{kind === 'team' ? '专家团' : '专家'}</button>}</div>}
 
     {nextCursor && !busy && <div className="empty-actions" style={{ justifyContent: 'center', marginTop: 18 }}>
       <button disabled={loadingMore} onClick={() => void load(nextCursor)}>{loadingMore ? '正在加载…' : '加载更多'}</button>
@@ -273,6 +301,7 @@ export function ExpertsPanel({ toggleNavigation, management, openCapability, has
       {detailId && <ExpertDetailModal expertId={detailId} management={management} acting={acting}
         onClose={() => setDetailId(undefined)}
         onSummon={(expertId, revisionId, draftText) => void runSummon(expertId, revisionId, draftText)}
+        onEditTask={id => void editInConversation(id)}
         onEditDraft={id => { setDetailId(undefined); setEditorId(id); }}
         onCopy={async (expertId, revisionId) => {
           setActing(true);

@@ -81,3 +81,5 @@ export function apply(ctx: Context) {
 内置 `workdsh-ppt-design`、`workdsh-word-design`、`workdsh-excel-design`、`workdsh-web-design`，参考腾讯 / WorkBuddy 的产品化方法，由 WorkDSH 按当前工具重新编写。包含叙事、排版、公式审查、响应式与交付参考；不是腾讯 SDK、转换引擎或云服务。感谢相关产品提供的设计启发。指南不能扩充当前编辑器或工具能力，具体来源与边界见[适配说明](../../../docs/design/TENCENT-AUTHORING-ADAPTATION.md)。
 
 创建指南使用 WorkDSH 独立命令，保留用户同名原版技能。多阶段创建要求更新原生任务进度；中断恢复先核对已有草稿与成果。
+
+2026-09-14源码候选0.1.0-alpha.28：配合活动插件提供已有技能标题；通过公开展示契约协作，不复制执行或技能状态。

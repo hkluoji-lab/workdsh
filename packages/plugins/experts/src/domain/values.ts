@@ -61,6 +61,8 @@ export function actionAccess(action: ExpertAction): AccessAction {
       return 'edit';
     case 'experts.prepare-execution':
     case 'experts.create-execution':
+    case 'experts.reserve-delegation':
+    case 'experts.claim-delegation':
     case 'experts.prepare-handoff':
     case 'experts.create-handoff':
       return 'use';

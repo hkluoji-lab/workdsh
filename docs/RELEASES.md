@@ -1,3 +1,7 @@
+## 2026-09-14 待发布源码候选
+
+本次提交准备：experts 0.1.0-alpha.2、skills 0.1.0-alpha.28、contracts 0.1.0-alpha.7，新增独立activity 0.1.0-alpha.1。模块分别版本化，不覆盖旧Release包。最新协作栏状态刷新纳入本次源码；本地重打包制品位于.artifacts/release-submit-2026-09-14。未推送/创建公开Release/发布npm；Office文本缺项按用户要求用README引用说明记录，不再作为本次阻塞；新制品完整组合回归仍未执行。Twitter草稿及真实图片见[social draft](social/twitter-2026-09-14.md)。
+
 # Module releases / 模块发布与安装
 
 2026-09-12。当前新增单个专家0.1 alpha及匹配的身份/授权/审计/Skill/展示配套；下方旧Skill发布信息保留为历史基线。每个模块保留自己的版本，GitHub Release 按模块建立，不再用一个仓库快照版本代替全部模块。

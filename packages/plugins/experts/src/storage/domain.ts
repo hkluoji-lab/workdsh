@@ -20,17 +20,19 @@ import { expertDefinitionSchema } from '../domain/definition.js';
  * disappearing. All writes go through `KvTable.update` for compare-and-swap.
  */
 
-const iso = z.string().min(1);
-const bounded = z.string().min(1).max(512);
+// Shared schema fragments, re-exported for the sibling team-run domain so both
+// expert storage domains validate owner/revision references identically.
+export const iso = z.string().min(1);
+export const bounded = z.string().min(1).max(512);
 
-const resourceOwnerSchema = z.object({
+export const resourceOwnerSchema = z.object({
   organizationId: bounded,
   ownerPrincipalId: bounded,
   scope: z.enum(['personal', 'organization', 'project']),
   projectId: bounded.optional(),
 });
 
-const revisionRefSchema = z.object({ expertId: bounded, revisionId: bounded });
+export const revisionRefSchema = z.object({ expertId: bounded, revisionId: bounded });
 
 const skillRevisionRefSchema: z.ZodType<SkillRevisionRef> = z.object({
   skillId: bounded,
@@ -56,6 +58,7 @@ const expertSchema: z.ZodType<Expert> = z.object({
   publishedRevisionRef: revisionRefSchema.optional(),
   createdAt: iso,
   updatedAt: iso,
+  teamParentId: bounded.optional(),
 });
 
 const draftSchema: z.ZodType<ExpertDraft> = z.object({
@@ -72,6 +75,7 @@ const revisionSchema: z.ZodType<ExpertRevision> = z.object({
   definitionDigest: bounded,
   dependencyLock: z.array(skillRevisionRefSchema),
   dependencyLockDigest: bounded,
+  teamMembers: z.record(z.string(), revisionRefSchema).optional(),
   presetRevisionRef: bounded,
   compilerVersion: bounded,
   compositionDigest: bounded,
@@ -88,6 +92,11 @@ const bindingSchema: z.ZodType<ExecutionBinding> = z.object({
   owner: resourceOwnerSchema,
   workspaceRef: bounded.optional(),
   createdFrom: bounded.optional(),
+  delegation: z.object({
+    parentSessionId: bounded,
+    parentCompositionDigest: bounded,
+    admission: z.enum(['reserved', 'claimed']),
+  }).optional(),
   creationOperationId: bounded,
   createdAt: iso,
 });

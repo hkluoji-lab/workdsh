@@ -30,7 +30,7 @@ export const expertsManagementPath = '/api/workdsh-experts';
 export const expertsImportPath = '/api/workdsh-experts/import';
 export const expertsExportPath = '/api/workdsh-experts/export';
 
-const maximumBodyBytes = 1024 * 1024 + 64 * 1024;
+const maximumBodyBytes = 32 * 1024 * 1024;
 
 type Endpoint =
   | 'skills' | 'list' | 'get' | 'create-draft' | 'update-draft' | 'copy' | 'validate'
@@ -62,7 +62,7 @@ function pickDefinition(value: unknown): Partial<ExpertDefinition> {
   const input = record(value);
   if (!input) return {};
   const patch: Record<string, unknown> = {};
-  for (const field of ['name', 'description', 'role', 'methodology', 'boundaries', 'deliverables', 'avatarRef', 'categoryId'] as const) {
+  for (const field of ['name', 'description', 'role', 'methodology', 'boundaries', 'deliverables', 'avatarRef', 'categoryId', 'agentDocument'] as const) {
     const text = str(input[field]);
     if (text !== undefined) patch[field] = text;
   }
@@ -104,6 +104,13 @@ function pickDefinition(value: unknown): Partial<ExpertDefinition> {
     }
     patch.futureRequirements = requirements;
   }
+  if (input.packageAssets !== undefined) patch.packageAssets = input.packageAssets;
+  if (input.packageDocuments !== undefined) {
+    const files = record(input.packageDocuments);
+    if (!files || Object.values(files).some(value => typeof value !== 'string')) throw new ExpertsError('experts/invalid-definition', '制作文件必须是文本映射。');
+    patch.packageDocuments = files;
+  }
+  if (input.team !== undefined) patch.team = input.team;
   return patch as Partial<ExpertDefinition>;
 }
 
@@ -127,6 +134,7 @@ function modelSelection(payload: unknown): ModelSelectionRequest | undefined {
 
 function listQuery(payload: unknown): ExpertListQuery {
   const input = record(payload) ?? {};
+  const expertType = oneOf(input.expertType, ['agent', 'team'] as const);
   const search = str(input.search);
   const origin = oneOf(input.origin, ['default', 'personal', 'organization'] as const);
   const availability = oneOf(input.availability, ['enabled', 'disabled', 'archived'] as const);
@@ -134,6 +142,7 @@ function listQuery(payload: unknown): ExpertListQuery {
   const cursor = str(input.cursor);
   const limit = typeof input.limit === 'number' && Number.isFinite(input.limit) ? input.limit : undefined;
   return {
+    ...(expertType === undefined ? {} : { expertType }),
     ...(search === undefined ? {} : { search }),
     ...(origin === undefined ? {} : { origin }),
     ...(availability === undefined ? {} : { availability }),
