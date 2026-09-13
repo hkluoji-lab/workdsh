@@ -1,3 +1,4 @@
+import {spreadsheetXlsx} from "../spreadsheet/xlsx.js";
 import type { Context } from "@deepseek-ai/cordis";
 import type { ToolRunContext } from "@deepseek-ai/dsh-tools";
 import type { OfficeContentSnapshot } from "workdsh-contracts/office";
@@ -12,8 +13,9 @@ export async function exportAndPresent(
   baseRevision?: number,
 ) {
   const isPpt = snapshot.kind === "presentation";
-  const format = isPpt ? "PPT" : "Word";
-  const extension = isPpt ? "pptx" : "docx";
+  const isSheet=snapshot.kind === "spreadsheet";
+  const format = isSheet ? "Excel" : isPpt ? "PPT" : "Word";
+  const extension = isSheet ? "xlsx" : isPpt ? "pptx" : "docx";
   exec.signal.throwIfAborted();
   if (baseRevision !== undefined && baseRevision !== snapshot.revision)
     throw new Error("REVISION_CONFLICT: 文档已更新，请读取最新修订后重新导出。");
@@ -25,7 +27,7 @@ export async function exportAndPresent(
     throw new Error(
       `${format} 文件交付需要当前会话的官方 bash 和 present 工具；右侧下载仍可使用。`,
     );
-  const bytes = snapshot.kind === "presentation"
+  const bytes = snapshot.kind === "spreadsheet" ? Buffer.from(await spreadsheetXlsx(snapshot)) : snapshot.kind === "presentation"
     ? Buffer.from(parsePresentation(snapshot.state.deck).bytes, "base64")
     : Buffer.from(await (await documentDocx(snapshot)).arrayBuffer());
   const maxBytes = isPpt ? 8 * 1024 * 1024 : 1024 * 1024;

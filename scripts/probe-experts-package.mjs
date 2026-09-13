@@ -199,6 +199,9 @@ try {
   await expect(page.getByRole('dialog', { name: '确认发布专家', exact: true })).toContainText('expert-authoring-test');
   assert.equal((await api(host, 'get', { expertId: drafted.expertId })).expert.publishedRevisionRef, undefined);
   const usagePreview = page.getByRole('region', { name: '专家使用预览', exact: true });
+  for (const title of ['会交付什么', '怎么处理你的任务', '使用前需要了解']) {
+    await expect(usagePreview.getByRole('heading', { name: title, exact: true })).toBeVisible();
+  }
   await expect(usagePreview).toContainText('Never invent credentials.');
   await expect(usagePreview).toContainText('示例任务 6');
   await expect(usagePreview).toContainText('暂不支持接入');
@@ -209,7 +212,7 @@ try {
     await page.screenshot({ path: join(artifacts, `expert-use-preview-${width}.png`), fullPage: true });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await usagePreview.getByText('完整专业设定', { exact: true }).scrollIntoViewIfNeeded();
+  await usagePreview.getByText('专业角色与经验', { exact: true }).click();
   await page.screenshot({ path: join(artifacts, 'expert-professional-preview.png'), fullPage: true });
   await page.getByRole('button', { name: '取消', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '编辑专家草稿', exact: true })).toBeVisible();

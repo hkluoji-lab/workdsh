@@ -115,3 +115,7 @@ content_open/content_read 的模型快照将图片 src 投影为 `office-image:<
 模型快照仅为投影；页面、持久状态、DOCX 保留嵌入图片，未增加资产注册表或文件访问底座。范围仅限可读取的 Office 工作副本文档，尚不支持新文件资料/远程 URL/其余七类编辑器的跨格式制作。失效来源须重新读取；源删除后的旧引用重试仍可能失败，通用资产幂等未完成。新图片仍使用已有 PNG/JPEG 嵌入输入。
 
 下一阶段开发计划：[PPT 实时制作 → 其他六类（Word 后续暂停）](../../../docs/design/office/NEXT-STAGE.md)。各阶段以真实文件、实时编辑和独立插件生命周期验收，规划不代表能力已完成。
+
+### Excel 工作副本（Preview）
+
+通过 `/office` 选择 Excel，或由模型读取 `content_capabilities` 后使用统一 `content_open/read/edit/export`。支持值、公式及多工作表；浏览器编辑时取得租约，完成后保存，下载真实 XLSX。限制为 20 张表、A1:CV1000、10,000 个非空单元格；格式、合并、图表与实时 XLSX 导入暂未接入。公式在浏览器计算，导出保留表达式并要求 Excel 重新计算。

@@ -147,3 +147,28 @@ Host 新增只读本地技能目录 `SkillCatalogStore`（默认 `~/.agents/.wor
 ### 同日追加：卡片再压至内容自然高度（对标 SkillHub）
 
 用户二次反馈卡片仍偏高（对比 SkillHub 更扁的列表）。修复：卡片 `padding 18→14px`、描述上边距 `12→6px`、`min-height 152→128px`，使渲染高度等于内容自然高度（14+47+6+48+14+border=131px），无底部空余，高宽比从 0.54 降到 0.47。验证：`check-dist` 三规则进包（`min-height:128px`、`padding:14px;display:flex;flex-direction:column`、`margin:6px 0 0` 各 raw=1）；18989 实测 8 张卡均 131px、弹框断言未回退（720/64/24px/基本信息/详情 820px）、pageerror 0；`probe:skills` 7/7 全 PASS。截图 `.artifacts/skills-market-top.png`（一屏可见 4 行卡片）。
+
+## 2026-09-13：我安装的独立页面（入口导航，参考 WorkBuddy）
+
+用户反馈：「我安装的 N」是不可点击的静态状态，已安装技能只以内联分区出现在市场页；要求点击后进入独立页面，参考 WorkBuddy「我安装的」页（返回「全部技能」、标题计数、批量管理与页内搜索）。
+
+官方能力复用记录（编码前填写）：
+
+| 字段 | 内容 |
+| --- | --- |
+| 任务与范围 | P1-03 / D03 技能市场 UI 增量：市场页「我安装的 N」改为可点击入口，进入同一面板内的独立安装页（返回链接、标题计数、批量管理、页内搜索、已安装卡片网格）；市场页可安装/已安装分区与全部既有管理动作保持不变。 |
+| 官方能力 | `../deepseek-harness-docs/slots.zh.md`（`ctx.slots.inject/register`、main 面板贡献与生命周期）；`../deepseek-harness-docs/web-client.zh.md`（布局与面板选择）。锁定包 `@deepseek-ai/dsh-client-ui-slots@0.1.5-rc.1`（`PropsRuntime`/`InjectFace`）；面板注册键 `workdsh-skills` 与 URL 呈现（`workdsh-view=skills`）继续由 bundle `NavigationLocation` 承担。 |
+| 复用选择 | 直接复用：安装页是同一 main 面板内的视图状态（React 局部 UI 状态），不新增第二个 main 注册、不新增 URL/路由、不改 bundle 的 `workdsh-view` 映射；卡片批量、启停、菜单、详情弹框、卸载/恢复继续复用既有 `SkillManager` 客户端与管理契约。 |
+| 自有边界 | 仅新增页面级展示状态与布局（`view=market/installed`、页内搜索、返回/标题/工具条），以及 `packages/ui` 图标集新增 `back` 路径。事实仍归官方与 `SkillManager`：已安装清单、启停、卸载、目录安装、watcher 重新发现均无第二套实现。 |
+| 证据与差异 | 既有 `scripts/probe-skills-package.mjs`（`probe:skills`）覆盖市场安装/编辑/启停/卸载/恢复与目录诊断；本轮在该探针新增安装页导航、页内搜索过滤与空结果、批量开关、返回与焦点断言。旧 `scripts/probe-browser.mjs` 技能段自 alpha.26 起已滞后（断言「技能库」标题与静态计数），不在本轮维护范围。 |
+| 验收 | 正例：点击「我安装的 N」进入安装页、面板滚动归零、返回后焦点回到入口；页内搜索过滤与空结果提示；批量开关选择真实可管理项；18989 人工预览对照 WorkBuddy 截图。反例：搜索无结果不显示卡片；只读技能不出现选择框与开关（既有约束）。未含：URL 深链（`workdsh-view` 不变）、跨会话记忆安装页状态。 |
+
+### 实现与结果
+
+skills 0.1.0-alpha.27（配套 ui 0.1.0-alpha.5）落地安装页视图：`SkillsPanel` 增加局部 `view=market|installed` 状态；市场头部「我安装的 N」由静态计数改为可点击入口，点击进入安装页。安装页含「全部技能」返回链接、计数标题（`data-testid="skills-installed"`）、「批量管理」与「搜索已安装的技能」页内搜索，卡片网格与批量操作栏复用市场同一 `renderSkillCard` 与管理逻辑（启停、详情、安装、选择行为一致，无第二套实现）。进入安装页与返回市场都把面板滚动归零，并把焦点分别迁移到返回链接与入口按钮（首次渲染跳过）。不新增第二个 main 注册、不改 bundle 的 `workdsh-view` URL 映射。`packages/ui` 图标集新增 `back` 路径（`M15 19l-7-7 7-7`，alpha.5）。
+
+验证（Node 22.23.2 / pnpm 10.34.5）：ui/skills build 与 typecheck 通过；`probe:skills` 8/8 段全部 PASS，新增浏览器断言覆盖入口可点击、安装页标题与市场标题互斥、返回链接获得焦点、滚动归零、页内搜索过滤与空结果、批量选择/退出、返回后焦点回到入口。截图 `.artifacts/skills-standalone/installed-page.png`。18989 人工预览（重装 alpha.27 后）：入口「我安装的 163」、安装页标题「我安装的 163」、返回链接聚焦、滚动归零、四列卡片网格、页内搜索过滤与空结果、批量选择（已选择 1 项）/退出、返回后焦点回入口，pageerror 0；browser-use 原生浏览器视图不可用，改用无头 Playwright 核对脚本 `.test-runtime/preview-check-18989.mjs` 并人工查看截图 `.artifacts/skills-standalone/18989-installed-page.png`、`18989-installed-search.png`、`18989-market-top.png`。
+
+探针附带修正：bundled 断言原检查未加前缀的 `skill-creator`（对应重命名前的旧构建），与本次 UI 改动无关；已修正为循环断言五个 `workdsh-` 前缀 bundled 技能各注册一次。经解包对比 alpha.26/alpha.27 tarball 确认差异来自上一轮 bundled 重命名工作。旧 `scripts/probe-browser.mjs` 技能段自 alpha.26 起滞后（断言「技能库」标题与静态计数），不在本轮维护范围；权威探针为 `scripts/probe-skills-package.mjs`。
+
+未执行：URL 深链、安装页状态跨会话记忆、真实模型调用。

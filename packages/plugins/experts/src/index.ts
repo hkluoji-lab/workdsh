@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { expertManagerSkillContent } from './authoring/guide.js';
 import { Context } from '@deepseek-ai/cordis';
 // Load the official Context augmentations this entry references (ctx.skills) and
@@ -53,11 +54,12 @@ function applyIntegration(ctx: Context): void {
   registerExpertsConnection(ctx);
   registerExpertManagementTools(ctx);
   ctx.effect(() => ctx.skills.register({
-    name: 'expert-manager',
+    name: 'workdsh-expert-manager',
     description: '以对话方式创建或修改 WorkDSH 专家草稿，校验并引导用户在界面确认发布。',
     whenToUse: '用户希望制作、修改、校验专家，或询问如何发布/召唤专家时使用。',
     source: 'bundled',
     content: expertManagerSkillContent,
+    resourceBase: { kind: 'directory', path: fileURLToPath(new URL('../resources/expert-manager/', import.meta.url)) },
   }));
 }
 

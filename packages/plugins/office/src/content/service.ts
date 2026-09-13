@@ -1,3 +1,4 @@
+import {spreadsheetStateSchema,spreadsheetEditInput,createSpreadsheet,applySpreadsheet,spreadsheetCapabilities} from "../spreadsheet/model.js";
 import { createHash, randomUUID } from "node:crypto";
 import { Service, type Context } from "@deepseek-ai/cordis";
 import {
@@ -19,6 +20,7 @@ import type {
   OfficeSnapshot,
   OfficeContentSnapshot,
   OfficePresentationOpenInput,
+  OfficeSpreadsheetOpenInput, OfficeSpreadsheetEditInput,
   OfficePresentationEditInput,
   OfficeReceipt,
   OfficeEditInput,
@@ -96,10 +98,10 @@ const eventSchema = z
 const recordSchema = z
   .object({
     documentId: id,
-    kind: z.enum(["document","presentation"]),
+    kind: z.enum(["document","presentation","spreadsheet"]),
     title: z.string(),
     revision: z.number().int().nonnegative(),
-    state: z.union([stateSchema,presentationStateSchema]),
+    state: z.union([stateSchema,presentationStateSchema,spreadsheetStateSchema]),
     owner: ownerSchema,
     workspaceId: z.string().optional(),
     sessionId: z.string(),
@@ -137,7 +139,7 @@ const recordSchema = z
       .strict()
       .nullable(),
   })
-  .strict().refine(record=>(record.kind==="document") === ("blocks" in record.state),"State must match editor kind");
+  .strict().refine(record=>record.kind==="document"?"blocks" in record.state:record.kind==="presentation"?"deck" in record.state:"sheets" in record.state,"State must match editor kind");
 type ContentRecord = z.infer<typeof recordSchema>;
 export const contentDomain = defineDomain({
   name: "workdsh_office",
@@ -150,7 +152,9 @@ const hash = (value: unknown) =>
 const newId = () => randomUUID();
 
 declare const __WORKDSH_PRESENTATION_ENABLED__:boolean;
+declare const __WORKDSH_SPREADSHEET_ENABLED__:boolean;
 export class ContentService extends Service {
+  readonly spreadsheetEnabled=typeof __WORKDSH_SPREADSHEET_ENABLED__!=="undefined"?__WORKDSH_SPREADSHEET_ENABLED__:true;
   readonly presentationEnabled=typeof __WORKDSH_PRESENTATION_ENABLED__!=="undefined"?__WORKDSH_PRESENTATION_ENABLED__:true;
   static inject = [
     "storageDomain",
@@ -295,11 +299,11 @@ export class ContentService extends Service {
   }
   async open(
     actor: ActorContext,
-    input: OfficeOpenInput | OfficePresentationOpenInput,
+    input: OfficeOpenInput | OfficePresentationOpenInput | OfficeSpreadsheetOpenInput,
     signal?: AbortSignal,
   ): Promise<OfficeContentSnapshot> {
     const value = parse(contentOpenInput, input);
-    ensure(!("kind" in value) || this.presentationEnabled,"UNSUPPORTED_KIND","此 Office 制品未装配 PPT 编辑器。");
+    ensure(!("kind" in value) || value.kind!=="presentation" || this.presentationEnabled,"UNSUPPORTED_KIND","此 Office 制品未装配 PPT 编辑器。");
     ensure(Buffer.byteLength(JSON.stringify(value)) <= 1024 * 1024, "LIMIT_REACHED", "导入正文超过1 MiB。请拆分文档。");
     if (value.source === "existing") {
       const snapshot = await this.read(actor, value.documentId, signal);
@@ -350,7 +354,7 @@ export class ContentService extends Service {
       };
       const record: ContentRecord = {
         documentId,
-        kind: "kind" in value ? "presentation" : "document",
+        kind: "kind" in value ? value.kind : "document",
         title: value.title,
         revision: 0,
         state: {
@@ -385,6 +389,10 @@ export class ContentService extends Service {
         deck.slides=deck.slides.slice(0,1);
         record.state={modelVersion:1,deck,focusSlideId:deck.slides[0].id};
       }
+      if ("kind" in value && value.kind === "spreadsheet") {
+        ensure(this.spreadsheetEnabled,"UNSUPPORTED_KIND","此制品未装配 Excel 编辑器。");
+        record.state=createSpreadsheet();
+      }
       if (value.source === "import") {
         const imported = applyOperations({modelVersion: 1, blockIds: [], blocks: {}}, [{op: "document.insertBlocks", afterBlockId: null, blocks: value.blocks.map((block, i) => ({...block, clientRef: `import-${i}`}))}], newId);
         record.state = imported.state;
@@ -412,6 +420,7 @@ export class ContentService extends Service {
   projectForAgent(snapshot: OfficeContentSnapshot): OfficeContentSnapshot {
     const projected = structuredClone(snapshot);
     if(projected.kind === "presentation") { const deck=projected.state.deck as Record<string,unknown>; delete deck.bytes; for(const slide of (deck.slides??[]) as Record<string,unknown>[]) {delete slide.rawXml;for(const element of (slide.elements??[]) as Record<string,unknown>[])delete element.rawXml;} return projected; }
+    if(projected.kind === "spreadsheet") return projected;
     for (const block of Object.values(projected.state.blocks)) {
       if (block.type === "image" && block.image) {
         const digest = createHash("sha256").update(block.image.src).digest("hex");
@@ -428,6 +437,7 @@ export class ContentService extends Service {
     // Request-local authorized snapshots; never a persistent asset registry.
     const target=this.get(envelope.documentId);
     if(target.kind === "presentation") return this.edit(actor,parse(presentationEditInput,input),signal);
+    if(target.kind === "spreadsheet") return this.edit(actor,parse(spreadsheetEditInput,input),signal);
     const sources = new Map<string, Promise<OfficeContentSnapshot>>();
     const source = (documentId: string) => {
       let pending = sources.get(documentId);
@@ -490,18 +500,18 @@ export class ContentService extends Service {
   }
   capabilities() {
     ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
-    return {...capabilities,...(this.presentationEnabled?{presentation:{model:"pptx-react-viewer@3.16.5",stateFormat:"pptx-viewer-core native slides and PPTX bytes",operations:["presentation.insertSlides","presentation.updateSlide","presentation.removeSlide","presentation.moveSlide"],limits:{slides:50,elementsPerSlide:200,contentSlidesPerCommit:1},export:{browser:"pptx",tool:"content_export",maxBytes:8*1024*1024}}}:{})};
+    return {...capabilities,...(this.spreadsheetEnabled?{spreadsheet:spreadsheetCapabilities}:{}),...(this.presentationEnabled?{presentation:{model:"pptx-react-viewer@3.16.5",stateFormat:"pptx-viewer-core native slides and PPTX bytes",operations:["presentation.insertSlides","presentation.updateSlide","presentation.removeSlide","presentation.moveSlide"],limits:{slides:50,elementsPerSlide:200,contentSlidesPerCommit:1},export:{browser:"pptx",tool:"content_export",maxBytes:8*1024*1024}}}:{})};
   }
   edit(
     actor: ActorContext,
-    input: OfficeEditInput | OfficePresentationEditInput,
+    input: OfficeEditInput | OfficePresentationEditInput | OfficeSpreadsheetEditInput,
     signal?: AbortSignal,
   ): Promise<OfficeReceipt> {
     return this.commit(actor, input, undefined, signal);
   }
   editHuman(
     actor: ActorContext,
-    input: OfficeEditInput | OfficePresentationEditInput,
+    input: OfficeEditInput | OfficePresentationEditInput | OfficeSpreadsheetEditInput,
     lease: { token: string; clientId: string },
     signal?: AbortSignal,
   ) {
@@ -509,13 +519,14 @@ export class ContentService extends Service {
   }
   private async commit(
     actor: ActorContext,
-    input: OfficeEditInput | OfficePresentationEditInput,
+    input: OfficeEditInput | OfficePresentationEditInput | OfficeSpreadsheetEditInput,
     human: { token: string; clientId: string } | undefined,
     signal?: AbortSignal,
   ): Promise<OfficeReceipt> {
     const target=this.get(input.documentId);
     ensure(target.kind!=="presentation"||this.presentationEnabled,"UNSUPPORTED_KIND","此 Office 制品未装配 PPT 编辑器。");
-    const value = target.kind === "presentation" ? parse(presentationEditInput,input) : parse(editInput,input);
+    ensure(target.kind!=="spreadsheet"||this.spreadsheetEnabled,"UNSUPPORTED_KIND","此制品未装配 Excel 编辑器。");
+    const value = target.kind === "presentation" ? parse(presentationEditInput,input) : target.kind === "spreadsheet" ? parse(spreadsheetEditInput,input) : parse(editInput,input);
     ensure(
       Buffer.byteLength(JSON.stringify(value)) <=
         capabilities.limits.batchBytes,
@@ -587,7 +598,8 @@ export class ContentService extends Service {
           }
           ensure(contentSlideIds.size<=1,"INVALID_INPUT","PPT 内容请逐页提交：每次最多新增或更新一页；删页、排序可批量完成。");
         }
-        const result = "deck" in current.state ? (()=>{
+        if(!human) ensure(!value.operations.some(op=>op && typeof op === "object" && "op" in op && op.op === "spreadsheet.replaceState"),"INVALID_INPUT","AI 请使用单元格及工作表语义操作。");
+        const result = "sheets" in current.state ? applySpreadsheet(current.state,value.operations) : "deck" in current.state ? (()=>{
           const pptState=current.state as z.infer<typeof presentationStateSchema>;
           const deck=preparedDeck!;
           let focusSlideId:string|undefined=[...contentSlideIds][0]??pptState.focusSlideId;

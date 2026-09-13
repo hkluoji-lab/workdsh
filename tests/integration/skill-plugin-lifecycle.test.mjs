@@ -81,7 +81,10 @@ test('Skill service waits, activates independently, disposes consumers and resto
     assert.equal((await (await uploading).json()).error.code, 'skill/request-cancelled');
     assert.ok(cancelled, 'disposal cancels and drains the active upload');
     await settle(() => routes.size === 0 && ctx.workdshSkills === undefined && disposed.length === 4);
-    assert.equal(await ctx.skills.get('skill-creator'), undefined);
+    assert.equal(await ctx.skills.get('workdsh-skill-creator'), undefined);
+    for (const name of ['workdsh-ppt-design', 'workdsh-word-design', 'workdsh-excel-design', 'workdsh-web-design']) {
+      assert.equal(await ctx.skills.get(name), undefined, 'bundled authoring guidance is revoked with its owner');
+    }
     assert.ok(ctx.unrelatedFeature.healthy);
     assert.match(await readFile(file, 'utf8'), /PRESERVE_ME/);
     assert.ok(await ctx.skills.get('shared-sample'), 'native file provider remains after management removal');

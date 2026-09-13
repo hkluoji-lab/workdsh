@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Context } from '@deepseek-ai/cordis';
-import SkillRegistry from '@deepseek-ai/dsh-skill';
+import SkillRegistry, { renderSkillContent } from '@deepseek-ai/dsh-skill';
 import Tools from '@deepseek-ai/dsh-tools';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -19,10 +19,14 @@ test('skills Host owns a disposable manager and official skill registration', as
     ctx.provide('systemPrompt', { tools() {}, section() {}, getSectionOrder() { return 0; } });
     await ctx.plugin(Tools);
     await ctx.plugin(SkillRegistry);
+    ctx.effect(() => ctx.skills.register({ name: 'skill-creator', source: 'bundled', description: 'Original user guide fixture', content: 'ORIGINAL_GUIDE_SENTINEL' }));
     await ctx.plugin(skillsHost);
-    const registered = await ctx.skills.get('skill-creator');
-    assert.equal(registered.name, 'skill-creator');
+    assert.equal((await ctx.skills.get('skill-creator')).content, 'ORIGINAL_GUIDE_SENTINEL');
+    const registered = await ctx.skills.get('workdsh-skill-creator');
+    assert.equal(registered.name, 'workdsh-skill-creator');
     assert.equal(registered.source, 'bundled');
+    assert.match(registered.content, /todo_write/);
+    assert.match(registered.content, /resumes after an interruption/);
     assert.match(registered.content, /workdsh_save_skill_draft/);
     assert.match(registered.content, /workdsh_validate_skill_draft/);
     assert.match(registered.content, /workdsh_publish_skill_draft/);
@@ -30,6 +34,23 @@ test('skills Host owns a disposable manager and official skill registration', as
     assert.match(registered.content, /Never overwrite an unrelated skill/);
     assert.match(registered.content, /filesystem skill provider and watcher/);
     assert.equal(registered.content, skillsHost.skillCreatorContent);
+    assert.equal(registered.resourceBase.kind, 'directory');
+    for (const reference of ['creation-methods.md', 'editing-and-delivery.md']) {
+      const resource = join(registered.resourceBase.path, 'references', reference);
+      assert.ok((await readFile(resource, 'utf8')).length > 100);
+    }
+    assert.ok(renderSkillContent(registered).includes(registered.resourceBase.path));
+    for (const skillName of ['workdsh-ppt-design', 'workdsh-word-design', 'workdsh-excel-design', 'workdsh-web-design']) {
+      const guidance = await ctx.skills.get(skillName);
+      assert.equal(guidance.source, 'bundled');
+      assert.equal(guidance.resourceBase.kind, 'directory');
+      const references = [...guidance.content.matchAll(/references\/([a-z-]+\.md)/g)];
+      assert.equal(references.length, 2);
+      for (const [, reference] of references) {
+        assert.ok((await readFile(join(guidance.resourceBase.path, 'references', reference), 'utf8')).length > 100);
+      }
+      assert.ok(renderSkillContent(guidance).includes(guidance.resourceBase.path));
+    }
     assert.equal(typeof ctx.workdshSkills.detail, 'function');
     assert.ok(ctx.tools.get('workdsh_save_skill_draft'));
     assert.ok(ctx.tools.get('workdsh_validate_skill_draft'));
@@ -63,8 +84,8 @@ test('skills Host owns a disposable manager and official skill registration', as
     };
     const catalog = await invoke('list', {});
     assert.equal(catalog.ok, true);
-    assert.ok(catalog.value.some(skill => skill.name === 'skill-creator'));
-    const invalid = await invoke('update', { name: 'skill-creator' });
+    assert.ok(catalog.value.some(skill => skill.name === 'workdsh-skill-creator'));
+    const invalid = await invoke('update', { name: 'workdsh-skill-creator' });
     assert.deepEqual(invalid, { ok: false, error: { code: 'skill/invalid-request', message: '技能文档或版本信息无效。', details: {} } });
     const document = '---\nname: api-import\ndescription: Uploaded through exact Fetch\n---\nKeep inert.\n';
     const uploadResponse = await importRoute.fetch(new Request('http://localhost/api/workdsh-skills/import', {

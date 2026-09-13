@@ -16,7 +16,7 @@ test('real bundle plugin releases its effect and supports a fresh installation',
     const effectCount = first.getEffects().length;
     assert.ok(effectCount > 0);
     assert.equal(ctx.workdshSkills, undefined, 'product diagnostics do not initialize Skill');
-    assert.equal(await ctx.skills.get('skill-creator'), undefined);
+    assert.equal(await ctx.skills.get('workdsh-skill-creator'), undefined);
     await first.dispose();
     assert.equal(first.getEffects().length, 0);
     await first.dispose();

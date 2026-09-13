@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ExpertAvailability, ExpertDefinition, ExpertDetail, ExpertSkillOption } from '../shared.js';
 import { skillStateLabel } from './SkillPicker.js';
 import type { ExpertManagementClient } from './management.js';
+import { ExpertWorkSummary } from './ExpertWorkSummary.js';
 
 export type ExpertDetailModalProps = {
   readonly expertId: string;
@@ -112,6 +113,7 @@ export function ExpertDetailModal({ expertId, management, acting, onClose, onSum
     </div>}
 
     {definition.description && <p className="detail-desc" style={{ marginTop: 20 }}>{definition.description}</p>}
+    <ExpertWorkSummary definition={definition} />
     {definition.tags.length > 0 && <h2 className="detail-section-title">擅长领域</h2>}
     {definition.tags.length > 0 && <div className="tag-row">{definition.tags.map(tag => <span className="tag" key={tag}>{tag}</span>)}</div>}
 
@@ -155,9 +157,6 @@ export function ExpertDetailModal({ expertId, management, acting, onClose, onSum
 
     <details className="expert-settings"><summary>专家设定</summary>
     <Prose title="专业角色" body={definition.role} />
-    <Prose title="工作方法" body={definition.methodology} />
-    <Prose title="边界与约束" body={definition.boundaries} />
-    <Prose title="交付要求" body={definition.deliverables} />
     </details>
 
     <div className="detail-head-actions" style={{ marginTop: 28, justifyContent: 'flex-end' }}>

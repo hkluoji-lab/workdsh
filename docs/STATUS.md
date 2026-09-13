@@ -1,8 +1,56 @@
+## 2026-09-13：我安装的独立页面（入口导航，参考 WorkBuddy）
+
+用户反馈「我安装的 N」不可点击、已安装技能只内联在市场页。skills 0.1.0-alpha.27 / ui 0.1.0-alpha.5 把市场头部「我安装的 N」改为可点击入口，进入同一面板内的独立安装页：顶部「全部技能」返回链接、计数标题、右上「批量管理」与「搜索已安装的技能」页内搜索；卡片、启停、详情、安装与批量选择复用市场同一实现，不新增第二个 main 注册、URL 映射或安装路径。进入与返回重置面板滚动，焦点分别迁移到返回链接与入口按钮；ui 包新增 back 图标（alpha.5）。
+
+验证：ui/skills build 与 typecheck 通过；`probe:skills` 8/8 段全部 PASS（新增安装页导航、页内搜索过滤与空结果、批量开关、返回焦点与滚动归零断言，截图 `.artifacts/skills-standalone/installed-page.png`）；18989 活预览重装 alpha.27 后实测入口「我安装的 163」、安装页标题、返回链接聚焦、滚动归零、四列卡片、页内搜索过滤与空结果、批量选择/退出、返回后焦点回入口，pageerror 0（browser-use 原生视图不可用，改用无头 Playwright 核对脚本 `.test-runtime/preview-check-18989.mjs` 并人工查看截图 `18989-installed-page.png`、`18989-installed-search.png`、`18989-market-top.png`）。
+
+探针附带修正：bundled 断言原检查未加前缀的 `skill-creator`（重命名前旧构建），修正为循环断言五个 `workdsh-` 前缀技能各注册一次；经 alpha.26/alpha.27 tarball 解包对比确认为上一轮重命名工作遗留，与本轮 UI 无关。旧 `probe-browser.mjs` 技能段滞后不维护。未执行：URL 深链、安装页状态跨会话记忆、真实模型调用。
+
+## 2026-09-13：AUTHORING-01 腾讯内容制作方法适配与 Preview 安装
+
+新增 workdsh-ppt-design、workdsh-word-design、workdsh-excel-design、workdsh-web-design 四个 bundled只读指南及八份配套参考，使用官方 SkillRegistration/resourceBase，不复制腾讯转换器/SDK/子代理流水线。PPT补逐页叙事、视觉系统与原生图表；Word补体裁、层级与交付；Excel补schema、实际行号、公式与审查；网页补价值叙事、令牌、响应式、中英文与真实交互。Office默认Word/PPT引导按需使用相应指南。
+
+[来源与复用记录](design/TENCENT-AUTHORING-ADAPTATION.md)限定相关入口、重点参考和脚本依赖，未宣称完整审查全部目录/许可。统一spreadsheet/html新建与高级格式仍未实现，指南明确禁止猜工具分支或冒充已生成文件。此增量是专业方法增强，不是四类完整编辑能力上线。
+
+Node22.23.2下Skills与Office构建/typecheck通过，技能Host+Office内容10项、卸载生命周期1项通过，官方get/render与引用文件存在验证通过。修复Office既有构建路径依赖cwd的问题：两处路径改由import.meta.url定位，标准包构建通过；首次失败测试曾使用旧Office产物，重新构建后已重跑通过。
+
+官方CLI以哈希制品地址更新preview Skills/Office，两包Host/Client及八份安装参考逐字节一致，重启18989。已认证管理list HTTP200/ok=true确认四指南readonly可用。用户原版技能/其他插件未改动，未提交推送。真实模型四类成品、视觉检查、Excel公式重算与交付质量未执行，后续分别验收；D04保持当前阶段。
+
+## 2026-09-13：CREATION-01 内置创建方法与参考接入
+
+已增强 Skills/Experts 两套实际 bundled 指南：案例驱动与资料转化、专业判断尺度、编辑保护、真实成果和未执行试用的状态区分。新增四份包内 references，以官方 SkillRegistration.resourceBase directory 接入，Skills 独立包新增 resources 文件清单。旧技能指南的工作区发布承诺已修正为真实工具支持的 shared-agents/profile；未支持的资源树不冒充已发布。
+
+官方复用记录见 [深度分析](design/WORKBUDDY-CREATION-PROMPTS-DEEP-ANALYSIS.md) CREATION-01。Node 22.23.2 下两包构建与 typecheck 通过；技能 Host/管理及专家管理/成果 28 项集成通过，其中实际官方 get/render 保留资源目录且引用文件存在。两包本地 pack 的归档均包含相应 references，git diff --check 通过。
+
+未修改用户 preview 技能、未安装候选包到运行 Profile、未执行模型 A/B、未提交推送。当前 D04 保持不变。下一步：资源树草稿接口与独立完整性检查，再进行单技能/单专家真实模型专业试用；本切片不宣布这些能力已完成。
+
+## 2026-09-13 创建能力深入分析
+
+进一步核对 WorkBuddy builtin 技能初始化/基础校验/递归打包与专家完整校验/简易注册/过滤打包的实际程序边界，区别指令要求和代码保证。整理资料转化、资源生产、产品发现与专业验收的价值及本宿主适配优先级，见 [深入分析](design/WORKBUDDY-CREATION-REVIEW.md)。本轮仅分析文档，不执行原版写入脚本、不修改用户对象；真实模型效果未执行。
+
+## 2026-09-13 WorkBuddy 原版创建能力对照
+
+阅读用户指定 workbuddy 目录中的 builtin skill-creator、expert-manager 及相关规范/脚本重点，对照当前 WorkDSH 创建服务与指南。明确应保留案例驱动、资料转化、资源组织、编辑保护、校验与交付，原版路径/注册/Team 工具需宿主适配。详见 [创建能力对照](design/WORKBUDDY-CREATION-REVIEW.md)。仅文档整理，未改 runtime、用户对象或 Profile；真实模型创建/分享验收未执行。
+
+## 2026-09-13 Preview 实际技能清单
+
+按用户纠正，从运行中 preview 已认证管理接口只读取得 list/catalog（HTTP 200、ok=true）。管理 161 条：149 启用、2 只读、1 停用、9 格式异常；151 可被模型调用。市场 170 条，137 本地 installed。已整理全量分类、核心能力、异常状态和多版本来源边界，见 [清单](design/PREVIEW-SKILLS-INVENTORY.md)。实际 skill-creator 是 WorkDSH bundled 指南；腾讯 PPT 不在当前 list/catalog。未逐项执行技能、修复异常、改用户文件/配置或启动模型测试。
+
+## 2026-09-13 优秀技能设计整理
+
+核对本机 tencent-pptx、ppt-implement、市场/WorkBuddy/Codex 多版本 skill-creator；整理叙事、具体视觉系统、渐进引用、确定性脚本、校验与交付方法，区分来源及本项目原生适配边界。详见 [优秀技能整理](design/EXCELLENT-SKILLS-REVIEW.md)。不按长度否定优秀技能，未改用户技能、运行引擎或 Profile；真实成品验证未执行。
+
+## 2026-09-13 只读技能质量审查工具
+
+已新增 audit:skills 工程工具与 3 项相关测试，不改运行时技能加载或用户文件。本机扫描 215 文件，139 个有启发式审阅项，主要为描述较长；不等于不可用或官方运行冲突。完整本机路径报告留在忽略的 .artifacts，公开文档仅记录汇总。详见 [审查文档](design/PROJECT-INSTRUCTION-AUDIT.md)。测试通过，模型 A/B、产品 UI 接入及全量构建未执行；currentStep 不变。
+
+## 2026-09-13 项目级指令与技能审查
+
+按用户授权对整个项目应用 OpenAI 指令/技能文章的原则，核对开发规则、技能格式校验、专家官方 preset 编译与交付字段、Office authoring/export 指令。已修正 AGENTS 按任务读文档及历史 D00 限制；详见 [审查与有限改进方案](design/PROJECT-INSTRUCTION-AUDIT.md)。未改运行代码、用户技能或专家修订。后续技能质量建议和多模型 A/B 尚未实现/执行，不更改 D04 顺序。验证见审查文档；模型与产品构建测试未执行。
+
 ## 2026-09-13 中英文产品网站上线
 
 按用户要求提供 WorkDSH 中英文产品展示网站，英文默认入口 https://techflag.github.io/workdsh/ ，中文入口 zh-CN.html。页面包含真实开发截图、PPT/技能/文档切换、架构与快速开始入口、开发预览边界及开源致谢。网站通过 GitHub Pages 官方 Actions 自动部署，首轮部署运行 34711881370 成功，双语更新运行 34712076797 成功。线上中文页面 lang=zh-CN、无控制台错误、手机无横向溢出。中英文页面经 Playwright 检查，截图切换正常、390px 手机布局无横向溢出。此网站为静态产品展示，不包含应用运行服务。
-
-## 当前：技能弹框与市场卡片对齐 WorkBuddy（2026-09-13）
 
 ## 2026-09-13：英文产品网站与 GitHub Pages
 
@@ -47,6 +95,8 @@
 - 查阅本机 WorkBuddy 的 `ppt-implement`（网页演示模板流程）和 `tencent-pptx`（依赖腾讯 slidep 工具）。只借鉴叙事、字号层级、配色、视觉焦点和布局对齐建议；未安装其运行时或重新引入另一套 PPT 引擎。
 - 已通过 Office 类型检查、构建及 8 项内容服务集成测试。实际模型在新指导下生成的美观度及流程遵循尚未验证；不能将提示词改进等同于视觉验收。
 
+
+## 当前：技能弹框与市场卡片对齐 WorkBuddy（2026-09-13）
 
 技能目录预览/详情弹框继续复用 workdsh-ui 公共 Modal（未改公共默认宽度与无障碍行为），仅经插件级高特异性类名收窄：预览 720px、详情 820px、确认 480px；图标 64px（原 112）、标题 24px（原 32）、关闭按钮 40px 与标题行垂直居中（实测中心 206.73=206.73），小节改名「基本信息」并修复「概述」缺失图标；修复预览弹框「＋ 安装」按钮被卡片圆形样式挤压致文字换行。市场卡片高度 190→152→131px（内容自然高度：内距 14px、描述上边距 6px、无底部空余），对齐 SkillHub 更扁的列表观感；分类标签栏隐藏滚动条（保留横向滚动）。探针弹框回归断言（宽度≤760、图标 64、标题 24px）不变，`probe:skills` 7/7；18989 实测卡片 131px、预览 720px/详情 820px、可安装 33 全图标、pageerror 0。截图 `.artifacts/skills-market-top.png`、`.artifacts/skills-market-preview.png`、`.artifacts/skills-market-detail.png`。注意：preview 的 office 存储中一条旧 schema 文档（用户 PPT 工作遗留）与新版 office 构建不兼容阻塞启动，已备份迁至 `.artifacts/office-documents-quarantine/`（可还原）。
 
@@ -1035,3 +1085,53 @@ D02 的工作台行为、公共 UI 边界、失败恢复和打包浏览器条件
 用户已授权实施 ADR-0018。当前工作为 D04 的 Skill 0.1 交付前置修正：独立 Host/Client、显式 Profile 组合、公共技能服务契约及制品/生命周期验收。沿用既有业务功能和数据目录，不启动专家业务或公共/企业功能；验证结果写入 skills-standalone-package 证据。此处保留开始时的范围记录；后续完成结果见本文顶部及独立交付验收，不能以原 alpha.23 打包记录代替 alpha.24 运行证据。
 
 安装回执：仅通过官方 dsh plugin --profile preview add 更新 Office 制品，已比对安装后的 Host/Client 与当前 dist 字节完全一致。18989 预览恢复运行，dsh-cost-meter 保留。实际文件资源 Tab 打开导出的 PPTX，修改图表 8→9，原文件字节不变，应用探针通过。未自动提交、推送或发布 npm。
+
+## 2026-09-13：WorkBuddy 创建提示词、参考与模板深度审查
+
+补充 [创建提示词深度分析](design/WORKBUDDY-CREATION-PROMPTS-DEEP-ANALYSIS.md)：覆盖内置技能/专家创建入口、四份专家参考、两份市场模式参考、生成模板与内置脚本，区分创建者提示词、生成执行定义、程序保证和宿主加载。提出保留案例驱动、材料映射、专业判断、资源与成果交付的方法，适配到 WorkDSH 现有受控服务；团队能力继续留后续阶段。
+
+原版打包测试实际执行：四项均在 setUp 因缺少 MAX_PACKAGE_BYTES 报错，未进入行为断言。禁用 pycache，仅使用临时目录，没有注册专家或修改用户技能。分析发现默认路径、agent_created、资源校验、头像完成态与批量内容生成存在文本/实现差异，结论限定本机副本。
+
+本轮仅文档补充，未实现新增资源树接口或运行模型 A/B，未提交推送。下一步以真实单技能和单专家案例适配并验收，不以字数或标签数代替质量。
+
+## 2026-09-13：CREATION-01 Preview 安装与启动
+
+用户授权安装后，以内容哈希地址通过官方 dsh plugin --profile preview add 更新 Skills 与 Experts 两个独立包。核对安装后的 Host/Client entry 和四份参考逐字节一致；未更改其他插件版本或用户 ~/.agents 技能文件。preview 使用默认用户 Agents home 启动于 127.0.0.1:18989。已认证管理 list 返回 HTTP 200/ok=true，skill-creator、expert-manager 均为内置 readonly 项。
+
+该安装增强当前 Profile 中同名内置创建指南，不替换官方 Skill loader/Agent loop，不删除用户原版副本，也不改 Office export。新增指南与参考已安装；真实模型读取参考与创建质量试用仍未执行。未提交推送。
+
+## 2026-09-13：OFFICE-EXCEL-01 Preview 首段接入
+
+统一 Office 内容服务新增 spreadsheet 工作副本，支持新建、读取、单元格值/公式、多工作表、修订控制、幂等操作、人工编辑租约与 XLSX 导出。使用已有 Univer 0.25.1 原生浏览器编辑器和 ExcelJS 4.4.0；与 Word/PPT 共用授权、存储、审计和成果交付链路。技能指南同步当前能力，优先读取 content_capabilities。
+
+Office 类型检查和完整构建通过；内容/下载集成测试 16 项通过，覆盖多表、公式、不一致修订、跨主体拒绝、租约、持久化恢复和 XLSX 数据回读。Preview 示例工作簿在真实浏览器显示公式结果 0.7，完成编辑返回已保存，已点击下载入口。未执行真实模型端到端生成或外部 Excel/WPS 验证。格式、合并、图表和实时 XLSX 导入仍未接入，不宣称完整 Excel。Word-only 构建已排除新增表格 SDK，但仍被原有 PPT/AI SDK 缺许可证文本阻断；保留发布门禁。本轮不提交、推送或 npm 发布，不改变 D04 主线完成状态。
+
+安装回执：Office 与 Skills 经官方 preview CLI 更新，安装后 Host/Client 与构建制品逐字节一致；18989 已重启，原应用标签页已恢复。补充 Office 输入入口测试 2 项通过，总计本轮相关测试 18 项。
+
+## 2026-09-13：CREATION-02 创建入口冲突与中断进度修正进行中
+
+官方能力复用记录：读取 subsystems/skills.md、subsystems/slots.md，锁定 dsh-skill/dsh-client-ui-conversation 0.1.5-rc.1 的公开注册与 Slot 类型。官方 provider 继续拥有技能解析；WorkDSH 采用独立命令名称避免用户同名文件技能覆盖，补充进度与恢复指南，不改 Harness 或历史日志。验收将使用官方 Registry 验证原版与增强版同时存在、入口命令与注册一致、插件卸载清理。中断 UI 扩展面尚在核对，不能将提示词约束视为确定性状态修复。
+
+CREATION-02 UI 复用面：采用 conversation.input.dock list Slot、SessionStandardProps.useSession/useProjection，以及公开 chat timeline 的 turn/end；读取 todos 投影和官方 running 状态，仅补充停止提示，不复制原生待办列表或修改其 owner。
+
+CREATION-02 实现与验证：创建入口与注册名改为 workdsh-skill-creator / workdsh-expert-manager，用户原版保留；两份指南加入原生 todo_write 阶段更新与中断恢复检查。Workbench 通过官方 conversation.input.dock、todos 投影、Session.running 与公开 Chat timeline 增量展示中断/停止提示，不改历史待办状态或原生动画。Skills、Experts、Workbench、bundle 构建通过，19 项相关集成测试通过。Skills/Experts/bundle 经官方 CLI 更新 preview，安装入口字节核对一致。真实模型创建与阶段更新试用未执行；资源树发布仍未接入，财务分析技能脚本未修改。无 Harness 源码修改、提交、推送或 npm 发布。
+
+CREATION-02 浏览器实测：重启 18989 后打开“创建财务分析Excel读取技能”原会话，DOM 显示“已中断 · 8 项任务尚未确认完成。任务列表保留上次记录，不代表仍在执行。”，原始待办 1 进行中 / 7 待处理保持原日志值；未发送继续指令、未修改该技能脚本。
+
+## 2026-09-13：Desktop 托管 Python 设计登记
+
+用户确认方向，新增 design/desktop/MANAGED-RUNTIME.md，并关联 ADR-0025、PLAN、ARCHITECTURE。设计区分解释器/依赖供给与官方 sandbox，覆盖离线精选依赖、额外依赖隔离、来源许可证/签名、原子升级回滚、可运行状态与干净机器门禁。RUNTIME-01～03 均待实现；本轮仅文档，未安装 Python、未改 Harness、未进行打包或测试、未提交推送。不恢复暂停的 Excel 格式/合并/图表开发。
+
+## 2026-09-13：WorkBuddy 专家需求与技术复核
+
+推送检查点：用户确认当前功能保留，下一阶段优先网页制作，连接器与资料库后移；D04历史未签收项保留，未冒记整体验收。当前实现和设计打包为一次仓库提交；Desktop未集成实验及空lefthook示例不纳入。Node22完整构建/typecheck通过，集成/技能质量/规划共79项测试通过；DOCX幂等测试固定ZIP夹具时间戳，避免同内容两次打包哈希随机变化。规划/whitespace及暂存路径/疑似密钥检查通过，预览数据与凭据未纳入。不发布npm或创建Release。
+
+体验启动回执：最新Experts包通过内容哈希地址由官方CLI安装到人工preview，Host/Client与分析参考字节核对一致；18989已重启，保留默认用户Agents目录及既有Profile数据，应用入口已请求打开。本轮未运行模型任务。
+
+使用闭环开发：新增只读 ExpertWorkSummary，详情和保存后发布预览共享 deliverables/methodology/boundaries 投影，优先呈现交付、工作方法和使用边界；角色可展开，不新增字段或模型摘要。原生召唤/草稿交接保持官方实现。Node22 Experts构建/typecheck、管理16项测试通过；独立安装态浏览器探针验证工作摘要、长内容、390/1440/1920响应式、发布取消与确认、真实技能选择、召唤原生Session、一次草稿交接/已有输入保护，以及两次冷启动绑定全部通过。已检查1440发布预览截图。check:plan/whitespace通过。安装态验证只使用临时Profile，人工preview尚未更新；本轮无模型调用。D04专业语义剩余缺口及E原有未验收项仍保留，不能据此宣称模块整体完成。
+
+继续开发/验证：dirty隔离真实模型复测两轮，独立run label保留历史。第一轮自动拒绝子集1300冒充整体；第二轮原生完成、金额、固定Skill/实际计算/原件/冷启动全部通过，但人工发现完整基期误置null及单位敏感性场景贡献方向错误，professional-review记录failed。原两处规则有改进但AT-27仍不签收；已补按期间独立完整性与反事实逐店计算，最后补充未复测。创建参考同步，成果校验3项和规划/whitespace通过；未安装人工preview，不改Harness/用户专家。下一步只复验剩余两处，详见d04-experts-review-fixes末尾。
+
+开发补充：已将单位判断、缺失与零、子集/总体和均值/结构边界加入实际 expert-manager 参考，并在创建指南要求分析类专家将规则落实到 methodology/boundaries；试用参考同时要求数值与文字结论核验、真实成果和验证范围说明。Node 22.23.2 下 Experts 构建通过，专家管理及成果校验19项测试通过，check:plan 与 diff whitespace 通过。该变更增强新创建定义，不修改已有发布专家或任务。尚未安装 preview、未执行创建入口真实模型及 dirty 方法最终复测，AT-27仍未整体签收；下一步按对应场景补模型证据，不以19项确定性测试证明专业语义已修复。
+
+新增 design/experts/WORKBUDDY-REASSESSMENT.md，关联专家交接包及有限开发计划。对照本机 expert-manager、Agent/展示规范、工作报告专业规则和行业研究章节契约，补充任务优先详情、场景分流、专业证据、refs/脚本归属、发布与试用分离及有限验收顺序。复核保留当前 D 已有真实模型证据和两处 dirty 判断缺口，未将旧状态误作未执行。下一步先关闭该缺口，再补材料转化创建案例与 E 签收；资源树/运行时独立跟踪。本轮仅设计文档，运行测试、模型调用、安装发布均未执行；未改 Harness 或恢复 Excel 高级开发。

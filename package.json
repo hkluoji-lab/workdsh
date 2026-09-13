@@ -32,7 +32,9 @@
     "probe:office:native": "node scripts/probe-office-native.mjs",
     "probe:office:live": "node scripts/probe-office-live.mjs",
     "test:office:content": "node --test tests/integration/office-content.test.mjs",
-    "release:office:pack": "node scripts/pack-office-release.mjs"
+    "release:office:pack": "node scripts/pack-office-release.mjs",
+    "audit:skills": "node scripts/quality/audit-skills.mjs",
+    "test:skill-quality": "node --test scripts/quality/audit-skills.test.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",

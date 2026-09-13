@@ -29,7 +29,7 @@ type SessionId = Parameters<ISessions['open']>[0];
  * Summon creates the bound native Session on the Host (so the expert's compiled preset
  * is attached at creation), then opens it here and seeds a one-shot draft hand-off; the
  * draft is never auto-sent. "制作专家" opens an ordinary Session seeded with the
- * `/expert-manager` guide.
+ * `/workdsh-expert-manager` guide.
  */
 export function apply(ctx: Context): void {
   const lifetime = new AbortController();

@@ -14,8 +14,10 @@ test('Browser DOCX importer handles rich text and complex-file warnings and reje
     await page.goto('https://workdsh-import.test/');
     await page.addScriptTag({content:bundle.outputFiles[0].text});
     const parse = async (xml, extras={}) => {
-      const zip = new JSZip();zip.file('word/document.xml',xml);
-      for (const [name,text] of Object.entries(extras)) zip.file(name,text);
+      // Stable archive bytes are necessary when asserting import idempotency.
+      const date = new Date('2026-01-01T00:00:00Z');
+      const zip = new JSZip();zip.file('word/document.xml',xml,{date});
+      for (const [name,text] of Object.entries(extras)) zip.file(name,text,{date});
       const bytes = await zip.generateAsync({type:'base64',compression:'DEFLATE'});
       return page.evaluate(async bytes => {try {return {value:await OfficeImport.importDocx(Uint8Array.from(atob(bytes),c=>c.charCodeAt(0)),'dsh-resource://file/report.docx')}} catch(e) {return {error:e.message}}},bytes);
     };

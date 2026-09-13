@@ -7,6 +7,18 @@ import { fileURLToPath } from "node:url";
 const root = new URL("../packages/plugins/office/", import.meta.url);
 const wordOnly = process.argv.includes("--word-only");
 await mkdir(new URL("dist/", root), { recursive: true });
+// Word-only packages omit both the spreadsheet UI and its XLSX dependency.
+const spreadsheetScope = {
+  name: "spreadsheet-release-scope",
+  setup(builder) {
+    if (!wordOnly) return;
+    builder.onResolve({filter: /spreadsheet\/(Page|xlsx)\.js$/}, args => ({path: args.path, namespace: "spreadsheet-disabled"}));
+    builder.onLoad({filter: /.*/, namespace: "spreadsheet-disabled"}, () => ({
+      contents: 'function unavailable(){throw new Error("Spreadsheet is unavailable in this release");} export {unavailable as LiveSpreadsheet, unavailable as spreadsheetXlsx, unavailable as downloadSpreadsheet};', loader: "js"
+    }));
+  }
+};
+
 
 
 const child = await build({
@@ -39,6 +51,7 @@ const client = await build({
   define: { "process.env.NODE_ENV": '"production"', __WORKDSH_WORD_ONLY__: String(wordOnly) },
   plugins: [
     nativePptPlugin(),
+    spreadsheetScope,
     {
       name: "editor-html",
       setup(builder) {
@@ -62,9 +75,10 @@ const host = await build({
   metafile: true,
   entryPoints: [fileURLToPath(new URL("src/index.ts", root))],
   bundle: true,
-  external: ["@deepseek-ai/*"],
+  external: ["@deepseek-ai/*", "exceljs"],
+  plugins: [spreadsheetScope],
   format: "esm",
-  define:{__WORKDSH_PRESENTATION_ENABLED__:String(!wordOnly)},
+  define:{__WORKDSH_PRESENTATION_ENABLED__:String(!wordOnly),__WORKDSH_SPREADSHEET_ENABLED__:String(!wordOnly)},
   platform: "node",
   outfile: fileURLToPath(new URL("dist/index.js", root)),
 });

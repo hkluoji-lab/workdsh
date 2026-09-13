@@ -8,7 +8,7 @@ An independently installable DeepSeek Harness plugin managing multiple local exp
 
 - 默认专家与我的专家目录、搜索、详情、收藏、复制、草稿编辑、校验与受信界面确认发布。
 - 发布冻结专家定义、Skill 修订与原生 Agent preset；已有构件摘要漂移时拒绝静默覆盖。
-- 召唤和示例创建关联原生任务，示例仅填空输入，不自动发送；制作专家进入原生任务并加载 `expert-manager` 指引。
+- 召唤和示例创建关联原生任务，示例仅填空输入，不自动发送；制作专家进入原生任务并加载 `workdsh-expert-manager` 指引。
 - Connection 页面操作和 Agent 管理工具调用同一个 `workdshExperts` Host 服务。
 - 本模块管理多个专家对象；一个专家不是一个 npm 包。专家团、公共市场与企业管理 Web 不在当前交付范围。
 
@@ -70,3 +70,5 @@ dsh --profile workdsh
 打开专家入口，复制默认专家或通过“制作专家”准备原生创建对话。保存草稿→校验→预览并确认发布→召唤→在原生输入框明确发送。模型在Harness设置中配置，插件不附带API Key。/ Open Experts, copy a default expert or prepare a creation conversation. Save, validate, review and publish, then summon and explicitly send the native task. Configure your own model in Harness.
 
 已验证虚构CSV场景中的真实Skill读取、文件读取、Python计算、成果生成和冷重启绑定；不代表任意专业结论可靠。脏数据报告仍有单位假设排除及局部转化率向整体推断两项语义缺口。跨平台、旧Desktop、完整热卸载和团队SOP未验收或未实现。/ Synthetic CSV probes verified actual Skill/file reads, Python execution, artifacts and cold-restart bindings. Two dirty-data interpretation findings remain open; this is not a guarantee of professional conclusions. Teams and enterprise administration are excluded.
+
+创建指南使用 WorkDSH 独立命令，保留用户同名原版技能。多阶段创建要求更新原生任务进度；中断恢复先核对已有草稿与成果。

@@ -18,7 +18,7 @@ WorkDSH 是基于 DeepSeek Harness 公开插件接口的 Web 工作平台，参�
 
 ## 每次开始与结束
 
-开始前阅读 `docs/STATUS.md`、`docs/PLAN.md` 中当前阶段和 `docs/ARCHITECTURE.md`；涉及功能时阅读相应模块 README 与 `docs/CONTRACTS.md`；任何数据、执行、账号或共享变更必须同时阅读 `docs/TEAM-DESIGN.md`。
+开始前确认工作区变更；实现任务从 `docs/STATUS.md` 和 `docs/development-order.json` 核对当前阶段。按任务读取文档：架构/所有权变化读 `docs/ARCHITECTURE.md`，范围或顺序变化读 `docs/PLAN.md`，功能实现读模块 README，公开契约变化读 `docs/CONTRACTS.md`，数据、执行、账号或共享变化读 `docs/TEAM-DESIGN.md`。文字、静态展示等局部修改不要求预读无关设计文档。
 
 - 先确认实际代码和工作区变更，再从任务台账选工作；不要仅凭上轮聊天记忆判断状态。
 - 范围变化先更新决策、计划和台账；用户新的明确指令优先于这些文件。
@@ -90,7 +90,7 @@ WorkDSH 是基于 DeepSeek Harness 公开插件接口的 Web 工作平台，参�
 
 ## 逐插件执行硬约束
 
-每次开发必须先读 docs/PLUGIN-DELIVERY.md 与 docs/development-order.json，核对 currentStep、dependsOn 和退出证据。只推进当前步骤；必要前置修复记录原因，不自行跳步或同时展开后续业务插件。步骤完成须填写证据并同步 STATUS；文档和占位不算插件版本完成。顺序变更先更新计划、台账与 ADR，用户明确新指令优先。当前 D00 完成前不得开始业务插件实现。
+每次开发必须先读 docs/PLUGIN-DELIVERY.md 与 docs/development-order.json，核对 currentStep、dependsOn 和退出证据。只推进当前步骤；必要前置修复记录原因，不自行跳步或同时展开后续业务插件。步骤完成须填写证据并同步 STATUS；文档和占位不算插件版本完成。顺序变更先更新计划、台账与 ADR，用户明确新指令优先。当前步骤以 docs/development-order.json 为准，已完成步骤的历史限制不重新阻止后续实现。
 
 ## 插件目录规则
 
@@ -101,3 +101,7 @@ WorkDSH 是基于 DeepSeek Harness 公开插件接口的 Web 工作平台，参�
 ## UI 开发硬约束
 
 任何页面、图标或样式变更前必须阅读 docs/UI-DESIGN.md。所有插件共用该规范，不自行另起视觉风格。现有原型仅是参考，不覆盖规范；正式实现不得复制累积 CSS 覆盖。结束时按规范第 8 节记录视觉对照、交互验证与未完成项，原型通过不代表产品完成。
+
+## 指令与技能质量
+
+项目级审查参考 [指令与技能审查](docs/design/PROJECT-INSTRUCTION-AUDIT.md)。技能描述准确限定使用场景；多流程技能通过短入口按需引用资源。保留技术契约、授权和真实交付约束，避免重复角色口号与无条件固定步骤。任务完成标准随成果明确；验证只运行与变更和未解决风险有关的真实检查。不同模型分别评估，不将 Astra 行为建议当成所有模型的保证。

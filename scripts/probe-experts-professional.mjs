@@ -14,7 +14,9 @@ import { expertDraftUrl } from '../packages/plugins/experts/dist/domain/navigati
 const root = fileURLToPath(new URL('..', import.meta.url));
 const scenario = process.argv[2] || 'normal';
 assert.ok(['normal', 'incomplete', 'dirty'].includes(scenario), 'Scenario must be normal, incomplete or dirty');
-const artifacts = join(root, `.artifacts/experts-professional-${scenario}`);
+const runLabel = process.argv[3] || '';
+assert.ok(!runLabel || /^[a-z0-9-]{1,40}$/.test(runLabel), 'Run label must contain lowercase letters, digits or hyphens');
+const artifacts = join(root, `.artifacts/experts-professional-${scenario}${runLabel ? `-${runLabel}` : ''}`);
 const home = await realpath(await mkdtemp(join(tmpdir(), 'workdsh-experts-professional-')));
 await mkdir(artifacts, { recursive: true });
 await unlink(join(artifacts, 'report.json')).catch(() => {});

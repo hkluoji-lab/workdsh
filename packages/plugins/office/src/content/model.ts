@@ -170,7 +170,8 @@ export const openInput = z.discriminatedUnion("source", [
   z.object({source: z.literal("import"), title: z.string().trim().min(1).max(160), operationId: id, blocks: z.array(blockInput).min(1).max(2000)}).strict(),
 ]);
 export const presentationOpenInput = z.object({source:z.literal("new"),kind:z.literal("presentation"), title:z.string().trim().min(1).max(160),operationId:id,brief:z.string().trim().min(1).max(100000).optional()}).strict();
-export const contentOpenInput=z.union([openInput,presentationOpenInput]);
+export const spreadsheetOpenInput=z.object({source:z.literal("new"),kind:z.literal("spreadsheet"),title:z.string().trim().min(1).max(160),operationId:id}).strict();
+export const contentOpenInput=z.union([openInput,presentationOpenInput,spreadsheetOpenInput]);
 export const presentationEditInput=z.object({documentId:id,baseRevision:z.number().int().nonnegative(),operationId:id,operations:z.array(z.unknown()).min(1).max(100)}).strict();
 export class OfficeError extends Error {
   constructor(

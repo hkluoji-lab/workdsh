@@ -35,6 +35,16 @@ export const skillsMarketCss = `
 .wd-skills .catalog-note{margin:0 0 16px;padding:10px 14px;border:1px solid #3a3a3a;border-radius:10px;background:#1c1c1c;color:#aaa;font-size:12px;line-height:20px}
 .wd-skills .notice{color:#8fd8b0}
 .wd-skills .empty .muted{display:block;margin-top:6px;font-size:12px}
+/* 我安装的页面视图：从市场头部「我安装的」入口进入，返回链接回到市场。 */
+.wd-skills .installed-back-row{display:flex;align-items:center;gap:6px;margin:0 0 10px}
+.wd-skills .back-to-market{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;color:#cfcfcf;padding:6px 10px;margin-left:-10px}
+.wd-skills .back-to-market:hover:not(:disabled){background:#2e2e2e}
+.wd-skills .back-to-market svg{width:18px;height:18px}
+.wd-skills .installed-head{flex-wrap:wrap;row-gap:12px}
+.wd-skills .installed-head h1{display:flex;align-items:center;gap:10px}
+.wd-skills .installed-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0}
+.wd-skills .installed-tools .search{margin-left:0;width:250px;min-width:150px}
+@media(max-width:900px){.wd-skills .installed-tools{width:100%;justify-content:flex-start}.wd-skills .installed-tools .search{width:100%}}
 .skill-detail-dialog .detail-title .slug,.catalog-dialog .detail-title .slug{margin:0 0 12px;font:13px/20px ui-monospace,SFMono-Regular,Menlo,monospace;color:#9a9a9a}
 /* 技能弹框沿用公共 Modal（.wd-dialog）外壳；用更高特异性只收窄技能相关弹框并紧凑化内部，不改公共默认值。 */
 .wd-dialog.skill-detail-dialog{width:min(820px,calc(100vw - 40px))}

@@ -63,8 +63,14 @@ export function SkillsPanel({ toggleNavigation, management, startSkillTask, star
   const [batchMode, setBatchMode] = useState(false);
   const [selectedNames, setSelectedNames] = useState<readonly string[]>([]);
   const [confirmBatchUninstall, setConfirmBatchUninstall] = useState(false);
+  const [view, setView] = useState<'market' | 'installed'>('market');
+  const [installedQuery, setInstalledQuery] = useState('');
   const search = useRef<HTMLInputElement>(null);
   const addMenu = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLElement>(null);
+  const installedEntry = useRef<HTMLButtonElement>(null);
+  const backLink = useRef<HTMLButtonElement>(null);
+  const firstView = useRef(true);
 
   const refresh = useCallback(async () => {
     setBusy(true); setError('');
@@ -95,6 +101,12 @@ export function SkillsPanel({ toggleNavigation, management, startSkillTask, star
     const outside = (event: PointerEvent) => { if (!(event.target instanceof Element) || !event.target.closest('.card-actions')) setActionMenu(undefined); };
     document.addEventListener('pointerdown', outside); return () => document.removeEventListener('pointerdown', outside);
   }, [actionMenu]);
+  // 视图切换后回到页首并迁移焦点：进入安装页聚焦返回链接，回到市场聚焦入口按钮。
+  useEffect(() => {
+    if (firstView.current) { firstView.current = false; return; }
+    panel.current?.scrollTo({ top: 0 });
+    (view === 'installed' ? backLink : installedEntry).current?.focus();
+  }, [view]);
 
   const install = async (entry: SkillCatalogEntry) => {
     setError(''); setNotice(''); setInstallBusy(entry.name);
@@ -174,6 +186,9 @@ export function SkillsPanel({ toggleNavigation, management, startSkillTask, star
     } catch (cause) { setError(messageOf(cause)); setBusy(false); }
   };
   const toggleBatchSelection = (name: string) => setSelectedNames(current => current.includes(name) ? current.filter(item => item !== name) : [...current, name]);
+  const toggleBatch = () => { setBatchMode(value => !value); setSelectedNames([]); };
+  const openInstalled = () => { setActionMenu(undefined); setError(''); setView('installed'); };
+  const returnToMarket = () => { setActionMenu(undefined); setView('market'); };
   const runBatch = async (action: 'enable' | 'disable' | 'uninstall') => {
     if (!selectedNames.length) return;
     setBusy(true); setError('');
@@ -195,10 +210,36 @@ export function SkillsPanel({ toggleNavigation, management, startSkillTask, star
   const inCategory = (values?: readonly string[]) => category === ALL || Boolean(values?.includes(category));
   const available = entries.filter(entry => !entry.installed && inCategory(entry.categories) && (matches(entry.name) || matches(entry.title) || matches(entry.description)));
   const filtered = skills.filter(skill => inCategory(skill.categories) && matches(`${skill.name} ${skill.title ?? ''} ${skill.localizedDescription ?? skill.description} ${skill.whenToUse ?? ''}`));
+  const installedFiltered = skills.filter(skill => `${skill.name} ${skill.title ?? ''} ${skill.localizedDescription ?? skill.description} ${skill.whenToUse ?? ''}`.toLowerCase().includes(installedQuery.trim().toLowerCase()));
   const capabilityTabs = [['experts', '专家'], ['skills', '技能'], ['connectors', '连接器'], ['apps', '行业应用']] as const;
   const capabilityKey: Record<string, string> = { experts: 'workdsh-experts', skills: 'workdsh-skills' };
-  return <section className="wd-skills" data-testid="workdsh-skills">
+  const countsLine = <div role="status" aria-live="polite" className={error ? 'error counts' : notice ? 'notice counts' : 'muted counts'}>{busy ? '正在读取…' : error || notice || `共 ${skills.length} 个已安装技能 · 当前显示 ${view === 'installed' ? installedFiltered.length : filtered.length} 个`}</div>;
+  const batchBar = <div className="batch-bar" role="toolbar" aria-label="批量管理技能"><span>已选择 {selectedNames.length} 项</span><button disabled={!selectedNames.length || busy} onClick={() => void runBatch('enable')}>启用</button><button disabled={!selectedNames.length || busy} onClick={() => void runBatch('disable')}>停用</button><button className="danger" disabled={!selectedNames.length || busy} onClick={() => setConfirmBatchUninstall(true)}>卸载</button></div>;
+  const renderSkillCard = (skill: ManagedSkillSummary) => <article className={`card ${skill.state === 'disabled' ? 'disabled' : skill.state === 'invalid' ? 'invalid' : ''} ${actionMenu === skill.name ? 'menu-open' : ''}`} key={skill.name}>
+    <div className="card-top">{batchMode && skill.manageable ? <button className="batch-check" role="checkbox" aria-checked={selectedNames.includes(skill.name)} aria-label={`选择技能 ${skill.name}`} onClick={() => toggleBatchSelection(skill.name)}>{selectedNames.includes(skill.name) ? '✓' : ''}</button> : null}<button className="card-open" aria-label={`查看技能 ${skill.name}`} onClick={() => batchMode && skill.manageable ? toggleBatchSelection(skill.name) : void openDetail(skill.name)}><SkillMark name={skill.name} title={skill.title} iconUrl={skill.iconUrl} /><span className="card-title"><strong title={skill.name}>{skill.title ?? skill.name}</strong>{skill.title && skill.title !== skill.name ? <small className="slug">{skill.name}</small> : null}</span></button>
+      {!batchMode && skill.manageable && <div className="card-actions"><button className="more-button" aria-label={`管理技能 ${skill.name}`} aria-haspopup="menu" aria-expanded={actionMenu === skill.name} onClick={() => setActionMenu(current => current === skill.name ? undefined : skill.name)}>•••</button>{actionMenu === skill.name && <div className="card-menu" role="menu"><button role="menuitem" disabled={skill.state !== 'enabled'} onClick={() => void trial(skill.name)}>去试试</button><button role="menuitem" onClick={() => void openDetail(skill.name)}>编辑</button><button role="menuitem" onClick={() => void openDirectory(skill)}>打开文件夹</button><button className="danger" role="menuitem" onClick={() => void prepareUninstall(skill)}>卸载</button></div>}</div>}
+      {!batchMode && <button className="switch" role="switch" disabled={!skill.manageable || skill.state === 'invalid'} aria-checked={skill.state === 'enabled'} aria-label={`${skill.state === 'enabled' ? '停用' : '启用'}技能 ${skill.name}`} onClick={() => void setEnabled(skill, skill.state !== 'enabled')} />}
+    </div><p className="muted">{skill.localizedDescription ?? skill.description}</p>{skill.state === 'invalid' && <small className="diagnostic">需要修复 · {skill.diagnostics?.[0]?.message}</small>}
+  </article>;
+  return <section ref={panel} className="wd-skills" data-testid="workdsh-skills">
     <style>{skillsCss + skillsActionsCss + skillsMarketCss}</style>
+    {view === 'installed' ? <>
+      <div className="installed-back-row">
+        <button className="nav-toggle" onClick={toggleNavigation} aria-label="切换导航">导航</button>
+        <button ref={backLink} className="back-to-market" aria-label="返回全部技能" onClick={returnToMarket}>{icon('back')}全部技能</button>
+      </div>
+      <div className="section-head installed-head" data-testid="skills-installed">
+        <h1>我安装的 <span className="market-count">{skills.length}</span></h1>
+        <div className="installed-tools">
+          <button className={batchMode ? 'batch-toggle active' : 'batch-toggle'} onClick={toggleBatch}>{batchMode ? '退出批量' : '批量管理'}</button>
+          <input className="search" aria-label="搜索已安装的技能" placeholder="搜索已安装的技能" value={installedQuery} onChange={event => setInstalledQuery(event.currentTarget.value)} />
+        </div>
+      </div>
+      {batchMode && batchBar}
+      {countsLine}
+      {!busy && !installedFiltered.length ? <div className="empty"><strong>{skills.length ? '没有匹配的技能' : '尚未发现已安装技能'}</strong><span className="muted">{skills.length ? '换个关键词，或清空搜索。' : '返回「全部技能」即可安装或上传技能。'}</span></div> : null}
+      {installedFiltered.length ? <div className="grid">{installedFiltered.map(renderSkillCard)}</div> : null}
+    </> : <>
     <header className="cap-header">
       <button className="nav-toggle" onClick={toggleNavigation} aria-label="切换导航">导航</button>
       {capabilityTabs.map(([key, label]) => {
@@ -210,16 +251,16 @@ export function SkillsPanel({ toggleNavigation, management, startSkillTask, star
           onClick={() => { if (!active && target) openCapability(target); }}>{icon(key)}{label}</button>;
       })}
       <input ref={search} className="search" aria-label="搜索技能" placeholder="搜索技能" value={query} onChange={event => setQuery(event.currentTarget.value)} />
-      <span className="installed-count" role="status" aria-label={`已安装 ${skills.length} 个技能`}>我安装的 {skills.length}</span>
-      <button className={batchMode ? 'batch-toggle active' : 'batch-toggle'} onClick={() => { setBatchMode(value => !value); setSelectedNames([]); }}>{batchMode ? '退出批量' : '批量管理'}</button>
+      <button ref={installedEntry} className="installed-count" aria-label={`查看我安装的 ${skills.length} 个技能`} onClick={openInstalled}>我安装的 {skills.length}</button>
+      <button className={batchMode ? 'batch-toggle active' : 'batch-toggle'} onClick={toggleBatch}>{batchMode ? '退出批量' : '批量管理'}</button>
       <button className="trash-button" onClick={() => void openTrash()}>最近卸载</button>
       <div className="add-menu-wrap" ref={addMenu}><button className="add-skill" disabled={creating} aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(open => !open)}>＋ 添加技能</button>{addMenuOpen && <div className="add-menu" role="menu"><button role="menuitem" onClick={() => { setAddMenuOpen(false); search.current?.focus(); }}>查找技能</button><button role="menuitem" onClick={() => { setAddMenuOpen(false); setImportOpen(true); }}>上传技能</button><button role="menuitem" onClick={() => void beginSkillTask('create')}>创建技能</button></div>}</div>
     </header>
     <div className="section-head"><h1>技能市场</h1><button className="refresh" onClick={() => void refresh()} disabled={busy}>刷新</button></div>
     <nav className="category-tabs" aria-label="技能分类"><button className={category === ALL ? 'active' : ''} aria-current={category === ALL ? 'page' : undefined} onClick={() => setCategory(ALL)}>全部</button>{categories.map(label => <button key={label} className={category === label ? 'active' : ''} aria-current={category === label ? 'page' : undefined} onClick={() => setCategory(current => current === label ? ALL : label)}>{label}</button>)}</nav>
     {catalog && catalog.status !== 'ready' && <p className="catalog-note" role="note">{catalog.diagnostics?.[0]?.message ?? '未发现本地技能目录，仅显示已安装技能。'}</p>}
-    {batchMode && <div className="batch-bar" role="toolbar" aria-label="批量管理技能"><span>已选择 {selectedNames.length} 项</span><button disabled={!selectedNames.length || busy} onClick={() => void runBatch('enable')}>启用</button><button disabled={!selectedNames.length || busy} onClick={() => void runBatch('disable')}>停用</button><button className="danger" disabled={!selectedNames.length || busy} onClick={() => setConfirmBatchUninstall(true)}>卸载</button></div>}
-    <div role="status" aria-live="polite" className={error ? 'error counts' : notice ? 'notice counts' : 'muted counts'}>{busy ? '正在读取…' : error || notice || `共 ${skills.length} 个已安装技能 · 当前显示 ${filtered.length} 个`}</div>
+    {batchMode && batchBar}
+    {countsLine}
     {!busy && available.length ? <section className="market-section" aria-label="可安装技能"><div className="market-head"><h2>可安装 <span className="market-count">{available.length}</span></h2><span className="muted">来自本地技能目录，点击 ＋ 直接安装</span></div>
       <div className="grid">{available.map(entry => <article className="card market-card" key={entry.name}>
         <div className="card-top"><button className="card-open" aria-label={`查看技能 ${entry.name}`} onClick={() => { setError(''); setPreview(entry); }}><SkillMark name={entry.name} title={entry.title} iconUrl={entry.iconUrl} /><span className="card-title"><strong title={entry.name}>{entry.title}</strong>{entry.categories.length ? <small>{entry.categories.slice(0, 2).join(' · ')}</small> : null}</span></button>
@@ -229,13 +270,9 @@ export function SkillsPanel({ toggleNavigation, management, startSkillTask, star
     </section> : null}
     {!busy && !filtered.length ? <div className="empty"><strong>{skills.length ? '没有匹配的技能' : '尚未发现已安装技能'}</strong><span className="muted">可用上方「＋ 添加技能」上传，或从下方目录安装。</span></div> : null}
     {filtered.length ? <section className="market-section" aria-label="已安装技能">{available.length ? <div className="market-head"><h2>已安装 <span className="market-count">{filtered.length}</span></h2></div> : null}
-      <div className="grid">{filtered.map(skill => <article className={`card ${skill.state === 'disabled' ? 'disabled' : skill.state === 'invalid' ? 'invalid' : ''} ${actionMenu === skill.name ? 'menu-open' : ''}`} key={skill.name}>
-      <div className="card-top">{batchMode && skill.manageable ? <button className="batch-check" role="checkbox" aria-checked={selectedNames.includes(skill.name)} aria-label={`选择技能 ${skill.name}`} onClick={() => toggleBatchSelection(skill.name)}>{selectedNames.includes(skill.name) ? '✓' : ''}</button> : null}<button className="card-open" aria-label={`查看技能 ${skill.name}`} onClick={() => batchMode && skill.manageable ? toggleBatchSelection(skill.name) : void openDetail(skill.name)}><SkillMark name={skill.name} title={skill.title} iconUrl={skill.iconUrl} /><span className="card-title"><strong title={skill.name}>{skill.title ?? skill.name}</strong>{skill.title && skill.title !== skill.name ? <small className="slug">{skill.name}</small> : null}</span></button>
-        {!batchMode && skill.manageable && <div className="card-actions"><button className="more-button" aria-label={`管理技能 ${skill.name}`} aria-haspopup="menu" aria-expanded={actionMenu === skill.name} onClick={() => setActionMenu(current => current === skill.name ? undefined : skill.name)}>•••</button>{actionMenu === skill.name && <div className="card-menu" role="menu"><button role="menuitem" disabled={skill.state !== 'enabled'} onClick={() => void trial(skill.name)}>去试试</button><button role="menuitem" onClick={() => void openDetail(skill.name)}>编辑</button><button role="menuitem" onClick={() => void openDirectory(skill)}>打开文件夹</button><button className="danger" role="menuitem" onClick={() => void prepareUninstall(skill)}>卸载</button></div>}</div>}
-        {!batchMode && <button className="switch" role="switch" disabled={!skill.manageable || skill.state === 'invalid'} aria-checked={skill.state === 'enabled'} aria-label={`${skill.state === 'enabled' ? '停用' : '启用'}技能 ${skill.name}`} onClick={() => void setEnabled(skill, skill.state !== 'enabled')} />}
-      </div><p className="muted">{skill.localizedDescription ?? skill.description}</p>{skill.state === 'invalid' && <small className="diagnostic">需要修复 · {skill.diagnostics?.[0]?.message}</small>}
-    </article>)}</div>
+      <div className="grid">{filtered.map(renderSkillCard)}</div>
     </section> : null}
+    </>}
 
     <Modal open={Boolean(preview)} label={preview ? `${preview.title} 技能预览` : '技能预览'} className="skill-detail-dialog catalog-dialog" onClose={() => setPreview(undefined)}>
       {preview && <article data-testid="skill-catalog-preview"><div className="detail-hero"><SkillMark large name={preview.name} title={preview.title} iconUrl={preview.iconUrl} /><div className="detail-title"><h1>{preview.title}</h1><p className="slug">{preview.name}</p><div className="detail-actions"><button className="install solid" disabled={!preview.installable || Boolean(installBusy)} onClick={() => void install(preview)}>{installBusy === preview.name ? '正在安装…' : '＋ 安装'}</button><button onClick={() => setPreview(undefined)}>稍后再说</button></div></div></div>

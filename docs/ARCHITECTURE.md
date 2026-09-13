@@ -185,3 +185,7 @@ WorkDSH 一元领域操作使用生成的 Typert Remote；Host 方法入口恢�
 H09 校正：上述一元方法是首期实现选择；Typert 专题还声明 stream descriptor/Gateway，实际发布支持须在 rc.1 验证。流式传输不会自动提供领域重放与去重。原生 Todo 无稳定条目 ID，Plan 是软提示，Goal 是单 Session 目标，均不能承担项目业务状态。
 
 取消与完成分层：Code runtime 停止模型程序后仍需核对在途 Host 调用；Shell exitCode 0 不排除 timeout/abort；Subprocess done 不证明受管范围清空；PTY idle 不证明前台完成。业务服务保存实际回执与待对账状态。完整补充见 [审查收尾](research/harness-review-closure.md)。
+
+## Desktop 托管技能运行环境（设计待实现）
+
+Desktop 提供可分发 Python 和精选依赖，Harness 仍拥有执行与沙箱；依赖隔离不是安全隔离。正式集成须先验证锁定版公开配置和沙箱策略，不修改 Harness 本体或另建执行器。解释器按安装位置动态定位，用户技能与成果不随运行环境升级删除。详见 [托管运行环境设计](design/desktop/MANAGED-RUNTIME.md)。

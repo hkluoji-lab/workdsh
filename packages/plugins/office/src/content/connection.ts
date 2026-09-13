@@ -1,3 +1,4 @@
+import {spreadsheetEditInput} from "../spreadsheet/model.js";
 import type { Context } from "@deepseek-ai/cordis";
 import type { HostConnectionHandle } from "@deepseek-ai/dsh-client-connection";
 import { z } from "zod";
@@ -12,7 +13,7 @@ const endpoint = z.discriminatedUnion("endpoint", [
   z
     .object({
       endpoint: z.literal("edit"),
-      input: z.union([editInput,presentationEditInput]),
+      input: z.union([editInput,presentationEditInput,spreadsheetEditInput]),
       lease: z.object({ token: id, clientId: id }).strict().optional(),
     })
     .strict(),

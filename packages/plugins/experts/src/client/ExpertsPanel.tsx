@@ -21,7 +21,7 @@ type ExpertsPanelInjected = {
   hasCapability: (key: string) => boolean;
   /** Summon a published expert into a fresh bound native Session; never auto-sends. */
   summon: (expertId: string, revisionId: string | undefined, draftText: string | undefined) => Promise<void>;
-  /** Open a new native task seeded with the `/expert-manager` guide draft. */
+  /** Open a new native task seeded with the `/workdsh-expert-manager` guide draft. */
   createExpertTask: () => Promise<void>;
 };
 export type ExpertsPanelProps = PropsRuntime<'main'> & InjectFace<ExpertsPanelInjected>;

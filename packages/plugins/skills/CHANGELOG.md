@@ -1,3 +1,11 @@
+## 0.1.0-alpha.27 — 2026-09-13
+
+- 「我安装的」升级为独立安装页视图（对齐 WorkBuddy）：市场头部入口由静态计数改为可点击按钮，进入后提供「全部技能」返回链接、标题计数、批量管理与页内「搜索已安装的技能」；进入与返回时滚动归零，焦点分别移到返回链接与入口按钮。
+- 安装页复用同一套卡片渲染（renderSkillCard）、管理菜单、批量栏与卸载确认，不复制卡片逻辑；市场头部搜索、分类、可安装/已安装分区与刷新保持原行为。
+- 配套 workdsh-ui 0.1.0-alpha.5 新增 `back` 图标，供返回链接使用。
+- “我安装的” becomes a dedicated installed-skills page (WorkBuddy-aligned): the market header entry is a real button opening a page with an “全部技能” back link, count heading, batch management and in-page search; view switches reset scroll and move focus to the back link or the entry button.
+- The installed page reuses the same card renderer, management menu, batch bar and uninstall confirmation instead of duplicating card logic; the marketplace header search, categories, sections and refresh keep their existing behavior.
+
 ## 0.1.0-alpha.26 — 2026-09-13
 
 - 技能页升级为一体化技能市场：真实分类标签、目录卡片（品牌图标、中文名称、中文说明）与“＋”直接安装；安装复用既有受管导入路径（全局名称锁、指纹复核、原子发布），不新增第二套安装器。

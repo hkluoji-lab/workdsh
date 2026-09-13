@@ -1,3 +1,4 @@
+import { TaskExecutionNotice } from '../client/components/TaskExecutionNotice.js';
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client';
@@ -15,6 +16,7 @@ export const name = 'workdsh-workbench-client';
 export const inject = ['slots'];
 
 export function apply(ctx: Context): void {
+  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({ name: 'conversation.input.dock', id: 'workdsh-task-execution-notice' }, TaskExecutionNotice));
   for (const panel of businessPanels) {
     if ('description' in panel && panel.description) {
       ctx.slots.inject('main', () => ctx.slots.register({

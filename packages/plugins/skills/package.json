@@ -1,6 +1,6 @@
 {
   "name": "workdsh-plugin-skills",
-  "version": "0.1.0-alpha.26",
+  "version": "0.1.0-alpha.27",
   "private": false,
   "type": "module",
   "exports": {
@@ -15,6 +15,7 @@
   },
   "files": [
     "dist",
+    "resources",
     "README.md",
     "CHANGELOG.md",
     "cordis.patch.yml"

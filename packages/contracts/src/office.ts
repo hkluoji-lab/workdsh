@@ -106,7 +106,7 @@ export interface OfficeSnapshot {
 export interface OfficeContentService {
   open(
     actor: ActorContext,
-    input: OfficeOpenInput|OfficePresentationOpenInput,
+    input: OfficeOpenInput|OfficePresentationOpenInput|OfficeSpreadsheetOpenInput,
     signal?: AbortSignal,
   ): Promise<OfficeContentSnapshot>;
   read(
@@ -116,7 +116,7 @@ export interface OfficeContentService {
   ): Promise<OfficeContentSnapshot>;
   edit(
     actor: ActorContext,
-    input: OfficeEditInput|OfficePresentationEditInput,
+    input: OfficeEditInput|OfficePresentationEditInput|OfficeSpreadsheetEditInput,
     signal?: AbortSignal,
   ): Promise<OfficeReceipt>;
   present(
@@ -136,7 +136,7 @@ export interface OfficePresentationSnapshot extends Omit<OfficeSnapshot, "kind" 
   kind: "presentation";
   state: {modelVersion: 1; deck: unknown; focusSlideId?: string};
 }
-export type OfficeContentSnapshot = OfficeSnapshot | OfficePresentationSnapshot;
+export type OfficeContentSnapshot = OfficeSnapshot | OfficePresentationSnapshot | OfficeSpreadsheetSnapshot;
 export interface OfficePresentationOpenInput {
   source: "new";
   kind: "presentation";
@@ -146,4 +146,24 @@ export interface OfficePresentationOpenInput {
 }
 export interface OfficePresentationEditInput extends Omit<OfficeEditInput, "operations"> {
   operations: unknown[]; // native adapter validates the exact operation union
+}
+
+export interface OfficeSpreadsheetCell {
+  value?: string | number | boolean | null;
+  formula?: string;
+}
+export interface OfficeSpreadsheetState {
+  modelVersion: 1;
+  sheetOrder: string[];
+  sheets: Record<string, {sheetId: string; name: string; cells: Record<string, OfficeSpreadsheetCell>}>;
+}
+export interface OfficeSpreadsheetSnapshot extends Omit<OfficeSnapshot, "kind" | "state"> {
+  kind: "spreadsheet";
+  state: OfficeSpreadsheetState;
+}
+export interface OfficeSpreadsheetOpenInput {
+  source: "new"; kind: "spreadsheet"; title: string; operationId: string;
+}
+export interface OfficeSpreadsheetEditInput extends Omit<OfficeEditInput, "operations"> {
+  operations: unknown[];
 }

@@ -1,5 +1,5 @@
 import {readFile} from 'node:fs/promises';
-import {resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {adaptInspector} from './pptx-trial/adapt-inspector.mjs';
 export function nativePptPlugin(){return { name:'trial-static-labels-zh',setup(b){b.onLoad({filter:/pptx-react-viewer\/dist\/.*\.mjs$/},async({path})=>{
  let contents=adaptInspector(await readFile(path,'utf8'));
@@ -10,7 +10,7 @@ export function nativePptPlugin(){return { name:'trial-static-labels-zh',setup(b
  contents=contents.replace('const [isSlidesPaneOpen, setIsSlidesPaneOpen] = useState(\n    () => typeof window === "undefined" ? true : window.innerWidth >= 768\n  );','const [isSlidesPaneOpen, setIsSlidesPaneOpen] = useState(true);');
  contents=contents.replace('mode === "edit" && !isMobile && !dialogs.isNarrowViewport && state.isSlidesPaneOpen','mode === "edit" && !isMobile && state.isSlidesPaneOpen');
  if(contents.includes('function Toolbar(p) {')){
- contents='import {Ribbon as TrialRibbon} from '+JSON.stringify(resolve('packages/plugins/office/src/presentation/native-react/Ribbon.tsx'))+';\n'+contents;
+ contents='import {Ribbon as TrialRibbon} from '+JSON.stringify(fileURLToPath(new URL('../packages/plugins/office/src/presentation/native-react/Ribbon.tsx',import.meta.url)))+';\n'+contents;
  contents=contents.replace('function Toolbar(p) {',`function Toolbar(p) {
  const [all,setAll]=useState(false);
  useEffect(()=>{if(p.selectedElement?.type==='chart'&&!p.isInspectorPaneOpen)p.onToggleInspector()},[p.selectedElement?.id]);

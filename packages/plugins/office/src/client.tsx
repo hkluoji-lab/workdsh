@@ -7,8 +7,9 @@ import type {} from "@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client";
 import { OfficeDocument } from "./OfficeDocument.js";
 import type {} from "@deepseek-ai/dsh-client-ui-sidebar-right/client";
 import type { ISessions } from "@deepseek-ai/dsh-api-session-controller/client";
+import { downloadSpreadsheet } from "./spreadsheet/xlsx.js";
 import { downloadDocument } from "./live/docx.js";
-import type { OfficeSnapshot } from "workdsh-contracts/office";
+import type { OfficeContentSnapshot } from "workdsh-contracts/office";
 import { DocumentPage } from "./live/DocumentPage.js";
 import {
   createDocumentModel,
@@ -68,13 +69,19 @@ export function apply(ctx: Context): void {
   };
   const activeDocuments = new Map<string, ReturnType<typeof createDocumentModel>>();
   const office: OfficeClient = {
+    request:rpc,
     createPresentation:options=>createPresentationModel(options,rpc),
     importDocument: (sessionId, input, signal) => rpc(sessionId, {endpoint: "open", input}, signal),
     list: (sessionId, signal) => rpc(sessionId, { endpoint: "list" }, signal),
     download: async (sessionId, documentId) => {
       const current = activeDocuments.get(sessionId + ":" + documentId);
       if (current) await current.download();
-      else await downloadDocument(await rpc<OfficeSnapshot>(sessionId, {endpoint: "read", documentId}));
+      else {
+        const snapshot = await rpc<OfficeContentSnapshot>(sessionId, {endpoint: "read", documentId});
+        if (snapshot.kind === "spreadsheet") await downloadSpreadsheet(snapshot);
+        else if (snapshot.kind === "document") await downloadDocument(snapshot);
+        else throw new Error("请在 PPT 编辑器中下载此演示文稿。");
+      }
     },
     open: (sessionId, documentId) => ctx.sidebarRight.openTabIn(sessionId as never, "workdsh-office-live", {params: {documentId}}),
     createDocument: (options) => {
@@ -90,7 +97,7 @@ export function apply(ctx: Context): void {
     const sessions = ctx.sessions as unknown as ISessions;
     const id = sessions.list.getSnapshot().current;
     return id ? String(id) : undefined;
-  },!__WORKDSH_WORD_ONLY__)) ctx.effect(() => ctx.inputTriggers.registerSource(source));
+  },!__WORKDSH_WORD_ONLY__,!__WORKDSH_WORD_ONLY__)) ctx.effect(() => ctx.inputTriggers.registerSource(source));
   ctx.effect(() =>
     ctx.sidebarRightTabs.register({
       id: "workdsh-office-live",

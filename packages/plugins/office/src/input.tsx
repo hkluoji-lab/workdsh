@@ -22,7 +22,7 @@ function documentRef(ref: string): {sessionId: string; documentId: string; role:
 }
 
 /** Native reference chips own removal, undo, persistence and submit serialization. */
-export function officeInputSources(office: OfficeClient, currentSession: () => string | undefined, presentationAvailable=false): InputTriggerSource[] {
+export function officeInputSources(office: OfficeClient, currentSession: () => string | undefined, presentationAvailable=false,spreadsheetAvailable=false): InputTriggerSource[] {
   return [{
     trigger: "/", name: outputSourceName, order: -20,
     candidates: async (_session, req) => {
@@ -32,7 +32,7 @@ export function officeInputSources(office: OfficeClient, currentSession: () => s
       const filter = "office".startsWith(query) ? "" : query.replace(/^office[.\s]*/, "");
       return officeTypes.filter(([id, label]) => !filter || id.includes(filter) || label.toLowerCase().includes(filter)).map(([id, label, live]) => ({
         name: `office.${id}`, value: id, section: "/office · 选择输出类型",
-        description: `${label} · 新建${(live || id === "ppt" && presentationAvailable) ? " · 支持实时写作" : " · 实时编辑待接入"}`,
+        description: `${label} · 新建${(live || id === "ppt" && presentationAvailable || id === "excel" && spreadsheetAvailable) ? " · 支持实时写作" : " · 实时编辑待接入"}`,
         icon: "file" as const,
       }));
     },
@@ -46,7 +46,7 @@ export function officeInputSources(office: OfficeClient, currentSession: () => s
       serialize: async (ref, signal) => {
         signal.throwIfAborted();
         const [id, label, live] = outputType(ref);
-        return `\n[用户选择的 Office 输出意图]\n${JSON.stringify({version: 1, outputType: id, label, defaultAction: "create", targetRequired: false, liveEditingAvailable: live || id === "ppt" && presentationAvailable})}\n没有明确标注为 target 的文档引用时，创建新文档；reference 引用仅作资料，保留原件。明确 target 时修改该对象，多个 target 或冲突输出类型需先澄清。Word 使用 content_open/content_read/content_edit/content_present，创建后立即打开右侧，分批写入。PPT 使用 content_open 的 kind:"presentation"、source:"new"，立即创建右侧原生编辑器；用 presentation.insertSlides/updateSlide 分批制作，不用 Word 替代，PPTX 在右侧下载。其他类型实时适配尚未完成，不得当作 Word 创建或宣称右侧实时编辑已支持；按所选类型生成可用文件，能力不足明确说明。\n`;
+        return `\n[用户选择的 Office 输出意图]\n${JSON.stringify({version: 1, outputType: id, label, defaultAction: "create", targetRequired: false, liveEditingAvailable: live || id === "ppt" && presentationAvailable || id === "excel" && spreadsheetAvailable})}\n没有明确标注为 target 的文档引用时，创建新文档；reference 引用仅作资料，保留原件。明确 target 时修改该对象，多个 target 或冲突输出类型需先澄清。Word 使用 content_open/content_read/content_edit/content_present，创建后立即打开右侧，分批写入。PPT 使用 content_open 的 kind:"presentation"、source:"new"，立即创建右侧原生编辑器；用 presentation.insertSlides/updateSlide 分批制作，不用 Word 替代，PPTX 在右侧下载。Excel 使用 content_open 的 kind:"spreadsheet"、source:"new"；使用 spreadsheet.setCells/clearCells/addSheet/renameSheet/removeSheet 修改单元格与工作表，完成后 content_export 交付 XLSX。其他类型实时适配尚未完成，不得当作 Word 创建或宣称右侧实时编辑已支持；按所选类型生成可用文件，能力不足明确说明。\n`;
       },
     },
   }, {

@@ -1,3 +1,4 @@
+import {createRequire as dependencyRequire} from "node:module";
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
@@ -17,6 +18,7 @@ await build({
   platform: "node",
   format: "esm",
   outfile: output,
+  plugins:[{name:"office-runtime-deps",setup(b){b.onResolve({filter:/^exceljs$/},()=>({path:dependencyRequire(resolve("packages/plugins/office/package.json")).resolve("exceljs"),external:true}));}}],
 });
 const {
   documentDocx,

@@ -171,7 +171,41 @@ try {
   assert.equal((await api(host, 'install-catalog', { name: catalogSkill })).error.code, 'skill/target-exists');
   await page.screenshot({ path: join(artifacts, 'catalog-marketplace.png'), fullPage: true });
   pass('Browser marketplace shows real categories and installs a catalog entry through the managed import path');
-  assert.equal((await api(host, 'list')).value.filter(row => row.name === 'skill-creator').length, 1);
+  // "我安装的" opens a dedicated installed page (WorkBuddy pattern): back link
+  // first, count heading, in-page search and the shared card/batch management.
+  const installedEntry = page.getByRole('button', { name: /查看我安装的 \d+ 个技能/ });
+  await expect(installedEntry).toBeVisible();
+  await page.getByTestId('workdsh-skills').evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await installedEntry.click();
+  await expect(page.getByTestId('skills-installed')).toBeVisible();
+  await expect(page.getByTestId('skills-installed').getByRole('heading', { name: /^我安装的 \d+$/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '技能市场', exact: true })).toHaveCount(0);
+  const backToMarket = page.getByRole('button', { name: '返回全部技能', exact: true });
+  await expect(backToMarket).toBeFocused();
+  await expect.poll(() => page.getByTestId('workdsh-skills').evaluate(element => element.scrollTop)).toBe(0);
+  const installedSearch = page.getByRole('textbox', { name: '搜索已安装的技能', exact: true });
+  await installedSearch.fill(catalogSkill);
+  await expect(page.getByRole('button', { name: `查看技能 ${catalogSkill}`, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: `查看技能 ${fixture}`, exact: true })).toHaveCount(0);
+  await installedSearch.fill('no-such-skill-000');
+  await expect(page.getByText('没有匹配的技能', { exact: true })).toBeVisible();
+  await installedSearch.fill('');
+  await page.getByRole('button', { name: '批量管理', exact: true }).click();
+  await page.getByRole('checkbox', { name: `选择技能 ${fixture}`, exact: true }).click();
+  await expect(page.getByText('已选择 1 项', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '退出批量', exact: true }).click();
+  await expect(page.getByRole('checkbox', { name: `选择技能 ${fixture}`, exact: true })).toHaveCount(0);
+  await page.screenshot({ path: join(artifacts, 'installed-page.png'), fullPage: true });
+  await backToMarket.click();
+  await expect(page.getByRole('heading', { name: '技能市场', exact: true })).toBeVisible();
+  await expect(installedEntry).toBeFocused();
+  pass('Installed skills open a dedicated page with back link, count heading, in-page search and shared batch management');
+  // Bundled skills keep the WorkDSH prefix so the unprefixed `skill-creator`
+  // name stays available to the user's own skills; each registers exactly once.
+  const bundledSkills = (await api(host, 'list')).value;
+  for (const name of ['workdsh-skill-creator', 'workdsh-ppt-design', 'workdsh-word-design', 'workdsh-excel-design', 'workdsh-web-design']) {
+    assert.equal(bundledSkills.filter(row => row.name === name).length, 1, `${name} is registered exactly once`);
+  }
   await page.getByRole('button', { name: `查看技能 ${fixture}`, exact: true }).click();
   await page.getByRole('button', { name: '编辑', exact: true }).click();
   const editor = page.getByRole('textbox', { name: 'SKILL.md', exact: true });

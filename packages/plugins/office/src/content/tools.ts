@@ -140,9 +140,16 @@ const operation = {
 } as const;
 const snapshot = {
   type:"object",additionalProperties:false,
-  properties:{documentId:string,kind:{type:"string",enum:["document","presentation"],required:true},title:string,revision:{type:"integer",required:true},generation:string,
+  properties:{documentId:string,kind:{type:"string",enum:["document","presentation","spreadsheet"],required:true},title:string,revision:{type:"integer",required:true},generation:string,
     state:{type:"object",additionalProperties:true,required:true,description:"document: modelVersion/blockIds/blocks; presentation: modelVersion/deck, pptx-viewer-core native slides and PPTX bytes with stable slide IDs and elements."}},
 } as const;
+const sheetCell={type:"object",additionalProperties:false,properties:{value:{oneOf:[{type:"string"},{type:"number"},{type:"boolean"},{type:"null"}]},formula:{type:"string",description:"= prefixed formula; omit value"}}} as const;
+const sheetOperation={oneOf:[
+ {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"spreadsheet.setCells",required:true},sheetId:string,cells:{type:"array",required:true,items:{type:"object",additionalProperties:false,properties:{address:{...string,description:"A1 address, within A1:CV1000"},cell:{...sheetCell,required:true}}}}}},
+ {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"spreadsheet.clearCells",required:true},sheetId:string,addresses:{type:"array",required:true,items:{type:"string"}}}},
+ ...["spreadsheet.addSheet","spreadsheet.renameSheet"].map(op=>({type:"object" as const,additionalProperties:false as const,properties:{op:{type:"string" as const,const:op,required:true as const},sheetId:string,name:string}})),
+ {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"spreadsheet.removeSheet",required:true},sheetId:string}},
+]} as const;
 const pptOperation={oneOf:[
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.updateSlide",required:true},slideId:string,patch:{type:"object",required:true,additionalProperties:false,properties:{elements:{type:"array",items:{type:"object",additionalProperties:true}},name:{type:"string"},backgroundColor:{type:"string"},notes:{type:"string"}}}}},
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.insertSlides",required:true},afterSlideId:{oneOf:[{type:"string"},{type:"null"}],required:true},slides:{type:"array",required:true,items:{type:"object",additionalProperties:true,description:"One pptx-viewer-core native slide: id, slideNumber, elements. Element geometry x,y,width,height; chartData holds chartType,categories,series [{name,values}]."}}}},
@@ -186,7 +193,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_export",
       description:
-        "Export a committed Word document as real DOCX or native presentation as real PPTX through the official present card. Use baseRevision from content_read. Same document/revision/content has a stable path; uncertain-write retries check existing bytes and never overwrite conflicts. Uses official bash approval and requires bash/present in this Session. On delivery-only failure, check the card and retry present for the returned path. The live editor remains editable. Tables and embedded PNG/JPEG images are retained; complex Word pagination is not lossless.",
+        "Export a committed Word document as real DOCX or native presentation as real PPTX, or spreadsheet as real XLSX through the official present card. Use baseRevision from content_read. Same document/revision/content has a stable path; uncertain-write retries check existing bytes and never overwrite conflicts. Uses official bash approval and requires bash/present in this Session. On delivery-only failure, check the card and retry present for the returned path. The live editor remains editable. Tables and embedded PNG/JPEG images are retained; complex Word pagination is not lossless.",
       parameters: { documentId: string, baseRevision: {type: "integer", description: "Latest revision from content_read. Reuse on uncertain-write retries; rejects changed document revisions."} },
       output: {
         schema: {
@@ -218,7 +225,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_open",
       description:
-        "Create or reopen Word or PPT. For PPT set input.kind=presentation, source=new, title and operationId; optional brief. Automatically opens the live right-hand editor immediately; no content_present call is needed. New documents start with one empty paragraph. Use content_edit in small meaningful batches as you write so the user sees progress in the document, rather than waiting for the whole report. Reuse operationId on retries. This is not DOCX import.",
+        "Create or reopen Word, PPT or Excel. For Excel use kind=spreadsheet, source=new; returned state has sheetOrder and sheets with A1-keyed cells. For PPT set input.kind=presentation, source=new, title and operationId; optional brief. Automatically opens the live right-hand editor immediately; no content_present call is needed. New documents start with one empty paragraph. Use content_edit in small meaningful batches as you write so the user sees progress in the document, rather than waiting for the whole report. Reuse operationId on retries. This is not DOCX import.",
       parameters: {
         input: {
           oneOf: [
@@ -239,6 +246,7 @@ export function apply(ctx: Context) {
                 documentId: string,
               },
             },
+            ...(ctx.workdshOfficeContent.spreadsheetEnabled?[{type:"object",additionalProperties:false,properties:{source:{type:"string",const:"new",required:true},kind:{type:"string",const:"spreadsheet",required:true},title:string,operationId:string}} as const]:[]),
             ...(ctx.workdshOfficeContent.presentationEnabled?[{type:"object",additionalProperties:false,properties:{source:{type:"string",const:"new",required:true},kind:{type:"string",const:"presentation",required:true},title:string,operationId:string,brief:{type:"string",description:"Optional planning context; opening initializes only one title page. Add/update each slide in a separate content_edit."}}} as const]:[]),
           ],
           required: true,
@@ -276,7 +284,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_capabilities",
       description:
-        "Discover implemented operations and limits. Currently native document paragraphs/headings/tables/embedded images; DOCX export through content_export is available when official bash/present tools are mounted; Browser DOCX working-copy import is available; pptx-react-viewer presentations support native slides and editable charts; PPTX download is available in the right-hand editor, content_export delivers the saved PPTX through the official file card. Other editor kinds remain unavailable.",
+        "Discover implemented operations and limits. Currently native document paragraphs/headings/tables/embedded images; DOCX export through content_export is available when official bash/present tools are mounted; Browser DOCX working-copy import is available; pptx-react-viewer presentations support native slides and editable charts; PPTX download is available in the right-hand editor, content_export delivers the saved PPTX through the official file card. Excel supports new live workbooks, A1 cell values/formulas, and sheet add/rename/remove; browser Univer computes formulas, Host does not. Formatting/charts and live XLSX import remain unavailable.",
       parameters: {},
       output: {
         schema: {
@@ -307,7 +315,7 @@ export function apply(ctx: Context) {
             documentId: string,
             baseRevision: { type: "integer", required: true },
             operationId: string,
-            operations: { type: "array", required: true, items: {oneOf:[...operation.oneOf,...(ctx.workdshOfficeContent.presentationEnabled?pptOperation.oneOf:[])]} },
+            operations: { type: "array", required: true, items: {oneOf:[...operation.oneOf,...(ctx.workdshOfficeContent.spreadsheetEnabled?sheetOperation.oneOf:[]),...(ctx.workdshOfficeContent.presentationEnabled?pptOperation.oneOf:[])]} },
           },
         },
       },

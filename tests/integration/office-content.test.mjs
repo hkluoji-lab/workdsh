@@ -1,3 +1,5 @@
+import {createRequire} from "node:module";
+const officeRequire=createRequire(new URL("../../packages/plugins/office/package.json",import.meta.url));
 import test from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
@@ -19,6 +21,8 @@ const artifacts = new URL(
 await mkdir(artifacts, { recursive: true });
 await build({
   entryPoints: {
+    "spreadsheet-adapter":"packages/plugins/office/src/spreadsheet/adapter.ts",
+    "spreadsheet-xlsx":"packages/plugins/office/src/spreadsheet/xlsx.ts",
     service:"packages/plugins/office/src/content/service.ts",
     model:"packages/plugins/office/src/content/model.ts",
     tools:"packages/plugins/office/src/content/tools.ts",
@@ -30,6 +34,7 @@ await build({
   platform: "node",
   format: "esm",
   external: ["@deepseek-ai/*"],
+  plugins:[{name:"office-runtime-deps",setup(b){b.onResolve({filter:/^exceljs$/},()=>({path:officeRequire.resolve("exceljs"),external:true}));}}],
 });
 const { ContentService } = await import(new URL("service.js", artifacts));
 const toolPlugin = await import(new URL("tools.js", artifacts));
@@ -594,4 +599,45 @@ test("PPT export delivers committed native bytes, retries safely and rejects cha
     await assert.rejects(()=>exportAndPresent(ctx,exec,snapshot,3),/未交付文件/);
     assert.equal(await readFile(join(home,first.path),"utf8"),"changed");
   }finally{await rm(home,{recursive:true,force:true});}
+});
+
+
+test("Excel live service persists batches, fences human edits, and delivers actual XLSX",async()=>{
+ const root=await mkdtemp(join(tmpdir(),"office-excel-live-"));let h;
+ const {spreadsheetXlsx}=await import(new URL("spreadsheet-xlsx.js",artifacts));
+ const {default:ExcelJS}=await import(pathToFileURL(officeRequire.resolve("exceljs")).href);
+ try{
+  h=await boot(root);const exec={signal:new AbortController().signal,agent:{id:"session-a"}};
+  const first=await h.ctx.tools.get("content_open").execute({input:{source:"new",kind:"spreadsheet",title:"销售日报",operationId:"excel-create"}},exec);
+  assert.equal(first.kind,"spreadsheet");assert.deepEqual(first.state.sheetOrder,["sheet-1"]);
+  assert.ok((await h.s.pending(actor())).some(r=>r.documentId===first.documentId));
+  const batch={documentId:first.documentId,baseRevision:0,operationId:"excel-values",operations:[{op:"spreadsheet.setCells",sheetId:"sheet-1",cells:[{address:"A1",cell:{value:"收入"}},{address:"A2",cell:{value:7}},{address:"B2",cell:{value:3}},{address:"C2",cell:{formula:"=SUM(A2:B2)"}}]}]};
+  const receipt=await h.ctx.tools.get("content_edit").execute({input:batch},exec);assert.equal(receipt.revision,1);assert.deepEqual(await h.s.editForAgent(actor(),batch),receipt);
+  await assert.rejects(h.s.editForAgent(actor(),{...batch,operationId:"stale"}),{code:"REVISION_CONFLICT"});
+  const add={documentId:first.documentId,baseRevision:1,operationId:"excel-second-sheet",operations:[{op:"spreadsheet.addSheet",sheetId:"summary",name:"汇总"},{op:"spreadsheet.setCells",sheetId:"summary",cells:[{address:"A1",cell:{formula:"='工作表1'!C2"}}]}]};
+  await h.s.editForAgent(actor(),add);
+  for(const p of ["b","c"])await assert.rejects(h.s.read(actor(p),first.documentId),{code:"FORBIDDEN"});
+  const lease=await h.s.lease(actor(),first.documentId,"excel-human","acquire");
+  await assert.rejects(h.s.editForAgent(actor(),{...batch,baseRevision:2,operationId:"lease-blocked"}),{code:"HUMAN_EDITING"});
+  const state=structuredClone((await h.s.read(actor(),first.documentId)).state);state.sheets["sheet-1"].cells.A2={value:9};
+  const manual={documentId:first.documentId,baseRevision:2,operationId:"excel-human-save",operations:[{op:"spreadsheet.replaceState",state}]};
+  await h.s.editHuman(actor(),manual,{token:lease.lease.token,clientId:"excel-human"});
+  await h.s.lease(actor(),first.documentId,"excel-human","release",lease.lease.token);
+  await assert.rejects(h.s.editForAgent(actor(),{...manual,baseRevision:3,operationId:"whole-state-agent"}),{code:"INVALID_INPUT"});
+  await assert.rejects(h.s.editForAgent(actor(),{...batch,baseRevision:3,operationId:"out-of-range",operations:[{op:"spreadsheet.setCells",sheetId:"sheet-1",cells:[{address:"CW1",cell:{value:4}}]}]}),{code:"INVALID_INPUT"});
+  assert.equal((await h.s.read(actor(),first.documentId)).revision,3);
+  const latest=await h.s.read(actor(),first.documentId);const bytes=await spreadsheetXlsx(latest);assert.deepEqual(bytes,await spreadsheetXlsx(latest));
+  const wb=new ExcelJS.Workbook();await wb.xlsx.load(bytes);assert.equal(wb.worksheets.length,2);assert.equal(wb.getWorksheet("工作表1").getCell("A2").value,9);assert.equal(wb.getWorksheet("工作表1").getCell("C2").formula,"SUM(A2:B2)");assert.equal(wb.getWorksheet("汇总").getCell("A1").formula,"'工作表1'!C2");
+  const {exportAndPresent}=await import(new URL("export.js",artifacts));const calls=[];const delivery={tools:{get:()=>true,execute:async input=>{calls.push(input);if(input.name==="bash"){const marker=/OFFICE_EXPORTED_[a-z0-9-]+/.exec(input.arguments.command)[0];return {content:[{type:"text",text:marker}]};}return {content:[]};}}};
+  const file=await exportAndPresent(delivery,{agent:{},signal:new AbortController().signal,callId:"excel-export",deferContext(){}},latest,3);assert.match(file.path,/\.xlsx$/);assert.equal(calls.at(-1).name,"present");
+  await h.ctx.fiber.dispose();h=await boot(root);const cold=await h.s.read(actor(),first.documentId);assert.equal(cold.kind,"spreadsheet");assert.equal(cold.state.sheets["sheet-1"].cells.A2.value,9);assert.deepEqual(await h.s.editForAgent(actor(),batch),receipt);
+ }finally{if(h)await h.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
+});
+
+test("Univer working-copy mapping preserves formulas and refuses lossy manual formatting",async()=>{
+ const {univerSnapshot,stateFromUniver}=await import(new URL("spreadsheet-adapter.js",artifacts));
+ const state={modelVersion:1,sheetOrder:["s1"],sheets:{s1:{sheetId:"s1",name:"Sheet1",cells:{A1:{value:"类别"},B2:{formula:"=SUM(C2:D2)"}}}}};
+ const native=univerSnapshot(state,"test","测试"),baseline=structuredClone(native);native.sheets.s1.cellData[1][1].v=10;
+ assert.deepEqual(stateFromUniver(native,baseline),state);
+ native.sheets.s1.cellData[0][0].s={bl:1};assert.throws(()=>stateFromUniver(native,baseline),/格式/);
 });

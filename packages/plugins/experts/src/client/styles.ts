@@ -110,6 +110,10 @@ export const expertsCss = `${modalCss}
 .expert-dialog .cap-row.missing{border-color:#765349;background:#2a211f}
 .expert-dialog .cap-row.missing .cap-state{color:#ff9b95}
 .expert-dialog .expert-settings summary{cursor:pointer;list-style-position:inside;margin:24px 0 12px;font-size:16px;font-weight:600}
+.expert-work-summary{display:grid;gap:12px;margin:20px 0}
+.expert-work-summary>section{border-left:3px solid #3b82f6;padding:2px 0 2px 14px;min-width:0}
+.expert-dialog .expert-work-summary h3{font-size:15px;margin:0 0 6px;color:#e7e7e7}
+.expert-work-summary p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;margin:0;color:#bbb}
 .expert-dialog .prose-block{background:#1c1c1c;border:1px solid #2c2c2c;border-radius:12px;padding:16px 18px;white-space:pre-wrap;overflow-wrap:anywhere;color:#ddd;line-height:1.7;margin:0 0 12px}
 .expert-dialog .prose-block h4{margin:0 0 6px;font-size:13px;color:#a5a5a5;font-weight:600}
 .confirm-dialog{width:min(560px,calc(100vw - 40px));padding:32px 36px}

@@ -132,3 +132,11 @@ C预览更新：六包内容寻址重装、入口摘要核对与18989重启通�
 当前制品：normal/incomplete/dirty三目录对应`.artifacts/experts-professional-<scenario>`，包含report.json、原生对话截图、analysis-results.json、analysis-report.md。核心检查及冷启动绑定通过，professionalReview保持required，不将自动数值检查当文字评审。模块仍in_progress；52/52集成、Experts构建/typecheck、check:plan及规划测试2/2通过。未重装人工预览、未提交/推送/发布。
 
 收尾检查：扫描91个本轮制品文件，未发现预览模型凭据的明文值；所有professional临时Home的凭据文件均已移除，预览模型配置仍存在。最后52/52集成与check:plan复验通过。对dirty残留语义问题进一步补充方法技能：算术自洽不能辨别单位、已观测子集稳定不能推断缺失部分或整体；此最后补充未调用模型重验，D专业签收保持待关闭。
+
+## 2026-09-13：异常场景两轮真实模型复测
+
+使用临时Home、合成CSV和已配置预览模型，未改人工预览或用户专家。探针增加可选受限run label，分别保存到 `.artifacts/experts-professional-dirty-review-20260913` 与 `...-review2-20260913`，旧制品不覆盖。第一轮原生任务结束但自动校验拒绝targetVisitors=1300；报告仍由A+C稳定排除B/整体改善。失败成果和professional-review.json已保留。
+
+补充方法技能的整体字段覆盖与摘要边界后，第二轮原生completed、冻结Skill读取、真实CSV/Python、金额对账、原件不变和冷启动绑定通过。报告正确承认单位恒等式不能排除反向单位解释，且不再从A+C断言B或整体转化率变化。但专业复核失败：完整基期客流2500被错误置null；敏感性场景错误称为“按fen标签直读、不归一化”，并声称C贡献方向不变，实际其变化为+1485000、总体方向反转。自动探针未覆盖这些额外语义，不能以PASS代替专业签收。
+
+已再次补充按期间独立保留完整基期、单位反事实准确命名及逐店重算要求，并同步专家创建参考；最后补充未模型复测。两轮均完成凭据清理；成果仅合成数据。成果校验3项测试、规划检查和diff whitespace通过。AT-27仍未整体签收；下一步限于两处剩余问题复验，不自动持续调用模型。
