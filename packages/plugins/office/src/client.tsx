@@ -1,3 +1,5 @@
+import {downloadPdf} from "./pdf/download.js";
+import {downloadHtml} from "./html/preview.js";
 import {createPresentationModel} from "./presentation/client-model.js";
 import type {} from "@deepseek-ai/dsh-client-ui-input-trigger/client";
 import { officeInputSources } from "./input.js";
@@ -78,7 +80,9 @@ export function apply(ctx: Context): void {
       if (current) await current.download();
       else {
         const snapshot = await rpc<OfficeContentSnapshot>(sessionId, {endpoint: "read", documentId});
-        if (snapshot.kind === "spreadsheet") await downloadSpreadsheet(snapshot);
+        if (snapshot.kind === "pdf") await downloadPdf(office,sessionId,snapshot);
+        else if (snapshot.kind === "html") downloadHtml(snapshot);
+        else if (snapshot.kind === "spreadsheet") await downloadSpreadsheet(snapshot);
         else if (snapshot.kind === "document") await downloadDocument(snapshot);
         else throw new Error("请在 PPT 编辑器中下载此演示文稿。");
       }

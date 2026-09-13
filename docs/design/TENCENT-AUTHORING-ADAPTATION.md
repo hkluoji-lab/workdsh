@@ -19,6 +19,8 @@
 
 ## 接入
 
+网页优先切片（2026-09-13）：再次对照 Ardot design-to-code workflow、landing-page 与 web-app guidelines，采用内容/视觉分离和任务状态设计；拒绝照搬固定画布、强制多轮确认与“不运行预览”的宿主限制。workdsh-web-design 新增 workflow-and-delivery 参考，覆盖现有工程修改、静态页、应用、设计稿转换四条路径，真实预览/源码/素材/运行说明/文件引用交付。继续复用官方 SkillRegistration/resourceBase 与原生文件/工程工具；没有新增HTML工具、服务器或发布服务。验收先检查注册、按需参考、独立包资源，再验证一个真实成品与视觉；模型成品未执行不能记通过。
+
 Skills插件新增四个独立可发现的 bundled只读指南：workdsh-ppt-design、workdsh-word-design、workdsh-excel-design、workdsh-web-design。准确描述使用范围；包内 references 通过 directory resourceBase 按需读取。Office默认引导在打开Word/PPT后使用相应设计建议，普通短文不强制加载全部参考。专家可通过真实技能目录选择这些指南；它们是专业方法，不替代底层编辑/数据能力。
 
 Word与PPT仍使用同一 content_* 权威服务和官方导出文件卡。统一 spreadsheet/html新建API未实现，指南明确不能猜分支或伪造成功；已有XLSX副本编辑、真实工程网页制作遵循当前工具。新指南不扩充编辑器格式保真或图表支持范围。不能把指南上线描述成Excel/HTML统一编辑器已完成。
@@ -30,3 +32,11 @@ Word与PPT仍使用同一 content_* 权威服务和官方导出文件卡。统�
 ## 已执行证据
 
 两包标准build/typecheck通过；skill-creator-host及office-content共10项、skill-plugin-lifecycle1项通过，参考路径与可撤销注册验证。preview两个候选包经官方CLI安装，Host/Client与八份参考逐字节一致；重启后已认证list HTTP200，四指南readonly。Office现有构建cwd问题已修复为脚本相对路径。不声称真实模型成品或视觉质量通过。
+
+## 网页可靠性复审（2026-09-13）
+
+本次进一步阅读本机 ardot-design-to-code/SKILL.md、workflows/design-to-code-workflow.md、references/guidelines-code.md，ardot-ui-design/SKILL.md、references/guidelines-web-app.md，以及 core/workflows/ardot-workflow.md 分级验证段。原版有组件逐个分析/验证、计算 CSS、实例与父容器分析、整页集成复验；core 要求区块边界和最终检查、限制无效修复，而转换工作流又写生成后不要运行代码/预览，且强制多轮确认和默认固定画布。不能把这些互相矛盾或专属宿主规则直接继承。
+
+缺口判断：先前改写过于概括，入口未将实现与验收参考作为制作流程明确装配，缺少组件样式/父容器契约；HTML 全文替换会丢弃未携带的样式；打开预览不等于 AI 已检查画面。单个 .bar 冲突不能证明所有技能不可靠，但说明静态注册/路径测试未覆盖模型成品质量。
+
+调整：入口明确制作前读取实现/交付参考，组件契约与样式作用域、完整更新保留内容、边界分级检查、桌面/真实侧栏/手机验收和真实文件一致性；Office 引导同步使用指南。未实现自动视觉验收工具，也未执行模型成品对比，不能声称可靠性已通过模型评测。腾讯方法参考不等于接入其 Ardot 引擎。

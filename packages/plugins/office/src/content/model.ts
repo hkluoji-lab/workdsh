@@ -1,3 +1,5 @@
+import {pdfOpenInput} from "../pdf/model.js";
+import {htmlOpenInput} from "../html/model.js";
 import { z } from "zod";
 import type {
   OfficeBlock,
@@ -171,7 +173,7 @@ export const openInput = z.discriminatedUnion("source", [
 ]);
 export const presentationOpenInput = z.object({source:z.literal("new"),kind:z.literal("presentation"), title:z.string().trim().min(1).max(160),operationId:id,brief:z.string().trim().min(1).max(100000).optional()}).strict();
 export const spreadsheetOpenInput=z.object({source:z.literal("new"),kind:z.literal("spreadsheet"),title:z.string().trim().min(1).max(160),operationId:id}).strict();
-export const contentOpenInput=z.union([openInput,presentationOpenInput,spreadsheetOpenInput]);
+export const contentOpenInput=z.union([openInput,presentationOpenInput,spreadsheetOpenInput,htmlOpenInput,pdfOpenInput]);
 export const presentationEditInput=z.object({documentId:id,baseRevision:z.number().int().nonnegative(),operationId:id,operations:z.array(z.unknown()).min(1).max(100)}).strict();
 export class OfficeError extends Error {
   constructor(

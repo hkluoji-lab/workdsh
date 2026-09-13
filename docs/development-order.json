@@ -229,9 +229,10 @@
     "task": "P1-01",
     "status": "in_progress",
     "decision": "docs/adr/0024-ai-visible-browser-editing.md",
-    "scope": "用户批准的OFFICE-AI-01 / Office 0.1专项。通过官方Harness插件实现Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown及统一AI实时编辑。按U1—U5与OP-T01—07推进，U1最小新建document插件/五工具/原生Tiptap/独立打包已验证，U2确定性工具/UI链路通过；接续真实模型/PTC及恢复验收，八类与U3-U5未完成。独立Office包、Host服务/工具/Connection与Client官方组合；不改变主线D04/D15状态，不包含tables业务数据库或pages发布。",
+    "scope": "用户批准的OFFICE-AI-01 / Office 0.1专项。通过官方Harness插件实现Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown及统一AI实时编辑。按U1—U5与OP-T01—07推进，U1最小新建document插件/五工具/原生Tiptap/独立打包已验证，U2确定性工具/UI链路通过；接续真实模型/PTC及恢复验收，八类与U3-U5未完成。独立Office包、Host服务/工具/Connection与Client官方组合；不改变主线D04/D15状态，不包含tables业务数据库或pages发布。 2026-09-13 用户最新决定：画布与多维表格不再列入本专项开发，停止这两项占位入口；下一个适配器仅推进 PDF，现有 Word/PPT/Excel/HTML 保持，Markdown 本轮不扩展。PDF 完成须真实文件预览、AI 更新、保存重开与最终 PDF 交付验证，不能将技能指导或静态预览称为已完成。 PDF 首版已实现新建页对象及文本/矩形、真实 PDF.js 预览、按页修订、人工文字保存和 PDF 派生下载；字体完整静态嵌入，既有任意 PDF 导入/OCR/图片编辑未接入。独立安装交付签收以 PDF-LIVE 证据为准，Office 专项仍为 in_progress。",
     "evidence": [
-      "docs/evidence/office-live-u1.md"
+      "docs/evidence/office-live-u1.md",
+      "docs/design/office/PDF-LIVE.md"
     ]
   },
   "completedSlices": [

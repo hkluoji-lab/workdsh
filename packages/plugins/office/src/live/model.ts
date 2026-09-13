@@ -38,7 +38,7 @@ export interface OfficeClient {
   list(
     sessionId: string,
     signal: AbortSignal,
-  ): Promise<{ documentId: string; title: string; kind?:"document"|"presentation"|"spreadsheet" }[]>;
+  ): Promise<{ documentId: string; title: string; kind?:"document"|"presentation"|"spreadsheet"|"html"|"pdf" }[]>;
   createDocument(
     options: DocumentOptions,
   ): ReturnType<typeof createDocumentModel>;

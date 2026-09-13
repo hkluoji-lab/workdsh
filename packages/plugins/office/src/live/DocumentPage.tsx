@@ -1,3 +1,5 @@
+import {LivePdf} from "../pdf/Page.js";
+import {LiveHtml} from "../html/Page.js";
 import {LiveSpreadsheet} from "../spreadsheet/Page.js";
 import {LivePresentation} from "../presentation/Page.js";
 import React, {
@@ -22,7 +24,7 @@ export function DocumentPage(props: Props) {
     | undefined;
   const sessionId = String(props.sessionId);
   const [selected, setSelected] = useState(params?.documentId);
-  const [items, setItems] = useState<{ documentId: string; title: string;kind?:"document"|"presentation"|"spreadsheet" }[]>(
+  const [items, setItems] = useState<{ documentId: string; title: string;kind?:"document"|"presentation"|"spreadsheet"|"html"|"pdf" }[]>(
     [],
   );
   const [error, setError] = useState("");
@@ -70,7 +72,7 @@ export function DocumentPage(props: Props) {
           新文档已就绪，完成当前编辑后打开。
         </div>
       )}
-      {selected && !items.some(item=>item.documentId===selected) ? <div className="wd-office-empty">正在打开…</div> : selected ? (items.find(item=>item.documentId===selected)?.kind==="spreadsheet" ? <LiveSpreadsheet key={sessionId+selected} documentId={selected} sessionId={sessionId} office={props.office} visible={info.tab.visible} signal={info.tab.signal} requestId={params?.documentId===selected?params.requestId:undefined} onEditing={setBusy}/> : items.find(item=>item.documentId===selected)?.kind==="presentation" ? <LivePresentation key={sessionId+selected} documentId={selected} sessionId={sessionId} office={props.office} visible={info.tab.visible} signal={info.tab.signal} requestId={params?.documentId===selected?params.requestId:undefined} onEditing={setBusy}/> :
+      {selected && !items.some(item=>item.documentId===selected) ? <div className="wd-office-empty">正在打开…</div> : selected ? (items.find(item=>item.documentId===selected)?.kind==="pdf" ? <LivePdf key={sessionId+selected} documentId={selected} sessionId={sessionId} office={props.office} visible={info.tab.visible} signal={info.tab.signal} requestId={params?.documentId===selected?params.requestId:undefined} onEditing={setBusy}/> : items.find(item=>item.documentId===selected)?.kind==="html" ? <LiveHtml key={sessionId+selected} documentId={selected} sessionId={sessionId} office={props.office} visible={info.tab.visible} signal={info.tab.signal} requestId={params?.documentId===selected?params.requestId:undefined}/> : items.find(item=>item.documentId===selected)?.kind==="spreadsheet" ? <LiveSpreadsheet key={sessionId+selected} documentId={selected} sessionId={sessionId} office={props.office} visible={info.tab.visible} signal={info.tab.signal} requestId={params?.documentId===selected?params.requestId:undefined} onEditing={setBusy}/> : items.find(item=>item.documentId===selected)?.kind==="presentation" ? <LivePresentation key={sessionId+selected} documentId={selected} sessionId={sessionId} office={props.office} visible={info.tab.visible} signal={info.tab.signal} requestId={params?.documentId===selected?params.requestId:undefined} onEditing={setBusy}/> :
         <LiveDocument
           key={sessionId + selected}
           documentId={selected}

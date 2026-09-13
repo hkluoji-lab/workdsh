@@ -106,7 +106,7 @@ export interface OfficeSnapshot {
 export interface OfficeContentService {
   open(
     actor: ActorContext,
-    input: OfficeOpenInput|OfficePresentationOpenInput|OfficeSpreadsheetOpenInput,
+    input: OfficeOpenInput|OfficePresentationOpenInput|OfficeSpreadsheetOpenInput|OfficeHtmlOpenInput|OfficePdfOpenInput,
     signal?: AbortSignal,
   ): Promise<OfficeContentSnapshot>;
   read(
@@ -116,7 +116,7 @@ export interface OfficeContentService {
   ): Promise<OfficeContentSnapshot>;
   edit(
     actor: ActorContext,
-    input: OfficeEditInput|OfficePresentationEditInput|OfficeSpreadsheetEditInput,
+    input: OfficeEditInput|OfficePresentationEditInput|OfficeSpreadsheetEditInput|OfficeHtmlEditInput|OfficePdfEditInput,
     signal?: AbortSignal,
   ): Promise<OfficeReceipt>;
   present(
@@ -136,7 +136,13 @@ export interface OfficePresentationSnapshot extends Omit<OfficeSnapshot, "kind" 
   kind: "presentation";
   state: {modelVersion: 1; deck: unknown; focusSlideId?: string};
 }
-export type OfficeContentSnapshot = OfficeSnapshot | OfficePresentationSnapshot | OfficeSpreadsheetSnapshot;
+export interface OfficeHtmlSnapshot extends Omit<OfficeSnapshot, "kind" | "state"> {
+  kind: "html";
+  state: {modelVersion:1;html:string};
+}
+export interface OfficeHtmlOpenInput {source:"new";kind:"html";title:string;operationId:string}
+export interface OfficeHtmlEditInput extends Omit<OfficeEditInput,"operations"> {operations:{op:"html.replaceDocument";html:string}[]}
+export type OfficeContentSnapshot = OfficeSnapshot | OfficePresentationSnapshot | OfficeSpreadsheetSnapshot | OfficeHtmlSnapshot | OfficePdfSnapshot;
 export interface OfficePresentationOpenInput {
   source: "new";
   kind: "presentation";
@@ -167,3 +173,9 @@ export interface OfficeSpreadsheetOpenInput {
 export interface OfficeSpreadsheetEditInput extends Omit<OfficeEditInput, "operations"> {
   operations: unknown[];
 }
+
+export type OfficePdfElement = {id:string;x:number;y:number;width:number;height:number}&({type:"text";text:string;fontSize:number;lineHeight:number;color:string}|{type:"rectangle";fill:string});
+export interface OfficePdfPage {id:string;width:number;height:number;background:string;elements:OfficePdfElement[]}
+export interface OfficePdfSnapshot extends Omit<OfficeSnapshot,"kind"|"state"> {kind:"pdf";state:{modelVersion:1;pages:OfficePdfPage[]}}
+export interface OfficePdfOpenInput {source:"new";kind:"pdf";title:string;operationId:string}
+export interface OfficePdfEditInput extends Omit<OfficeEditInput,"operations"> {operations:({op:"pdf.insertPage";afterPageId:string|null;page:OfficePdfPage}|{op:"pdf.updatePage";pageId:string;page:OfficePdfPage}|{op:"pdf.removePage";pageId:string})[]}

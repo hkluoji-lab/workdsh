@@ -1,3 +1,5 @@
+> 2026-09-13 最新范围：不开发画布与多维表格，停止新建候选展示（保留历史引用解析）；PDF 首版已实现新建分页工作副本、AI 按页更新、人工文字保存、真实 PDF.js 预览与 PDF 下载/导出；已有任意 PDF 导入、OCR 和图片编辑未接入。已有 HTML 实时预览保留。下文历史八类规划以此决定为准。
+
 # WorkDSH Office 浏览器编辑插件
 
 当前未发布 alpha.3 仅保留 pptx-react-viewer 3.16.5 / pptx-viewer-core 3.14.3 作为 PPT 编辑器，沿用已确认的中文桌面工具栏与原生图表侧栏。PPTist、CreatPPT、旧 PPT 预览/画布适配已删除。Word 已发布 alpha.2 保持原版本，后续 Word 开发暂停。

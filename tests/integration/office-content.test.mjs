@@ -31,6 +31,7 @@ await build({
   },
   outdir: artifacts.pathname,
   bundle: true,
+  loader:{".ttf":"binary"},
   platform: "node",
   format: "esm",
   external: ["@deepseek-ai/*"],
@@ -640,4 +641,32 @@ test("Univer working-copy mapping preserves formulas and refuses lossy manual fo
  const native=univerSnapshot(state,"test","测试"),baseline=structuredClone(native);native.sheets.s1.cellData[1][1].v=10;
  assert.deepEqual(stateFromUniver(native,baseline),state);
  native.sheets.s1.cellData[0][0].s={bl:1};assert.throws(()=>stateFromUniver(native,baseline),/格式/);
+});
+
+test("HTML opens live, commits revisions atomically, and persists across restart",async()=>{
+ const root=await mkdtemp(join(tmpdir(),"office-html-live-"));let h;
+ try{h=await boot(root);const exec={signal:new AbortController().signal,agent:{id:"session-a"}};
+ const first=await h.ctx.tools.get("content_open").execute({input:{source:"new",kind:"html",title:"预算看板",operationId:"html-create"}},exec);
+ assert.equal(first.kind,"html");assert.ok((await h.s.pending(actor())).some(r=>r.documentId===first.documentId));
+ const html='<!doctype html><html><body><h1>预算分析</h1><script>document.body.dataset.ready="yes"</script></body></html>';
+ const batch={documentId:first.documentId,baseRevision:0,operationId:"html-first",operations:[{op:"html.replaceDocument",html}]};
+ const receipt=await h.ctx.tools.get("content_edit").execute({input:batch},exec);assert.equal(receipt.revision,1);assert.deepEqual(await h.s.editForAgent(actor(),batch),receipt);
+ await assert.rejects(h.s.editForAgent(actor(),{...batch,operationId:"html-stale"}),{code:"REVISION_CONFLICT"});
+ await assert.rejects(h.s.read(actor("b"),first.documentId),{code:"FORBIDDEN"});
+ assert.equal((h.s.projectForAgent(await h.s.read(actor(),first.documentId))).state.html,html);
+ await h.ctx.fiber.dispose();h=await boot(root);assert.equal((await h.s.read(actor(),first.documentId)).state.html,html);
+ }finally{await h?.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
+});
+
+test('PDF opens live, persists pages and rejects stale, unauthorized and invalid edits',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'office-pdf-live-'));let h;
+ try{h=await boot(root);const exec={signal:new AbortController().signal,agent:{id:'session-a'}};const first=await h.ctx.tools.get('content_open').execute({input:{source:'new',kind:'pdf',title:'预算分析报告',operationId:'pdf-new'}},exec);assert.equal(first.kind,'pdf');assert.ok((await h.s.pending(actor())).some(r=>r.documentId===first.documentId));
+ const page=structuredClone(first.state.pages[0]);page.elements[1].text='年度预算：收入 1000 万元。缺失参数待确认。';const batch={documentId:first.documentId,baseRevision:0,operationId:'pdf-page1',operations:[{op:'pdf.updatePage',pageId:page.id,page}]};const receipt=await h.ctx.tools.get('content_edit').execute({input:batch},exec);assert.equal(receipt.revision,1);assert.deepEqual(await h.s.editForAgent(actor(),batch),receipt);
+ const second={...structuredClone(page),id:'page-2'};second.elements[0].text='明日计划';await h.s.editForAgent(actor(),{documentId:first.documentId,baseRevision:1,operationId:'pdf-page2',operations:[{op:'pdf.insertPage',afterPageId:page.id,page:second}]});
+ await assert.rejects(h.s.editForAgent(actor(),{...batch,operationId:'pdf-stale'}),{code:'REVISION_CONFLICT'});await assert.rejects(h.s.read(actor('b'),first.documentId),{code:'FORBIDDEN'});
+ const overflow=structuredClone(page);overflow.elements[1].height=10;await assert.rejects(h.s.editForAgent(actor(),{...batch,baseRevision:2,operationId:'pdf-overflow',operations:[{op:'pdf.updatePage',pageId:page.id,page:overflow}]}),{code:'INVALID_INPUT'});assert.equal((await h.s.read(actor(),first.documentId)).revision,2);
+ const lease=await h.s.lease(actor(),first.documentId,'pdf-human','acquire');await assert.rejects(h.s.editForAgent(actor(),{...batch,baseRevision:2,operationId:'pdf-leased'}),{code:'HUMAN_EDITING'});
+ page.elements[1].text='用户确认：预算收入 1000 万元。';await h.s.editHuman(actor(),{...batch,baseRevision:2,operationId:'pdf-manual',operations:[{op:'pdf.updatePage',pageId:page.id,page}]},{token:lease.lease.token,clientId:'pdf-human'});await h.s.lease(actor(),first.documentId,'pdf-human','release',lease.lease.token);
+ await h.ctx.fiber.dispose();h=await boot(root);const saved=await h.s.read(actor(),first.documentId);assert.equal(saved.revision,3);assert.equal(saved.state.pages[0].elements[1].text,page.elements[1].text);assert.equal(saved.state.pages[1].id,'page-2');
+ }finally{await h?.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
 });

@@ -19,6 +19,8 @@ import { randomUUID,createHash } from "node:crypto";
 import { chromium, expect } from "@playwright/test";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
+const installFlags=process.argv.includes("--online-packages")?[]:["--offline"];
+const pdfMode=process.argv.includes("--pdf");
 const pptMode=process.argv.includes("--ppt");
 const withPptSkills=process.argv.includes("--with-ppt-skills");
 const packageRoundtrip = process.argv.includes("--package-roundtrip");
@@ -27,7 +29,7 @@ const realRich = process.argv.includes("--real-rich");
 const realModel = process.argv.includes("--real-model") || realRich;
 const artifacts = join(
   root,
-  pptMode ? realModel ? withPptSkills ? ".artifacts/office-ppt-live-real-skills" : ".artifacts/office-ppt-live-real" : ".artifacts/office-ppt-live" : inputOnly ? ".artifacts/office-input" : realModel ? ".artifacts/office-live-real" : ".artifacts/office-live",
+  pdfMode ? realModel ? ".artifacts/office-pdf-live-real" : ".artifacts/office-pdf-live" : pptMode ? realModel ? withPptSkills ? ".artifacts/office-ppt-live-real-skills" : ".artifacts/office-ppt-live-real" : ".artifacts/office-ppt-live" : inputOnly ? ".artifacts/office-input" : realModel ? ".artifacts/office-live-real" : ".artifacts/office-live",
 );
 let credential;
 const home = await realpath(
@@ -161,7 +163,7 @@ async function api(host, request, path = "/api/office-live-probe") {
     method: "POST",
     headers: { cookie: host.cookie, "content-type": "application/json" },
     body: JSON.stringify(request),
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(pdfMode ? 120000 : 20000),
   });
   assert.equal(response.status, 200);
   const result = await response.json();
@@ -258,7 +260,11 @@ export const inject=['connection','workdshSessionAccess','tools','systemPrompt',
 export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/api/office-live-probe',methods:['POST'],requestBody:'buffered',async fetch(request){try{
  const r=await request.json();let value;
  if(r.action==='create'){value=await ctx.workdshSessionAccess.create({workspaceId:${JSON.stringify(workspaceId)}});}
- else if(r.action==='real-write'){
+ else if(r.action==='fixture-turn'){
+  const resolved=await ctx.workdshSessionAccess.resolveAgent(r.sessionId,request.signal);if(!resolved.agent)throw Error('agent unavailable');
+  // Test-only public Session fixture: native present requires an open turn. No synthetic event path is installed in the product.
+  if(r.open)resolved.agent.session.append('turn/start',{turn:1});else resolved.agent.session.append('turn/end',{turn:1,reason:{kind:'completed'}});value={fixture:true};
+ }else if(r.action==='real-write'){
   const resolved=await ctx.workdshSessionAccess.resolveAgent(r.sessionId,request.signal);
   if(!resolved.agent)throw Error('agent unavailable');
   resolved.agent.send({role:'user',id:r.messageId,content:[{type:'text',text:r.prompt}],source:{kind:'user'}},'next-turn',true);
@@ -310,7 +316,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
     const target='/tmp/workdsh-packs';await mkdir(target,{recursive:true});
     const archive=join(target,digest+'.tgz');await copyFile(tarballs[i],archive);tarballs[i]=archive;
   }
-  await cli("plugin", "--profile", "office", "add", ...tarballs, "--offline");
+  await cli("plugin", "--profile", "office", "add", ...tarballs, ...installFlags);
   pass(
     "Standalone prebuilt Office + explicit governance packages installed outside checkout; no experts/skills/workbench bundle",
   );
@@ -357,11 +363,11 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
     input: {
       source: "new",
       title: pptMode ? "门店 PPT 实时制作" : "人和 AI 共写一份文档",
-      ...(pptMode?{kind:"presentation"}:{}),
+      ...(pdfMode?{kind:"pdf"}:pptMode?{kind:"presentation"}:{}),
       operationId: "office-probe-create",
     },
   });
-  const first = pptMode ? undefined : doc.state.blockIds[0];
+  const first = (pptMode||pdfMode) ? undefined : doc.state.blockIds[0];
   pass(
     "Five real native tools register and execute through official Tools + trusted native Session",
   );
@@ -388,6 +394,26 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
       .catch(() => {});
   await page.waitForFunction(() => window.officeLiveProbe, { timeout: 20000 });
   await page.evaluate((sid) => window.officeLiveProbe.open(sid), sid);
+  if(pdfMode){
+    const status=page.getByRole("status").filter({hasText:"修订 0 · 预览已更新"});await expect(status).toBeVisible({timeout:25000});
+    pass("Standalone official Session auto-opens a real PDF.js preview without a model request");
+    const firstPage=structuredClone(doc.state.pages[0]);firstPage.elements[1].text="年度预算：收入 1000 万元。缺失参数待确认。";
+    await tool("content_edit",{input:{documentId:doc.documentId,baseRevision:0,operationId:"pdf-real-first",operations:[{op:"pdf.updatePage",pageId:firstPage.id,page:firstPage}]}});
+    await expect(page.getByRole("status").filter({hasText:"修订 1 · 预览已更新"})).toBeVisible({timeout:20000});
+    pass("Committed Chinese page revision reaches the actual official Sidebar through authenticated Connection");
+    await page.getByRole("button",{name:"编辑本页文字"}).click();await page.getByRole("textbox",{name:"PDF 文本 body",exact:true}).fill("用户确认：预算收入 1000 万元。");await page.getByRole("button",{name:"完成编辑并保存"}).click();
+    await expect(page.getByRole("status").filter({hasText:"修订 2 · 预览已更新"})).toBeVisible({timeout:20000});
+    doc=await tool("content_read",{documentId:doc.documentId});assert.equal(doc.state.pages[0].elements[1].text,"用户确认：预算收入 1000 万元。");
+    pass("Human page edit saves through the same authorized service and live PDF preview");
+    const pending=page.waitForEvent("download");await page.getByRole("button",{name:"下载 PDF"}).click();const downloaded=await pending;await downloaded.saveAs(join(artifacts,"report.pdf"));assert.equal((await readFile(join(artifacts,"report.pdf"))).subarray(0,5).toString(),"%PDF-");
+    await api(host,{action:"fixture-turn",sessionId:sid,open:true});
+    const exported=await tool("content_export",{documentId:doc.documentId,baseRevision:doc.revision});assert.equal(exported.status,"presented");assert.ok(exported.path.endsWith(".pdf"));assert.ok((await readFile(join(workspace,exported.path))).equals(await readFile(join(artifacts,"report.pdf"))));
+    await api(host,{action:"fixture-turn",sessionId:sid,open:false});
+    pass("With a test-only public Session turn fixture, official file card delivers exactly the same committed PDF bytes as browser download");
+    await page.screenshot({path:join(artifacts,"pdf-live.png")});await stop();host=await start();const cold=await tool("content_read",{documentId:doc.documentId});assert.deepEqual(cold.state,doc.state);
+    pass("Independent installed Host cold restart retains the saved PDF working copy");
+    if(realModel){await page.context().addCookies(host.cookie.split("; ").map(pair=>{const at=pair.indexOf("=");return {name:pair.slice(0,at),value:pair.slice(at+1),url:host.address}}));await page.goto(host.address);await page.waitForFunction(()=>window.officeLiveProbe);const {verifyRealPdf}=await import("./probe-office-pdf-real.mjs");await verifyRealPdf({api,host,page,workspace,artifacts,root,pass});}
+  } else {
   if(pptMode){
     if(realModel)throw new Error("Current PPT integration model acceptance must use the new native slide contract; this probe is deterministic only.");
     const native=page.getByTestId("office-presentation");
@@ -486,7 +512,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
       assert.equal(response.status,404);
       await stop();
       const officeTarball = tarballs.find(path=>path.includes("workdsh-plugin-office-"));
-      await cli("plugin", "--profile", "office", "add", officeTarball, "--offline");
+      await cli("plugin", "--profile", "office", "add", officeTarball, ...installFlags);
       host = await start();
       const tools = await api(host,{action:"visible-tools",sessionId:sid});
       for(const name of ["content_open","content_read","content_edit","content_present","content_export","content_capabilities"]) assert.ok(tools.includes(name));
@@ -1071,6 +1097,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
     pass(
       "Ordinary natural-language writing uses live document tools and auto-opens the editor with multiple committed batches",
     );
+  }
   }
   }
   }

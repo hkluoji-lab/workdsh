@@ -1,3 +1,6 @@
+import {pdfEditInput} from "../pdf/model.js";
+import {pdfBytes} from "../pdf/encode.js";
+import {htmlEditInput} from "../html/model.js";
 import {spreadsheetEditInput} from "../spreadsheet/model.js";
 import type { Context } from "@deepseek-ai/cordis";
 import type { HostConnectionHandle } from "@deepseek-ai/dsh-client-connection";
@@ -8,12 +11,13 @@ export const inject = ["connection", "workdshOfficeContent", "workdshIdentity"];
 const endpoint = z.discriminatedUnion("endpoint", [
   z.object({ endpoint: z.literal("open"), input: contentOpenInput }).strict(),
   z.object({ endpoint: z.literal("read"), documentId: id }).strict(),
+  z.object({endpoint:z.literal("pdfBytes"),documentId:id,baseRevision:z.number().int().nonnegative()}).strict(),
   z.object({ endpoint: z.literal("list") }).strict(),
   z.object({ endpoint: z.literal("pending") }).strict(),
   z
     .object({
       endpoint: z.literal("edit"),
-      input: z.union([editInput,presentationEditInput,spreadsheetEditInput]),
+      input: z.union([editInput,presentationEditInput,spreadsheetEditInput,htmlEditInput,pdfEditInput]),
       lease: z.object({ token: id, clientId: id }).strict().optional(),
     })
     .strict(),
@@ -73,6 +77,12 @@ export function apply(ctx: Context) {
             case "read":
               value = await s.read(actor, r.documentId, signal);
               break;
+            case "pdfBytes": {
+              const saved=await s.read(actor,r.documentId,signal);
+              if(saved.kind!=="pdf")throw new OfficeError("INVALID_INPUT","不是 PDF 工作副本。");
+              if(saved.revision!==r.baseRevision)throw new OfficeError("REVISION_CONFLICT","PDF 已更新，请重读。");
+              const bytes=await pdfBytes(saved,signal);signal.throwIfAborted();if(bytes.length>8*1024*1024)throw new OfficeError("LIMIT_REACHED","PDF 超过 8 MiB。 ");value={revision:saved.revision,bytes:Buffer.from(bytes).toString("base64")};break;
+            }
             case "list":
               value = await s.list(actor, signal);
               break;

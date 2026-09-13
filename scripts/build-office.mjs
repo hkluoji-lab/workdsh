@@ -1,12 +1,17 @@
 import './scope-pptx-native.mjs';
 import {nativePptPlugin} from './build-pptx-native.mjs';
 import { build } from "esbuild";
+import {createHash} from "node:crypto";
 import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 const root = new URL("../packages/plugins/office/", import.meta.url);
 const wordOnly = process.argv.includes("--word-only");
 await mkdir(new URL("dist/", root), { recursive: true });
+const font=await readFile(new URL("src/pdf/fonts/NotoSansSC.ttf",root));
+const fontSource=JSON.parse(await readFile(new URL("src/pdf/fonts/source.json",root),"utf8"));
+if(font.length!==fontSource.bytes||createHash("sha256").update(font).digest("hex")!==fontSource.sha256)throw Error("Bundled PDF font integrity mismatch");
+
 // Word-only packages omit both the spreadsheet UI and its XLSX dependency.
 const spreadsheetScope = {
   name: "spreadsheet-release-scope",
@@ -50,6 +55,7 @@ const client = await build({
   loader:{".css":"text"},
   define: { "process.env.NODE_ENV": '"production"', __WORKDSH_WORD_ONLY__: String(wordOnly) },
   plugins: [
+    {name:"pdf-worker-source",setup(builder){builder.onLoad({filter:/pdf\.worker\.min\.mjs$/},async args=>({contents:await readFile(args.path,"utf8"),loader:"text"}));}},
     nativePptPlugin(),
     spreadsheetScope,
     {
@@ -76,6 +82,7 @@ const host = await build({
   entryPoints: [fileURLToPath(new URL("src/index.ts", root))],
   bundle: true,
   external: ["@deepseek-ai/*", "exceljs"],
+  loader:{".ttf":"binary"},
   plugins: [spreadsheetScope],
   format: "esm",
   define:{__WORKDSH_PRESENTATION_ENABLED__:String(!wordOnly),__WORKDSH_SPREADSHEET_ENABLED__:String(!wordOnly)},
@@ -141,6 +148,7 @@ for (const [directory, pkg] of [...packages].sort((a, b) =>
     `${pkg.name}@${pkg.version} — ${typeof pkg.license === "string" ? pkg.license : JSON.stringify(pkg.license)}\n${texts.join("\n")}`,
   );
 }
+notices.push("Noto Sans SC (SIL Open Font License 1.1)\n"+await readFile(new URL("src/pdf/fonts/LICENSE",root),"utf8"));
 await writeFile(
   new URL("dist/THIRD-PARTY-LICENSES.txt", root),
   notices.join("\n\n----------------------------------------\n\n") + "\n\nTiptap UI Components @ 799929bea4804c73767562b69f8acc2acdb8ac86\n" + await readFile(new URL("src/live/tiptap-ui/LICENSE", root), "utf8"),

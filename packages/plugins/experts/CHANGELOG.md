@@ -2,6 +2,9 @@
 
 ## 0.1.0-alpha.1 — Unreleased candidate
 
+- Strengthen reusable public expert creation: derive methods and actual capabilities from needs, preserve source metadata and distinguish supported facts from future promises.
+- Document bounded real-model trials, actual outputs and open findings; model self-review does not guarantee professional correctness. No automatic publication or case-specific financial Skill is added.
+
 - Select real installed Skills with search, availability, cancellation and stable references; removing an expert reference never uninstalls the shared Skill.
 - Present expertise, task examples and real equipped Skill descriptions separately from the editor.
 - Authorize catalog selection per expert and omit filesystem paths from catalog responses.

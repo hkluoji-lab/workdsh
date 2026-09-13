@@ -45,7 +45,7 @@ test('skills Host owns a disposable manager and official skill registration', as
       assert.equal(guidance.source, 'bundled');
       assert.equal(guidance.resourceBase.kind, 'directory');
       const references = [...guidance.content.matchAll(/references\/([a-z-]+\.md)/g)];
-      assert.equal(references.length, 2);
+      assert.equal(references.length, skillName === 'workdsh-web-design' ? 3 : 2);
       for (const [, reference] of references) {
         assert.ok((await readFile(join(guidance.resourceBase.path, 'references', reference), 'utf8')).length > 100);
       }

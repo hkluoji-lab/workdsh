@@ -145,3 +145,7 @@ Office 原生 document 的 run.style 可选字体、点字号、颜色和背景�
 content_export({documentId}) 读取授权下最新已保存修订，返回 documentId/revision/path/status:presented。共享 DOCX codec 与右侧下载；实际文件写入和交付组合官方 tools.execute(bash/present)，继承调用方 scope/token/signal，不创建第二套文件操作传输。返回成功以官方 present 回执为准。导出文件与工作副本修订分开，当前有限导出不是完整 U3 冻结任务/幂等收据/恢复协议。
 
 WORD-RELEASE-02：content_export 新增可选 baseRevision，授权读取的最新修订不匹配时返回 REVISION_CONFLICT。相同 docId/revision/DOCX 摘要生成稳定路径，已有同字节文件复用，冲突不覆盖；写入回执未知不交付，重试同一修订核对文件。取消信号在写入前与 present 前重验，交付未知返回路径供核对。不是全量导出 Job/跨执行世界协议。
+
+## PDF 新建工作副本增量（2026-09-13）
+
+Office 契约新增 kind=pdf 的分页/文本/矩形状态及 pdf.insertPage/updatePage/removePage，复用 CAS/回执/授权/人工租约与展示请求。新建工作副本不表示已有 PDF 导入或任意内容对象编辑。PDF 字节由当前修订通过同一编码器派生；Connection pdfBytes 需要授权与明确 baseRevision，文件交付仍走官方 bash/present。

@@ -40,7 +40,32 @@ export async function checkProfessionalSession(artifacts, scenario = 'normal') {
     if (scenario === 'incomplete') {
       for (const key of ['baseVisitors', 'targetVisitors', 'baseOrders', 'targetOrders']) assert.equal(partial[key], null, 'Missing metrics must stay unknown');
       assert.ok(partial.stores === null || (Array.isArray(partial.stores) && partial.stores.length === 0), 'No fabricated store breakdown');
-    } else assert.equal(partial.targetVisitors, null, 'Missing visitor data must not be imputed');
+    } else {
+      assert.equal(partial.baseVisitors,2500,'Complete base-month visitors must remain known despite target-month missing data');
+      assert.equal(partial.targetVisitors,null,'Missing visitor data must not be imputed');
+      assert.equal(partial.baseOrders,350);assert.equal(partial.targetOrders,280);
+      // Optional reported subsets must use the same declared stores in both months.
+      // Derive the oracle from unchanged CSV rows, never from model-supplied totals.
+      const subset = partial.observedSubsetOnly;
+      if (subset) {
+        assert.ok(Array.isArray(subset.storesIncluded) && subset.storesIncluded.length > 0, 'Reported subset requires explicit store coverage');
+        const lines = (await readFile(join(workspace, 'input.csv'), 'utf8')).trim().split(/\r?\n/);
+        const columns = lines.shift().split(',');
+        const rawRows = [...new Set(lines)].map(line => Object.fromEntries(line.split(',').map((value, index) => [columns[index], value])));
+        for (const [prefix, month] of [['base', partial.baseMonth], ['target', partial.targetMonth]]) {
+          const rows = rawRows.filter(row => row.month === month && subset.storesIncluded.includes(row.store_id));
+          assert.equal(rows.length, new Set(subset.storesIncluded).size, 'Subset month must cover exactly its declared stores');
+          const total = field => rows.some(row => row[field] === '' || !Number.isFinite(Number(row[field]))) ? null : rows.reduce((sum, row) => sum + Number(row[field]), 0);
+          const visitors = total('visitors'), orders = total('orders');
+          assert.equal(subset[prefix + 'Visitors'], visitors, 'Subset visitors must not include undeclared stores');
+          assert.equal(subset[prefix + 'Orders'], orders, 'Subset orders must match declared coverage');
+          const conversion = visitors === null || orders === null || visitors === 0 ? null : orders / visitors * 100;
+          if (conversion === null) assert.equal(subset[prefix + 'ConversionPercent'], null);
+          else assert.ok(Math.abs(subset[prefix + 'ConversionPercent'] - conversion) <= 0.02, 'Subset conversion must use matching numerator and denominator');
+        }
+      }
+
+    }
   }
   const report = await readFile(join(workspace, 'analysis-report.md'), 'utf8');
   assert.ok(report.length >= 300);

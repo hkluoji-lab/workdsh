@@ -229,6 +229,16 @@ User-provided screenshot of the current application, showing categories, search,
 
 The current Office development candidate keeps `pptx-react-viewer` as its sole PPT editor, integrated with the native results panel and shared Office content service. It supports incremental slide writing, human editing, native chart data, saved working copies and PPTX download. Chinese UI and design guidance are still being improved; real-model visual quality acceptance is incomplete. This local candidate differs from the published Word-only packages above. See [PPT integration evidence](docs/evidence/office-pptx-integration.md).
 
+### HTML and PDF working copies / HTML 与 PDF 工作副本
+
+The current source candidate can open a self-contained HTML page in the native results panel before AI updates its saved revisions. PDF creation supports Chinese text, page updates, preview, manual text changes and actual PDF download/file delivery. PDF rendering uses bundled libraries and an embedded font; end users do not need Python for this PDF workflow. Existing arbitrary PDF import, OCR and image editing are not supported. These additions are source-development features and do not change the older Word-only release archives.
+
+当前源码候选支持自包含 HTML 先展示、AI 更新保存修订；PDF 支持中文新建、分页更新、预览、人工文字修改及真实文件下载/交付。PDF 流程无需用户安装 Python，不支持已有任意 PDF 导入、OCR 或图片编辑。详情见 [HTML working copies](docs/design/office/HTML-LIVE.md) 与 [PDF working copies](docs/design/office/PDF-LIVE.md)。
+
+Public expert creation is reusable across domains, with methods, real Skill selection, explicit UI publication and native task trials. Model-generated content still needs user review; synthetic professional evaluations document limitations rather than guaranteeing every answer. See [current evidence](docs/evidence/d04-experts-review-fixes.md).
+
+公共专家制作按用户需求组织方法、真实技能配备、界面确认发布和原生任务试用。模型成果仍需用户审核；专业样本记录用于说明限制，不代表所有专家每次都能正确回答。
+
 ### Native PPT editing preview
 
 [Office alpha.3 source prerelease](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.3) · No new installable archive is attached.
@@ -250,6 +260,9 @@ Thank you to these projects and their maintainers. This list covers major direct
 | [docx](https://github.com/dolanmiu/docx) | DOCX generation within the supported scope | MIT |
 | [docx-preview](https://github.com/VolodymyrBaydalka/docxjs) | Original-layout DOCX preview | Apache-2.0 |
 | [Univer OSS](https://github.com/dream-num/univer) / [ExcelJS](https://github.com/exceljs/exceljs) | Existing experimental spreadsheet adapters in development builds; full online spreadsheets remain planned | Apache-2.0 / MIT |
+| [PDF.js](https://github.com/mozilla/pdf.js) | Decode and display generated PDF files with a bundled worker | Apache-2.0 |
+| [pdf-lib](https://github.com/Hopding/pdf-lib) / [fontkit](https://github.com/Hopding/fontkit) | Encode PDF working copies and embed Chinese glyphs | MIT |
+| [Noto Sans SC](https://github.com/google/fonts/tree/main/ofl/notosanssc) | Bundled static Chinese font; license and derivation metadata retained | SIL Open Font License 1.1 |
 | [i18next](https://github.com/i18next/i18next) / [react-i18next](https://github.com/i18next/react-i18next) | Chinese localization for the PPT editor | MIT |
 | [Lucide](https://github.com/lucide-icons/lucide) | PPT toolbar icons | ISC |
 | [dsh-cost-meter](https://github.com/Han-1413141/dsh-cost-meter) | Separately installed spending plugin in the local preview Profile; not bundled in WorkDSH releases | See the independent project's license |

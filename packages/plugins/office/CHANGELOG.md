@@ -1,3 +1,10 @@
+## Current source candidate — HTML and PDF working copies
+
+- Open self-contained HTML working copies before AI revision updates; sandbox the native preview and retain source/download bytes.
+- Add PDF Chinese text and rectangle pages, AI page updates, manual text edits, real PDF.js preview, PDF download and native file delivery.
+- Embed the licensed Noto Sans SC static font; no end-user Python, font download or system-font requirement for the PDF workflow.
+- Existing arbitrary PDF import, OCR and image editing remain outside this slice. Published archives are unchanged.
+
 ## alpha.3 未发布：当前中文 PPT 编辑器集成
 
 - 唯一 PPT 提供方：pptx-react-viewer 3.16.5 / pptx-viewer-core 3.14.3。

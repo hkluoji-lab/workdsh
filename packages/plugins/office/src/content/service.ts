@@ -1,3 +1,8 @@
+import {pdfStateSchema,pdfEditInput,applyPdf,initialPdf} from "../pdf/model.js";
+import {pdfBytes} from "../pdf/encode.js";
+import type {OfficePdfOpenInput,OfficePdfEditInput} from "workdsh-contracts/office";
+import {htmlStateSchema,htmlEditInput,applyHtml} from "../html/model.js";
+import type {OfficeHtmlOpenInput,OfficeHtmlEditInput} from "workdsh-contracts/office";
 import {spreadsheetStateSchema,spreadsheetEditInput,createSpreadsheet,applySpreadsheet,spreadsheetCapabilities} from "../spreadsheet/model.js";
 import { createHash, randomUUID } from "node:crypto";
 import { Service, type Context } from "@deepseek-ai/cordis";
@@ -98,10 +103,10 @@ const eventSchema = z
 const recordSchema = z
   .object({
     documentId: id,
-    kind: z.enum(["document","presentation","spreadsheet"]),
+    kind: z.enum(["document","presentation","spreadsheet","html","pdf"]),
     title: z.string(),
     revision: z.number().int().nonnegative(),
-    state: z.union([stateSchema,presentationStateSchema,spreadsheetStateSchema]),
+    state: z.union([stateSchema,presentationStateSchema,spreadsheetStateSchema,htmlStateSchema,pdfStateSchema]),
     owner: ownerSchema,
     workspaceId: z.string().optional(),
     sessionId: z.string(),
@@ -139,7 +144,7 @@ const recordSchema = z
       .strict()
       .nullable(),
   })
-  .strict().refine(record=>record.kind==="document"?"blocks" in record.state:record.kind==="presentation"?"deck" in record.state:"sheets" in record.state,"State must match editor kind");
+  .strict().refine(record=>record.kind==="document"?"blocks" in record.state:record.kind==="presentation"?"deck" in record.state:record.kind==="pdf"?"pages" in record.state:record.kind==="html"?"html" in record.state:"sheets" in record.state,"State must match editor kind");
 type ContentRecord = z.infer<typeof recordSchema>;
 export const contentDomain = defineDomain({
   name: "workdsh_office",
@@ -299,7 +304,7 @@ export class ContentService extends Service {
   }
   async open(
     actor: ActorContext,
-    input: OfficeOpenInput | OfficePresentationOpenInput | OfficeSpreadsheetOpenInput,
+    input: OfficeOpenInput | OfficePresentationOpenInput | OfficeSpreadsheetOpenInput | OfficeHtmlOpenInput | OfficePdfOpenInput,
     signal?: AbortSignal,
   ): Promise<OfficeContentSnapshot> {
     const value = parse(contentOpenInput, input);
@@ -393,6 +398,8 @@ export class ContentService extends Service {
         ensure(this.spreadsheetEnabled,"UNSUPPORTED_KIND","此制品未装配 Excel 编辑器。");
         record.state=createSpreadsheet();
       }
+      if ("kind" in value && value.kind === "pdf") record.state=initialPdf(value.title);
+      if ("kind" in value && value.kind === "html") record.state={modelVersion:1,html:"<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head><body><p>网页已打开，等待 AI 写入内容。</p></body></html>"};
       if (value.source === "import") {
         const imported = applyOperations({modelVersion: 1, blockIds: [], blocks: {}}, [{op: "document.insertBlocks", afterBlockId: null, blocks: value.blocks.map((block, i) => ({...block, clientRef: `import-${i}`}))}], newId);
         record.state = imported.state;
@@ -420,7 +427,7 @@ export class ContentService extends Service {
   projectForAgent(snapshot: OfficeContentSnapshot): OfficeContentSnapshot {
     const projected = structuredClone(snapshot);
     if(projected.kind === "presentation") { const deck=projected.state.deck as Record<string,unknown>; delete deck.bytes; for(const slide of (deck.slides??[]) as Record<string,unknown>[]) {delete slide.rawXml;for(const element of (slide.elements??[]) as Record<string,unknown>[])delete element.rawXml;} return projected; }
-    if(projected.kind === "spreadsheet") return projected;
+    if(projected.kind === "spreadsheet" || projected.kind === "html" || projected.kind === "pdf") return projected;
     for (const block of Object.values(projected.state.blocks)) {
       if (block.type === "image" && block.image) {
         const digest = createHash("sha256").update(block.image.src).digest("hex");
@@ -438,6 +445,8 @@ export class ContentService extends Service {
     const target=this.get(envelope.documentId);
     if(target.kind === "presentation") return this.edit(actor,parse(presentationEditInput,input),signal);
     if(target.kind === "spreadsheet") return this.edit(actor,parse(spreadsheetEditInput,input),signal);
+    if(target.kind === "pdf") return this.edit(actor,parse(pdfEditInput,input),signal);
+    if(target.kind === "html") return this.edit(actor,parse(htmlEditInput,input),signal);
     const sources = new Map<string, Promise<OfficeContentSnapshot>>();
     const source = (documentId: string) => {
       let pending = sources.get(documentId);
@@ -500,18 +509,18 @@ export class ContentService extends Service {
   }
   capabilities() {
     ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
-    return {...capabilities,...(this.spreadsheetEnabled?{spreadsheet:spreadsheetCapabilities}:{}),...(this.presentationEnabled?{presentation:{model:"pptx-react-viewer@3.16.5",stateFormat:"pptx-viewer-core native slides and PPTX bytes",operations:["presentation.insertSlides","presentation.updateSlide","presentation.removeSlide","presentation.moveSlide"],limits:{slides:50,elementsPerSlide:200,contentSlidesPerCommit:1},export:{browser:"pptx",tool:"content_export",maxBytes:8*1024*1024}}}:{})};
+    return {...capabilities,pdf:{operations:["pdf.insertPage","pdf.updatePage","pdf.removePage"],coordinateSystem:"top-left points",pageLimits:{pages:50,elements:100},newDocument:true,existingPdfImport:false,elementSchema:"text: id,type,x,y,width,height,text,fontSize,lineHeight,color; rectangle: id,type,x,y,width,height,fill; page: id,width,height,background,elements",font:"bundled static Noto Sans SC, fully embedded",export:{tool:"content_export",browser:"pdf"}},html:{operations:["html.replaceDocument"],state:{modelVersion:1,html:"string"},maxBytes:1048576,preview:"sandboxed inline-only single-file HTML",export:{tool:"content_export",browser:"html"}},...(this.spreadsheetEnabled?{spreadsheet:spreadsheetCapabilities}:{}),...(this.presentationEnabled?{presentation:{model:"pptx-react-viewer@3.16.5",stateFormat:"pptx-viewer-core native slides and PPTX bytes",operations:["presentation.insertSlides","presentation.updateSlide","presentation.removeSlide","presentation.moveSlide"],limits:{slides:50,elementsPerSlide:200,contentSlidesPerCommit:1},export:{browser:"pptx",tool:"content_export",maxBytes:8*1024*1024}}}:{})};
   }
   edit(
     actor: ActorContext,
-    input: OfficeEditInput | OfficePresentationEditInput | OfficeSpreadsheetEditInput,
+    input: OfficeEditInput | OfficePresentationEditInput | OfficeSpreadsheetEditInput | OfficeHtmlEditInput | OfficePdfEditInput,
     signal?: AbortSignal,
   ): Promise<OfficeReceipt> {
     return this.commit(actor, input, undefined, signal);
   }
   editHuman(
     actor: ActorContext,
-    input: OfficeEditInput | OfficePresentationEditInput | OfficeSpreadsheetEditInput,
+    input: OfficeEditInput | OfficePresentationEditInput | OfficeSpreadsheetEditInput | OfficeHtmlEditInput | OfficePdfEditInput,
     lease: { token: string; clientId: string },
     signal?: AbortSignal,
   ) {
@@ -519,14 +528,14 @@ export class ContentService extends Service {
   }
   private async commit(
     actor: ActorContext,
-    input: OfficeEditInput | OfficePresentationEditInput | OfficeSpreadsheetEditInput,
+    input: OfficeEditInput | OfficePresentationEditInput | OfficeSpreadsheetEditInput | OfficeHtmlEditInput | OfficePdfEditInput,
     human: { token: string; clientId: string } | undefined,
     signal?: AbortSignal,
   ): Promise<OfficeReceipt> {
     const target=this.get(input.documentId);
     ensure(target.kind!=="presentation"||this.presentationEnabled,"UNSUPPORTED_KIND","此 Office 制品未装配 PPT 编辑器。");
     ensure(target.kind!=="spreadsheet"||this.spreadsheetEnabled,"UNSUPPORTED_KIND","此制品未装配 Excel 编辑器。");
-    const value = target.kind === "presentation" ? parse(presentationEditInput,input) : target.kind === "spreadsheet" ? parse(spreadsheetEditInput,input) : parse(editInput,input);
+    const value = target.kind === "presentation" ? parse(presentationEditInput,input) : target.kind === "spreadsheet" ? parse(spreadsheetEditInput,input) : target.kind === "pdf" ? parse(pdfEditInput,input) : target.kind === "html" ? parse(htmlEditInput,input) : parse(editInput,input);
     ensure(
       Buffer.byteLength(JSON.stringify(value)) <=
         capabilities.limits.batchBytes,
@@ -546,6 +555,14 @@ export class ContentService extends Service {
         if(!human)ensure(!active,"HUMAN_EDITING","用户正在编辑，请等待用户保存。");
         if(!human)ensure(!value.operations.some(op=>op&&typeof op==="object"&&"op" in op&&op.op==="presentation.replaceDeck"),"INVALID_INPUT","AI 请使用幻灯片语义操作。");
         try {preparedDeck=await applyPresentation(preparedState.deck,value.operations);}catch(error){ensure(false,"INVALID_INPUT",error instanceof Error?error.message:"无效 PPT 操作");}
+      }
+      let preparedPdf:z.infer<typeof pdfStateSchema>|undefined;
+      if("pages" in preparedState && !existing.receipts[key]) {
+        ensure(existing.revision===value.baseRevision,"REVISION_CONFLICT","文档已更新，请重读。");
+        const active=existing.lease?.generation===this.generation && existing.lease.expiresAt>Date.now();
+        if(!human)ensure(!active,"HUMAN_EDITING","用户正在编辑，请等待用户保存。");
+        try {preparedPdf=applyPdf(preparedState,value.operations).state;await pdfBytes({...this.snapshot(existing),kind:"pdf",state:preparedPdf},signal);}catch(error){ensure(false,"INVALID_INPUT",error instanceof Error?error.message:"无效 PDF 操作");}
+        signal?.throwIfAborted();
       }
       const next = await this.table.update(value.documentId, (current) => {
         signal?.throwIfAborted();
@@ -599,7 +616,7 @@ export class ContentService extends Service {
           ensure(contentSlideIds.size<=1,"INVALID_INPUT","PPT 内容请逐页提交：每次最多新增或更新一页；删页、排序可批量完成。");
         }
         if(!human) ensure(!value.operations.some(op=>op && typeof op === "object" && "op" in op && op.op === "spreadsheet.replaceState"),"INVALID_INPUT","AI 请使用单元格及工作表语义操作。");
-        const result = "sheets" in current.state ? applySpreadsheet(current.state,value.operations) : "deck" in current.state ? (()=>{
+        const result = "pages" in current.state ? {state:preparedPdf??current.state,ids:{}} : "html" in current.state ? applyHtml(current.state,value.operations) : "sheets" in current.state ? applySpreadsheet(current.state,value.operations) : "deck" in current.state ? (()=>{
           const pptState=current.state as z.infer<typeof presentationStateSchema>;
           const deck=preparedDeck!;
           let focusSlideId:string|undefined=[...contentSlideIds][0]??pptState.focusSlideId;
