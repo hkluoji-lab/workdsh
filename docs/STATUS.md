@@ -1,3 +1,5 @@
+2026-09-14 对外发行：本批新增experts alpha.2、skills alpha.28、activity alpha.1、office alpha.4、bundle alpha.41；8个精确tgz隔离官方Web Profile安装、两次冷启动、匿名401/认证200及活动/全部模块移除后冷启动通过。准备推送并按模块公开alpha Release，不发布npm、不发送Twitter。保留TM-01和真实长任务成员切换未验收范围。
+
 ## 2026-09-14 发布源码提交与Twitter宣传准备
 
 本次发布候选版本：experts alpha.2、skills alpha.28、contracts alpha.7、activity alpha.1。完整build、115项集成、9项活动测试、check:plan 29模块/50文档通过；8个独立tgz已重打到.artifacts/release-submit-2026-09-14并带SHA256清单。本次提交包含相关专家/团队/活动与技能展示改动、文档证据和3张原始真实截图；无关scripts/desktop和lefthook保持原状态。

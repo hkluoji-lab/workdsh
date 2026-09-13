@@ -121,3 +121,7 @@ content_open/content_read 的模型快照将图片 src 投影为 `office-image:<
 ### Excel 工作副本（Preview）
 
 通过 `/office` 选择 Excel，或由模型读取 `content_capabilities` 后使用统一 `content_open/read/edit/export`。支持值、公式及多工作表；浏览器编辑时取得租约，完成后保存，下载真实 XLSX。限制为 20 张表、A1:CV1000、10,000 个非空单元格；格式、合并、图表与实时 XLSX 导入暂未接入。公式在浏览器计算，导出保留表达式并要求 Excel 重新计算。
+
+## 0.1.0-alpha.4 Web preview
+
+Full experimental Office package for Harness 0.1.5-rc.1 Web. Includes the current HTML, Word, PDF, PPT and spreadsheet implementation; feature-specific limitations remain documented. Third-party dependency references are listed in the root README and existing notices are preserved.
