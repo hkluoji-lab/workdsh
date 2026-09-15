@@ -92,6 +92,7 @@ const bindingSchema: z.ZodType<ExecutionBinding> = z.object({
   owner: resourceOwnerSchema,
   workspaceRef: bounded.optional(),
   createdFrom: bounded.optional(),
+  // Read old bindings without rewriting user data. New Team members have no such row.
   delegation: z.object({
     parentSessionId: bounded,
     parentCompositionDigest: bounded,

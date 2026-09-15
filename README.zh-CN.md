@@ -29,7 +29,7 @@ WorkDSH 把**技能、专家、团队动态和可编辑的 Office 成果**装进
 
 WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终文件放在同一个任务里。你可以边看边改，也可以让 AI 读取最新保存版本后继续，不必从旧提示词重新生成。
 
-已经使用 Harness `0.1.5-rc.1` Web Profile？从 [Releases](https://github.com/techflag/workdsh/releases) 下载需要的模块，或直接看[快速开始](#快速开始)。WorkDSH 使用官方 `dsh plugin` 生命周期，没有另造第二套运行时。
+已经使用 Harness `0.1.6-alpha.1` Web Profile？从 [Releases](https://github.com/techflag/workdsh/releases) 下载需要的模块，或直接看[快速开始](#快速开始)。WorkDSH 使用官方 `dsh plugin` 生命周期，没有另造第二套运行时。
 
 ## 它能替你交付什么
 
@@ -67,7 +67,7 @@ WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终
 
 ## 当前预览状态
 
-最新公开 Web 预览已在 **Harness `0.1.5-rc.1`、Node.js `22.23.2`、macOS** 上完成真实安装包与冷启动验证。技能管理、单个专家、Office 工作副本和协作动态均已有 alpha 模块。
+最新公开 Web 预览已在 **Harness `0.1.6-alpha.1`、Node.js `22.23.2`、macOS** 上完成真实安装包与冷启动验证。技能管理、单个专家、Office 工作副本和协作动态均已有 alpha 模块。
 
 它仍是开发预览：专家团完整真实模型流程、任意复杂 Office 文件保真和多平台验收尚未完成；默认只监听本机，也不宣称已经具备可直接暴露公网的生产级多租户能力。下文保留精确版本、校验值、能力边界和验证证据。
 
@@ -135,7 +135,7 @@ Workbench `alpha.10` 目前随展示包交付。共享 UI、contracts 和本地�
 
 ### 安装预构建插件
 
-使用 **Node.js 22 LTS 的 22.19+ 或 Node 24+**、**pnpm 10.34.5**，以及官方 **Harness CLI `0.1.5-rc.1`**。以下命令要求 `dsh` 指向该版本 CLI，而不是旧桌面应用的启动器。
+使用 **Node.js 22 LTS 的 22.19+ 或 Node 24+**、**pnpm 10.34.5**，以及官方 **Harness CLI `0.1.6-alpha.1`**。以下命令要求 `dsh` 指向该版本 CLI，而不是旧桌面应用的启动器。
 
 下载上方技能 `.tgz`，使用独立 Web Profile，将示例路径替换为已下载文件的绝对路径：
 

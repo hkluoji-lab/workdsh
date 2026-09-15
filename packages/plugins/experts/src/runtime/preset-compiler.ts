@@ -33,7 +33,7 @@ import { sha256, shortDigest } from '../domain/digest.js';
  * mutating the parsed YAML Document in place.
  */
 
-export const COMPILER_VERSION = 'workdsh-expert-compiler/0.1';
+export const COMPILER_VERSION = 'workdsh-expert-compiler/0.2-native-team';
 
 const PERSONA_MODULE = '@deepseek-ai/dsh-persona';
 const SKILL_FS_MODULE = '@deepseek-ai/dsh-skill-filesystem';
@@ -198,6 +198,15 @@ export async function verifyPackageFiles(presetDir: string, files: Readonly<Reco
   }
 }
 
+export function expertPersonaConfig(input: Pick<CompileInput, 'definition' | 'packageRoot' | 'teamMembers'>) {
+  const prefix = [compilePersonaPrefix(input.definition), ...(input.packageRoot ? [`专家作品资源目录：${input.packageRoot}。bin 下的工具已随发布版本安装；用原生 bash 按此路径调用，仍遵守沙箱和审批。`] : []), ...(input.teamMembers ? [
+    readFileSync(new URL('../../resources/skills/workdsh-expert-manager/runtime/team-lead.md', import.meta.url), 'utf8'),
+    JSON.stringify({ members: input.teamMembers, workflows: input.definition.team?.workflows }),
+  ] : [])].join('\n\n');
+  const suffix = compilePersonaSuffix(input.definition);
+  return { prefix, suffix, complete: false, includeRuntimeContext: true };
+}
+
 /**
  * Mutate the copied composition in place: set the persona row config and the
  * skill-filesystem row config, inserting them when the base somehow lacks them.
@@ -209,12 +218,8 @@ function rewriteComposition(baseText: string, input: CompileInput): string {
     throw Object.assign(new Error('基础 preset 组合不是插件行列表，无法编译专家。'), { code: 'experts/preset-broken' });
   }
 
-  const prefix = [compilePersonaPrefix(input.definition), ...(input.packageRoot ? [`专家作品资源目录：${input.packageRoot}。bin 下的工具已随发布版本安装；用原生 bash 按此路径调用，仍遵守沙箱和审批。`] : []), ...(input.teamMembers ? [
-    readFileSync(new URL('../../resources/skills/workdsh-expert-manager/runtime/team-lead.md', import.meta.url), 'utf8'),
-    JSON.stringify({ members: input.teamMembers, workflows: input.definition.team?.workflows }),
-  ] : [])].join('\n\n');
-  const suffix = compilePersonaSuffix(input.definition);
-  const personaConfig = doc.createNode({ prefix, suffix, complete: false, includeRuntimeContext: true });
+  const persona = expertPersonaConfig(input);
+  const personaConfig = doc.createNode(persona);
   const skillConfig = doc.createNode({
     includeDefaultRoots: true,
     watch: false,
@@ -239,7 +244,7 @@ function rewriteComposition(baseText: string, input: CompileInput): string {
   }
 
   if (!sawPersona) {
-    seq.items.push(doc.createNode({ id: `persona-${randomUUID().slice(0, 8)}`, name: PERSONA_MODULE, config: { prefix, suffix, complete: false, includeRuntimeContext: true } }) as unknown as YAMLMap);
+    seq.items.push(doc.createNode({ id: `persona-${randomUUID().slice(0, 8)}`, name: PERSONA_MODULE, config: persona }) as unknown as YAMLMap);
   }
   if (!sawSkillFs) {
     seq.items.push(doc.createNode({ id: `skill-filesystem-${randomUUID().slice(0, 8)}`, name: SKILL_FS_MODULE, config: { includeDefaultRoots: true, watch: false, customSkillDirs: [...input.snapshotDirs].sort() } }) as unknown as YAMLMap);

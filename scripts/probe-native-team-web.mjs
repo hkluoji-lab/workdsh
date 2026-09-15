@@ -1,0 +1,101 @@
+import assert from 'node:assert/strict';
+import { spawn, execFile } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, writeFile, realpath, copyFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { randomUUID } from 'node:crypto';
+import { chromium, expect } from '@playwright/test';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
+const artifacts = join(root, '.artifacts/dsh-0.1.6-upgrade/native-team-web');
+const home = await realpath(await mkdtemp(join(tmpdir(), 'workdsh-native-team-web-')));
+const cwd = join(home, 'workspace'), workspaceId = randomUUID();
+await mkdir(artifacts, { recursive: true }); await mkdir(cwd); await mkdir(join(home, 'storages'));
+for (const name of ['analyst', 'reviewer']) {
+  const directory = join(home, 'agents/skills', `method-${name}`); await mkdir(directory, { recursive: true });
+  await writeFile(join(directory, 'SKILL.md'), `---\nname: method-${name}\ndescription: Isolated ${name} method\n---\nMETHOD_${name.toUpperCase()}\n`);
+}
+const now = new Date().toISOString();
+await writeFile(join(home, 'storages/workspace.json'), JSON.stringify({ unit: { name: 'workspace', version: 2 }, global: { initialized: true, workspaceIds: [workspaceId], archivedSessionIds: [] }, tables: { workspaces: { [workspaceId]: { path: cwd, title: 'Native Team verification', sessionIds: [], createdAt: now, updatedAt: now } } } }));
+const env = { ...process.env, DSH_HOME: home, DSH_AGENTS_HOME: join(home, 'agents'), PATH: `${join(root, 'node_modules/.bin')}:${dirname(process.execPath)}:${process.env.PATH}` };
+const dsh = join(root, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), pnpm = join(root, 'node_modules/pnpm/bin/pnpm.cjs');
+const exec = promisify(execFile);
+const command = async (bin, args, workdir = home) => (await exec(process.execPath, [bin, ...args], { cwd: workdir, env, timeout: 90000, maxBuffer: 8 * 1024 * 1024 })).stdout;
+let server, browser, log = '', page;
+const report = { home, checks: [], browserErrors: [], notRun: ['paid model', 'user preview deployment', 'fork member browser history'] };
+const pass = name => { report.checks.push(name); console.log(`PASS ${name}`); };
+const waitFor = async fn => { const signal = AbortSignal.timeout(30000); while (!await fn()) { signal.throwIfAborted(); await new Promise(r => setTimeout(r, 100)); } };
+const stop = async () => { if (!server || server.exitCode !== null || server.signalCode !== null) return; const ended = new Promise(r => server.once('close', r)); server.kill('SIGTERM'); const timer = setTimeout(() => server.kill('SIGKILL'), 4000); await ended; clearTimeout(timer); };
+const start = async () => {
+  log = '';
+  server = spawn(process.execPath, [dsh, '--profile', 'native-team', '--host', '127.0.0.1', '--port', '0', '--no-open'], { cwd: home, env, stdio: ['ignore', 'pipe', 'pipe'] });
+  server.stdout.on('data', d => { log += d; }); server.stderr.on('data', d => { log += d; });
+  await waitFor(() => { if (server.exitCode !== null) throw Error(log); return /http:\/\/127\.0\.0\.1:\d+\/\?token=[\w-]+/.test(log); });
+  const url = log.match(/http:\/\/127\.0\.0\.1:\d+\/\?token=[\w-]+/)[0];
+  let response;
+  await waitFor(async () => { try { response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(2000) }); return true; } catch { return false; } });
+  const cookie = response.headers.getSetCookie().map(c => c.split(';')[0]).join('; '); assert.ok(cookie);
+  return { address: new URL(url).origin, cookie };
+};
+const api = async (host, input) => { const response = await fetch(`${host.address}/api/native-team-probe`, { method: 'POST', headers: { cookie: host.cookie, 'content-type': 'application/json' }, body: JSON.stringify(input), signal: AbortSignal.timeout(45000) }); const result = await response.json(); assert.ok(result.ok, JSON.stringify(result)); return result.value; };
+async function open(host, id) {
+  await page.context().clearCookies();
+  await page.context().addCookies(host.cookie.split('; ').map(pair => { const at = pair.indexOf('='); return { name: pair.slice(0, at), value: pair.slice(at + 1), url: host.address }; }));
+  await page.goto(host.address);
+  for (const name of ['Continue', 'Configure later']) await page.getByRole('button', { name, exact: true }).click({ timeout: 2000 }).catch(() => {});
+  await page.waitForFunction(() => !!window.nativeTeamProbe);
+  await page.evaluate(id => window.nativeTeamProbe.open(id), id);
+  await page.getByRole('button', { name: /Agent Team/ }).click();
+  await expect(page.getByRole('dialog')).toContainText('analyst');
+}
+try {
+  const tarballs = [];
+  for (const directory of ['packages/providers/identity-local', 'packages/plugins/audit', 'packages/plugins/access', 'packages/plugins/skills', 'packages/plugins/experts', 'packages/bundle', 'packages/plugins/activity']) {
+    const manifest = JSON.parse(await readFile(join(root, directory, 'package.json'), 'utf8'));
+    await command(pnpm, ['--filter', manifest.name, 'pack', '--pack-destination', artifacts], root);
+    tarballs.push(join(artifacts, `${manifest.name}-${manifest.version}.tgz`));
+  }
+  const fixture = join(home, 'fixture'); await mkdir(fixture);
+  await writeFile(join(fixture, 'package.json'), JSON.stringify({ name: 'workdsh-native-team-probe', version: '0.0.0', type: 'module', exports: { '.': './index.mjs', './client': './client.js' }, peerDependencies: { '@deepseek-ai/dsh-llm': '0.1.6-alpha.1' }, dsh: { bundle: { patch: './patch.yml' }, client: { platform: 'web', inject: ['@deepseek-ai/dsh-api-session-controller'] } } }));
+  await copyFile(join(root, 'tests/fixtures/native-team-web/index.mjs'), join(fixture, 'index.mjs'));
+  await writeFile(join(fixture, 'patch.yml'), '- insert:\n    - id: native-team-probe\n      name: workdsh-native-team-probe\n');
+  await writeFile(join(fixture, 'client.js'), `window.__ModuleLoader__.load({id:'workdsh-native-team-probe',factory:function(){return {inject:['sessions'],apply:function(ctx){ctx.effect(function(){window.nativeTeamProbe={open:async function(id){await ctx.sessions.refresh();ctx.sessions.open(id)}};return function(){delete window.nativeTeamProbe}})}}}});`);
+  await command(pnpm, ['pack', '--pack-destination', artifacts], fixture); tarballs.push(join(artifacts, 'workdsh-native-team-probe-0.0.0.tgz'));
+  await command(dsh, ['--profile', 'native-team', '--from-default-profile', 'web', '--dump-config']);
+  await command(dsh, ['plugin', '--profile', 'native-team', 'add', ...tarballs, '--offline']);
+  pass('seven-independent-packages-installed-via-official-cli');
+  let host = await start();
+  const created = await api(host, { action: 'create', cwd, workspaceId });
+  assert.equal(created.view.members.filter(m => m.role === 'teammate').length, 2);
+  pass('packaged-production-host-runs-native-spawn-and-member-skill-tools-through-access-bridge');
+  browser = await chromium.launch({ headless: true }); page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  page.on('pageerror', error => report.browserErrors.push(error.message));
+  await open(host, created.sessionId);
+  const panel = page.getByRole('dialog');
+  await expect(panel).toContainText('reviewer'); await expect(panel).toContainText('核对测试数据'); await expect(panel).toContainText('复核测试结论');
+  await expect(page.locator('.wd-activity')).toHaveCount(0);
+  await page.screenshot({ path: join(artifacts, 'official-team.png'), fullPage: true });
+  pass('official-roster-and-task-board-render-without-legacy-team-bar');
+  await panel.getByRole('button', { name: /^(New task|新建任务)$/ }).click();
+  await panel.getByRole('textbox', { name: /^(Task subject|任务标题)$/ }).fill('浏览器创建的官方任务');
+  await panel.getByRole('textbox', { name: /^(Task description|任务描述)$/ }).fill('真实 Remote 写入，随后冷重启核对。');
+  await panel.getByRole('button', { name: /^(Save|保存)$/ }).click();
+  await expect(panel).toContainText('浏览器创建的官方任务');
+  assert.ok((await api(host, { action: 'view', sessionId: created.sessionId })).tasks.some(t => t.subject === '浏览器创建的官方任务'));
+  pass('official-web-task-mutation-reaches-native-team-service');
+  await panel.getByRole('button').filter({ hasText: 'analyst' }).click();
+  await expect(page.getByText('analyst：官方 Team 隔离验证完成。', { exact: true })).toBeVisible();
+  await page.screenshot({ path: join(artifacts, 'official-member.png'), fullPage: true });
+  pass('official-member-navigation-opens-real-session-history');
+  await stop(); host = await start();
+  const resumed = await api(host, { action: 'view', sessionId: created.sessionId });
+  assert.deepEqual(resumed.members.map(m => m.id), created.view.members.map(m => m.id));
+  assert.ok(resumed.tasks.some(t => t.subject === '浏览器创建的官方任务'));
+  await open(host, created.sessionId); await expect(page.getByRole('dialog')).toContainText('浏览器创建的官方任务');
+  await page.screenshot({ path: join(artifacts, 'official-team-cold.png'), fullPage: true });
+  pass('cold-web-restart-keeps-member-identities-and-ui-created-task');
+  assert.deepEqual(report.browserErrors, []); pass('no-browser-page-errors'); report.status = 'passed';
+} catch (error) { report.status = 'failed'; report.error = error.stack; console.error(error); process.exitCode = 1; if (page) await page.screenshot({ path: join(artifacts, 'failure.png'), fullPage: true }).catch(() => {}); }
+finally { await browser?.close(); await stop(); await writeFile(join(artifacts, 'host.log'), log.replace(/token=[^\s]+/g, 'token=[redacted]')); await writeFile(join(artifacts, 'result.json'), JSON.stringify(report, null, 2)); }

@@ -586,12 +586,18 @@ export class SkillManager extends Service implements SkillManagementService {
   }
 
   private async fromDefinition(definition: SkillDefinition): Promise<ManagedSkillDetail | undefined> {
-    if (!definition.path || !this.rootFor(definition.path)) return {
+    const readonlyDetail: ManagedSkillDetail = {
       name: definition.name, description: definition.description, whenToUse: definition.whenToUse,
       modelInvocable: definition.invocation.modelInvocable, state: 'readonly', manageable: false, resources: [],
     };
+    if (!definition.path) return readonlyDetail;
     const active = await this.activeEntry(definition.name);
-    if (!active) return undefined;
+    if (!active) return readonlyDetail;
+    // Harness exposes a canonical instruction path; configured roots may use
+    // an OS alias (e.g. /var -> /private/var). Compare actual files only after
+    // activeEntry has enforced the managed-root and symlink checks. A winning
+    // external skill with the same name must never select the managed copy.
+    if (await realpath(definition.path) !== await realpath(active.file)) return readonlyDetail;
     const document = await readFile(active.file, 'utf8');
     const directory = dirname(active.file);
     return {

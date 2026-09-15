@@ -32,7 +32,7 @@ when-to-use: 用户要求创建或修改专家、专家团，将材料或个人�
 
 ## 与运行分工
 
-本 Skill 制作可复用作品，不执行用户未来的业务任务。团队的成员修订、技能快照由 Host 固定；主理人自行处理简单问题；需要单个专业成员时调用 workdsh_expert_team_ask 并接收完整成果。多成员任务从正文 Workflow 选择流程，使用 team_open 形成阶段与依赖；已有结构化场景可用 team_start。没有依赖的阶段可并行，通过 delegate 回传完整成果；需要独立评审的阶段才设置 reviewer，通过 review/status/deliver 收口。不要移植 WorkBuddy 的 TeamCreate、Agent、SendMessage 工具名，也不要生成多个角色的假对话充当团队运行。
+本 Skill 制作可复用作品，不执行用户未来的业务任务。团队成员、技能和协作场景保存在作品中；运行使用 Harness 官方 spawn_teammate、send_message、list_agents、wait_agent、interrupt_agent 与 team_task_*。成员名使用作品中的 key，已有成员通过 send_message 继续。协作场景用于指导专业分工和评审，不能声称有自有调度器自动签收。不要移植 WorkBuddy 的 TeamCreate、Agent、SendMessage 工具名，也不要用多个角色的假对话冒充真实团队。
 
 
 ## 资料转换与批量制作

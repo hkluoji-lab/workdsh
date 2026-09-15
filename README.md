@@ -29,7 +29,7 @@ Attach your material and ask in plain language:
 
 WorkDSH can keep the source material, model conversation, live result, revisions, and final file together. You can inspect the work, edit it yourself, then ask the AI to continue from the latest saved version.
 
-Already using the Harness `0.1.5-rc.1` Web Profile? Install the modules you need from [Releases](https://github.com/techflag/workdsh/releases), or jump to the [quick start](#quick-start). WorkDSH uses the official `dsh plugin` lifecycle rather than a second runtime.
+Already using the Harness `0.1.6-alpha.1` Web Profile? Install the modules you need from [Releases](https://github.com/techflag/workdsh/releases), or jump to the [quick start](#quick-start). WorkDSH uses the official `dsh plugin` lifecycle rather than a second runtime.
 
 ## What it gives you
 
@@ -67,7 +67,7 @@ Already using the Harness `0.1.5-rc.1` Web Profile? Install the modules you need
 
 ## Current preview status
 
-The latest public Web preview was verified on **Harness `0.1.5-rc.1`, Node.js `22.23.2`, and macOS** through packaged installation and cold-start checks. Skills, individual experts, Office working copies, and collaboration activity are available as alpha modules.
+The latest public Web preview was verified on **Harness `0.1.6-alpha.1`, Node.js `22.23.2`, and macOS** through packaged installation and cold-start checks. Skills, individual experts, Office working copies, and collaboration activity are available as alpha modules.
 
 This remains a development preview. Real-model acceptance for complete expert-team workflows, arbitrary Office fidelity, and multi-platform behavior is not finished. The default listener is local; this repository does not claim a production-ready internet-facing multi-tenant deployment. Exact versions, checksums, limits, and evidence are documented below.
 
@@ -135,7 +135,7 @@ Workbench `alpha.10` is currently delivered within the presentation bundle. Shar
 
 ### Install a prebuilt plugin
 
-Use **Node.js 22.19+ on the 22 LTS line, or Node 24+**, **pnpm 10.34.5**, and the official **Harness CLI `0.1.5-rc.1`**. These commands assume `dsh` resolves to that CLI, rather than an older desktop launcher.
+Use **Node.js 22.19+ on the 22 LTS line, or Node 24+**, **pnpm 10.34.5**, and the official **Harness CLI `0.1.6-alpha.1`**. These commands assume `dsh` resolves to that CLI, rather than an older desktop launcher.
 
 Download the Skill `.tgz` above. Create a dedicated Web Profile and replace the example path with your downloaded file's absolute path:
 
@@ -300,7 +300,7 @@ The current build inventory additionally includes the following package versions
 
 ## 2026-09-14 Alpha Web release / 最新预览发行
 
-本批通过8个精确安装包的隔离官方Web Profile安装、两次冷启动、匿名401/认证200、活动插件移除及全部模块移除后冷启动。完整构建、115项集成测试、9项活动测试通过。验证环境：Harness 0.1.5-rc.1，Node 22.23.2，macOS。专家团TM-01、真实长任务状态切换及多平台整体验收尚未完成。
+本批通过8个精确安装包的隔离官方Web Profile安装、两次冷启动、匿名401/认证200、活动插件移除及全部模块移除后冷启动。完整构建、115项集成测试、9项活动测试通过。验证环境：Harness 0.1.6-alpha.1，Node 22.23.2，macOS。专家团TM-01、真实长任务状态切换及多平台整体验收尚未完成。
 
 | 模块 | 安装包版本 | 下载 |
 | --- | --- | --- |

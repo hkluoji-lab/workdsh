@@ -77,7 +77,7 @@ corepack pnpm preview:install
 
 ## 安装、卸载与内容保留
 
-发布物是独立 `.tgz`：Host入口、Client模块、`cordis.patch.yml`、编辑器资源、版本说明和许可说明都随包交付。安装使用官方 `dsh plugin --profile <名称> add <Office.tgz>`，并显式提供本地身份、授权、审计基础插件及匹配 Harness `0.1.5-rc.1` Web Profile。已有 WorkDSH Profile 可复用这些治理依赖，不需要装专家、技能管理或工作台插件。Word-only 预览制品见 [GitHub prerelease](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1)；不将其宣称为完整 Office 正式版。
+发布物是独立 `.tgz`：Host入口、Client模块、`cordis.patch.yml`、编辑器资源、版本说明和许可说明都随包交付。安装使用官方 `dsh plugin --profile <名称> add <Office.tgz>`，并显式提供本地身份、授权、审计基础插件及匹配 Harness `0.1.6-alpha.1` Web Profile。已有 WorkDSH Profile 可复用这些治理依赖，不需要装专家、技能管理或工作台插件。Word-only 预览制品见 [GitHub prerelease](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1)；不将其宣称为完整 Office 正式版。
 
 通过官方 `dsh plugin --profile <名称> remove workdsh-plugin-office` 移除安装，按官方Profile流程重新启动/加载配置。Office菜单、文档引用来源、六个工具、写作guide、预览与实时页注册一起撤销；保留用户已保存内容和原文件。已存在输入标签属于草稿，不能替用户删除，插件缺失时引用无法解析、发送失败；删除标签后可正常输入。重装对应制品后入口恢复，同一Profile中已保存记录和修订保留；未承诺自动恢复卸载时未保存的浏览器缓冲。
 
@@ -126,7 +126,7 @@ content_open/content_read 的模型快照将图片 src 投影为 `office-image:<
 
 ## 0.1.0-alpha.4 Web preview
 
-Full experimental Office package for Harness 0.1.5-rc.1 Web. Includes the current HTML, Word, PDF, PPT and spreadsheet implementation; feature-specific limitations remain documented. Third-party dependency references are listed in the root README and existing notices are preserved.
+Full experimental Office package for Harness 0.1.6-alpha.1 Web. Includes the current HTML, Word, PDF, PPT and spreadsheet implementation; feature-specific limitations remain documented. Third-party dependency references are listed in the root README and existing notices are preserved.
 
 ### PPT 风格预览
 

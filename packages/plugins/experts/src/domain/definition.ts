@@ -9,7 +9,7 @@ import type {
 } from 'workdsh-contracts';
 import { EXPERT_LIMITS } from './values.js';
 import { byteLength, codePointLength, digestOf } from './digest.js';
-import { createSop } from './team-sop.js';
+import { validateTeamWorkflow } from './team-workflow.js';
 
 /**
  * Definition validation, normalization and persona-prefix compilation.
@@ -192,7 +192,7 @@ export function validateDefinition(candidate: unknown): readonly DomainIssue[] {
   if (definition.team) {
     const { members, workflows } = definition.team;
     const memberKeys = new Set(members.map(member => member.key));
-    if (members.length < 2 || members.length > 8 || memberKeys.size !== members.length) issues.push({ code: 'team/members', message: '专家团需要 2 至 8 位不同成员，另有主理人。' });
+    if (members.length < 2 || members.length > 16 || memberKeys.size !== members.length) issues.push({ code: 'team/members', message: '专家团需要 2 至 16 位不同成员，另有主理人。' });
     members.forEach((member, i) => {
       if (!/^[a-z][a-z0-9-]{0,39}$/.test(member.key) || member.key === 'lead') issues.push({ code: 'team/member-key', path: `team.members.${i}.key`, message: '成员标识须为小写英文和连字符，lead 保留给主理人。' });
       issues.push(...validateDefinition(member.definition).map(issue => ({ ...issue, path: `team.members.${i}.definition.${issue.path ?? ''}` })));
@@ -201,7 +201,7 @@ export function validateDefinition(candidate: unknown): readonly DomainIssue[] {
     workflows.forEach((workflow, i) => {
       for (const [field, value] of Object.entries(workflow)) if (typeof value === 'string' && (!value.trim() || hasTemplateBraces(value) || value.length > 4000)) issues.push({ code: 'team/workflow-text', path: `team.workflows.${i}.${field}`, message: '场景文字不能为空、过长或包含模板插值。' });
       if (workflow.stages.length) {
-        try { createSop({ stages: workflow.stages.map(stage => ({ ...stage, dependsOn: [...stage.dependsOn], maxAttempts: 2 })), maxTotalAttempts: Math.min(20, workflow.stages.length * 2) }); }
+        try { validateTeamWorkflow(workflow.stages); }
         catch (error) { issues.push({ code: 'team/workflow-plan', path: `team.workflows.${i}.stages`, message: String(error) }); }
         for (const stage of workflow.stages) if (!memberKeys.has(stage.worker) || (stage.reviewer && !memberKeys.has(stage.reviewer))) issues.push({ code: 'team/unknown-member', message: `场景 ${workflow.title} 引用了不存在的成员。` });
       }

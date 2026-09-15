@@ -1,26 +1,63 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type {} from '@deepseek-ai/dsh-agent';
+import type { Agent } from '@deepseek-ai/dsh-agent';
+import type {} from '@deepseek-ai/dsh-experimental-agent-team';
+import * as Persona from '@deepseek-ai/dsh-persona';
+import * as SkillFiles from '@deepseek-ai/dsh-skill-filesystem';
+import { writableRoot } from '@deepseek-ai/dsh-agent-presets';
+import { join } from 'node:path';
+import { parse } from 'yaml';
 import { ExpertsError } from '../domain/values.js';
+import { expertPersonaConfig } from './preset-compiler.js';
 
-/** Native loop admission, including resumed agents; never a parallel executor. */
+/** Asset admission and role composition only. No child driver, mailbox or Team state. */
 export function registerExpertExecutionGuard(ctx: Context): void {
-  ctx.on('agent/pre-step', async ({ agent, signal }, next) => {
+  const installed = new WeakMap<Agent, string>();
+
+  async function prepare(agent: Agent, signal: AbortSignal | undefined, creating: boolean): Promise<void> {
+    const membership = ctx.agentTeams.tryMembership(agent);
+    const root = membership?.root ?? agent;
     const header = agent.session.header;
-    const actor = await ctx.workdshIdentity.resolve({ sessionId: String(agent.session.id) }, signal);
+    const actor = await ctx.workdshIdentity.resolve({ sessionId: String(root.id) }, signal);
+    let role;
     try {
-      const binding = await ctx.workdshExperts.verifyBinding(actor, String(agent.session.id), signal);
-      if (binding.presetRevisionRef !== header.agentPreset) {
-        throw new ExpertsError('experts/conflict', '任务当前 preset 与固定专家修订不一致。');
-      }
-      if (binding.delegation && (header.parentSession !== binding.delegation.parentSessionId
-          || header.delegationDepth !== 1 || header.origin !== 'subagent'
-          || header.cwd !== binding.workspaceRef)) {
-        throw new ExpertsError('experts/conflict', '原生子任务的父任务、深度或工作区与预留不一致。');
-      }
+      role = await ctx.workdshExperts.resolveNativeRole(actor, String(root.id), membership?.role === 'teammate' ? membership.name : undefined, signal);
     } catch (error) {
-      if (!(error instanceof ExpertsError && error.code === 'experts/not-found' && error.details?.reason === 'unbound' && !header.agentPreset?.startsWith('wd-exp-'))) throw error;
-      // Ordinary unbound tasks stay native. An unbound expert fork never falls back.
+      const unbound = error instanceof ExpertsError && error.code === 'experts/not-found' && error.details?.reason === 'unbound';
+      // The trusted create endpoint stores a Lead asset binding after Agent creation.
+      // Its first pre-step must still verify the binding before reaching the model.
+      if (unbound && (!header.agentPreset?.startsWith('wd-exp-') || creating && root === agent && !header.parentSession)) return;
+      throw error;
     }
+    if (role.binding.presetRevisionRef !== header.agentPreset) throw new ExpertsError('experts/conflict', '原生任务 preset 与固定专家组合不一致。');
+    if (membership?.role === 'teammate') {
+      if (header.parentSession !== root.id || header.cwd !== root.session.header.cwd) throw new ExpertsError('experts/conflict', '官方成员与主任务的父关系或工作区不一致。');
+      const childActor = await ctx.workdshIdentity.resolve({ sessionId: String(agent.id) }, signal);
+      if (childActor.principalId !== actor.principalId || childActor.organizationId !== actor.organizationId) throw new ExpertsError('experts/forbidden', '成员和主任务不属于同一授权主体。');
+    }
+    const { revision } = role;
+    if (root === agent && !revision.definition.team) return;
+    if (installed.get(agent) === revision.compositionDigest) return;
+    signal?.throwIfAborted();
+    // Read only our already verified immutable composition, not arbitrary plugins.
+    const rows = parse(await ctx.agentPresets.read(revision.presetRevisionRef)) as { name?: string; config?: SkillFiles.Config }[];
+    const skills = rows.find(row => row.name === '@deepseek-ai/dsh-skill-filesystem')?.config;
+    if (!skills) throw new ExpertsError('experts/dependency-missing', '固定专家组合缺少技能目录。');
+    const definition = revision.definition;
+    const packageRoot = definition.packageDocuments ? join(writableRoot(ctx.agentPresets.roots, revision.presetRevisionRef), revision.presetRevisionRef, 'expert-package') : undefined;
+    // The official Agent scope owns these providers and their disposal.
+    const persona = agent.ctx.plugin(Persona, expertPersonaConfig({ definition, packageRoot, teamMembers: revision.teamMembers }));
+    ctx.effect(() => () => persona.dispose());
+    await persona;
+    const skillFiles = agent.ctx.plugin(SkillFiles, skills);
+    ctx.effect(() => () => skillFiles.dispose());
+    await skillFiles;
+    signal?.throwIfAborted();
+    installed.set(agent, revision.compositionDigest);
+  }
+
+  ctx.on('agent/created', async ({ agent, signal }) => { await prepare(agent, signal, true); });
+  ctx.on('agent/pre-step', async ({ agent, signal }, next) => {
+    await prepare(agent, signal, false);
     return next();
   });
 }

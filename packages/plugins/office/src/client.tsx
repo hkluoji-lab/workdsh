@@ -109,6 +109,7 @@ export function apply(ctx: Context): void {
       title: () => "文档 · 实时编辑",
       guide: [
         {
+          id: "workdsh-office-live",
           order: 45,
           title: () => "文档",
           description: () => "查看并编辑 AI 正在编写的工作副本",

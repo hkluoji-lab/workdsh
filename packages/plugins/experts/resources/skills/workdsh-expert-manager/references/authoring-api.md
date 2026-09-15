@@ -30,10 +30,4 @@ export_file(expert_id,revision_id?,file_path) 通过原生 bash 写真实完整�
 
 ## 团队运行映射
 
-单成员问题用 workdsh_expert_team_ask(member,instructions)，member 是包声明的业务标识。运行真实固定版本子 Session，返回完整输出；不能调度主理人或团队外角色。
-
-多成员从完整 Agent MD 的 Workflow 选择场景，team_open 可省略 members，Host 从当前发布作品解析固定成员。阶段含 id、worker、depends_on、max_attempts，instructions 可保存阶段要求，reviewer 可选；原版正文无需改写为只有一种结构化流程。无依赖阶段可并行，后序收到主理人中转的完整前序输出和文件版本；配置评审才要求独立签收。已有元数据 workflows 的场景仍用 team_start。取消保留已消耗次数，重复调用保持绑定，重启不自动执行。
-
-## 修改纪律与验收
-
-保留未要求改动的文件、包 name、agentName 与稳定角色标识。包创作更新完整文件，避免兼容摘要与 MD 两份真相。资源是内容，不是授权。原版 TeamCreate/Agent/SendMessage 映射上述工具，禁止伪造成员对话。准确区分已保存、已发布、实际运行与已输出文件；能力覆盖以运行证据为准，模型专业质量需真实试用。
+运行统一使用官方 Agent Teams：以成员 key 为 name 调用 spawn_teammate，使用 send_message 继续已有成员，list_agents/wait_agent 查询和等待，interrupt_agent 停止当前轮次。用 team_task_create/list/get/update 记录工作与依赖。场景正文保留专业流程、交付要求和独立评审要求；当前没有 WorkDSH 自有 SOP 执行器、尝试计数和自动签收机制。完整运行指导见 ../runtime/team-lead.md。

@@ -1,3 +1,59 @@
+## 2026-09-15：官方 Team 替换已实现并完成隔离验证
+
+已移除自建 TeamRunsManager、SOP 运行状态机/团队运行表、workdsh_expert_team_* 工具和 workdsh-expert 委派 provider。正式插件通过 patch 装配 0.1.6-alpha.1 官方 Team 服务、九项工具和官方 Web Client；构建先清理 dist，候选 tgz 无旧执行器。专家作品、成员与技能固定修订、授权和历史保留为资产；公开 agent/created / pre-step 将对应 Persona/Skill Filesystem 挂在官方成员作用域，不创建自有子任务运行表。旧委派记录保留但不续跑旧调度器，需重新召唤官方 Team 任务。
+
+生产插件真实 Loader/AgentLoop/Team 测试 9/9，独立进程恢复子检查 2/2：两成员并行、各自角色/实际技能读取、fresh/fork、未知成员与跨主体/组织拒绝、官方任务依赖与 CAS、模型调用 spawn_teammate、中断及原成员 ID 冷恢复均通过。七个独立包通过官方 CLI 安装到仓库外 Web Profile，7/7 检查通过：真实生产 Host 的 spawn/skill 工具经过 Access 桥、官方成员/任务面板、浏览器实际新增任务、打开成员会话、冷重启保持成员与任务；无 pageerror，旧团队活动条不再显示。仅模型 I/O 使用确定性夹具，未使用付费模型。
+
+回归：根 build、typecheck、integration 101/101、activity 9/9、frozen install、check:versions（483 个 DSH 锁定条目均为 0.1.6-alpha.1，Cordis 仅 4.0.2）、check:plan（29 模块/50 文档）通过。旧执行器专属测试随删除实现退役，因此 integration 数量由前一阶段 124 调整为 101，并以真实官方运行与独立 Web 探针补充。git diff --check 通过。
+
+证据：`.artifacts/dsh-0.1.6-upgrade/native-expert-team/result.json`、`cold-result.json`、`native-team-web/result.json`；截图为 `native-team-web/official-team.png`、`official-member.png`、`official-team-cold.png`；命令日志同目录，最终候选包在 `final-pack/`。迁移决策和边界见专家插件 README、ADR-0033。
+
+独立限制：纯官方默认及角色组合均复现 fork 的 sessionQuery 读取错误 `seeded session constructor seed must equal its inherited prefix`；公共持久化读取和 fork 队友继续执行已通过，不能据此承诺分叉 Web 历史正常。默认 fresh 成员的完整 Web 链路已通过。后续处理官方分叉查询、真实模型专业成果与升级计划其余官方新能力；不恢复旧执行器，不把上述检查写成 D04/D11 或整个升级全部验收。
+
+未执行：用户 preview 部署/重启、用户旧数据迁移演练、付费模型业务、完整热卸载、企业远程多人、提交/推送/发布。用户运行环境保持原状。
+
+## 2026-09-15：官方 Team 替换自有专家团（用户明确授权）
+
+用户要求直接废弃自有专家团执行实现。当前专项改为：移除 TeamRunsManager、SOP 运行状态机、workdsh_expert_team_* 工具和 workdsh-expert one-shot provider；以 0.1.6-alpha.1 官方 Agent Teams、九项工具及官方 Web 团队面板实现。角色/技能/WorkBuddy 导入和已发布专家内容保留为资产配置，协作场景作为工作指导，运行事实仅由官方 Session 日志和 Team 拥有。旧运行数据保留原地，不再续跑旧调度器；新任务使用官方 Team。公开查询缺陷单独实测和修复，不再作为保留旧执行器的理由。
+
+复用：发布包 @deepseek-ai/dsh-experimental-agent-team、dsh-experimental-tool-agent-team、dsh-experimental-client-ui-agent-team；公开 agent/created、agentTeams.tryMembership 和 Agent 局部 persona/skill-filesystem 组合。已有 V1 证据包含并行、角色/技能隔离、fresh/fork、未知成员拒绝、中断和冷恢复；本次必须补生产插件测试，不能用独立探针替代。保持原有资产授权，禁止复制上游实现或增加团队运行表。未验收完整真实模型业务，不对其宣称完成。
+
+## 2026-09-15 — 专家实现缩减与官方 Team 局部组合实测
+
+用户确认优先用官方能力替换专家实现。更新专项计划与 PLAN：不预设保留整套 ExpertsManager/preset 编译器/协作服务，保留用户作品与历史，按必要差异评估导入、授权和专业验收。新增 [官方专家组合探针](../scripts/probe-official-expert-composition.mjs) 与 `probe:experts:official` 命令；使用精确 0.1.6-alpha.1 的官方发布包，不加载 WorkDSH 专家服务或旧执行 Guard。
+
+真实 Loader/AgentLoop/Team/Skill/persistence、确定性模型的实测表明：默认队友无需旧 binding 可运行；通过公开 `agent/created`、`tryMembership` 和 `agent.ctx.plugin()` 的 Persona/Skill Filesystem 局部挂载，两名原生队友同时 running，首请求角色和实际读取技能分别正确，父级/兄弟目录未污染。fresh/fork、初始化失败不发请求、官方中断、关闭 runtime 和独立进程通过消息唤醒原队友均已跑到；冷恢复包含原 fresh 与 fork Session ID 的实际新回合。`agent.ctx.loader.create()` 的 Persona 重复注册、把 Context 当 Skill scope 及错误恢复参数均属于探针调用问题，已按公开契约修正后复测。
+
+主流程 9 项、冷进程 3 项断言通过；但官方 `sessionQuery.readSession` 的分叉历史读取在默认组合、局部专家组合和冷恢复中仍报 inherited prefix 错误，总结果明确 partial、退出 2。公开 persistence 读取可用，探针据此继续其他断言，没有把查询失败计为通过。完整 Web Profile 与进一步公开查询方案尚未验证。旧专家 baseline 也已在 0.1.6 复跑，确认旧 binding Guard 阻止默认子代理，不能据此说官方不能运行专家。详见[证据](evidence/dsh-0.1.6-official-integration.md)及 .artifacts/dsh-0.1.6-upgrade/official-expert-composition/。
+
+本轮修改的是探针、命令与迁移计划，生产专家实现尚未切换，用户 preview 未部署重启。下一步验证用户作品/固定修订到官方局部配置的关联、官方工具 Guard 与专业签收，继续定位分叉历史查询与 U16-2 回归。真实模型、用户数据迁移、资源权限、热卸载、Web UI 与整体升级验收未执行；不删除仍在使用的旧路径，不标记 D04/TM-01 完成。
+
+## 2026-09-15 — 升级范围补齐官方新能力接入
+
+按用户要求，DSH 0.1.6 升级交付同时包含现有功能回归与官方新能力落地。更新[专项计划](DSH-0.1.6-UPGRADE-PLAN.md)及 PLAN，列出 U16-F01—F12：会话工作区、官方 Team、浏览器操作、电脑操作、MCP 资源、SSH 工作区、Headless、自动审核、长任务/PTC、图片与 Messages、可见过程与重连、插件配置恢复。每项均明确官方所有者、WorkDSH 接入责任、实际任务和失败路径验收；V4 最小接点验证不再等同于产品交付。外部环境未就绪保持待办，不静默删功能；保留用户配置和权限。
+
+核对已发布 0.1.6-alpha.1 的 web-app/base patch、MCP Resources 与 agent-presets README：官方已声明终端、归档、预览、资源工具与公开组合查询。WorkDSH 安装脚本不会重新初始化已有 Profile，旧专家保存的 preset 也须单独迁移验证。四个公开来源的版本/声明及摘要回执见 .artifacts/dsh-0.1.6-upgrade/official-feature-inventory.json，新增[证据记录](evidence/dsh-0.1.6-official-integration.md)。这里只确认公开声明和工程组合方式，不代表最终配置已启用或功能运行通过。
+
+check:plan 通过（29 模块/50 文档）；12 个独立工作项、三份计划/证据文档的本地引用与空白检查、git diff --check 通过。本轮只更新计划与证据，未执行新增功能运行探针、类型检查、构建、模型任务、部署、重启或发布。F01—F12 待产品验收，下一步继续 U16-2 旧数据/协议/长任务回归及必要适配，再按计划批次推进 U16-3。上一轮隔离升级回归结果保持，D04/TM-01 仍未整体验收。
+
+## 2026-09-15 — 升级顺序调整：先运行再修复适配
+
+按用户最新方向，先在隔离环境升级 DSH 0.1.6-alpha.1，沿用已有业务组合执行类型、构建、安装启动和功能回归，依据真实失败修复。官方 Team 迁移与新增能力验证在升级后的环境继续，不将完整迁移设计作为升级底座前置；原有业务验收与权限不放宽。用户正在使用的 preview 不安装、不重启。
+
+已建立 codex/dsh-0.1.6-upgrade 分支并保存原有差异。frozen-lockfile 安装、475 项版本锁定、全工程类型和构建通过。首轮 integration 112/123，11 项失败定位到新版官方 Skill path 已规范为真实路径，/var 与 /private/var 别名被原字符串比较误判为不可管理，影响技能编辑/启停/卸载及专家发布冻结。修正 skills/src/services/manager.ts：受管目录与 symlink 检查后对比真实文件身份；同名外部技能仍只读，不能误操作本地副本。新增实际 provider 的别名/重名来源回归，修复后 integration 124/124、activity 9/9、技能 build/typecheck 通过。
+
+七层官方 Web Profile 工程外安装、Host 鉴权、专家原生 Session 固定绑定、DOCX/PPTX/XLSX 原生 Tab 共 6 项通过、浏览器错误 0；现有 --team 确定性协作 10/10、14 个原生子 Session 与实际文件验收通过；修复后的技能独立包浏览器与冷移除/重装 8 项通过。两个隔离 Profile 的 agent/session/skill/skill-filesystem/client-connection 均解析为 0.1.6-alpha.1。证据见 [隔离升级与适配记录](evidence/dsh-0.1.6-official-integration.md)，原始日志、机器汇总及截图位于 .artifacts/dsh-0.1.6-upgrade/20260915-154820/。规划检查 29 模块/50 文档及 git diff --check 通过。
+
+下一步继续 U16-2 的真实旧数据/协议/长任务回归，再进入 U16-3 官方新增能力与 Team 替换。当前通过的是原有协作在新底座运行，V1—V3 官方 Team 替换、V4 全部新能力、付费模型、实际用户数据升级/回退和长时间资源检查未执行。用户 preview 未部署重启，未提交/推送/公开发布；D04/TM-01 保持未整体验收。
+
+## 2026-09-15 — DSH 0.1.6 升级计划复审与验证前置
+
+新增 [DSH 0.1.6 升级计划](DSH-0.1.6-UPGRADE-PLAN.md)，以用户最新要求覆盖早期对话方案：不等 RC、公开预览版、官方运行与自有业务展示；“未找到官方接点”只表示待验证，不直接认定不可实现或删减功能。首要工作是隔离复跑旧 A/B 专家绑定失败场景，并验证默认组合、官方配置及公开 Provider/生命周期/Guard 接点，随后验证技能快照、SOP专业验收、冷恢复和实际 UI。新路径未通过前不删除既有执行适配或业务校验。
+
+计划同时补齐旧 Profile/preset 兼容修订、数据备份与回退演练、Messages/Files API/事件上报配置、不同运行面实验能力的实际条件，以及公开制品回读验证。上轮试升级变更仍未提交；此前版本检查、类型检查、构建通过不代表 0.1.6 功能验收。D04/TM-01 完成状态不变；下一执行项 U16-0 → U16-V1。
+
+上述计划复审已通过 check:plan（29 模块、50 文档）与 git diff --check；当时未执行新运行探针、真实模型、安装包验收、部署、重启、提交与发布。
+
 ## 2026-09-15 — README 特色复核与 Office 路线归位
 
 重新检查中英文 README 的产品表达：首屏明确 WorkDSH 是面向 DeepSeek Harness 的独立开源 WorkBuddy 式工作台，并说明并非 WorkBuddy 官方开源版本。特色表突出任务—可见过程—人工介入—可编辑成果闭环、真实文件交付、人与 AI 实时共编、带资源和固定修订的专业能力、可见的专家团队过程、Harness 原生工作流和独立插件交付，同时保留 TM-01 未整体验收等边界。下载区补齐当前五个公开模块，修正 Office alpha.3/alpha.4 和 Word-only 旧描述，英文入口移除重复中文段落；顶部导航同时提供 GitHub Releases 与 `https://gitee.com/techflag/workdsh` 国内镜像。删除开发文档区中孤立且已经过时的“PPT 实时制作 → 其他六类”说明，在 README 路线表补充 Office 0.1，并由 `docs/ROADMAP.md` 统一记录当前公开版本、PPT 开发重点、Word 扩展暂停和真实文件/独立插件生命周期验收要求。`docs/design/office/NEXT-STAGE.md` 仅作为历史阶段与实现记录。此次只修改文档，不改变运行能力、安装包或验收状态。

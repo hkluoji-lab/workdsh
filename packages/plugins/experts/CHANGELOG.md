@@ -1,5 +1,13 @@
 ## 0.1.0-alpha.3 — 2026-09-15
 
+## Unreleased — DSH 0.1.6 official Team migration
+
+- Replace the custom team executor, SOP runtime, delegation tools and provider with official Agent Teams, its nine tools and its Web panel.
+- Compose published member personas and pinned skills through official Agent-scoped plugins; preserve asset authorization, old revisions and history.
+- Remove the duplicate team activity bar and clean obsolete runtime output before packing.
+- Add real Loader/AgentLoop cold-resume probes and independent Web Profile verification. Paid-model professional acceptance remains separate.
+
+
 - 专家管理内置技能迁入统一 `resources/skills/workdsh-expert-manager` 目录。
 - 调整创建菜单、草稿审阅和详情折叠区，并更新隔离安装与冷启动探针。
 - 统一专家弹框外观；TM-01 真实模型整体验收仍未完成。

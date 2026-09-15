@@ -208,7 +208,7 @@ export interface ExecutionBinding {
   readonly owner: ResourceOwner;
   readonly workspaceRef?: string;
   readonly createdFrom?: string;
-  /** Host-only one-shot admission; native Session logs own execution status. */
+  /** Legacy record retained for history detection; the retired executor cannot resume it. */
   readonly delegation?: {
     readonly parentSessionId: string;
     readonly parentCompositionDigest: string;
@@ -426,10 +426,6 @@ export interface ExpertsService {
   setPreference(actor: ActorContext, expertId: string, pinned: boolean, expectedRevision?: string, signal?: AbortSignal): Promise<ExpertPreference>;
   prepareExecution(actor: ActorContext, expertId: string, revisionId: string | undefined, workspaceRef: string | undefined, modelSelection: ModelSelectionRequest | undefined, draftText: string | undefined, signal?: AbortSignal, workspaceId?: string): Promise<ExecutionPlan>;
   createExecution(actor: ActorContext, executionPlanId: string, context: MutationContext, signal?: AbortSignal): Promise<ExecutionCreation>;
-  /** Reserve one direct expert child. No Agent is started. Not a model/Remote endpoint. */
-  reserveDelegation(actor: ActorContext, parentSessionId: string, target: ExpertRevisionRef, context: MutationContext, signal?: AbortSignal): Promise<ExecutionBinding>;
-  /** Consume one reservation before native creation. Never replays a model invocation. */
-  claimDelegation(actor: ActorContext, sessionId: string, parentSessionId: string, signal?: AbortSignal): Promise<ExecutionBinding>;
   consumeHandoff(actor: ActorContext, handoffId: string, expectedDraftVersion: string, signal?: AbortSignal): Promise<DraftHandoff>;
   prepareHandoff(actor: ActorContext, sourceSessionId: string, targetExpertId: string, sourceEventRef: string | undefined, selectedAssetRefs: readonly string[], signal?: AbortSignal): Promise<HandoffPlan>;
   createHandoff(actor: ActorContext, handoffPlanId: string, reviewedSummary: string, context: MutationContext, signal?: AbortSignal): Promise<ExecutionCreation>;
@@ -446,6 +442,5 @@ export type ExpertAction =
   | 'experts.list' | 'experts.get' | 'experts.create-draft' | 'experts.update-draft'
   | 'experts.copy' | 'experts.validate' | 'experts.publish' | 'experts.set-availability'
   | 'experts.set-preference' | 'experts.prepare-execution' | 'experts.create-execution'
-  | 'experts.reserve-delegation' | 'experts.claim-delegation'
   | 'experts.prepare-handoff' | 'experts.create-handoff' | 'experts.preview-import'
   | 'experts.commit-import' | 'experts.export' | 'experts.operation' | 'experts.verify-binding';

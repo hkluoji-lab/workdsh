@@ -1,5 +1,10 @@
 # 活动与协作展示插件 0.1
 
+## 2026-09-15：团队展示交给官方 Team
+
+按用户决定退役自建团队执行与展示。工作动态条仅用于个人任务；团队资产或已有子成员的任务不显示旧团队头像、成员轮询详情和“主理人处理中”分支。团队名册、任务操作与成员导航由 `@deepseek-ai/dsh-experimental-client-ui-agent-team@0.1.6-alpha.1` 的公开 Client 负责。以下早期团队样式记录保留为历史，不是当前实现。视觉证据见 `.artifacts/dsh-0.1.6-upgrade/native-team-web/`，验收结论以 STATUS 为准。
+
+
 ## 用户已确认需求
 
 独立DSH标准插件，默认顶部40px一行（头像、身份、真实状态、长任务耗时、展开入口）。下面的正文、工具调用、输入框、文件卡片保持原生。适用于普通问答、技能、单专家、专家团；Skill是助理能力，不能装成员工。多次调用同一专家合并身份，不把累计子会话数当人数/并行数。
@@ -10,7 +15,7 @@
 
 ## 官方复用记录（P1-01）
 
-基线0.1.5-rc.1，公开发布包ui-conversation README/contract/slots及api-session-controller SessionBinding/eventSource、sessions.list、subagentAddress/openSubagent。使用官方Loader/Profile/dsh.client；不增加HTTP事件源、模型、执行器、任务数据库或第二个React root。身份经公开ActivityPresentation契约由专家插件核验会话固定修订；技能插件提供已有中文标题；可选适配器缺失时回退助理/子任务，不猜专家身份。
+基线0.1.6-alpha.1，公开发布包ui-conversation README/contract/slots及api-session-controller SessionBinding/eventSource、sessions.list、subagentAddress/openSubagent。使用官方Loader/Profile/dsh.client；不增加HTTP事件源、模型、执行器、任务数据库或第二个React root。身份经公开ActivityPresentation契约由专家插件核验会话固定修订；技能插件提供已有中文标题；可选适配器缺失时回退助理/子任务，不猜专家身份。
 
 锁定版没有标题下方增量Slot。使用公开的 list `conversation.session.header.utilities` 注册独立组件，通过只匹配包含 `.wd-activity` 的原生header的CSS，预留48px并把40px栏定位在标题/标签下方。不读取/复制/覆盖原生Header组件，不重新声明其children，不改正文或Composer。卸载后effect删除组件与CSS，原生布局自动恢复。若升级提供专门附加Slot，优先迁移。初版Header包装在浏览器验证发现声明时序及子Slot所有权问题，已移除。
 
@@ -42,6 +47,6 @@ ActivityPresentation通过Cordis effect托管可选身份/技能标签resolver�
 
 用户收敛范围：只实现参考图顶部栏，保留半宽居中；团队56px双层文字、36px成员圆头像、运行成员光圈、Siri沿边动画及关闭开关。普通任务46px保留。团队组成来自绑定固定修订的定义；成员运行来自原生子任务目录，不把配置成员显示为已执行。没有已核实交接事件时不制造箭头、交接文字或运动光点；无成员运行显示主理人处理中。缺失头像保持姓名首字，不伪造写真。
 
-官方复用记录：锁定Harness0.1.5-rc.1；原conversation.session.header.utilities Slot和useSession/useSessions/eventSource保持。跨插件仅给workdsh-contracts/activity的ActivityIdentity添加可选teamName/members展示字段，专家提供绑定修订的只读身份，不改变执行/授权/存储。原生正文、文件卡及展开详情所有权保持。公开Slot证据来自既有隔离官方Profile浏览器探针；新增56px布局验证，不把CSS探针冒充真实多人运行验收。
+官方复用记录：锁定Harness0.1.6-alpha.1；原conversation.session.header.utilities Slot和useSession/useSessions/eventSource保持。跨插件仅给workdsh-contracts/activity的ActivityIdentity添加可选teamName/members展示字段，专家提供绑定修订的只读身份，不改变执行/授权/存储。原生正文、文件卡及展开详情所有权保持。公开Slot证据来自既有隔离官方Profile浏览器探针；新增56px布局验证，不把CSS探针冒充真实多人运行验收。
 
 2026-09-14 子任务动态刷新修复：官方ISessions.refreshSubagents公开入口读取catalog中的Agent driver采样状态。活动栏只读缓存会漏掉任务进行中的状态变化；组件首次/终态刷新一次，父任务运行时每3秒刷新官方目录，卸载/切换清理计时器，失败保留官方错误状态。不使用setSubagentCatalogOpen共享菜单开关，避免影响原生菜单生命周期，不另造执行状态。

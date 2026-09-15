@@ -7,19 +7,13 @@ import type {} from '@deepseek-ai/dsh-skill';
 import type {} from '@deepseek-ai/dsh-client-connection';
 import type {} from '@deepseek-ai/dsh-tools';
 import { ExpertsManager } from './services/experts-manager.js';
-import { TeamRunsManager } from './services/team-runs.js';
 import { registerExpertsConnection } from './services/connection-api.js';
 import { registerExpertManagementTools } from './tools/management-tools.js';
-import { registerExpertTeamTools } from './tools/team-tools.js';
 import { registerExpertExecutionGuard } from './runtime/execution-guard.js';
-import { registerExpertDelegationProvider } from './runtime/delegation-provider.js';
 
 export * from './services/experts-manager.js';
-export * from './services/team-runs.js';
 export * from './services/connection-api.js';
 export * from './tools/management-tools.js';
-export * from './tools/team-tools.js';
-export * from './runtime/delegation-provider.js';
 
 /**
  * Host plugin entry for WorkDSH experts (D04 / P1-02, expert module 0.1).
@@ -37,7 +31,7 @@ export const name = 'workdsh-plugin-experts';
 export const inject = [
   'storageDomain', 'agentPresets', 'sessionController',
   'workdshIdentity', 'workdshAccess', 'workdshAudit', 'workdshSessionAccess', 'workdshSkills',
-  'connection', 'tools', 'skills', 'agents', 'subagents', 'sessionQuery', 'fs',
+  'connection', 'tools', 'skills', 'agents', 'agentTeams', 'sessionQuery', 'fs',
 ];
 
 /**
@@ -71,8 +65,7 @@ export function registerExpertManagerSkill(ctx: Context): () => void {
 /** Independent Host apply: own service, transport, tools and bundled skill. */
 export async function applyExpertsHost(ctx: Context): Promise<void> {
   await ctx.plugin(ExpertsManager);
-  await ctx.plugin(TeamRunsManager);
-  await ctx.plugin({ name: 'workdsh-experts-integration', inject: [...inject, 'workdshExperts', 'workdshTeamRuns'], apply: applyIntegration });
+  await ctx.plugin({ name: 'workdsh-experts-integration', inject: [...inject, 'workdshExperts'], apply: applyIntegration });
 }
 
 /** The consumer declares the services provided by the manager child Fibers. */
@@ -80,12 +73,6 @@ function applyIntegration(ctx: Context): void {
   registerExpertExecutionGuard(ctx);
   registerExpertsConnection(ctx);
   registerExpertManagementTools(ctx);
-  registerExpertTeamTools(ctx);
-  // The one-shot delegation provider lives under this plugin's lifecycle; a
-  // start is admitted by the same `workdshTeamRuns` service the AI tools call.
-  registerExpertDelegationProvider(ctx, {
-    admission: { authorizeStart: input => ctx.workdshTeamRuns.authorizeDelegation(input) },
-  });
   ctx.effect(() => registerExpertManagerSkill(ctx));
 }
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -11,6 +11,53 @@ import { SkillManager } from '../../packages/plugins/skills/dist/index.js';
 
 const skillPackageRequire = createRequire(new URL('../../packages/plugins/skills/package.json', import.meta.url));
 const { zipSync } = skillPackageRequire('fflate');
+
+test('canonical skill paths remain manageable through a home alias without selecting a shadowed local copy', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workdsh-skill-canonical-'));
+  const physicalHome = join(root, 'physical-agents');
+  const agentsHome = join(root, 'agents-alias'); const dshHome = join(root, 'dsh');
+  const originalAgentsHome = process.env.DSH_AGENTS_HOME; const originalDshHome = process.env.DSH_HOME;
+  const ctx = new Context();
+  const document = body => `---\nname: canonical-skill\ndescription: Path identity fixture\n---\n${body}\n`;
+  try {
+    await mkdir(join(physicalHome, 'skills/canonical-skill'), { recursive: true });
+    await symlink(physicalHome, agentsHome, process.platform === 'win32' ? 'junction' : 'dir');
+    process.env.DSH_AGENTS_HOME = agentsHome; process.env.DSH_HOME = dshHome;
+    const file = join(agentsHome, 'skills/canonical-skill/SKILL.md');
+    await writeFile(file, document('LOCAL'));
+    await ctx.plugin(SkillRegistry);
+    await ctx.plugin(filesystem, { dshHome, agentsHome, watch: false });
+    new SkillManager(ctx);
+    const definition = await ctx.skills.get('canonical-skill');
+    assert.equal(definition.path, await realpath(file));
+    assert.notEqual(definition.path, file, 'the provider returns a canonical path, not the configured alias');
+    const detail = await ctx.workdshSkills.detail('canonical-skill');
+    assert.equal(detail.manageable, true);
+    assert.match(detail.document, /LOCAL/);
+    await ctx.workdshSkills.update({ name: detail.name, document: document('UPDATED'), expectedRevision: detail.revision });
+    assert.match(await readFile(file, 'utf8'), /UPDATED/);
+    await ctx.workdshSkills.setEnabled(detail.name, false);
+    await ctx.workdshSkills.setEnabled(detail.name, true);
+
+    const external = join(root, 'external');
+    await mkdir(join(external, 'canonical-skill'), { recursive: true });
+    const externalFile = join(external, 'canonical-skill/SKILL.md');
+    await writeFile(externalFile, document('EXTERNAL'));
+    await ctx.plugin(filesystem, { providerName: 'external', includeDefaultRoots: false, customSkillDirs: [external], watch: false });
+    assert.match((await ctx.skills.get(detail.name)).content, /EXTERNAL/);
+    const shadowed = await ctx.workdshSkills.detail(detail.name);
+    assert.equal(shadowed.state, 'readonly');
+    assert.equal(shadowed.manageable, false);
+    await assert.rejects(ctx.workdshSkills.update({ name: detail.name, document: document('WRONG'), expectedRevision: detail.revision }), /skill\/not-manageable/);
+    assert.match(await readFile(file, 'utf8'), /UPDATED/);
+    assert.equal(await readFile(externalFile, 'utf8'), document('EXTERNAL'));
+  } finally {
+    await ctx.fiber.dispose();
+    if (originalAgentsHome === undefined) delete process.env.DSH_AGENTS_HOME; else process.env.DSH_AGENTS_HOME = originalAgentsHome;
+    if (originalDshHome === undefined) delete process.env.DSH_HOME; else process.env.DSH_HOME = originalDshHome;
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test('skill manager reads, conflict-checks, disables, enables and recoverably uninstalls local skills', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workdsh-skill-manager-'));

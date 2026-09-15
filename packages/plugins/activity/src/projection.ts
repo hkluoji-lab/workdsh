@@ -45,7 +45,7 @@ export function activityMessage(state: ActivityState): string {
   if (state.phase === 'failed') return '本轮未完成，请查看原始过程';
   if (state.phase === 'completed') return state.delivered ? '本轮结束 · 已交付文件' : '本轮已结束';
   if (state.phase === 'idle') return '准备好了';
-  if (state.tool?.startsWith('workdsh_expert_team')) return '正在处理专家协作';
+  if (state.tool === 'spawn_teammate' || state.tool?.startsWith('team_task_')) return '正在处理专家协作';
   if (state.tool) return '正在执行工具';
   return '正在处理';
 }

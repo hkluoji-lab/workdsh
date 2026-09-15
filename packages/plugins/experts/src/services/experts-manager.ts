@@ -1445,97 +1445,26 @@ export class ExpertsManager extends Service implements ExpertsService {
     }
   }
 
-  /** TM-01 Host admission only: execution and its lifecycle remain native. */
-  async reserveDelegation(actor: ActorContext, parentSessionId: string, target: ExpertRevisionRef, context: MutationContext, signal?: AbortSignal): Promise<ExecutionBinding> {
-    assertActorContext(actor);
-    this.assertContext(context);
-    const payloadDigest = digestOf({ parentSessionId, target, organizationId: actor.organizationId });
-    const parent = await this.verifyBinding(actor, parentSessionId, signal);
-    if (parent.delegation) throw new ExpertsError('experts/forbidden', '首版只允许主持人的直接子任务。');
-    if (!parent.workspaceRef) throw new ExpertsError('experts/unsupported-capability', '子任务需要已解析的父任务工作区；当前预留不接受未解析的 workspaceId。');
-    await this.assertDelegationExpert(actor, parent.expertRevisionRef, signal);
-    await this.assertDelegationExpert(actor, target, signal);
-    const revision = this.loadRevision(target.expertId, target.revisionId);
-    if (await this.computeReadiness(revision, actor, signal) !== 'ready') {
-      throw new ExpertsError('experts/dependency-missing', '成员专家的固定组合尚未就绪。');
+  /** Asset resolution only; official Team owns roster, child creation and messages. */
+  async resolveNativeRole(actor: ActorContext, rootSessionId: string, memberName?: string, signal?: AbortSignal): Promise<{ binding: ExecutionBinding; revision: ExpertRevision }> {
+    const binding = await this.verifyBinding(actor, rootSessionId, signal);
+    const owner = this.loadExpert(binding.expertRevisionRef.expertId);
+    if (!this.isVisible(actor, owner)) throw new ExpertsError('experts/not-found', '未找到该任务绑定的专家。');
+    await this.authorize(actor, 'experts.prepare-execution', owner, signal);
+    if (owner.availability !== 'enabled') throw new ExpertsError('experts/disabled', '该任务绑定的专家已停用或归档。');
+    const lead = this.loadRevision(binding.expertRevisionRef.expertId, binding.expertRevisionRef.revisionId);
+    let revision = lead;
+    if (memberName && lead.definition.team) {
+      const ref = lead.teamMembers?.[memberName];
+      if (!ref) throw new ExpertsError('experts/invalid-request', '该成员不在当前已发布团队配置中，请使用配置中的成员 key。');
+      const expert = this.loadExpert(ref.expertId);
+      if (!this.isVisible(actor, expert)) throw new ExpertsError('experts/not-found', '未找到该团队成员。');
+      await this.authorize(actor, 'experts.prepare-execution', expert, signal);
+      if (expert.availability !== 'enabled') throw new ExpertsError('experts/disabled', '成员已停用或归档。');
+      revision = this.loadRevision(ref.expertId, ref.revisionId);
+      await this.verifyRevision(actor, revision, signal);
     }
-    return this.withOperation(actor, 'experts.reserve-delegation', context, payloadDigest, signal, async record => {
-      signal?.throwIfAborted();
-      // Availability can change while this reservation waits for the domain queue.
-      await this.assertDelegationExpert(actor, parent.expertRevisionRef, signal);
-      await this.assertDelegationExpert(actor, target, signal);
-      const sessionId = `delegation-${digestOf({ organizationId: actor.organizationId, operationId: context.operationId }).slice(0, 32)}`;
-      const binding: ExecutionBinding = {
-        sessionId, expertRevisionRef: { ...target }, presetRevisionRef: revision.presetRevisionRef,
-        compositionDigest: revision.compositionDigest, skillRevisionRefs: revision.dependencyLock,
-        owner: parent.owner, ...(parent.workspaceRef === undefined ? {} : { workspaceRef: parent.workspaceRef }),
-        creationOperationId: context.operationId, createdAt: new Date().toISOString(),
-        delegation: { parentSessionId, parentCompositionDigest: parent.compositionDigest, admission: 'reserved' },
-      };
-      // Never overwrite a prior admission, including an uncertain storage result.
-      const prior = this.bindingsTable().get(keys.binding(sessionId));
-      if (prior) throw new ExpertsError('experts/outcome-unknown', '该子任务已有预留，请先核对原操作。');
-      await this.bindingsTable().put(keys.binding(sessionId), binding);
-      record({ resultRef: sessionId });
-      await this.audit(actor, 'experts.reserve-delegation', target.expertId, 'succeeded', 'experts/delegation-reserved', { sessionId, parentSessionId });
-      return binding;
-    }, operation => {
-      const binding = this.bindingsTable().get(keys.binding(operation.resultRef ?? ''));
-      if (!binding || binding.owner.organizationId !== actor.organizationId) {
-        throw new ExpertsError('experts/outcome-unknown', '无法核对子任务预留。');
-      }
-      return binding;
-    });
-  }
-
-  async claimDelegation(actor: ActorContext, sessionId: string, parentSessionId: string, signal?: AbortSignal): Promise<ExecutionBinding> {
-    assertActorContext(actor);
-    return this.enqueue(async () => {
-      signal?.throwIfAborted();
-      const binding = this.bindingsTable().get(keys.binding(sessionId));
-      if (!binding?.delegation) throw new ExpertsError('experts/not-found', '未找到子任务预留。');
-      if (binding.owner.ownerPrincipalId !== actor.principalId || binding.owner.organizationId !== actor.organizationId
-          || binding.delegation.parentSessionId !== parentSessionId) {
-        throw new ExpertsError('experts/forbidden', '不能领取其他主体或父任务的子任务。');
-      }
-      if (binding.delegation.admission !== 'reserved') {
-        throw new ExpertsError('experts/conflict', '预留已领取；请核对原生日志，不能重复执行。');
-      }
-      await this.verifyDelegationParent(actor, binding, signal);
-      await this.assertDelegationExpert(actor, binding.expertRevisionRef, signal);
-      const revision = this.loadRevision(binding.expertRevisionRef.expertId, binding.expertRevisionRef.revisionId);
-      if (await this.computeReadiness(revision, actor, signal) !== 'ready') {
-        throw new ExpertsError('experts/dependency-missing', '成员专家的固定组合尚未就绪。');
-      }
-      signal?.throwIfAborted();
-      const claimed: ExecutionBinding = { ...binding, delegation: { ...binding.delegation, admission: 'claimed' } };
-      await this.bindingsTable().update(keys.binding(sessionId), current => {
-        if (digestOf(current) !== digestOf(binding)) throw new ExpertsError('experts/conflict', '子任务预留已变化，不能重复领取。');
-        return claimed;
-      });
-      await this.audit(actor, 'experts.claim-delegation', binding.expertRevisionRef.expertId, 'succeeded', 'experts/delegation-claimed', { sessionId, parentSessionId });
-      return claimed;
-    });
-  }
-
-  private async assertDelegationExpert(actor: ActorContext, ref: ExpertRevisionRef, signal?: AbortSignal): Promise<void> {
-    const expert = this.loadExpert(ref.expertId);
-    if (!this.isVisible(actor, expert)) throw new ExpertsError('experts/not-found', '未找到该专家。');
-    await this.authorize(actor, 'experts.claim-delegation', expert, signal);
-    if (expert.availability !== 'enabled') throw new ExpertsError('experts/disabled', '委派引用的专家已停用或归档。');
-  }
-
-  private async verifyDelegationParent(actor: ActorContext, binding: ExecutionBinding, signal?: AbortSignal): Promise<void> {
-    const delegation = binding.delegation!;
-    const parent = this.bindingsTable().get(keys.binding(delegation.parentSessionId));
-    // Bound depth keeps corrupt/cyclic records from recursing through verification.
-    if (!parent || parent.delegation || parent.sessionId === binding.sessionId
-        || parent.compositionDigest !== delegation.parentCompositionDigest
-        || parent.workspaceRef !== binding.workspaceRef) {
-      throw new ExpertsError('experts/conflict', '子任务与主持人的固定绑定不一致。');
-    }
-    await this.verifyBinding(actor, parent.sessionId, signal);
-    await this.assertDelegationExpert(actor, parent.expertRevisionRef, signal);
+    return { binding, revision };
   }
 
   async verifyBinding(actor: ActorContext, sessionId: string, signal?: AbortSignal): Promise<ExecutionBinding> {
@@ -1547,19 +1476,23 @@ export class ExpertsManager extends Service implements ExpertsService {
     if (binding.owner.ownerPrincipalId !== actor.principalId || binding.owner.organizationId !== actor.organizationId) {
       throw new ExpertsError('experts/forbidden', '没有权限校验该任务的专家绑定。');
     }
-    if (binding.delegation) {
-      if (binding.delegation.admission !== 'claimed') throw new ExpertsError('experts/conflict', '子任务预留尚未领取，不能执行。');
-      await this.verifyDelegationParent(actor, binding, signal);
-      await this.assertDelegationExpert(actor, binding.expertRevisionRef, signal);
-    }
+    if (binding.delegation) throw new ExpertsError('experts/unsupported-capability', '旧版专家团执行器已退役。请从专家团重新创建官方 Team 任务，旧文件和历史仍保留。');
     const revision = this.loadRevision(binding.expertRevisionRef.expertId, binding.expertRevisionRef.revisionId);
-    if (revision.definition.packageDocuments) await verifyPackageFiles(join(writableRoot(this.ctx.agentPresets.roots, revision.presetRevisionRef), revision.presetRevisionRef), revision.definition.packageDocuments, revision.definition.packageAssets);
     if (revision.presetRevisionRef !== binding.presetRevisionRef || revision.compositionDigest !== binding.compositionDigest
-        || digestOf(revision.dependencyLock) !== digestOf(binding.skillRevisionRefs)
-        || sha256(await this.ctx.agentPresets.read(binding.presetRevisionRef)) !== binding.compositionDigest) {
-      throw new ExpertsError('experts/conflict', '任务绑定与专家修订不一致，可能已被篡改。');
+        || digestOf(revision.dependencyLock) !== digestOf(binding.skillRevisionRefs)) {
+      throw new ExpertsError('experts/conflict', '任务绑定与专家修订不一致。');
     }
-    for (const ref of binding.skillRevisionRefs) {
+    await this.verifyRevision(actor, revision, signal);
+    await this.audit(actor, 'experts.verify-binding', binding.expertRevisionRef.expertId, 'succeeded', 'experts/verify-binding-succeeded', { sessionId });
+    return binding;
+  }
+
+  private async verifyRevision(actor: ActorContext, revision: ExpertRevision, signal?: AbortSignal): Promise<void> {
+    if (revision.definition.packageDocuments) await verifyPackageFiles(join(writableRoot(this.ctx.agentPresets.roots, revision.presetRevisionRef), revision.presetRevisionRef), revision.definition.packageDocuments, revision.definition.packageAssets);
+    if (sha256(await this.ctx.agentPresets.read(revision.presetRevisionRef)) !== revision.compositionDigest) {
+      throw new ExpertsError('experts/conflict', '已发布专家 preset 已漂移。');
+    }
+    for (const ref of revision.dependencyLock) {
       signal?.throwIfAborted();
       const check = await this.ctx.workdshSkills.checkRevision(ref, actor, signal);
       if (check.status === 'drifted') throw new ExpertsError('experts/dependency-drift', '绑定任务的 Skill 快照已漂移，拒绝执行。', { skillId: ref.skillId });
@@ -1567,8 +1500,6 @@ export class ExpertsManager extends Service implements ExpertsService {
       if (check.status === 'source-disabled') throw new ExpertsError('experts/dependency-disabled', '绑定任务依赖的 Skill 来源已停用，拒绝执行。', { skillId: ref.skillId });
       if (check.status === 'forbidden') throw new ExpertsError('experts/forbidden', '当前主体无权使用绑定任务的 Skill 依赖。', { skillId: ref.skillId });
     }
-    await this.audit(actor, 'experts.verify-binding', binding.expertRevisionRef.expertId, 'succeeded', 'experts/verify-binding-succeeded', { sessionId });
-    return binding;
   }
 
   // ── local import / export ───────────────────────────────────────────────
