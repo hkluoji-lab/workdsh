@@ -41,7 +41,9 @@
     "probe:experts:team": "node scripts/check-environment.mjs && node scripts/probe-native-expert-team.mjs",
     "probe:experts:team:web": "node scripts/check-environment.mjs && node scripts/probe-native-team-web.mjs",
     "probe:computer-use:native": "node scripts/probe-computer-use-native.mjs",
-    "probe:browser-use:playwright": "node scripts/probe-browser-use-playwright.mjs"
+    "probe:browser-use:playwright": "node scripts/probe-browser-use-playwright.mjs",
+    "probe:mcp:resources": "node scripts/probe-mcp-resources.mjs",
+    "probe:headless": "node scripts/probe-headless-interface.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
@@ -50,6 +52,8 @@
     "@deepseek-ai/dsh-agent-loop": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-agent-presets": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-llm": "0.1.6-alpha.1",
+    "@deepseek-ai/dsh-mcp-client": "0.1.6-alpha.1",
+    "@deepseek-ai/dsh-mcp-resources": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-scope": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-session": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-session-persistence-jsonl": "0.1.6-alpha.1",
