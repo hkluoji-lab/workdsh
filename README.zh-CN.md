@@ -13,7 +13,7 @@
   <a href="https://techflag.github.io/workdsh/">产品网站</a>
 </p>
 
-WorkDSH 把**技能、专家、团队动态和可编辑的 Office 成果**装进 DeepSeek Harness 原生任务体验。你不用在聊天、临时网页和本地文件之间来回切换：对话在左边继续，文档、表格、PPT、PDF 或网页在右边实时出现，最后留下可以打开和下载的文件。
+WorkDSH 把**技能、专家、连接器、团队动态、浏览器/电脑操作和可编辑的 Office 成果**装进 DeepSeek Harness 原生任务体验。你不用在聊天、临时网页和本地文件之间来回切换：对话在左边继续，文档、表格、PPT、PDF、网页或外部服务结果在右边实时出现，最后留下可以打开和下载的成果。
 
 你可以把它理解为一个**独立开源的 WorkBuddy 式工作台**：交代真实任务，看到执行过程，需要时人工介入，最后拿到可继续编辑的成果。WorkDSH 针对 DeepSeek Harness 独立开发，并非 WorkBuddy 官方开源版本。
 
@@ -39,6 +39,7 @@ WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终
 | 汇报 PPT | 新建或导入 PPTX 工作副本，逐页修改，保留人工调整 | 可编辑、可下载的 PPTX；复杂模板仍需逐页复核 |
 | 数据表格 | 在任务旁打开工作簿，保留已支持的值和公式 | 可编辑的 XLSX 工作副本及明确的格式边界 |
 | 可复用的专业能力 | 安装或创建带资源的 Markdown 技能；专家固定审阅后的技能版本 | 可管理的技能和明确的专家身份，不再依赖一次性提示词 |
+| 外部服务 | 管理多个 MCP 实例，凭据进入官方凭据服务，并按对话选择工具 | 输入框旁显示连接器名称，本次任务只获得所选连接器的 MCP 工具 |
 | 团队协作 | 在会话里显示专家团、成员、当前状态和任务动态 | 可见的协作轨迹；TM-01 真实模型完整验收仍在进行 |
 
 ## 看到工作过程，也拿到真实成果
@@ -54,6 +55,10 @@ WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终
 <tr>
 <td colspan="2"><img src="docs/assets/screenshots/workdsh-jd-cart-review.png" alt="WorkDSH 将选定的京东商品加入购物车并在结算前展示截图证据"><br><strong>真实网页操作、可核对证据、关键步骤由人接管</strong><br>这次真实任务里，WorkDSH 搜索京东、把用户选定的商品加入购物车，将执行结果和截图放在一起，并停在结算之前。</td>
 </tr>
+<tr>
+<td width="50%"><img src="docs/assets/screenshots/workdsh-tencent-docs-query.png" alt="WorkDSH 在单个对话中选择腾讯文档连接器并查询真实账号"><br><strong>一个对话只连接需要的服务</strong><br>腾讯文档只用于当前任务，名称持续显示在输入框旁，回答来自真实 MCP 工具调用。</td>
+<td width="50%"><img src="docs/assets/screenshots/workdsh-connectors-management.png" alt="WorkDSH MCP 连接器管理展示腾讯文档已连接"><br><strong>真实 MCP 生命周期与工具发现</strong><br>Harness 官方 MCP Client 已连接腾讯文档并发现 224 个工具；令牌保存在官方凭据服务中。</td>
+</tr>
 </table>
 
 ## WorkDSH 的核心特色
@@ -64,13 +69,14 @@ WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终
 | **交付真实成果** | 已支持的输出会保存为工作副本和可下载文件；工具失败时不会把一段文字冒充已交付文件。 |
 | **人与 AI 实时共编** | 打开成果直接修正，再让模型从最新保存版本继续，不必根据旧提示词全部重做。 |
 | **专业能力可以复用** | 技能携带指令和资源，专家绑定经过审阅的技能修订与明确身份，不依赖一次性的角色提示词。 |
+| **连接器按对话生效** | 全局启用多个 MCP 实例，再决定当前对话能使用哪一个；新会话默认不选择连接器。 |
 | **团队作战过程可见** | 会话中可以看到专家团、当前成员、交接和任务状态；TM-01 真实模型完整验收仍在进行。 |
 | **保留 Harness 原生体验** | 任务、模型、附件、权限、队列、技能和插件加载仍由 Harness 负责，WorkDSH 扩展公开服务和 UI 插槽。 |
 | **插件独立交付** | 技能、专家、Office、活动、治理和展示分别版本化，Profile 只安装真正需要的模块。 |
 
 ## 当前预览状态
 
-最新公开 Web 预览已在 **Harness `0.1.6-alpha.1`、Node.js `22.23.2`、macOS** 上完成真实安装包与冷启动验证。技能管理、已发布专家、官方 Team 协作、Office 工作副本和协作动态均已有 alpha 模块。
+最新公开 Web 预览已在 **Harness `0.1.6-alpha.1`、Node.js `22.23.2`、macOS** 上完成真实安装包与冷启动验证。技能管理、已发布专家、MCP 连接器、官方 Team 协作、浏览器/电脑操作、Office 工作副本和协作动态均已有 alpha 模块。
 
 它仍是开发预览：专家团完整真实模型流程、任意复杂 Office 文件保真和多平台验收尚未完成；默认只监听本机，也不宣称已经具备可直接暴露公网的生产级多租户能力。下文保留精确版本、校验值、能力边界和验证证据。
 
@@ -128,9 +134,10 @@ flowchart TB
 | --- | --- | --- | --- |
 | 技能管理 | `workdsh-plugin-skills@0.1.0-alpha.29` | [技能 `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.29/workdsh-plugin-skills-0.1.0-alpha.29.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.29) | 可独立安装的 Harness 功能插件。 |
 | 专家 | `workdsh-plugin-experts@0.1.0-alpha.3` | [专家 `.tgz`](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.3/workdsh-plugin-experts-0.1.0-alpha.3.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.3) | 专家定义、已审阅修订及其与官方 DSH Team 运行时的组合。 |
+| 连接器 | `workdsh-plugin-connectors@0.1.0-alpha.1` | [连接器 `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.2/workdsh-plugin-connectors-0.1.0-alpha.1.tgz) · [项目发行](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.2) | 多 stdio/HTTP MCP 实例、官方凭据存储、健康与工具发现、按对话隔离工具。 |
 | 工作动态 | `workdsh-plugin-activity@0.1.0-alpha.2` | [动态 `.tgz`](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.2/workdsh-plugin-activity-0.1.0-alpha.2.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.2) | 显示任务、技能和专家团队工作状态。 |
 | Office | `workdsh-plugin-office@0.1.0-alpha.5` | [Office `.tgz`](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.5/workdsh-plugin-office-0.1.0-alpha.5.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5) | 支持范围内的可编辑工作副本、预览和文件导出。 |
-| WorkDSH 展示组合 | `workdsh-bundle@0.1.0-alpha.42` | [展示 `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.42/workdsh-bundle-0.1.0-alpha.42.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.42) | 可选品牌、主题与工作台组合；Skill 需单独安装。 |
+| WorkDSH 展示组合 | `workdsh-bundle@0.1.0-alpha.45` | [展示 `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.2/workdsh-bundle-0.1.0-alpha.45.tgz) · [项目发行](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.2) | 可选品牌、主题与工作台组合；功能插件按需独立安装。 |
 
 Workbench `alpha.10` 目前随展示包交付。共享 UI、contracts 和本地身份/授权/审计基础属于配套包，**不作为面向用户的独立下载项**。完整对应关系见[模块发布说明](docs/RELEASES.md)。
 
@@ -153,7 +160,7 @@ dsh --profile workdsh
 需要 WorkDSH 外观时，先停止该 Profile，再安装可选展示包并重启：
 
 ```sh
-dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.42.tgz
+dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.45.tgz
 dsh --profile workdsh
 ```
 
@@ -179,7 +186,8 @@ corepack pnpm preview
 | Skill 0.1 | 本地技能管理与独立安装交付 | 已在指定 Web 基线上验证。 |
 | 专家 0.1 | 专家定义、草稿、修订、共享技能引用和任务交接 | alpha可安装试用；专业成果质量与稳定性验收尚未完成。 |
 | Office 0.1 | 真实文件创建、实时编辑、预览与导出；当前源码开发重点为 PPT | alpha可安装试用；PPT 模板和真实模型视觉验收仍在进行，Word 功能扩展暂停。 |
-| 后续模块 | 连接器 → 资料库 → 项目 → 行业应用 → 集成 | 按模块逐一交付。 |
+| 连接器 0.1 | 多 MCP 实例、官方凭据存储、发现、生命周期与按对话选择 | Alpha 可用；令牌授权已验证，交互式 OAuth 留待后续。 |
+| 后续模块 | 资料库 → 项目 → 行业应用 → 集成 | 按模块逐一交付。 |
 | 企业版 | 服务端 + 管理 Web + Harness 执行节点；组织技能、分类、版本、授权和下发 | 后置。本次没有公共技能市场、SkillHub 或技能套件。 |
 
 [路线图](docs/ROADMAP.md)、[专家交接方案](docs/design/experts/README.md)和[企业版 ToDo](docs/TODO.md)保留范围与验收条件。当前预览面向可信本机用户，不是可直接暴露到公网的多租户服务。

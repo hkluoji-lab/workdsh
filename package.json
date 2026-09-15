@@ -1,6 +1,6 @@
 {
   "name": "workdsh",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "private": true,
   "type": "module",
   "description": "WorkDSH planning and plugin workspace",
@@ -14,8 +14,8 @@
     "check:acceptance": "node scripts/check-acceptance.mjs",
     "check:env": "node scripts/check-environment.mjs",
     "test:planning": "node --test tests/planning/*.test.mjs",
-    "build": "corepack pnpm --filter workdsh-contracts build && corepack pnpm --filter workdsh-provider-identity-local build && corepack pnpm --filter workdsh-plugin-audit build && corepack pnpm --filter workdsh-plugin-access build && corepack pnpm --filter workdsh-plugin-skills build && corepack pnpm --filter workdsh-plugin-experts build && corepack pnpm --filter workdsh-plugin-office build && corepack pnpm --filter workdsh-bundle build && corepack pnpm --filter workdsh-plugin-activity build",
-    "typecheck": "corepack pnpm --filter workdsh-contracts typecheck && corepack pnpm --filter workdsh-provider-identity-local typecheck && corepack pnpm --filter workdsh-plugin-audit typecheck && corepack pnpm --filter workdsh-plugin-access typecheck && corepack pnpm --filter workdsh-plugin-skills typecheck && corepack pnpm --filter workdsh-plugin-experts typecheck && corepack pnpm --filter workdsh-plugin-office typecheck && corepack pnpm --filter workdsh-bundle typecheck && corepack pnpm --filter workdsh-plugin-activity typecheck",
+    "build": "corepack pnpm --filter workdsh-contracts build && corepack pnpm --filter workdsh-provider-identity-local build && corepack pnpm --filter workdsh-plugin-audit build && corepack pnpm --filter workdsh-plugin-access build && corepack pnpm --filter workdsh-plugin-skills build && corepack pnpm --filter workdsh-plugin-experts build && corepack pnpm --filter workdsh-plugin-connectors build && corepack pnpm --filter workdsh-plugin-office build && corepack pnpm --filter workdsh-bundle build && corepack pnpm --filter workdsh-plugin-activity build",
+    "typecheck": "corepack pnpm --filter workdsh-contracts typecheck && corepack pnpm --filter workdsh-provider-identity-local typecheck && corepack pnpm --filter workdsh-plugin-audit typecheck && corepack pnpm --filter workdsh-plugin-access typecheck && corepack pnpm --filter workdsh-plugin-skills typecheck && corepack pnpm --filter workdsh-plugin-experts typecheck && corepack pnpm --filter workdsh-plugin-connectors typecheck && corepack pnpm --filter workdsh-plugin-office typecheck && corepack pnpm --filter workdsh-bundle typecheck && corepack pnpm --filter workdsh-plugin-activity typecheck",
     "probe:install": "node scripts/check-environment.mjs && node scripts/probe-install.mjs",
     "probe:activity": "node scripts/probe-activity.mjs",
     "test:activity": "node --test packages/plugins/activity/tests/*.test.mjs",
@@ -36,6 +36,7 @@
     "probe:office:live": "node scripts/probe-office-live.mjs",
     "test:office:content": "node --test tests/integration/office-content.test.mjs",
     "release:office:pack": "node scripts/pack-office-release.mjs",
+    "release:project:pack": "node scripts/pack-project-release.mjs",
     "audit:skills": "node scripts/quality/audit-skills.mjs",
     "test:skill-quality": "node --test scripts/quality/audit-skills.test.mjs",
     "probe:experts:team": "node scripts/check-environment.mjs && node scripts/probe-native-expert-team.mjs",
@@ -43,6 +44,7 @@
     "probe:computer-use:native": "node scripts/probe-computer-use-native.mjs",
     "probe:browser-use:playwright": "node scripts/probe-browser-use-playwright.mjs",
     "probe:mcp:resources": "node scripts/probe-mcp-resources.mjs",
+    "probe:connectors": "node scripts/probe-connectors.mjs",
     "probe:headless": "node scripts/probe-headless-interface.mjs"
   },
   "devDependencies": {
@@ -105,6 +107,7 @@
       "@deepseek-ai/dsh-bash-local": "0.1.6-alpha.1",
       "@deepseek-ai/dsh-bash-sandbox": "0.1.6-alpha.1",
       "@deepseek-ai/dsh-brand": "0.1.6-alpha.1",
+      "@deepseek-ai/dsh-browser-use": "0.1.6-alpha.1",
       "@deepseek-ai/dsh-chunked-list": "0.1.6-alpha.1",
       "@deepseek-ai/dsh-client-connection": "0.1.6-alpha.1",
       "@deepseek-ai/dsh-client-file-upload": "0.1.6-alpha.1",
@@ -327,7 +330,11 @@
       "@deepseek-ai/dsh-experimental-auto-review": "0.1.6-alpha.1",
       "@deepseek-ai/dsh-experimental-tool-agent-team": "0.1.6-alpha.1",
       "@deepseek-ai/dsh-experimental-client-ui-agent-team": "0.1.6-alpha.1",
-      "@deepseek-ai/dsh-client-ui-primitives": "0.1.6-alpha.1"
+      "@deepseek-ai/dsh-client-ui-primitives": "0.1.6-alpha.1",
+      "@deepseek-ai/dsh-computer-use": "0.1.6-alpha.1",
+      "@deepseek-ai/dsh-experimental-browser-use-playwright-mcp": "0.1.6-alpha.1",
+      "@deepseek-ai/dsh-experimental-browser-use-runtime": "0.1.6-alpha.1",
+      "@deepseek-ai/dsh-experimental-computer-use-cua-driver-native": "0.1.6-alpha.1"
     }
   }
 }

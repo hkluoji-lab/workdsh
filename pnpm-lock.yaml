@@ -31,6 +31,7 @@ overrides:
   '@deepseek-ai/dsh-bash-local': 0.1.6-alpha.1
   '@deepseek-ai/dsh-bash-sandbox': 0.1.6-alpha.1
   '@deepseek-ai/dsh-brand': 0.1.6-alpha.1
+  '@deepseek-ai/dsh-browser-use': 0.1.6-alpha.1
   '@deepseek-ai/dsh-chunked-list': 0.1.6-alpha.1
   '@deepseek-ai/dsh-client-connection': 0.1.6-alpha.1
   '@deepseek-ai/dsh-client-file-upload': 0.1.6-alpha.1
@@ -254,6 +255,10 @@ overrides:
   '@deepseek-ai/dsh-experimental-tool-agent-team': 0.1.6-alpha.1
   '@deepseek-ai/dsh-experimental-client-ui-agent-team': 0.1.6-alpha.1
   '@deepseek-ai/dsh-client-ui-primitives': 0.1.6-alpha.1
+  '@deepseek-ai/dsh-computer-use': 0.1.6-alpha.1
+  '@deepseek-ai/dsh-experimental-browser-use-playwright-mcp': 0.1.6-alpha.1
+  '@deepseek-ai/dsh-experimental-browser-use-runtime': 0.1.6-alpha.1
+  '@deepseek-ai/dsh-experimental-computer-use-cua-driver-native': 0.1.6-alpha.1
 
 importers:
 
@@ -508,6 +513,66 @@ importers:
       workdsh-contracts:
         specifier: workspace:*
         version: link:../../contracts
+
+  packages/plugins/connectors:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: 4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-agent':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(ce40d13c69e7e1ce48818baba37665e1)
+      '@deepseek-ai/dsh-api-remotes':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-scope@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)))
+      '@deepseek-ai/dsh-client-connection':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-client-ui-conversation':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-layout':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-credentials':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-mcp-client':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(94992de6e2e4a2b9ef71764c06db2b07)
+      '@deepseek-ai/dsh-mcp-resources':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-llm@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-scope@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)))(@deepseek-ai/dsh-system-prompt@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-llm@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-scope@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))))(@deepseek-ai/dsh-tools@0.1.6-alpha.1(e89197212305e1b19bd6df05221bc44b))
+      '@deepseek-ai/dsh-storage-domain':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-storage@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-tools':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(e89197212305e1b19bd6df05221bc44b)
+      '@deepseek-ai/schemastery':
+        specifier: 3.18.2
+        version: 3.18.2
+      '@types/node':
+        specifier: 22.19.0
+        version: 22.19.0
+      '@types/react':
+        specifier: 19.2.14
+        version: 19.2.14
+      react:
+        specifier: 19.2.4
+        version: 19.2.4
+      workdsh-ui:
+        specifier: workspace:*
+        version: link:../../ui
+      zod:
+        specifier: ^4.3.6
+        version: 4.4.3
 
   packages/plugins/experts:
     dependencies:
@@ -1799,7 +1864,7 @@ packages:
     peerDependencies:
       '@deepseek-ai/cordis': ^4.0.2
       '@deepseek-ai/dsh-agent': 0.1.6-alpha.1
-      '@deepseek-ai/dsh-browser-use': ^0.1.6-alpha.1
+      '@deepseek-ai/dsh-browser-use': 0.1.6-alpha.1
       '@deepseek-ai/dsh-system-prompt': 0.1.6-alpha.1
       '@deepseek-ai/dsh-tools': 0.1.6-alpha.1
 
@@ -1808,7 +1873,7 @@ packages:
     peerDependencies:
       '@deepseek-ai/cordis': ^4.0.2
       '@deepseek-ai/dsh-agent': 0.1.6-alpha.1
-      '@deepseek-ai/dsh-browser-use': ^0.1.6-alpha.1
+      '@deepseek-ai/dsh-browser-use': 0.1.6-alpha.1
       '@deepseek-ai/dsh-system-prompt': 0.1.6-alpha.1
       '@deepseek-ai/dsh-tools': 0.1.6-alpha.1
 
@@ -1832,7 +1897,7 @@ packages:
     resolution: {integrity: sha512-Oba3cWWSheSKgztM45bQO06KhkBxPZNhzEV4tns26W+DBTJupZvJC1ky6E5AJSx6DDkcas/AUtmiMjf9vA1uUg==}
     peerDependencies:
       '@deepseek-ai/cordis': ^4.0.2
-      '@deepseek-ai/dsh-computer-use': ^0.1.6-alpha.1
+      '@deepseek-ai/dsh-computer-use': 0.1.6-alpha.1
       '@deepseek-ai/dsh-system-prompt': 0.1.6-alpha.1
       '@deepseek-ai/dsh-tools': 0.1.6-alpha.1
 

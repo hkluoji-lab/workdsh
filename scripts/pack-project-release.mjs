@@ -1,0 +1,77 @@
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const project = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+const tag = `v${project.version}`;
+const destination = join(root, '.artifacts', `project-${tag}`);
+const packageDirectories = [
+  'packages/providers/identity-local',
+  'packages/plugins/audit',
+  'packages/plugins/access',
+  'packages/plugins/skills',
+  'packages/plugins/experts',
+  'packages/plugins/connectors',
+  'packages/plugins/office',
+  'packages/plugins/activity',
+  'packages/bundle',
+];
+
+await rm(destination, { recursive: true, force: true });
+await mkdir(destination, { recursive: true });
+
+for (const directory of packageDirectories) {
+  execFileSync('corepack', ['pnpm', 'pack', '--pack-destination', destination], {
+    cwd: join(root, directory),
+    stdio: 'inherit',
+  });
+}
+
+const sourceCommit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+const packages = [];
+for (const directory of packageDirectories) {
+  const manifest = JSON.parse(await readFile(join(root, directory, 'package.json'), 'utf8'));
+  const filename = `${manifest.name}-${manifest.version}.tgz`;
+  const bytes = await readFile(join(destination, filename));
+  packages.push({
+    name: manifest.name,
+    version: manifest.version,
+    filename,
+    bytes: bytes.length,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+  });
+}
+
+packages.sort((left, right) => left.name.localeCompare(right.name));
+await writeFile(join(destination, 'SHA256SUMS'), packages.map(item => `${item.sha256}  ${item.filename}`).join('\n') + '\n');
+await writeFile(join(destination, 'release-manifest.json'), JSON.stringify({
+  project: 'WorkDSH',
+  version: project.version,
+  tag,
+  channel: 'github-prerelease',
+  sourceCommit,
+  harness: '0.1.6-alpha.1',
+  node: process.version,
+  packageManager: project.packageManager,
+  packages,
+  verified: [
+    'full build and typecheck',
+    '102 integration tests and 9 activity tests',
+    'planning and exact-version gates',
+    'connector tool/resource discovery, lifecycle, multi-instance and per-session isolation probe',
+    'real Tencent Docs token connection and read-only account query in WorkDSH',
+  ],
+  limitations: [
+    'alpha preview; package APIs and stored data may change',
+    'interactive OAuth, connector multi-account switching and public authorization are not complete',
+    'complete expert-team long runs, arbitrary Office fidelity and cross-platform acceptance remain incomplete',
+    'packages are GitHub assets and are not published to the npm registry',
+  ],
+}, null, 2) + '\n');
+await copyFile(join(root, 'docs/releases/v0.1.0-alpha.2.md'), join(destination, 'RELEASE-NOTES.md'));
+
+const files = (await readdir(destination)).sort();
+console.log(`Project release candidate ${tag}: ${packages.length} packages; files: ${files.join(', ')}`);

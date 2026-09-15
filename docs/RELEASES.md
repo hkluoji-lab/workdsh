@@ -1,3 +1,11 @@
+## 2026-09-15 WorkDSH 项目级 alpha.2
+
+[`v0.1.0-alpha.2`](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.2) 是当前 WorkDSH 模块的项目级发行，基于 DeepSeek Harness `0.1.6-alpha.1`。它在既有 Skill 单模块项目预览之后，第一次用一个项目 Release 汇总当前组合所需的九个预构建插件包、统一校验文件和发布清单。
+
+本次新增可安装的 `workdsh-plugin-connectors@0.1.0-alpha.1`：支持多个 stdio/Streamable HTTP MCP 实例、官方凭据存储、工具与资源发现、启停、增删改和按会话工具隔离。腾讯文档令牌连接实测发现 224 个工具，并在 WorkDSH 会话内完成只读账号文档查询。新会话默认不选连接器；选择后详情弹窗关闭并在输入框旁显示连接器名称。交互式 OAuth、多账号和公共授权尚未验收。
+
+完整变化、验证和边界见[项目发行说明](releases/v0.1.0-alpha.2.md)。各插件仍保留独立包版本，不因项目 tag 统一改号。
+
 ## 2026-09-15 DSH 0.1.6 官方 Team 公开发布回执
 
 源码发行提交：`bbda262fd0f7d3332d1a9a864d24e0114b2dc811`。main 与 5 个模块 tag 已推送，5 个 GitHub prerelease 均已公开；共 23 个附件完成无认证 HTTP 200 回读，并与本地发行制品逐字节 SHA-256 一致。
@@ -94,7 +102,8 @@ Each release carries its own prebuilt package, checksums, and a manifest tying i
 | `workdsh-provider-identity-local` | `0.1.0-alpha.3` | 本地身份基础服务源码和测试，未作为独立用户安装包交付。 |
 | `workdsh-plugin-access` | `0.1.0-alpha.3` | 本地授权基础服务源码和测试，未作为独立用户安装包交付。 |
 | `workdsh-plugin-audit` | `0.1.0-alpha.2` | 本地审计基础服务源码和测试，未作为独立用户安装包交付。 |
-| 专家、连接器、项目、资料库等 | 见 [modules.json](modules.json) | 设计/规划模块，不生成空插件发布包。 |
+| 连接器 / Connectors | `0.1.0-alpha.1` | 项目级 `v0.1.0-alpha.2` 附带可安装包；令牌授权已验证，OAuth 仍在规划。 |
+| 项目、资料库等 | 见 [modules.json](modules.json) | 设计/规划模块，不生成空插件发布包。 |
 
 Workbench currently ships inside the presentation bundle. UI and contracts are shared development libraries. Local identity/access/audit are source-level foundations. None is advertised as an independently installable end-user plugin in this release. Planned modules receive their own releases only after actual package and lifecycle acceptance.
 

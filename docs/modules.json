@@ -36,10 +36,10 @@
       "src"
     ],
     "release": {
-      "version": "0.1.0-alpha.42",
+      "version": "0.1.0-alpha.45",
       "channel": "github-prerelease",
       "date": "2026-09-15",
-      "evidence": "docs/releases/2026-09-15-dsh-0.1.6-alpha.1.md"
+      "evidence": "docs/releases/v0.1.0-alpha.2.md"
     },
     "acceptanceNote": "精确8包Profile生命周期通过，不等于D10首期全部业务模块组合验收。"
   },
@@ -123,7 +123,8 @@
     "title": "连接器管理",
     "phase": "P1",
     "task": "P1-04",
-    "status": "planned",
+    "moduleVersion": "0.1",
+    "status": "in_progress",
     "directories": [
       "src/domain",
       "src/services",
@@ -133,7 +134,14 @@
       "src/client/components",
       "src/harness",
       "tests"
-    ]
+    ],
+    "release": {
+      "version": "0.1.0-alpha.1",
+      "channel": "github-prerelease",
+      "date": "2026-09-15",
+      "evidence": "docs/releases/v0.1.0-alpha.2.md"
+    },
+    "acceptanceNote": "已完成多实例 stdio/Streamable HTTP MCP、官方凭据引用、工具与资源发现、启停、增删改及按对话工具隔离；腾讯文档令牌连接实测发现 224 个工具并完成只读查询。交互式 OAuth、多账号、公共授权和完整审计尚未验收。"
   },
   {
     "path": "packages/plugins/applications",
