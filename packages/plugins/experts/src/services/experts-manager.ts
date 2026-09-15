@@ -418,6 +418,101 @@ export class ExpertsManager extends Service implements ExpertsService {
     throw new ExpertsError('experts/preset-broken', '专家需要官方标准模式（standard），但当前不可用。请恢复标准模式后重试；不会自动切换到 PTC、创造或其他模式。');
   }
 
+  /**
+   * Recompile an older published team for the current runtime without mutating its
+   * immutable revision. Existing Sessions keep their old binding; only future
+   * executions move to the derived revision. This is intentionally done on use so
+   * installations upgraded from an earlier WorkDSH release need no manual republish.
+   */
+  private async ensureCurrentExecutionRevision(actor: ActorContext, revision: ExpertRevision, signal?: AbortSignal): Promise<ExpertRevision> {
+    if (!revision.definition.team || revision.compilerVersion === COMPILER_VERSION) return revision;
+    return this.enqueue(async () => {
+      // Another concurrent prepare may already have advanced the published pointer.
+      const owner = this.loadExpert(revision.expertId);
+      const currentRef = owner.publishedRevisionRef;
+      if (currentRef && currentRef.revisionId !== revision.revisionId) {
+        const current = this.loadRevision(currentRef.expertId, currentRef.revisionId);
+        if (current.compilerVersion === COMPILER_VERSION && current.definitionDigest === revision.definitionDigest) return current;
+      }
+
+      const basePresetId = await this.resolveBasePreset(signal);
+      const upgradedMembers: Record<string, ExpertRevisionRef> = {};
+      for (const [memberName, ref] of Object.entries(revision.teamMembers ?? {})) {
+        signal?.throwIfAborted();
+        const source = this.loadRevision(ref.expertId, ref.revisionId);
+        const snapshotDirs: string[] = [];
+        for (const skill of source.dependencyLock) {
+          snapshotDirs.push((await this.ctx.workdshSkills.retainRevision(skill, { domain: EXPERT_DOMAIN, id: source.expertId }, signal)).snapshotDir);
+        }
+        const compiled = await compileExpertPreset(this.ctx, {
+          expertId: source.expertId,
+          definition: source.definition,
+          snapshotDirs,
+          basePresetId,
+        });
+        const revisionId = revisionIdFor(source.definitionDigest, source.dependencyLockDigest, compiled.presetId);
+        const upgraded: ExpertRevision = {
+          ...source,
+          revisionId,
+          presetRevisionRef: compiled.presetId,
+          compilerVersion: COMPILER_VERSION,
+          compositionDigest: compiled.compositionDigest,
+        };
+        if (!this.revisionsTable().get(keys.revision(source.expertId, revisionId))) {
+          await this.revisionsTable().put(keys.revision(source.expertId, revisionId), upgraded);
+        }
+        const member = this.loadExpert(source.expertId);
+        if (member.publishedRevisionRef?.revisionId === source.revisionId) {
+          await this.expertsTable().update(keys.expert(source.expertId), row => ({
+            ...row,
+            publishedRevisionRef: { expertId: source.expertId, revisionId },
+            revision: `r-${randomUUID()}`,
+            updatedAt: new Date().toISOString(),
+          }));
+        }
+        upgradedMembers[memberName] = { expertId: source.expertId, revisionId };
+      }
+
+      const snapshotDirs: string[] = [];
+      for (const skill of revision.dependencyLock) {
+        snapshotDirs.push((await this.ctx.workdshSkills.retainRevision(skill, { domain: EXPERT_DOMAIN, id: revision.expertId }, signal)).snapshotDir);
+      }
+      const compiled = await compileExpertPreset(this.ctx, {
+        expertId: revision.expertId,
+        definition: revision.definition,
+        snapshotDirs,
+        basePresetId,
+        teamMembers: upgradedMembers,
+      });
+      const revisionId = revisionIdFor(revision.definitionDigest, revision.dependencyLockDigest, compiled.presetId);
+      const upgraded: ExpertRevision = {
+        ...revision,
+        revisionId,
+        teamMembers: upgradedMembers,
+        presetRevisionRef: compiled.presetId,
+        compilerVersion: COMPILER_VERSION,
+        compositionDigest: compiled.compositionDigest,
+      };
+      if (!this.revisionsTable().get(keys.revision(revision.expertId, revisionId))) {
+        await this.revisionsTable().put(keys.revision(revision.expertId, revisionId), upgraded);
+      }
+      if (owner.publishedRevisionRef?.revisionId === revision.revisionId) {
+        await this.expertsTable().update(keys.expert(revision.expertId), row => ({
+          ...row,
+          publishedRevisionRef: { expertId: revision.expertId, revisionId },
+          revision: `r-${randomUUID()}`,
+          updatedAt: new Date().toISOString(),
+        }));
+      }
+      await this.audit(actor, 'experts.prepare-execution', revision.expertId, 'succeeded', 'experts/compiler-migration-succeeded', {
+        from: revision.compilerVersion,
+        to: COMPILER_VERSION,
+        revisionId,
+      });
+      return upgraded;
+    });
+  }
+
   // ── projections ───────────────────────────────────────────────────────────
 
   /** Cheap, ownership-derived capabilities. Non-owned rows deny by default (org phase deferred). */
@@ -1185,7 +1280,8 @@ export class ExpertsManager extends Service implements ExpertsService {
     if (expert.availability === 'disabled') throw new ExpertsError('experts/disabled', '专家已停用，请先启用后再召唤。');
     const targetRevisionId = revisionId ?? expert.publishedRevisionRef?.revisionId;
     if (targetRevisionId === undefined) throw new ExpertsError('experts/not-published', '专家尚未发布，无法召唤。');
-    const revision = this.loadRevision(expertId, targetRevisionId);
+    let revision = this.loadRevision(expertId, targetRevisionId);
+    revision = await this.ensureCurrentExecutionRevision(actor, revision, signal);
     const readiness = await this.computeReadiness(revision, actor, signal);
     const missing: DomainIssue[] = [];
     if (readiness === 'missing-dependency') missing.push({ code: 'experts/dependency-missing', message: '存在缺失或漂移的 Skill 依赖，请修复后再召唤。' });
@@ -1194,7 +1290,7 @@ export class ExpertsManager extends Service implements ExpertsService {
     const executionPlanId = `plan-${randomUUID()}`;
     const plan: ExecutionPlan = {
       executionPlanId,
-      expertRevisionRef: { expertId, revisionId: targetRevisionId },
+      expertRevisionRef: { expertId, revisionId: revision.revisionId },
       presetRevisionRef: revision.presetRevisionRef,
       ...(workspaceRef === undefined ? {} : { workspaceRef }),
       ...(workspaceId === undefined ? {} : { workspaceId }),

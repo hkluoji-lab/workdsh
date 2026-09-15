@@ -20,8 +20,9 @@ import { AuditJournal } from '../../packages/plugins/audit/dist/index.js';
 import { SkillManager } from '../../packages/plugins/skills/dist/index.js';
 import { ExpertsManager } from '../../packages/plugins/experts/dist/index.js';
 import { registerExpertExecutionGuard } from '../../packages/plugins/experts/dist/runtime/execution-guard.js';
-import { compileExpertPreset } from '../../packages/plugins/experts/dist/runtime/preset-compiler.js';
+import { COMPILER_VERSION, compileExpertPreset, expertPersonaConfig } from '../../packages/plugins/experts/dist/runtime/preset-compiler.js';
 import { definitionFromDocuments } from '../../packages/plugins/experts/dist/authoring/documents.js';
+import { keys } from '../../packages/plugins/experts/dist/storage/domain.js';
 
 test('authored expert package publishes complete MD and mounts retained bundled Skill resources', async () => {
   const h = await boot();
@@ -653,6 +654,20 @@ test('G01 compiling identical content reuses the preset and refuses existing dri
   } finally { await h.cleanup(); }
 });
 
+test('published legacy team instructions are migrated to official DSH Team tools at runtime', () => {
+  const definition = fullDefinition('Legacy team');
+  definition.agentDocument = `---\nname: legacy-team\ndescription: Legacy team\n---\nCall workdsh_expert_team_start, workdsh_expert_team_delegate, workdsh_expert_team_status, workdsh_expert_team_ask and workdsh_expert_team_deliver.`;
+  const persona = expertPersonaConfig({
+    definition,
+    teamMembers: { analyst: { expertId: 'member-1', revision: 'rev-1' } },
+  });
+  assert.match(persona.prefix, /spawn_teammate/);
+  assert.match(persona.prefix, /team_task_create/);
+  assert.match(persona.prefix, /team_task_list/);
+  assert.match(persona.prefix, /wait_agent/);
+  assert.doesNotMatch(persona.prefix, /workdsh_expert_team_/);
+});
+
 // Exercise official output validation/rendering, not only the execute JSON.
 test('authoring tool content preserves full definitions, CAS tokens and draft links without publish authority', async () => {
   const h = await boot();
@@ -835,7 +850,7 @@ test('complete authored team publishes once with fixed hidden member revisions',
     const files = {
       '.workdsh-expert/plugin.json': JSON.stringify({ name: 'public-team', expertType: 'team', agentName: 'public-team-team-lead', agents: ['./agents/public-team-team-lead.md', './agents/analyst.md', './agents/reviewer.md'], teamInfo: { leadAgent: 'public-team-team-lead', memberAgents: ['analyst', 'reviewer'] }, workflows: [{ id: 'report', title: 'Report', trigger: 'Produce a report', deliverable: 'Verified report', stages: [{ id: 'draft', worker: 'analyst', reviewer: 'reviewer', dependsOn: [] }] }] }),
       'settings.json': JSON.stringify({ agent: 'public-team-team-lead' }),
-      'agents/public-team-team-lead.md': doc('public-team-team-lead'),
+      'agents/public-team-team-lead.md': `${doc('public-team-team-lead')}\n\nCall workdsh_expert_team_start before workdsh_expert_team_delegate.`,
       'agents/analyst.md': doc('analyst'), 'agents/reviewer.md': doc('reviewer'),
       'README.md': 'Complete reusable team.'
     };
@@ -862,16 +877,38 @@ test('complete authored team publishes once with fixed hidden member revisions',
     assert.equal(teams.items[0].expertType, 'team');
     assert.equal((await h.experts.list(a, { expertType: 'agent', origin: 'personal' })).total, 0);
     assert.equal((await h.experts.list(a, { expertType: 'team', search: 'not-found' })).total, 0);
+
+    // Model an immutable revision published by the pre-0.1.6 compiler. Preparing a
+    // new execution must advance the published pointer to a derived current revision
+    // while leaving the historical row untouched for existing Session bindings.
+    const legacyRevisionId = 'rev-legacy-team-runtime';
+    await h.experts.revisionsTable().put(keys.revision(draft.expertId, legacyRevisionId), {
+      ...detail.revision,
+      revisionId: legacyRevisionId,
+      presetRevisionRef: 'standard',
+      compilerVersion: 'workdsh-expert-compiler/0.2-legacy-team',
+      compositionDigest: 'legacy-composition-digest',
+    });
+    await h.experts.expertsTable().update(keys.expert(draft.expertId), row => ({
+      ...row,
+      publishedRevisionRef: { expertId: draft.expertId, revisionId: legacyRevisionId },
+    }));
     const plan = await h.experts.prepareExecution(a, draft.expertId);
+    const migrated = await h.experts.get(a, draft.expertId);
+    assert.equal(migrated.revision.compilerVersion, COMPILER_VERSION);
+    assert.equal(plan.expertRevisionRef.revisionId, migrated.revision.revisionId);
+    assert.notEqual(plan.presetRevisionRef, 'standard');
+    assert.equal(h.experts.revisionsTable().get(keys.revision(draft.expertId, legacyRevisionId)).compilerVersion, 'workdsh-expert-compiler/0.2-legacy-team');
+    assert.doesNotMatch(await h.ctx.agentPresets.read(plan.presetRevisionRef), /workdsh_expert_team_/);
     const execution = await h.experts.createExecution(a, plan.executionPlanId, { operationId: 'native-asset-binding' });
-    assert.equal((await h.experts.resolveNativeRole(a, execution.sessionId, 'analyst')).revision.revisionId, detail.revision.teamMembers.analyst.revisionId);
+    assert.equal((await h.experts.resolveNativeRole(a, execution.sessionId, 'analyst')).revision.revisionId, migrated.revision.teamMembers.analyst.revisionId);
     await h.experts.setAvailability(a, draft.expertId, 'disabled', { operationId: 'native-team-disable' });
     await assert.rejects(h.experts.resolveNativeRole(a, execution.sessionId, 'analyst'), error => error.code === 'experts/disabled');
     await h.experts.setAvailability(a, draft.expertId, 'enabled', { operationId: 'native-team-enable' });
-    await assert.rejects(h.experts.setAvailability(a, detail.revision.teamMembers.analyst.expertId, 'disabled', { operationId: 'native-member-disable' }), error => error.code === 'experts/forbidden');
-    assert.equal((await h.experts.resolveNativeRole(a, execution.sessionId, 'reviewer')).revision.revisionId, detail.revision.teamMembers.reviewer.revisionId);
+    await assert.rejects(h.experts.setAvailability(a, migrated.revision.teamMembers.analyst.expertId, 'disabled', { operationId: 'native-member-disable' }), error => error.code === 'experts/forbidden');
+    assert.equal((await h.experts.resolveNativeRole(a, execution.sessionId, 'reviewer')).revision.revisionId, migrated.revision.teamMembers.reviewer.revisionId);
     const cold = await boot(h.root);
-    try { assert.deepEqual((await cold.experts.get(a, draft.expertId)).revision.teamMembers, detail.revision.teamMembers); }
+    try { assert.deepEqual((await cold.experts.get(a, draft.expertId)).revision.teamMembers, migrated.revision.teamMembers); }
     finally { await cold.cleanup(); }
   } finally { await h.cleanup(); }
 });

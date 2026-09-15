@@ -33,11 +33,26 @@ import { sha256, shortDigest } from '../domain/digest.js';
  * mutating the parsed YAML Document in place.
  */
 
-export const COMPILER_VERSION = 'workdsh-expert-compiler/0.2-native-team';
+export const COMPILER_VERSION = 'workdsh-expert-compiler/0.3-official-team-migration';
 
 const PERSONA_MODULE = '@deepseek-ai/dsh-persona';
 const SKILL_FS_MODULE = '@deepseek-ai/dsh-skill-filesystem';
 const TOOL_SKILL_MODULE = '@deepseek-ai/dsh-tool-skill';
+
+const LEGACY_TEAM_TOOL_REPLACEMENTS: Readonly<Record<string, string>> = {
+  workdsh_expert_team_start: '官方 Team 已随当前会话建立（无需调用建团工具）',
+  workdsh_expert_team_ask: '`spawn_teammate`、`send_message` 与 `wait_agent`',
+  workdsh_expert_team_delegate: '`spawn_teammate`、`team_task_create` 与 `send_message`',
+  workdsh_expert_team_status: '`list_agents`、`team_task_list` 与 `team_task_get`',
+  workdsh_expert_team_complete: '`team_task_update`',
+  workdsh_expert_team_deliver: '完成共享任务后直接汇总交付',
+  workdsh_expert_team_cancel: '`interrupt_agent` 或更新共享任务状态',
+};
+
+/** Keep older published team assets usable after the 0.1.6 official Team migration. */
+export function migrateLegacyTeamInstructions(text: string): string {
+  return text.replace(/workdsh_expert_team_(?:start|ask|delegate|status|complete|deliver|cancel)\b/g, tool => LEGACY_TEAM_TOOL_REPLACEMENTS[tool] ?? tool);
+}
 
 export interface CompiledPreset {
   readonly presetId: string;
@@ -199,10 +214,12 @@ export async function verifyPackageFiles(presetDir: string, files: Readonly<Reco
 }
 
 export function expertPersonaConfig(input: Pick<CompileInput, 'definition' | 'packageRoot' | 'teamMembers'>) {
-  const prefix = [compilePersonaPrefix(input.definition), ...(input.packageRoot ? [`专家作品资源目录：${input.packageRoot}。bin 下的工具已随发布版本安装；用原生 bash 按此路径调用，仍遵守沙箱和审批。`] : []), ...(input.teamMembers ? [
+  const authoredPersona = compilePersonaPrefix(input.definition);
+  const prefix = [...(input.teamMembers ? [
     readFileSync(new URL('../../resources/skills/workdsh-expert-manager/runtime/team-lead.md', import.meta.url), 'utf8'),
     JSON.stringify({ members: input.teamMembers, workflows: input.definition.team?.workflows }),
-  ] : [])].join('\n\n');
+    migrateLegacyTeamInstructions(authoredPersona),
+  ] : [authoredPersona]), ...(input.packageRoot ? [`专家作品资源目录：${input.packageRoot}。bin 下的工具已随发布版本安装；用原生 bash 按此路径调用，仍遵守沙箱和审批。`] : [])].join('\n\n');
   const suffix = compilePersonaSuffix(input.definition);
   return { prefix, suffix, complete: false, includeRuntimeContext: true };
 }
