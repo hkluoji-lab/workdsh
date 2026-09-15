@@ -67,7 +67,7 @@ WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终
 
 ## 当前预览状态
 
-最新公开 Web 预览已在 **Harness `0.1.6-alpha.1`、Node.js `22.23.2`、macOS** 上完成真实安装包与冷启动验证。技能管理、单个专家、Office 工作副本和协作动态均已有 alpha 模块。
+最新公开 Web 预览已在 **Harness `0.1.6-alpha.1`、Node.js `22.23.2`、macOS** 上完成真实安装包与冷启动验证。技能管理、已发布专家、官方 Team 协作、Office 工作副本和协作动态均已有 alpha 模块。
 
 它仍是开发预览：专家团完整真实模型流程、任意复杂 Office 文件保真和多平台验收尚未完成；默认只监听本机，也不宣称已经具备可直接暴露公网的生产级多租户能力。下文保留精确版本、校验值、能力边界和验证证据。
 
@@ -123,11 +123,11 @@ flowchart TB
 
 | 模块 | 包版本 | 下载 | 安装范围 |
 | --- | --- | --- | --- |
-| 技能管理 | `workdsh-plugin-skills@0.1.0-alpha.28` | [技能 `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.28/workdsh-plugin-skills-0.1.0-alpha.28.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28) | 可独立安装的 Harness 功能插件。 |
-| 专家 | `workdsh-plugin-experts@0.1.0-alpha.2` | [专家 `.tgz`](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.2/workdsh-plugin-experts-0.1.0-alpha.2.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.2) | 专家定义、已审阅修订、技能配备和原生任务交接。 |
-| 工作动态 | `workdsh-plugin-activity@0.1.0-alpha.1` | [动态 `.tgz`](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.1/workdsh-plugin-activity-0.1.0-alpha.1.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.1) | 显示任务、技能和专家团队工作状态。 |
-| Office | `workdsh-plugin-office@0.1.0-alpha.4` | [Office `.tgz`](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.4/workdsh-plugin-office-0.1.0-alpha.4.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4) | 支持范围内的可编辑工作副本、预览和文件导出。 |
-| WorkDSH 展示组合 | `workdsh-bundle@0.1.0-alpha.41` | [展示 `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.41/workdsh-bundle-0.1.0-alpha.41.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.41) | 可选品牌、主题与工作台组合；Skill 需单独安装。 |
+| 技能管理 | `workdsh-plugin-skills@0.1.0-alpha.29` | [技能 `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.29/workdsh-plugin-skills-0.1.0-alpha.29.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.29) | 可独立安装的 Harness 功能插件。 |
+| 专家 | `workdsh-plugin-experts@0.1.0-alpha.3` | [专家 `.tgz`](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.3/workdsh-plugin-experts-0.1.0-alpha.3.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.3) | 专家定义、已审阅修订及其与官方 DSH Team 运行时的组合。 |
+| 工作动态 | `workdsh-plugin-activity@0.1.0-alpha.2` | [动态 `.tgz`](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.2/workdsh-plugin-activity-0.1.0-alpha.2.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.2) | 显示任务、技能和专家团队工作状态。 |
+| Office | `workdsh-plugin-office@0.1.0-alpha.5` | [Office `.tgz`](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.5/workdsh-plugin-office-0.1.0-alpha.5.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5) | 支持范围内的可编辑工作副本、预览和文件导出。 |
+| WorkDSH 展示组合 | `workdsh-bundle@0.1.0-alpha.42` | [展示 `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.42/workdsh-bundle-0.1.0-alpha.42.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.42) | 可选品牌、主题与工作台组合；Skill 需单独安装。 |
 
 Workbench `alpha.10` 目前随展示包交付。共享 UI、contracts 和本地身份/授权/审计基础属于配套包，**不作为面向用户的独立下载项**。完整对应关系见[模块发布说明](docs/RELEASES.md)。
 
@@ -141,7 +141,7 @@ Workbench `alpha.10` 目前随展示包交付。共享 UI、contracts 和本地�
 
 ```sh
 dsh --profile workdsh --from-default-profile web --dump-config
-dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.28.tgz
+dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.29.tgz
 dsh --profile workdsh
 ```
 
@@ -150,7 +150,7 @@ dsh --profile workdsh
 需要 WorkDSH 外观时，先停止该 Profile，再安装可选展示包并重启：
 
 ```sh
-dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.41.tgz
+dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.42.tgz
 dsh --profile workdsh
 ```
 
@@ -217,7 +217,7 @@ corepack pnpm probe:browser
 
 ### 原生 PPT 编辑预览
 
-[Office alpha.4 预发布与安装包](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4)
+[Office alpha.5 预发布与安装包](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5)
 
 ![WorkDSH 原生 PPT 编辑](docs/assets/screenshots/workdsh-ppt-live-preview.png)
 

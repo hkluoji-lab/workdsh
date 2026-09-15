@@ -1,3 +1,15 @@
+## 2026-09-15 DSH 0.1.6 官方 Team 预发布
+
+本批使用 DeepSeek Harness `0.1.6-alpha.1`，以官方 Team 替代 WorkDSH 自建专家团执行器。五个独立模块版本为 experts alpha.3、skills alpha.29、activity alpha.2、office alpha.5、bundle alpha.42；专家发行附 identity-local alpha.5、audit alpha.4、access alpha.5。安装包、摘要和 manifest 见各模块发布页；未发布 npm。完整变化、验证与已知边界见[本批发布说明](releases/2026-09-15-dsh-0.1.6-alpha.1.md)。
+
+| 模块 | 安装包版本 | 下载 |
+| --- | --- | --- |
+| experts | `workdsh-plugin-experts@0.1.0-alpha.3` | [Release](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.3) · [tgz](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.3/workdsh-plugin-experts-0.1.0-alpha.3.tgz) |
+| skills | `workdsh-plugin-skills@0.1.0-alpha.29` | [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.29) · [tgz](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.29/workdsh-plugin-skills-0.1.0-alpha.29.tgz) |
+| activity | `workdsh-plugin-activity@0.1.0-alpha.2` | [Release](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.2) · [tgz](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.2/workdsh-plugin-activity-0.1.0-alpha.2.tgz) |
+| office | `workdsh-plugin-office@0.1.0-alpha.5` | [Release](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5) · [tgz](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.5/workdsh-plugin-office-0.1.0-alpha.5.tgz) |
+| bundle | `workdsh-bundle@0.1.0-alpha.42` | [Release](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.42) · [tgz](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.42/workdsh-bundle-0.1.0-alpha.42.tgz) |
+
 ## 2026-09-14 公开发布回执
 
 源码发行提交：`557d076f12d8e18003edf6940793acf2055d111c`。main已推送，5个独立模块tag均指向该提交；全部为公开prerelease，未覆盖旧附件。

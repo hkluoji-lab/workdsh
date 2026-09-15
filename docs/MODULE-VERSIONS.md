@@ -34,11 +34,11 @@
 | 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.10` | implemented |
 | 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.3` | in_progress |
 | 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.29` | implemented |
-| 资源授权 | 0.1 | `workdsh-plugin-access@0.1.0-alpha.4` | implemented |
-| 审计 | 0.1 | `workdsh-plugin-audit@0.1.0-alpha.3` | implemented |
-| 本地身份提供方 | 0.1 | `workdsh-provider-identity-local@0.1.0-alpha.4` | implemented |
+| 资源授权 | 0.1 | `workdsh-plugin-access@0.1.0-alpha.5` | implemented |
+| 审计 | 0.1 | `workdsh-plugin-audit@0.1.0-alpha.4` | implemented |
+| 本地身份提供方 | 0.1 | `workdsh-provider-identity-local@0.1.0-alpha.5` | implemented |
 | Office 浏览器编辑插件 | 0.1 | `workdsh-plugin-office@0.1.0-alpha.5` | in_progress |
-| 协作与活动展示 | 0.1 | `workdsh-plugin-activity@0.1.0-alpha.1` | in_progress |
+| 协作与活动展示 | 0.1 | `workdsh-plugin-activity@0.1.0-alpha.2` | in_progress |
 
 以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
 

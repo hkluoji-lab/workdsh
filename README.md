@@ -123,11 +123,11 @@ Each installable module has a matching **GitHub prerelease, versioned package, S
 
 | Module | Package version | Download | Scope |
 | --- | --- | --- | --- |
-| Skill management | `workdsh-plugin-skills@0.1.0-alpha.28` | [Skill `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.28/workdsh-plugin-skills-0.1.0-alpha.28.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28) | Independently installable feature plugin. |
-| Experts | `workdsh-plugin-experts@0.1.0-alpha.2` | [Expert `.tgz`](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.2/workdsh-plugin-experts-0.1.0-alpha.2.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.2) | Expert definitions, reviewed revisions, skills, and native-task handoff. |
-| Activity | `workdsh-plugin-activity@0.1.0-alpha.1` | [Activity `.tgz`](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.1/workdsh-plugin-activity-0.1.0-alpha.1.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.1) | Visible task, skill, and expert-team activity. |
-| Office | `workdsh-plugin-office@0.1.0-alpha.4` | [Office `.tgz`](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.4/workdsh-plugin-office-0.1.0-alpha.4.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4) | Supported editable working copies, previews, and file export. |
-| WorkDSH presentation | `workdsh-bundle@0.1.0-alpha.41` | [Presentation `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.41/workdsh-bundle-0.1.0-alpha.41.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.41) | Optional brand, theme, and workbench composition. Install Skill separately. |
+| Skill management | `workdsh-plugin-skills@0.1.0-alpha.29` | [Skill `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.29/workdsh-plugin-skills-0.1.0-alpha.29.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.29) | Independently installable feature plugin. |
+| Experts | `workdsh-plugin-experts@0.1.0-alpha.3` | [Expert `.tgz`](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.3/workdsh-plugin-experts-0.1.0-alpha.3.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.3) | Expert definitions and reviewed revisions composed with the official DSH Team runtime. |
+| Activity | `workdsh-plugin-activity@0.1.0-alpha.2` | [Activity `.tgz`](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.2/workdsh-plugin-activity-0.1.0-alpha.2.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.2) | Visible task, skill, and expert-team activity. |
+| Office | `workdsh-plugin-office@0.1.0-alpha.5` | [Office `.tgz`](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.5/workdsh-plugin-office-0.1.0-alpha.5.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5) | Supported editable working copies, previews, and file export. |
+| WorkDSH presentation | `workdsh-bundle@0.1.0-alpha.42` | [Presentation `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.42/workdsh-bundle-0.1.0-alpha.42.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.42) | Optional brand, theme, and workbench composition. Install Skill separately. |
 
 Workbench `alpha.10` is currently delivered within the presentation bundle. Shared UI, contracts, and the local identity/access/audit foundation are supporting packages, **not standalone end-user downloads**. See the [complete module map](docs/RELEASES.md).
 
@@ -141,7 +141,7 @@ Download the Skill `.tgz` above. Create a dedicated Web Profile and replace the 
 
 ```sh
 dsh --profile workdsh --from-default-profile web --dump-config
-dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.28.tgz
+dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.29.tgz
 dsh --profile workdsh
 ```
 
@@ -150,7 +150,7 @@ Open **专家 · 技能 · 连接器 → 技能** in the sidebar. Use **添加�
 To add the WorkDSH appearance, stop that Profile, install the optional bundle, then restart:
 
 ```sh
-dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.41.tgz
+dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.42.tgz
 dsh --profile workdsh
 ```
 
@@ -231,7 +231,7 @@ Public expert creation is reusable across domains, with methods, real Skill sele
 
 ### Native PPT editing preview
 
-[Office alpha.4 prerelease and installable archive](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4)
+[Office alpha.5 prerelease and installable archive](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5)
 
 ![WorkDSH 原生 PPT 编辑](docs/assets/screenshots/workdsh-ppt-live-preview.png)
 
@@ -304,10 +304,10 @@ The current build inventory additionally includes the following package versions
 
 | 模块 | 安装包版本 | 下载 |
 | --- | --- | --- |
-| experts | `workdsh-plugin-experts@0.1.0-alpha.2` | [Release](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.2) · [tgz](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.2/workdsh-plugin-experts-0.1.0-alpha.2.tgz) |
-| skills | `workdsh-plugin-skills@0.1.0-alpha.28` | [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28) · [tgz](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.28/workdsh-plugin-skills-0.1.0-alpha.28.tgz) |
-| activity | `workdsh-plugin-activity@0.1.0-alpha.1` | [Release](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.1) · [tgz](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.1/workdsh-plugin-activity-0.1.0-alpha.1.tgz) |
-| office | `workdsh-plugin-office@0.1.0-alpha.4` | [Release](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4) · [tgz](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.4/workdsh-plugin-office-0.1.0-alpha.4.tgz) |
-| bundle | `workdsh-bundle@0.1.0-alpha.41` | [Release](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.41) · [tgz](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.41/workdsh-bundle-0.1.0-alpha.41.tgz) |
+| experts | `workdsh-plugin-experts@0.1.0-alpha.3` | [Release](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.3) · [tgz](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.3/workdsh-plugin-experts-0.1.0-alpha.3.tgz) |
+| skills | `workdsh-plugin-skills@0.1.0-alpha.29` | [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.29) · [tgz](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.29/workdsh-plugin-skills-0.1.0-alpha.29.tgz) |
+| activity | `workdsh-plugin-activity@0.1.0-alpha.2` | [Release](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.2) · [tgz](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.2/workdsh-plugin-activity-0.1.0-alpha.2.tgz) |
+| office | `workdsh-plugin-office@0.1.0-alpha.5` | [Release](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5) · [tgz](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.5/workdsh-plugin-office-0.1.0-alpha.5.tgz) |
+| bundle | `workdsh-bundle@0.1.0-alpha.42` | [Release](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.42) · [tgz](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.42/workdsh-bundle-0.1.0-alpha.42.tgz) |
 
 下载所需tgz后，使用官方CLI：`dsh plugin --profile <profile> add /absolute/path/<package>.tgz`。基础身份、审计与授权配套见专家发行附件；各模块独立安装。仅发布GitHub alpha附件，未发布npm注册表。Office依赖引用与声明许可证见下文；现有notice及检查报告保留。

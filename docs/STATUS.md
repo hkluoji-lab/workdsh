@@ -1,3 +1,9 @@
+## 2026-09-15：DSH 0.1.6 官方 Team 发布候选
+
+本批候选版本为 experts alpha.3、skills alpha.29、activity alpha.2、office alpha.5、bundle alpha.42；配套 identity-local alpha.5、audit alpha.4、access alpha.5。自建专家团执行器已移除，已发布旧团队在下次调用时升级为新的官方 Team 执行修订，历史修订保持不可变。
+
+发布门槛已通过 build、typecheck、integration 102/102、activity 9/9、check:versions、check:plan、P0 acceptance、官方 Team 生产探针和真实 Web 提示词核对。P1 长期台账 52 项继续保留；官方 fork 历史查询缺陷、跨平台、60 分钟资源收敛与 Office 10 项许可证正文缺口写入 alpha 边界。发布说明见 [2026-09-15 DSH 0.1.6 alpha](releases/2026-09-15-dsh-0.1.6-alpha.1.md)。
+
 ## 2026-09-15：官方 Team 替换已实现并完成隔离验证
 
 已移除自建 TeamRunsManager、SOP 运行状态机/团队运行表、workdsh_expert_team_* 工具和 workdsh-expert 委派 provider。正式插件通过 patch 装配 0.1.6-alpha.1 官方 Team 服务、九项工具和官方 Web Client；构建先清理 dist，候选 tgz 无旧执行器。专家作品、成员与技能固定修订、授权和历史保留为资产；公开 agent/created / pre-step 将对应 Persona/Skill Filesystem 挂在官方成员作用域，不创建自有子任务运行表。旧委派记录保留但不续跑旧调度器，需重新召唤官方 Team 任务。

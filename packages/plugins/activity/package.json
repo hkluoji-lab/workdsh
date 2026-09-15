@@ -1,6 +1,6 @@
 {
   "name": "workdsh-plugin-activity",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "type": "module",
   "private": false,
   "description": "Compact animated activity presentation for standard DSH sessions",
@@ -22,7 +22,8 @@
     "dist",
     "README.md",
     "cordis.patch.yml",
-    "DESIGN.md"
+    "DESIGN.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "corepack pnpm --filter workdsh-contracts build && tsc -p tsconfig.json && node ../../../scripts/build-activity.mjs",

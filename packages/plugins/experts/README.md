@@ -63,9 +63,9 @@ corepack pnpm probe:experts:team:web
 
 ```sh
 dsh --profile workdsh --from-default-profile web --dump-config
-dsh plugin --profile workdsh add /absolute/path/release/workdsh-provider-identity-local-0.1.0-alpha.4.tgz \
-  /absolute/path/release/workdsh-plugin-audit-0.1.0-alpha.3.tgz \
-  /absolute/path/release/workdsh-plugin-access-0.1.0-alpha.4.tgz \
+dsh plugin --profile workdsh add /absolute/path/release/workdsh-provider-identity-local-0.1.0-alpha.5.tgz \
+  /absolute/path/release/workdsh-plugin-audit-0.1.0-alpha.4.tgz \
+  /absolute/path/release/workdsh-plugin-access-0.1.0-alpha.5.tgz \
   /absolute/path/release/workdsh-plugin-skills-0.1.0-alpha.29.tgz \
   /absolute/path/release/workdsh-plugin-experts-0.1.0-alpha.3.tgz
 dsh --profile workdsh
