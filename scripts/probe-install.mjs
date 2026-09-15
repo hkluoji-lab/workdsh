@@ -70,6 +70,8 @@ try {
   await command(dsh, ['plugin', '--profile', 'probe', 'add', skillsTarball, tarball]);
   const config = await command(dsh, ['--profile', 'probe', '--dump-config']);
   assert.ok(config.includes('workdsh-installation-probe'));
+  assert.ok(config.includes("name: '@deepseek-ai/dsh-computer-use'"));
+  assert.ok(config.includes("name: '@deepseek-ai/dsh-experimental-computer-use-cua-driver-native'"));
   assert.equal(config.split('id: workdsh-skills').length - 1, 1);
   const installed = JSON.parse(readFileSync(resolve(home, 'profiles/probe/node_modules/workdsh-bundle/package.json'), 'utf8'));
   assert.equal(installed.version, version);
@@ -137,6 +139,8 @@ try {
   await command(dsh, ['plugin', '--profile', 'probe', 'remove', 'workdsh-bundle']);
   const removed = await command(dsh, ['--profile', 'probe', '--dump-config']);
   assert.ok(!removed.includes('workdsh-installation-probe'));
+  assert.ok(!removed.includes("name: '@deepseek-ai/dsh-computer-use'"));
+  assert.ok(!removed.includes("name: '@deepseek-ai/dsh-experimental-computer-use-cua-driver-native'"));
   startServer();
   await until(() => /http:\/\/127\.0\.0\.1:\d+/.test(serverOutput), 'restart after removal');
   const removedAddress = serverOutput.match(/http:\/\/127\.0\.0\.1:\d+/)[0];

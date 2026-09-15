@@ -1,6 +1,6 @@
 {
   "name": "workdsh-bundle",
-  "version": "0.1.0-alpha.42",
+  "version": "0.1.0-alpha.43",
   "private": true,
   "type": "module",
   "description": "WorkDSH default Harness bundle and client composition",
@@ -63,10 +63,12 @@
     "@deepseek-ai/dsh-skill": "0.1.6-alpha.1",
     "@types/react": "19.2.14",
     "react": "19.2.4",
-    "workdsh-ui": "workspace:*",
-    "workdsh-plugin-workbench": "workspace:*"
+    "workdsh-plugin-workbench": "workspace:*",
+    "workdsh-ui": "workspace:*"
   },
   "dependencies": {
+    "@deepseek-ai/dsh-computer-use": "0.1.6-alpha.1",
+    "@deepseek-ai/dsh-experimental-computer-use-cua-driver-native": "0.1.6-alpha.1",
     "yaml": "2.9.0"
   }
 }
