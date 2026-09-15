@@ -143,7 +143,14 @@ export interface OfficeHtmlSnapshot extends Omit<OfficeSnapshot, "kind" | "state
 export interface OfficeHtmlOpenInput {source:"new";kind:"html";title:string;operationId:string}
 export interface OfficeHtmlEditInput extends Omit<OfficeEditInput,"operations"> {operations:{op:"html.replaceDocument";html:string}[]}
 export type OfficeContentSnapshot = OfficeSnapshot | OfficePresentationSnapshot | OfficeSpreadsheetSnapshot | OfficeHtmlSnapshot | OfficePdfSnapshot;
-export interface OfficePresentationOpenInput {
+export type OfficePresentationOpenInput = {
+  source: "pptx";
+  kind: "presentation";
+  title: string;
+  operationId: string;
+  /** Internal service transport; model-facing tool reads via Harness fs. */
+  bytes: string;
+} | {
   source: "new";
   kind: "presentation";
   title: string;

@@ -43,9 +43,10 @@ import {
   runInput,
   blockInput,
   parse,
+  OfficeError,
 } from "./model.js";
 
-import {parsePresentation,createPresentation,applyPresentation} from "../presentation/native-deck.js";
+import {parsePresentation,createPresentation,importPresentation,applyPresentation} from "../presentation/native-deck.js";
 
 declare module "@deepseek-ai/cordis" {
   interface Context {
@@ -309,7 +310,7 @@ export class ContentService extends Service {
   ): Promise<OfficeContentSnapshot> {
     const value = parse(contentOpenInput, input);
     ensure(!("kind" in value) || value.kind!=="presentation" || this.presentationEnabled,"UNSUPPORTED_KIND","此 Office 制品未装配 PPT 编辑器。");
-    ensure(Buffer.byteLength(JSON.stringify(value)) <= 1024 * 1024, "LIMIT_REACHED", "导入正文超过1 MiB。请拆分文档。");
+    ensure(Buffer.byteLength(JSON.stringify(value)) <= (value.source === "pptx" ? 13*1024*1024 : 1024 * 1024), "LIMIT_REACHED", "导入正文超过1 MiB。请拆分文档。");
     if (value.source === "existing") {
       const snapshot = await this.read(actor, value.documentId, signal);
       await this.present(actor, value.documentId, signal);
@@ -390,8 +391,8 @@ export class ContentService extends Service {
         },
       };
       if ("kind" in value && value.kind === "presentation") {
-        const deck=await createPresentation(value.title);
-        deck.slides=deck.slides.slice(0,1);
+        const deck=value.source === "pptx" ? await importPresentation(value.title,value.bytes) : await createPresentation(value.title);
+        if(value.source!=="pptx")deck.slides=deck.slides.slice(0,1);
         record.state={modelVersion:1,deck,focusSlideId:deck.slides[0].id};
       }
       if ("kind" in value && value.kind === "spreadsheet") {
@@ -407,6 +408,7 @@ export class ContentService extends Service {
       }
       signal?.throwIfAborted();
       ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
+      ensure(Buffer.byteLength(JSON.stringify(record.state)) < 30*1024*1024,"LIMIT_REACHED","工作副本超过 30 MiB。请使用更小的模板。");
       await this.table.put(documentId, record);
       await this.flushAudit(documentId);
       return this.snapshot(record);
@@ -509,7 +511,7 @@ export class ContentService extends Service {
   }
   capabilities() {
     ensure(!this.closed, "UNAVAILABLE", "Office 内容服务已停止。");
-    return {...capabilities,pdf:{operations:["pdf.insertPage","pdf.updatePage","pdf.removePage"],coordinateSystem:"top-left points",pageLimits:{pages:50,elements:100},newDocument:true,existingPdfImport:false,elementSchema:"text: id,type,x,y,width,height,text,fontSize,lineHeight,color; rectangle: id,type,x,y,width,height,fill; page: id,width,height,background,elements",font:"bundled static Noto Sans SC, fully embedded",export:{tool:"content_export",browser:"pdf"}},html:{operations:["html.replaceDocument"],state:{modelVersion:1,html:"string"},maxBytes:1048576,preview:"sandboxed inline-only single-file HTML",export:{tool:"content_export",browser:"html"}},...(this.spreadsheetEnabled?{spreadsheet:spreadsheetCapabilities}:{}),...(this.presentationEnabled?{presentation:{model:"pptx-react-viewer@3.16.5",stateFormat:"pptx-viewer-core native slides and PPTX bytes",operations:["presentation.insertSlides","presentation.updateSlide","presentation.removeSlide","presentation.moveSlide"],limits:{slides:50,elementsPerSlide:200,contentSlidesPerCommit:1},export:{browser:"pptx",tool:"content_export",maxBytes:8*1024*1024}}}:{})};
+    return {...capabilities,pdf:{operations:["pdf.insertPage","pdf.updatePage","pdf.removePage"],coordinateSystem:"top-left points",pageLimits:{pages:50,elements:100},newDocument:true,existingPdfImport:false,elementSchema:"text: id,type,x,y,width,height,text,fontSize,lineHeight,color; rectangle: id,type,x,y,width,height,fill; page: id,width,height,background,elements",font:"bundled static Noto Sans SC, fully embedded",export:{tool:"content_export",browser:"pdf"}},html:{operations:["html.replaceDocument"],state:{modelVersion:1,html:"string"},maxBytes:1048576,preview:"sandboxed inline-only single-file HTML",export:{tool:"content_export",browser:"html"}},...(this.spreadsheetEnabled?{spreadsheet:spreadsheetCapabilities}:{}),...(this.presentationEnabled?{presentation:{model:"pptx-react-viewer@3.16.5",stateFormat:"pptx-viewer-core native slides and PPTX bytes",templateImport:{tool:"content_import_pptx",source:"pptx",maxBytes:8*1024*1024,preservesOriginalPackage:true},operations:["presentation.insertSlides","presentation.updateSlide","presentation.updateText","presentation.removeSlide","presentation.moveSlide"],limits:{slides:50,elementsPerSlide:200,contentSlidesPerCommit:1},export:{browser:"pptx",tool:"content_export",maxBytes:8*1024*1024}}}:{})};
   }
   edit(
     actor: ActorContext,
@@ -538,9 +540,9 @@ export class ContentService extends Service {
     const value = target.kind === "presentation" ? parse(presentationEditInput,input) : target.kind === "spreadsheet" ? parse(spreadsheetEditInput,input) : target.kind === "pdf" ? parse(pdfEditInput,input) : target.kind === "html" ? parse(htmlEditInput,input) : parse(editInput,input);
     ensure(
       Buffer.byteLength(JSON.stringify(value)) <=
-        capabilities.limits.batchBytes,
+        (human && target.kind === "presentation" ? 30*1024*1024 : capabilities.limits.batchBytes),
       "LIMIT_REACHED",
-      "单批编辑不能超过 1 MiB。",
+      "编辑内容超过此通道的大小限制。",
     );
     return this.enqueue(async () => {
       await this.authorize(actor, "edit", this.get(value.documentId), signal);
@@ -554,7 +556,7 @@ export class ContentService extends Service {
         const active=existing.lease?.generation===this.generation && existing.lease.expiresAt>Date.now();
         if(!human)ensure(!active,"HUMAN_EDITING","用户正在编辑，请等待用户保存。");
         if(!human)ensure(!value.operations.some(op=>op&&typeof op==="object"&&"op" in op&&op.op==="presentation.replaceDeck"),"INVALID_INPUT","AI 请使用幻灯片语义操作。");
-        try {preparedDeck=await applyPresentation(preparedState.deck,value.operations);}catch(error){ensure(false,"INVALID_INPUT",error instanceof Error?error.message:"无效 PPT 操作");}
+        try {preparedDeck=await applyPresentation(preparedState.deck,value.operations);}catch(error){if(error instanceof OfficeError)throw error;ensure(false,"INVALID_INPUT",error instanceof Error?error.message:"无效 PPT 操作");}
       }
       let preparedPdf:z.infer<typeof pdfStateSchema>|undefined;
       if("pages" in preparedState && !existing.receipts[key]) {
@@ -610,7 +612,7 @@ export class ContentService extends Service {
         if("deck" in current.state && !human) {
           for(const operation of value.operations) {
             const op=operation as {op?:string;slideId?:string;slides?:{id:string}[]};
-            if(op.op==="presentation.updateSlide" && op.slideId) contentSlideIds.add(op.slideId);
+            if((op.op==="presentation.updateSlide" || op.op==="presentation.updateText") && op.slideId) contentSlideIds.add(op.slideId);
             if(op.op==="presentation.insertSlides") for(const slide of op.slides??[]) contentSlideIds.add(slide.id);
           }
           ensure(contentSlideIds.size<=1,"INVALID_INPUT","PPT 内容请逐页提交：每次最多新增或更新一页；删页、排序可批量完成。");

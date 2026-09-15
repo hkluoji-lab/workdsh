@@ -42,7 +42,7 @@ export function Modal({ open, label, children, className = '', onClose }: ModalP
   return (
     <div className="wd-dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
       <div ref={dialog} className={`wd-dialog ${className}`.trim()} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1}>
-        <button type="button" className="wd-dialog-close" aria-label="关闭" onClick={onClose}><span aria-hidden>×</span></button>
+        <button type="button" className="wd-dialog-close" aria-label="关闭" onClick={onClose}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
         {children}
       </div>
     </div>

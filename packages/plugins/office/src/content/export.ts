@@ -48,8 +48,9 @@ export async function exportAndPresent(
   // Existing destination bytes are checked; neither symlinks nor changed files are overwritten.
   const script = `const fs=require("node:fs"),crypto=require("node:crypto");fs.mkdirSync("output",{recursive:true});if(!fs.lstatSync("output").isDirectory())throw Error("Invalid output directory");const p=Buffer.from("${Buffer.from(path).toString("base64")}","base64").toString("utf8"),b=Buffer.from("${bytes.toString("base64")}","base64"),t="output/.office-${crypto.randomUUID()}.tmp";fs.writeFileSync(t,b,{flag:"wx"});try{try{fs.linkSync(t,p)}catch(e){if(e.code!=="EEXIST")throw e;if(!fs.lstatSync(p).isFile()||crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex")!=="${digest}")throw Error("Export destination conflict")}}finally{fs.unlinkSync(t)}console.log("${marker}")`;
   const commands = [`node -e '${script}'`];
-  if (isPdf) {
-    // Complete embedded fonts exceed shell argument/terminal-input limits.
+  if (bytes.length > 96 * 1024) {
+    // PPTX templates, embedded PDF fonts and other large files exceed shell
+    // argument/terminal-input limits. Bound commands for every format.
     // Every chunk still runs through the official bash approval and sandbox chain.
     const temp = `output/.office-${crypto.randomUUID()}.tmp`;
     const encodedPath=Buffer.from(path).toString("base64");

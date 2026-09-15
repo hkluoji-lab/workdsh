@@ -137,7 +137,8 @@ try {
   pass('Addressed draft handoff preserves existing user text and ignores other Sessions');
   await page.getByRole('button', { name: '专家 · 技能 · 连接器', exact: true }).click();
   await page.getByRole('button', { name: '专家', exact: true }).click();
-  await page.getByRole('button', { name: '制作专家', exact: true }).click();
+  await page.locator('summary.create-expert').click();
+  await page.getByRole('menuitem', { name: '创建专家', exact: true }).click();
   await expect(page.locator('[contenteditable="true"]').first()).toContainText('帮我创建一个 XXX 专家');
   pass('Create-expert entry opens a native task with expert-manager guidance');
   // Isolated data only: never publish the user's uploaded financial expert.
@@ -254,16 +255,20 @@ try {
   await page.goto(`${host.address}/?workdsh-view=experts`);
   await page.getByRole('button', { name: 'Configure later', exact: true }).click({ timeout: 4000 }).catch(() => {});
   await page.getByRole('button', { name: '查看专家 待发布验收专家', exact: true }).click();
-  await expect(page.getByText('草稿有修改，尚未发布', { exact: true })).toBeVisible();
-  await expect(page.getByText('配备技能 · 1', { exact: true })).toBeVisible();
-  await expect(page.getByText('expert-authoring-test', { exact: true }).last()).toBeVisible();
-  await expect(page.getByRole('region', { name: '扩展能力', exact: true })).toContainText('可选 · 暂不支持接入');
+  const publishedDetail = page.getByRole('dialog', { name: '专家详情', exact: true });
+  await expect(publishedDetail.getByText('草稿有修改，尚未发布', { exact: true })).toBeVisible();
+  await publishedDetail.locator('summary').filter({ hasText: '配备技能与能力 · 1' }).click();
+  const publishedSkills = publishedDetail.getByText('配备技能 · 1', { exact: true });
+  await publishedSkills.scrollIntoViewIfNeeded();
+  await expect(publishedSkills).toBeVisible();
+  await expect(publishedDetail.getByText('expert-authoring-test', { exact: true }).last()).toBeVisible();
+  await expect(publishedDetail.getByRole('region', { name: '扩展能力', exact: true })).toContainText('可选 · 暂不支持接入');
   for (const width of [1440, 1920, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: join(artifacts, `expert-unpublished-${width}.png`), fullPage: true });
   }
-  await page.getByRole('button', { name: '查看编辑草稿', exact: true }).click();
+  await page.getByRole('button', { name: '审阅草稿', exact: true }).click();
   await expect(page.getByText('配备技能 · 0', { exact: true })).toBeVisible();
   await expect(page.getByText('草稿有修改，尚未发布', { exact: true })).toBeVisible();
   assert.equal((await api(host, 'get', { expertId: drafted.expertId })).revision.revisionId, published.revision.revisionId);

@@ -3,7 +3,7 @@ const officeRequire=createRequire(new URL("../../packages/plugins/office/package
 import test from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
-import { mkdtemp, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -23,6 +23,7 @@ await build({
   entryPoints: {
     "spreadsheet-adapter":"packages/plugins/office/src/spreadsheet/adapter.ts",
     "spreadsheet-xlsx":"packages/plugins/office/src/spreadsheet/xlsx.ts",
+    connection:"packages/plugins/office/src/content/connection.ts",
     service:"packages/plugins/office/src/content/service.ts",
     model:"packages/plugins/office/src/content/model.ts",
     tools:"packages/plugins/office/src/content/tools.ts",
@@ -31,6 +32,7 @@ await build({
   },
   outdir: artifacts.pathname,
   bundle: true,
+  splitting: true,
   loader:{".ttf":"binary"},
   platform: "node",
   format: "esm",
@@ -72,8 +74,9 @@ const identity = {
   membership: (o, p) =>
     members.get(p)?.organizationId === o ? members.get(p) : undefined,
 };
-async function boot(root) {
+async function boot(root, fs = {}) {
   const ctx = new Context();
+  ctx.provide("fs", fs);
   ctx.provide("workdshIdentity", identity);
   await ctx.plugin(Storage);
   await ctx.plugin(JsonStorage, { root });
@@ -669,4 +672,197 @@ test('PDF opens live, persists pages and rejects stale, unauthorized and invalid
  page.elements[1].text='用户确认：预算收入 1000 万元。';await h.s.editHuman(actor(),{...batch,baseRevision:2,operationId:'pdf-manual',operations:[{op:'pdf.updatePage',pageId:page.id,page}]},{token:lease.lease.token,clientId:'pdf-human'});await h.s.lease(actor(),first.documentId,'pdf-human','release',lease.lease.token);
  await h.ctx.fiber.dispose();h=await boot(root);const saved=await h.s.read(actor(),first.documentId);assert.equal(saved.revision,3);assert.equal(saved.state.pages[0].elements[1].text,page.elements[1].text);assert.equal(saved.state.pages[1].id,'page-2');
  }finally{await h?.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
+});
+
+
+test("PPT style preview tool saves through Office permissions, retries durably and disposes", async()=>{
+ const root=await mkdtemp(join(tmpdir(),"ppt-style-tool-"));let h;
+ try {
+  h=await boot(root);
+  const tool=h.ctx.tools.get("content_preview_styles");assert.ok(tool);
+  const exec={agent:{id:"session-a"},signal:new AbortController().signal,callId:"styles"};
+  const args={title:"材料节点建设方案",family:"red",operationId:"styles-red"};
+  const preview=await tool.execute(args,exec);
+  assert.equal(preview.styles.length,4);assert.match(preview.styles[1].label,/科技红/);
+  const saved=await h.s.read(actor(),preview.documentId,exec.signal);
+  assert.equal(saved.kind,"html");assert.match(saved.state.html,/材料节点建设方案/);
+  const again=await tool.execute(args,exec);assert.equal(again.documentId,preview.documentId);
+  assert.equal((await h.s.read(actor(),preview.documentId,exec.signal)).revision,saved.revision);
+  await assert.rejects(h.s.read(actor("c"),preview.documentId,exec.signal));
+  const cancelled=new AbortController();cancelled.abort();
+  await assert.rejects(tool.execute({...args,operationId:"cancelled"},{...exec,signal:cancelled.signal}));
+  await h.toolFiber.dispose();assert.equal(h.ctx.tools.get("content_preview_styles"),undefined);
+ }finally{if(h)await h.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
+});
+
+
+test("PPTX import uses Harness fs, preserves package and supports template text edits",async()=>{
+ const root=await mkdtemp(join(tmpdir(),"ppt-template-import-"));let h;
+ try{
+  const {createPresentation}=await import(new URL("native-deck.js",artifacts));
+  const template=await createPresentation("单位标准模板");
+  let bytes=Buffer.from(template.bytes,"base64");let reads=0;
+  const target={targetKey:"opaque-template"};
+  h=await boot(root,{resolve:async(path,opts)=>{assert.equal(path,"templates/company.pptx");assert.equal(opts.cwd,"/workspace");return target;},readBytes:async(t,signal,cap)=>{assert.equal(t,target);assert.equal(cap,8*1024*1024);reads++;return bytes;}});
+  const exec={signal:new AbortController().signal,agent:{id:"session-a",session:{header:{cwd:"/workspace"}}}};
+  const args={path:"templates/company.pptx",title:"客户汇报",operationId:"template-import"};
+  const tool=h.ctx.tools.get("content_import_pptx");
+  const first=await tool.execute(args,exec);const full=await h.s.read(actor(),first.documentId);
+  assert.equal(full.state.deck.bytes,template.bytes);assert.equal(first.state.deck.bytes,undefined);
+  assert.equal(full.state.deck.slides.length,template.slides.length);
+  assert.ok((await h.s.pending(actor())).some(p=>p.documentId===first.documentId));
+  assert.deepEqual(await tool.execute(args,exec),first);assert.equal(reads,2);
+  await assert.rejects(h.s.read(actor("b"),first.documentId),{code:"FORBIDDEN"});
+  await assert.rejects(h.s.read(actor("c"),first.documentId),{code:"FORBIDDEN"});
+  const slide=full.state.deck.slides.find(s=>s.elements.some(e=>e.text==="单位标准模板"));
+  const element=slide.elements.find(e=>e.text==="单位标准模板");
+  const batch={documentId:first.documentId,baseRevision:0,operationId:"template-title",operations:[{op:"presentation.updateText",slideId:slide.id,elementId:element.id,expectedText:element.text,text:"客户项目实际内容"}]};
+  await h.s.editForAgent(actor(),batch);
+  const edited=await h.s.read(actor(),first.documentId);
+  const result=edited.state.deck.slides.find(s=>s.id===slide.id).elements.find(e=>e.id===element.id);
+  assert.equal(result.text,"客户项目实际内容");assert.equal(result.x,element.x);assert.deepEqual(result.textStyle,element.textStyle);
+  const {PptxHandler}=await import(officeRequire.resolve("pptx-viewer-core"));const handler=new PptxHandler();
+  const loaded=await handler.load(Uint8Array.from(Buffer.from(edited.state.deck.bytes,"base64")).buffer);
+  assert.ok(loaded.slides.some(s=>s.elements.some(e=>e.text==="客户项目实际内容")));
+  assert.deepEqual(bytes,Buffer.from(template.bytes,"base64"));
+  await assert.rejects(h.s.editForAgent(actor(),{...batch,baseRevision:1,operationId:"wrong-current-text"}),{code:"REVISION_CONFLICT"});
+  await assert.rejects(h.s.editForAgent(actor(),{...batch,operationId:"stale-text"}),{code:"REVISION_CONFLICT"});
+  bytes=Buffer.from((await createPresentation("另一个模板")).bytes,"base64");
+  await assert.rejects(tool.execute(args,exec),{code:"IDEMPOTENCY_MISMATCH"});
+  await assert.rejects(h.s.open(actor(),{source:"pptx",kind:"presentation",title:"坏文件",operationId:"bad-template",bytes:Buffer.from("not-pptx").toString("base64")}));
+  const abort=new AbortController();abort.abort();await assert.rejects(tool.execute({...args,operationId:"aborted-import"},{...exec,signal:abort.signal}));
+ }finally{await h?.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
+});
+
+
+test("Large template browser saves are accepted only for authorized PPT documents",async()=>{
+ const root=await mkdtemp(join(tmpdir(),"ppt-template-rpc-"));let h;
+ try{
+  h=await boot(root);
+  const {createPresentation}=await import(new URL("native-deck.js",artifacts));
+  const template=await createPresentation("标准模板");
+  const JSZip=(await import(officeRequire.resolve("jszip"))).default;
+  const zip=await JSZip.loadAsync(Buffer.from(template.bytes,"base64"));
+  zip.file("customXml/workdsh-padding.bin",Buffer.alloc(2*1024*1024,7));
+  const bytes=(await zip.generateAsync({type:"nodebuffer",compression:"STORE"})).toString("base64");
+  const first=await h.s.open(actor(),{source:"pptx",kind:"presentation",title:"大模板",operationId:"large-template",bytes});
+  let endpoint;
+  h.ctx.provide("connection",{fetch:{register:spec=>{endpoint=spec;return()=>{};}}});
+  await h.ctx.plugin(await import(new URL("connection.js",artifacts)));
+  const envelope={sessionId:"session-a",request:{endpoint:"edit",input:{documentId:first.documentId,baseRevision:0,operationId:"large-browser-save",operations:[{op:"presentation.replaceDeck",deck:first.state.deck}]}}};
+  const body=JSON.stringify(envelope);assert.ok(Buffer.byteLength(body)>1500000);
+  const send=async(text)=> (await endpoint.fetch(new Request("http://local/api/workdsh-office",{method:"POST",body:text}))).json();
+  const saved=await send(body);assert.equal(saved.ok,true);assert.equal(saved.value.revision,1);
+  assert.deepEqual(await send(body),saved);
+  const forbidden=await send(JSON.stringify({...envelope,sessionId:"session-b"}));assert.equal(forbidden.error.code,"FORBIDDEN");
+  const ordinary=JSON.stringify({sessionId:"session-a",request:{endpoint:"open",input:{source:"new",title:"普通 Word",operationId:"too-large-word"}}})+" ".repeat(1600000);
+  assert.equal((await send(ordinary)).error.code,"LIMIT_REACHED");
+ }finally{await h?.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
+});
+
+
+test("Native snapshots stay aligned with committed PPTX after repeated saves",async()=>{
+ const {createPresentation,applyPresentation}=await import(new URL("native-deck.js",artifacts));
+ const {PptxHandler}=await import(officeRequire.resolve("pptx-viewer-core"));
+ let deck=await createPresentation("标准模板标题");
+ const slide=deck.slides.find(s=>s.elements.some(e=>e.text==="标准模板标题"));
+ const element=slide.elements.find(e=>e.text==="标准模板标题");
+ deck=await applyPresentation(deck,[{op:"presentation.updateText",slideId:slide.id,elementId:element.id,expectedText:element.text,text:"实际项目标题"}]);
+ for(let i=0;i<3;i++){
+  deck=await applyPresentation(deck,[{op:"presentation.replaceDeck",deck}]);
+  const native=await new PptxHandler().load(Uint8Array.from(Buffer.from(deck.bytes,"base64")).buffer);
+  for(let index=0;index<deck.slides.length;index++){
+   assert.equal(deck.slides[index].nativeId,native.slides[index].id);
+   const fields=s=>s.elements.map(e=>({id:e.id,type:e.type,text:e.text,x:e.x,y:e.y,width:e.width,height:e.height,color:e.textStyle?.color,segments:e.textSegments?.map(r=>({text:r.text,color:r.style?.color}))}));
+   assert.deepEqual(fields(deck.slides[index]),fields(native.slides[index]));
+  }
+  assert.ok(native.slides.some(s=>s.elements.some(e=>e.text==="实际项目标题")));
+ }
+});
+
+
+test("Authored RGB text survives an inherited theme reference on save",async()=>{
+ const {createPresentation,applyPresentation}=await import(new URL("native-deck.js",artifacts));
+ let deck=await createPresentation("颜色保真");
+ const slide=deck.slides.find(s=>s.elements.some(e=>e.text==="颜色保真"));
+ const element=slide.elements.find(e=>e.text==="颜色保真");
+ const colorXml={"a:srgbClr":{"@_val":"D6000F"}};
+ const colorRef={scheme:"tx1"};
+ const style={...element.textStyle,color:"#D6000F",colorXml,colorRef,authoredRunStyle:{colorXml},inheritedRunStyle:{colorRef}};
+ element.textStyle=style;element.textSegments=[{text:element.text,style}];
+ deck=await applyPresentation(deck,[{op:"presentation.updateText",slideId:slide.id,elementId:element.id,expectedText:element.text,text:"目录红色"}]);
+ for(let i=0;i<2;i++){
+  const actual=deck.slides.flatMap(s=>s.elements).find(e=>e.text==="目录红色");
+  assert.equal(actual.textStyle.color.toUpperCase(),"#D6000F");
+  deck=await applyPresentation(deck,[{op:"presentation.replaceDeck",deck}]);
+ }
+});
+
+
+test("Large template PPTX exports through bounded commands without changing package bytes",async()=>{
+ const {exportAndPresent}=await import(new URL("export.js",artifacts));
+ const {createPresentation}=await import(new URL("native-deck.js",artifacts));
+ const {default:JSZip}=await import(officeRequire.resolve("jszip"));
+ const {execFile}=await import("node:child_process");
+ const {promisify}=await import("node:util");
+ const {readFile}=await import("node:fs/promises");
+ const home=await mkdtemp(join(tmpdir(),"office-large-ppt-export-"));
+ const deck=await createPresentation("客户模板");
+ const zip=await JSZip.loadAsync(Buffer.from(deck.bytes,"base64"));
+ zip.file("customXml/large-template.bin",Buffer.alloc(1750695,77));
+ const bytes=await zip.generateAsync({type:"nodebuffer",compression:"STORE"});deck.bytes=bytes.toString("base64");
+ const snapshot={documentId:"large-ppt",kind:"presentation",title:"大模板",revision:22,state:{deck},generation:"test"};
+ const calls=[];let denied=false;
+ const ctx={tools:{get:()=>true,execute:async input=>{
+  calls.push(input);
+  if(input.name!=="bash")return {content:[]};
+  assert.ok(Buffer.byteLength(input.arguments.command)<140000);
+  if(denied)return {isError:true,content:[{type:"text",text:"denied"}]};
+  const {stdout}=await promisify(execFile)(process.execPath,["-e",input.arguments.command.slice(9,-1)],{cwd:home});
+  return {content:[{type:"text",text:stdout}]};
+ }}};
+ const exec={agent:{},signal:new AbortController().signal,callId:"large-export",deferContext(){}};
+ try{
+  const first=await exportAndPresent(ctx,exec,snapshot,22);
+  assert.deepEqual(await readFile(join(home,first.path)),bytes);
+  assert.ok(calls.filter(c=>c.name==="bash").length>10);
+  assert.equal(calls.at(-1).name,"present");
+  assert.equal((await exportAndPresent(ctx,exec,snapshot,22)).path,first.path);
+  denied=true;const start=calls.length;
+  await assert.rejects(()=>exportAndPresent(ctx,exec,snapshot,22),/未交付文件/);
+  assert.equal(calls.slice(start).some(c=>c.name==="present"),false);
+ }finally{await rm(home,{recursive:true,force:true});}
+});
+
+
+test("Template page expansion revives runtime image handles without duplicating backgrounds",async()=>{
+ const {createPresentation,importPresentation,applyPresentation}=await import(new URL("native-deck.js",artifacts));
+ const {default:JSZip}=await import(officeRequire.resolve("jszip"));
+ const source=await createPresentation("背景保真");
+ const zip=await JSZip.loadAsync(Buffer.from(source.bytes,"base64"));
+ const image=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aP1sAAAAASUVORK5CYII=","base64");
+ zip.file("ppt/media/template-background.png",image);
+ const slide=source.slides[0].nativeId;
+ const xml=await zip.file(slide).async("string");
+ zip.file(slide,xml.replace(/<p:cSld([^>]*)>/,'<p:cSld$1><p:bg><p:bgPr><a:blipFill><a:blip r:embed="rIdTemplateImage"/><a:stretch><a:fillRect/></a:stretch></a:blipFill><a:effectLst/></p:bgPr></p:bg>'));
+ const rel=slide.replace("/slides/","/slides/_rels/")+".rels";
+ const relXml=await zip.file(rel).async("string");
+ zip.file(rel,relXml.replace("</Relationships>",'<Relationship Id="rIdTemplateImage" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/template-background.png"/></Relationships>'));
+ const ct=await zip.file("[Content_Types].xml").async("string");
+ if(!/Extension="png"/.test(ct))zip.file("[Content_Types].xml",ct.replace("</Types>",'<Default Extension="png" ContentType="image/png"/></Types>'));
+ let deck=await importPresentation("背景保真",(await zip.generateAsync({type:"nodebuffer"})).toString("base64"));
+ assert.match(deck.slides[0].backgroundImage,/^blob:/);
+ // A handle from a previous Host process is unavailable; package bytes own its image.
+ deck.slides[0].backgroundImage="blob:nodedata:previous-host-process";
+ const originalSize=Buffer.from(deck.bytes,"base64").length;
+ for(let i=0;i<8;i++){
+  deck=await applyPresentation(deck,[{op:"presentation.insertSlides",afterSlideId:deck.slides.at(-1).id,slides:[{id:"body-test-"+i,slideNumber:deck.slides.length+1,elements:[]}]}]);
+  const saved=await JSZip.loadAsync(Buffer.from(deck.bytes,"base64"));
+  assert.equal(Object.values(saved.files).filter(f=>f.name.startsWith("ppt/media/")&&!f.dir).length,1);
+  assert.deepEqual(Buffer.from(await saved.file("ppt/media/template-background.png").async("uint8array")),image);
+  assert.ok(Buffer.from(deck.bytes,"base64").length<originalSize+40000);
+ }
+ const title=deck.slides[0].elements.find(e=>e.text==="背景保真");
+ deck=await applyPresentation(deck,[{op:"presentation.updateText",slideId:deck.slides[0].id,elementId:title.id,expectedText:title.text,text:"blob: is literal text"}]);
+ assert.ok(deck.slides[0].elements.some(e=>e.text==="blob: is literal text"));
 });

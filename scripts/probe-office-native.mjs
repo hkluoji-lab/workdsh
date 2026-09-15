@@ -88,7 +88,12 @@ try {
   await command(pnpm, ['pack', '--pack-destination', artifacts], fixture); tarballs.push(join(artifacts, 'workdsh-office-native-probe-0.0.0.tgz'));
   for (const kind of ['docx','pptx','xlsx']) await writeFile(join(workspace, 'input.'+kind), await readFile(join(root, '.artifacts/office-integration/input.'+kind)));
   await cli('--profile', 'experts', '--from-default-profile', 'web', '--dump-config');
-  await cli('plugin', '--profile', 'experts', 'add', ...tarballs, '--offline');
+  // Exercise the same fresh-profile path used by users. Prefer the local pnpm
+  // store, but allow missing transitive metadata to be fetched: a clean machine
+  // cannot satisfy a first install with --offline. protobufjs is the sole
+  // transitive package in this stack that declares an install script, so keep
+  // pnpm's build policy explicit and narrowly scoped.
+  await cli('plugin', '--profile', 'experts', 'add', ...tarballs, '--prefer-offline', '--allow-build=protobufjs');
   pass('Seven product Profile layers plus isolated diagnostic installed outside checkout');
   let host = await start();
   const listed = await api(host, 'list');
@@ -124,8 +129,17 @@ try {
   for (const kind of ['docx','pptx','xlsx']) {
     await page.evaluate(sid => window.officeNativeProbe.files(sid), summoned.sessionId);
     await page.getByText('input.'+kind, {exact:true}).first().click();
-    const child = page.frameLocator('iframe[title="Office 文档编辑"]').last();
-    await child.locator('#status').filter({hasText:kind==='docx'?'Word 支持':kind==='pptx'?'PPT 支持':'Excel 支持'}).waitFor({timeout:30000});
+    if (kind === 'docx') {
+      await page.getByRole('region', {name: 'DOCX文档编辑', exact: true}).waitFor({timeout: 30000});
+      await page.getByRole('button', {name: '下载 Word', exact: true}).waitFor({timeout: 30000});
+    } else if (kind === 'pptx') {
+      const editor = page.getByRole('region', {name: 'PPTX 编辑', exact: true});
+      await editor.waitFor({timeout: 30000});
+      await editor.getByRole('tab', {name: '开始', exact: true}).waitFor({timeout: 30000});
+    } else {
+      const child = page.frameLocator('iframe[title="Office 文档编辑"]').last();
+      await child.locator('#status').filter({hasText: 'Excel 支持'}).waitFor({timeout:30000});
+    }
     await page.screenshot({path:join(artifacts,'native-'+kind+'.png')});
     pass('Official resource read and native Office Tab: '+kind);
   }

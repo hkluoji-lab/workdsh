@@ -5,6 +5,7 @@ import * as Connection from "./content/connection.js";
 export const name = "workdsh-office";
 // The Loader entry must declare the services its child modules consume, too.
 export const inject = [
+  "fs",
   "storageDomain",
   "tools",
   "systemPrompt",

@@ -11,13 +11,13 @@ import { registerExpertManagerSkill } from '../../packages/plugins/experts/dist/
 // ── Bundled expert-manager skill: one Markdown source, no second copy (S1) ─────
 //
 // The authoring prompt used to be a TS string inside `src/authoring/guide.ts`. It
-// now ships as `resources/expert-manager/SKILL.md` (frontmatter + body) and
+// now ships as `resources/skills/workdsh-expert-manager/SKILL.md` (frontmatter + body) and
 // guide.ts only loads and validates that packaged file. These tests pin the move:
 // the exported body stays byte-identical to the file, and the real registry path
 // serves exactly that body on demand — catalog summaries never carry it, so an
 // ordinary task only ever receives the skill when it is actually loaded.
 
-const skillFile = fileURLToPath(new URL('../../packages/plugins/experts/resources/expert-manager/SKILL.md', import.meta.url));
+const skillFile = fileURLToPath(new URL('../../packages/plugins/experts/resources/skills/workdsh-expert-manager/SKILL.md', import.meta.url));
 
 function parseSkillFile() {
   const document = readFileSync(skillFile, 'utf8');

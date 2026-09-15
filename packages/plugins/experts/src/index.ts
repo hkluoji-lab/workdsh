@@ -46,7 +46,7 @@ export const inject = [
  * confirmation; the trusted confirm + publish and every task summon/handoff stay
  * user-driven, so the skill never claims a publish or an auto-sent task.
  *
- * The wording is owned by `resources/expert-manager/SKILL.md`; this module shape
+ * The wording is owned by `resources/skills/workdsh-expert-manager/SKILL.md`; this module shape
  * only re-exports the parsed body for consumers that referenced it before the
  * move, and registers it below.
  */
@@ -64,7 +64,7 @@ export function registerExpertManagerSkill(ctx: Context): () => void {
     ...expertManagerSkillMeta,
     source: 'bundled',
     content: expertManagerSkillContent,
-    resourceBase: { kind: 'directory', path: fileURLToPath(new URL('../resources/expert-manager/', import.meta.url)) },
+    resourceBase: { kind: 'directory', path: fileURLToPath(new URL('../resources/skills/workdsh-expert-manager/', import.meta.url)) },
   });
 }
 

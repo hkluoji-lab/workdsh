@@ -2,9 +2,11 @@
 
 # WorkDSH Office 浏览器编辑插件
 
-当前未发布 alpha.3 仅保留 pptx-react-viewer 3.16.5 / pptx-viewer-core 3.14.3 作为 PPT 编辑器，沿用已确认的中文桌面工具栏与原生图表侧栏。PPTist、CreatPPT、旧 PPT 预览/画布适配已删除。Word 已发布 alpha.2 保持原版本，后续 Word 开发暂停。
+当前 alpha.5 候选仅保留 pptx-react-viewer 3.16.5 / pptx-viewer-core 3.14.3 作为 PPT 编辑器，沿用已确认的中文桌面工具栏与原生图表侧栏。PPTist、CreatPPT、旧 PPT 预览/画布适配已删除。Word 已发布 alpha.2 保持原版本，后续 Word 开发暂停。
 
 PPT 新建、逐页 AI 修改、修订、权限及保存使用同一 Office 内容服务；原生文件 Tab 直接接收 Harness 授权字节，无 iframe。已有 PPTX 在浏览器编辑并下载副本；不静默覆盖原文件。服务新建的 PPT 工作副本支持自动保存、重新打开和下载。原生图表数据直接可编辑，不用图片或扇形拼图。原型构建适配固定版本的工具栏/侧栏并限定 CSS，不修改 Harness 或发布依赖文件；升级需重新复核。
+
+`content_import_pptx(path,title,operationId)` 通过调用会话的 Harness 文件服务读取实际 PPTX，并打开独立实时工作副本；不覆盖模板。上限 8 MiB、50 页、每页 200 元素、解压 64 MiB，工作副本状态 30 MiB。要求客户模板时使用此入口，导入失败不能空白重绘。`presentation.updateText(slideId,elementId,expectedText,text)` 替换普通文字框，保留位置、占位符元数据和首段样式；整框文字替换不保留混合内联字体。仍需逐页检查实际渲染，导入不代表任意复杂对象都保真。人工 PPT 保存通道允许 30 MiB；普通文档和 AI 编辑仍沿用原大小限制。
 
 content_open(kind=presentation) 初始化一页；content_edit 的 presentation.insertSlides/updateSlide 使用 core 原生 slides/elements，页 ID 为稳定业务 ID，nativeId 对应 PPTX 部件。删除、排序沿用结构操作。content_capabilities 提供当前字段和图表能力；旧模板操作不再可用。文件交付工具 content_export 已支持已提交 Word/DOCX 与 PPT/PPTX，通过官方 bash/present 策略链路交付文件卡；PPTX 上限 8 MiB，实际会话端到端验收待执行。
 
@@ -43,13 +45,13 @@ corepack pnpm preview:install
 
 `probe:office:native` 依赖前一个探针产生的测试文件，在隔离 Home 使用真实七包 Profile＋仅测试的诊断插件验证；不发送模型请求。图形预览不会由构建/测试自动打开。
 
-依赖：Univer 0.25.1、ExcelJS 4.4.0、docx-preview 0.4.0、pptx-preview 1.0.7。PPT 预览库是原样 npm 依赖，作者明确 npm 包可免费使用，但其源码不是完整开放许可；不可宣称所有依赖都是完全开源。没有修改或复制该库私有实现。
+主要依赖：Univer 0.25.1、ExcelJS 4.4.0、docx-preview 0.4.0、pptx-react-viewer 3.16.5、pptx-viewer-core 3.14.3、PDF.js 5.4.624、pdf-lib 1.17.1、Tiptap 3.31.0。PPT 编辑与展示使用 ChristopherVR/pptx-viewer 的 Apache-2.0 包；没有重新引入已删除的 pptx-preview。
 
 导出目前是浏览器下载副本，未实现覆盖 Host 原件及冲突检测。切换文件、刷新或关闭 Tab 可能丢弃未导出内容，请先导出副本。不要用此开发版本覆盖重要原件。
 
 `node scripts/probe-office-live.mjs --real-model` 显式使用已配置 preview 模型进行隔离真实验收；临时凭据结束清理，不写入制品。默认探针仍不调用模型。
 
-`probe:office:live` 单独安装 Office 与显式治理依赖，通过官方 Tools 和浏览器验证三批提交、人工编辑及重载；不发真实模型请求。构建生成 `dist/THIRD-PARTY-LICENSES.txt`、`dist/bundled-dependencies.json` 和 `dist/license-review.json`。新增 Tiptap 为 MIT；完整实验构建中旧依赖的历史许可缺口不代表Word-only分发。alpha.2独立安装包排除旧适配器并校验实际许可文本齐全。
+`probe:office:live` 单独安装 Office 与显式治理依赖，通过官方 Tools 和浏览器验证三批提交、人工编辑及重载；不发真实模型请求。构建生成 `dist/THIRD-PARTY-LICENSES.txt`、`dist/bundled-dependencies.json` 和 `dist/license-review.json`。当前完整候选保留精确依赖清单与已收集许可文本；另有 10 个依赖版本尚未收集到随包许可文本，`@univerjs/telemetry@0.25.1` 的包元数据未声明许可证。两类缺项均进入发布清单，报告不会改写为通过。
 
 
 ### U2/U3 原生文件交付与下载
@@ -81,7 +83,7 @@ corepack pnpm preview:install
 
 ### 安装与卸载 Office 候选包
 
-以下命令用于本仓库已配置的 `preview` Profile，要求完成开发环境准备，先运行 `corepack pnpm release:office:pack` 生成本地 alpha.2 候选 `.tgz`。已发布的 [alpha.1](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1) 另有下载附件，能力范围以对应版本为准。使用 Node.js 22.23.2。先在运行预览的终端按 `Ctrl+C` 停止应用，再执行安装和启动：
+以下命令用于本仓库已配置的 `preview` Profile，要求完成开发环境准备，先运行 `corepack pnpm release:office:pack` 生成当前完整 Office 候选 `.tgz`。已发布旧版本的能力范围以对应版本说明为准。使用 Node.js 22.23.2。先在运行预览的终端按 `Ctrl+C` 停止应用，再执行安装和启动：
 
 ```bash
 cd /Users/techflag/project/workdsh
@@ -89,7 +91,7 @@ cd /Users/techflag/project/workdsh
 # 安装本地候选包 / Install the local candidate
 DSH_HOME="$PWD/.test-runtime/preview" \
   corepack pnpm exec dsh plugin --profile preview add \
-  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.2.tgz"
+  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.5.tgz"
 
 # 启动 / Start
 corepack pnpm preview
@@ -102,11 +104,11 @@ DSH_HOME="$PWD/.test-runtime/preview" \
 ```
 请保持安装、卸载和启动使用同一 `DSH_HOME` 与 Profile。卸载撤销 Office 入口及工具，保留已保存文档和原文件；重新安装恢复入口。新建 Word 无需 `@` 引用，在任务输入框选择 `/office` → Word 即可。
 
-生命周期与真实tgz冷启动重装证据见 `docs/evidence/office-word-release-u3.md`；已发布 alpha.1 与开发候选 alpha.2 的范围分别见 CHANGELOG.md。候选支持有界表格和嵌入图片，完整页面排版仍是后续功能。
+生命周期与真实 tgz 冷启动重装证据见 `docs/evidence/office-word-release-u3.md` 和当前原生 Office 探针；各版本范围见 CHANGELOG.md。候选支持多格式工作副本和模板导入，具体保真边界以本页各格式说明为准。
 
-## Word-only 分发范围与导出重试
+## 当前完整候选与历史 Word-only 分发
 
-运行 `corepack pnpm release:office:pack` 生成 Word-only tgz，许可缺失或未知依赖时打包失败。该制品仅注册 DOCX 文件预览，剔除旧 Univer/Excel/PPT 代码及运行依赖；上面的多格式适配表描述源码中的实验开发形态，不属于本版分发范围。八类输出菜单保留后续路线，其他七类实时适配仍待开发。
+运行 `corepack pnpm release:office:pack` 生成当前完整 Office tgz，包含构建产物、精确依赖清单、已收集许可文本和缺项报告。打包器不会再生成过时的 Word-only 变体，也不会因 10 项已知文本缺项伪装为“许可证完整”；`release-manifest.json` 会保留 `licenseTextsComplete: false` 及具体项目。alpha.1/alpha.2 的 Word-only 包仅是历史发布物。
 
 同一文档修订与内容产生稳定 DOCX 字节和路径。`content_export` 可传 `baseRevision`（来自 content_read）；文档已更新时拒绝旧修订导出。官方 bash 将完整临时文件独占链接到目标，已存在时核对摘要，不覆盖修改后的文件。写入回执丢失时同一修订重试可复用文件；交付失败/结果未知返回现有路径，先核对原生卡片再重试 present。取消后不继续交付。幂等文件不表示 present 卡片具备跨进程去重，跨 Host/执行世界迁移及掉电恢复尚未验收。
 
@@ -125,3 +127,13 @@ content_open/content_read 的模型快照将图片 src 投影为 `office-image:<
 ## 0.1.0-alpha.4 Web preview
 
 Full experimental Office package for Harness 0.1.5-rc.1 Web. Includes the current HTML, Word, PDF, PPT and spreadsheet implementation; feature-specific limitations remain documented. Third-party dependency references are listed in the root README and existing notices are preserved.
+
+### PPT 风格预览
+
+`content_preview_styles` 使用同一 Office 服务保存独立 HTML 规划预览，通用和红色各四套封面；返回方案 label、palette、layout 和预览 documentId。真正答案由官方 `ask_user_question` 收集，不在 HTML 内自行桥接会话。选择后重新打开原始原生 PPT，应用全局风格并导出；预览不是整份 PPT 或交付回执。当前首版固定八套设计，不等同于 WorkBuddy 任意动态风格生成。
+
+模板中字重名称含 DemiBold/Semibold 的文字在画布按 CSS 600 绘制，避免再次选用粗体产生中文字形重影；不改导出 PPTX 的字体名称或样式。
+
+### 长任务导出与背景资源
+
+超过96KiB的导出文件统一分块经过官方bash审批/沙箱链，不将整个PPTX Base64放入单个命令参数。最终核对SHA并原子落盘，拒绝覆盖冲突目标；中途失败不展示成功交付卡片。保存基于当前PPTX重新绑定已知blob媒体句柄，再判断页面变更，避免临时URL变化触发背景重复打包。未知媒体引用应重新读取或提供实际嵌入图片。

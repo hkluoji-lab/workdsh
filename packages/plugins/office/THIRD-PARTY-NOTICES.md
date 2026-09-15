@@ -6,16 +6,16 @@ The existing browser file adapters continue to bundle Univer OSS (Apache-2.0), E
 
 Each build writes `dist/THIRD-PARTY-LICENSES.txt` with the license/copyright/notice texts found in every dependency actually bundled by esbuild, and `dist/bundled-dependencies.json` with its exact version. These files travel inside the prebuilt plugin archive. Framework peer dependencies remain owned by the Harness installation. This inventory is not a claim that DOCX/PPTX conversion is lossless or that optional commercial SDKs have been licensed.
 
-`dist/license-review.json` records legacy tarballs without a complete license text. Such entries are not cleared for a final product release by this build. The same-tag Univer repository license supplies the missing protocol 0.25.1 text; the remaining legacy entries require review or replacement in U5.
+`dist/license-review.json` records packages for which the build did not collect a complete license text. The current alpha.5 candidate has 10 such versioned entries. Their declared license metadata and repository references are retained in the report and listed in the root README; this notice does not relabel them as complete. The release manifest separately records `@univerjs/telemetry@0.25.1`, whose installed package metadata has no license field.
 
 Tiptap UI Components (MIT), commit 799929bea4804c73767562b69f8acc2acdb8ac86; adapted Toolbar/Button and official SVG icons. Source and changes: src/live/tiptap-ui/SOURCE.md; license included in dist/THIRD-PARTY-LICENSES.txt.
 
-## Word-only release variant
+## Release candidate packaging
 
-`corepack pnpm release:office:pack` builds the Word-only variant. It excludes the experimental Univer/ExcelJS/pptx-preview adapters from code and package dependencies; only DOCX file previews are registered. Both Word text-copy editing and original-layout DOCX viewing remain available. The eight output choices still describe the future roadmap. `dist/release-scope.json` identifies the variant. All actual bundled dependency license texts must be present; unknown licenses block this release build. isarray 1.0.0's MIT text is retained from its packaged README License section, not inferred from metadata. Dual-licensed `(MIT OR GPL-3.0-or-later)` code is distributed under its MIT option; `(MIT AND Zlib)` includes both texts. Experimental full builds remain subject to the legacy review described above.
+`corepack pnpm release:office:pack` builds the complete current Office plugin. The release manifest records the dependency count, declared licenses, packages without declared metadata, the exact missing-text list and `licenseTextsComplete`. The 10 known missing texts do not stop this alpha candidate by product decision, but they remain visible and must not be described as collected. Historical alpha.1/alpha.2 Word-only archives are unchanged. isarray 1.0.0's MIT text is retained from its packaged README License section, not inferred from metadata. Dual-licensed `(MIT OR GPL-3.0-or-later)` code is distributed under its MIT option; `(MIT AND Zlib)` includes both texts.
 
 
-Word alpha.2 adds the MIT-licensed @tiptap/extension-table and @tiptap/extension-image at exactly 3.31.0. Native TableKit commands, column resize/cell selection and Image/ResizableNodeView are reused without copying their implementations. Bundled license texts are included in the generated THIRD-PARTY-LICENSES.txt and verified by the Word-only pack gate.
+Word alpha.2 added the MIT-licensed @tiptap/extension-table and @tiptap/extension-image at exactly 3.31.0. Native TableKit commands, column resize/cell selection and Image/ResizableNodeView are reused without copying their implementations. Collected bundled license texts remain included in generated THIRD-PARTY-LICENSES.txt.
 
 ## Current native PPT development integration
 

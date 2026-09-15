@@ -52,3 +52,11 @@
 .workdsh-ppt-editor [data-pptx-inspector] table input{background:#202124!important}
 .workdsh-ppt-editor [data-pptx-inspector] button[class*="bg-primary"]{background:#303c50!important;color:#b7d6ff!important}
 .workdsh-ppt-editor [data-pptx-inspector] button:hover{background:#34373c}
+
+/* Native text compatibility: named Demi/Semibold faces already encode weight.
+   CSS bold=700 selects an extra heavy face and crowds CJK glyphs. Normalize
+   only these named canvas fonts; keep PPTX font/style and geometry intact. */
+.workdsh-ppt-editor [data-pptx-element] [style*="font-family:"][style*="demibold" i],
+.workdsh-ppt-editor [data-pptx-element] [style*="font-family:"][style*="semibold" i] {
+  font-weight: 600 !important;
+}

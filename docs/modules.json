@@ -34,7 +34,14 @@
     "directories": [
       "tests",
       "src"
-    ]
+    ],
+    "release": {
+      "version": "0.1.0-alpha.41",
+      "channel": "github-prerelease",
+      "date": "2026-09-14",
+      "evidence": "docs/releases/2026-09-14-development-candidate.md"
+    },
+    "acceptanceNote": "精确8包Profile生命周期通过，不等于D10首期全部业务模块组合验收。"
   },
   {
     "path": "packages/plugins/workbench",
@@ -73,7 +80,14 @@
       "resources/skills/expert-manager",
       "resources/templates",
       "src/services/preferences"
-    ]
+    ],
+    "release": {
+      "version": "0.1.0-alpha.2",
+      "channel": "github-prerelease",
+      "date": "2026-09-14",
+      "evidence": "docs/releases/2026-09-14-development-candidate.md"
+    },
+    "acceptanceNote": "D04与TM-01整体验收未完成；有限团队运行已有实现，不等于D11全范围完成。"
   },
   {
     "path": "packages/plugins/skills",
@@ -91,11 +105,18 @@
       "src/client/components",
       "src/harness",
       "tests",
-      "resources/skills/skill-creator",
+      "resources/skills/workdsh-skill-creator",
       "resources/templates",
       "src/services/discovery",
       "src/services/preferences"
-    ]
+    ],
+    "release": {
+      "version": "0.1.0-alpha.28",
+      "channel": "github-prerelease",
+      "date": "2026-09-14",
+      "evidence": "docs/releases/2026-09-14-development-candidate.md"
+    },
+    "acceptanceNote": "D03登记范围完成，不代表第三方技能依赖或整个P1验收。"
   },
   {
     "path": "packages/plugins/connectors",
@@ -466,7 +487,14 @@
     "moduleVersion": "0.1",
     "directories": [
       "src"
-    ]
+    ],
+    "release": {
+      "version": "0.1.0-alpha.4",
+      "channel": "github-prerelease",
+      "date": "2026-09-14",
+      "evidence": "docs/releases/2026-09-14-development-candidate.md"
+    },
+    "acceptanceNote": "现有适配器已有实现；专项暂停保留，全部格式保真/真实模型/跨平台未完成。"
   },
   {
     "path": "packages/plugins/activity",
@@ -478,6 +506,13 @@
     "directories": [
       "src",
       "tests"
-    ]
+    ],
+    "release": {
+      "version": "0.1.0-alpha.1",
+      "channel": "github-prerelease",
+      "date": "2026-09-14",
+      "evidence": "docs/releases/2026-09-14-development-candidate.md"
+    },
+    "acceptanceNote": "浏览器布局/动效与生命周期已有证据，最新真实长任务成员切换未完整重验。"
   }
 ]

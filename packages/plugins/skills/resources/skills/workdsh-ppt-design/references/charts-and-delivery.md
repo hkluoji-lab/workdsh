@@ -13,6 +13,6 @@
 
 图片必须是实际支持的嵌入素材，先确认内容、比例、清晰度和对应页面。不按生成顺序盲分配，不制造 base64。需要图片生成时只在工具确实可用时使用，设计建议不保证该工具存在。装饰素材不能替代证据图表。
 
-新建先 content_open(kind:presentation)，再读取实际能力与页 ID，逐页 content_edit。更新 elements 会整体替换本页列表，必须保留未要求删除的元素。继续编辑依据真实修订；发生人工编辑或冲突先重读。
+有模板先 content_import_pptx，普通新建先 content_open(kind:presentation)，再读取实际能力与页 ID，逐页 content_edit。更新 elements 会整体替换本页列表，必须保留未要求删除的元素。继续编辑依据真实修订；发生人工编辑或冲突先重读。
 
 完成后重读最新内容，确认页数、关键事实、图表数据和未解决项，再用 content_export 导出真实 PPTX。保存的工作副本、渲染预览、专业检查和下载文件是不同证据。导出失败明确说明，用户仍可使用右侧下载。不要运行 slidep、PptxGenJS、LibreOffice 或另一套构建来替换当前编辑流程。

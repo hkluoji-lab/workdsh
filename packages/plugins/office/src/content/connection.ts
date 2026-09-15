@@ -54,10 +54,10 @@ export function apply(ctx: Context) {
         const signal = AbortSignal.any([request.signal, lifetime.signal]);
         try {
           signal.throwIfAborted();
-          if (Number(request.headers.get("content-length")) > 1500000)
+          if (Number(request.headers.get("content-length")) > 30*1024*1024)
             throw new OfficeError("LIMIT_REACHED", "请求过大。");
           const text = await request.text();
-          if (new TextEncoder().encode(text).length > 1500000)
+          if (new TextEncoder().encode(text).length > 30*1024*1024)
             throw new OfficeError("LIMIT_REACHED", "请求过大。");
           const envelope = parse(
             z.object({ sessionId: id, request: endpoint }).strict(),
@@ -69,6 +69,11 @@ export function apply(ctx: Context) {
             ),
             r = envelope.request,
             s = ctx.workdshOfficeContent;
+          if (new TextEncoder().encode(text).length > 1500000) {
+            const largePresentation = r.endpoint === "open" && r.input.source === "pptx" ||
+              r.endpoint === "edit" && (await s.read(actor, r.input.documentId, signal)).kind === "presentation";
+            if (!largePresentation) throw new OfficeError("LIMIT_REACHED", "请求过大。");
+          }
           let value: unknown;
           switch (r.endpoint) {
             case "open":

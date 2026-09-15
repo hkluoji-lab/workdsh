@@ -210,7 +210,7 @@ function rewriteComposition(baseText: string, input: CompileInput): string {
   }
 
   const prefix = [compilePersonaPrefix(input.definition), ...(input.packageRoot ? [`专家作品资源目录：${input.packageRoot}。bin 下的工具已随发布版本安装；用原生 bash 按此路径调用，仍遵守沙箱和审批。`] : []), ...(input.teamMembers ? [
-    readFileSync(new URL('../../resources/expert-manager/runtime/team-lead.md', import.meta.url), 'utf8'),
+    readFileSync(new URL('../../resources/skills/workdsh-expert-manager/runtime/team-lead.md', import.meta.url), 'utf8'),
     JSON.stringify({ members: input.teamMembers, workflows: input.definition.team?.workflows }),
   ] : [])].join('\n\n');
   const suffix = compilePersonaSuffix(input.definition);

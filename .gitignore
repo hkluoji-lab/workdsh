@@ -14,5 +14,7 @@ tmp/
 !.env.example
 /docs/
 /.qoder/
+**/__pycache__/
+*.py[cod]
 
 packages/plugins/office/src/presentation/native-react/native.css

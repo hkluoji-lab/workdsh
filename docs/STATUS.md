@@ -1,3 +1,198 @@
+## 2026-09-15 — 发布候选清理与打包修复
+
+清理默认 lefthook 样例和 Python 缓存，并为后续缓存增加忽略规则；保留有意新增的 `scripts/desktop/`，该目录不纳入本批 Web 发布范围。根锁定补齐 `@deepseek-ai/dsh-client-store@0.1.5-rc.1`，三个已漂移的浏览器探针按当前技能、专家和 Office UI 修正。Office 原生探针改为可在干净隔离 Home 首次安装的 `--prefer-offline`，仅显式允许 protobufjs 构建脚本；新鲜 Profile 的 DOCX/XLSX/PPTX 打开验证通过。
+
+候选版本更新为 contracts alpha.8、ui alpha.6、skills alpha.29、experts alpha.3、office alpha.5、bundle alpha.42。Node 22.23.2 下 typecheck、build、123 项 integration、技能完整安装生命周期、专家 13 项与两次冷启动、Office 浏览器探针及完整七层原生 Profile 探针全部通过；版本锁定检查为 465 项 Harness 依赖均为 0.1.5-rc.1、Cordis 仅 4.0.2，规划检查 29 模块/50 文档通过，技能质量 3/3 和六个内置技能目录安全审计通过（仅入口长度建议）。
+
+修复过时的 `release:office:pack`：不再构建 Word-only alpha.2，而是生成当前完整 alpha.5 Office 候选，保留 PPT/Excel 等依赖和多格式 release-scope。tgz 内嵌精确依赖清单、已收集许可文本与原始缺项报告；发布清单如实记录 10 项未收集文本、`licenseTextsComplete:false`，以及 `@univerjs/telemetry@0.25.1` 无声明许可证元数据。根 README 和 Office notice 同步披露，按用户决定不作为本次预览发行阻塞，但不宣称许可证收集完成。
+
+本轮没有提交、推送、创建 Release、发布 npm、部署或重启 preview。真实模型完整长任务、TM-01 整体验收和多平台验收仍未完成，不能据此宣称整套系统完成。
+
+已生成六个当前源码候选 tgz（contracts alpha.8、ui alpha.6、skills alpha.29、experts alpha.3、office alpha.5、bundle alpha.42）及统一 SHA256/机器清单，位于忽略目录 `.artifacts/release-candidate-2026-09-15/`。逐包读取 package.json、摘要复核通过；技能包不含 Python 缓存，专家包不再携带旧 `expert-manager` 空目录。候选附件不等于已经完成公开发行。
+
+## 2026-09-14 — 长任务修复已部署重启
+
+用户授权重启。停止旧preview后通过官方preview:install更新插件，Office Host/Client安装入口与最新构建逐字节一致。重启launcher PID22686，直接本地HTTP返回401（认证保护正常），启动日志未发现EMFILE、without inject、端口冲突、堆溢出或模块缺失。本次包含大文件分块导出与图片临时引用重绑定修复；真实模型任务再次导出的完整验收未执行，历史EMFILE根因不据此宣称已解决。
+
+## 2026-09-14 — 长任务 PPT 导出与文件膨胀代码修复
+
+用户提供577条会话记录：最终保存30页、revision22；7次content_export中出现超过8MiB和写入失败，最后turn/end为user aborted。实际1750695字节文件用单参数Node命令复现errno7 Argument list too long；所有格式大于96KiB改分块官方bash写入，保留审批/沙箱、信号、摘要、原子落盘和重试语义。
+
+实际精简模板每次新增正文原先重复增加2份背景图约1MiB，最终触及上限。原因是PptxHandler.load每次生成不同backgroundImage blob句柄，脏页比较误判。通过公开解析的当前包基线重绑定已知媒体引用后，隔离内存扩展至31页约1.83MiB，媒体始终5个。未调用模型生成汇报、未修改用户会话文档；早先只读恢复副本不代表内容验收。
+
+新增大模板分块导出、失败不present、过期Host媒体句柄、连续插页及媒体字节保留回归；20项集成测试与Office类型检查通过。Office构建及git diff --check通过。尚未部署/重启运行中的preview，真实会话导出回执及完整视觉验收未执行。
+
+## 2026-09-14 — 客户汇报技能切换为精简模板 1.0.3
+
+按用户新指定文件替换独立 unit-report-ppt 的 base-template.pptx，实际4页：首页、目录、正文示例、结束页。同步封面缩略图、XML profile、来源SHA及模板策略；正文以第3页按需扩展，不恢复旧31页重复结构。下载包与 ~/.agents 安装资源同步，原安装目录已备份；不修改通用内置PPT、不覆盖用户提供的原文件、不重启应用。ZIP模板字节核对及资源引用检查通过；新模板的完整生成会话、绘图与导出渲染验收未执行。
+
+## 2026-09-14 — 修复模板导入 Fs 注入声明并同步客户技能
+
+用户真实会话发现模板导入抛出 cannot get property fs without inject，之前隔离服务测试未覆盖该缺陷。Office Loader 入口和工具插件均新增 fs 依赖声明，测试改为加载前提供 Fs；18 项集成测试、Office 类型检查与构建通过。官方 CLI 部署至 preview 并逐字节核对，已重启 launcher PID 8443。客户 unit-report-ppt 安装目录同步至 1.0.2，旧目录备份于 ~/.cache/workdsh-skill-backups/，模板二进制一致。当前正在运行的会话与已创建空白 PPT 不会自动转为模板；需要重新明确调用模板导入，认证模型导入任务尚未实测验收。
+
+## 2026-09-14 — PPT 模板修改部署至 preview
+
+完整工程构建通过；停止旧 Host 后通过官方 CLI 更新 preview，安装脚本对 Host/Client 入口逐字节核对通过。已重启，launcher PID 3980 / Host PID 3981，127.0.0.1:18989 正常监听，直接本地请求返回 401（认证保护正常）。新启动日志中未发现 EMFILE、堆溢出、模块缺失或端口冲突；不代表历史账本问题已根治。Office 安装文件与本次构建一致，content_import_pptx 已包含在部署制品中。认证模型会话整体验收未执行，用户技能包 1.0.2 未自动覆盖用户已安装技能。
+
+## 2026-09-14 — PPTX 公司模板导入与保存验证
+
+- Office 新增 `content_import_pptx`，通过 Harness Fs 读取原始模板，建立独立工作副本；原模板文件不被覆盖。支持受版本与旧文字检查保护的 `presentation.updateText`。
+- 已用客户实际 31 页模板验证工具导入、Agent 文字修改及超过 1.5 MiB 的人工保存。保留母版、版式、主题与媒体；主题和 5 个媒体文件字节未变。
+- 修复保存时明确指定的 RGB 文字颜色被母版主题色覆盖；使用原生公开 `isDirty` 标记保留未修改页的 XML。修复 DemiBold/SemiBold CJK 字体重复加粗造成的页脚视觉重影。
+- 真实编辑器组件截图：封面、目录画布与原模板像素一致，第 6 页除修改标题外画布像素一致；浏览器错误为 0。私有验证材料位于 `.artifacts/ppt-template-probe/`，不随公开包提交。
+- 当前完成源码及组件/服务层验证，未重启或部署运行中的应用；尚未验收认证模型对话的完整流程。文字整体替换保留首段样式，不承诺保留混合行内格式或所有复杂 PPTX 对象的完整保真。
+
+
+## 客户 PPT 模板截图验证（2026-09-14）
+使用实际 mountPptx 编辑组件及工程 nativePptPlugin/CSS，隔离 headless 浏览器 1440×1000 打开原模板与另存 PPTX，截取 1/2/6 页并人工查看。封面 logo、建筑照片、红色标题区，目录背景与内容页 logo/页脚均显示。第 6 页单位页脚文字重叠，不能宣称模板显示完全正常。原模板和另存同页截图像素比较见 .artifacts/ppt-template-probe/visual-comparison.json，浏览器 pageerror 为零。首次 about:blank localStorage 限制造成加载失败，改隔离本地路由后成功；实际切页使用实例公开 setActiveSlideIndex。未修改用户原文件、未部署或重启；实际 Agent 导入工作副本链路仍未接通。
+
+## PPT 底层模板能力实证（2026-09-14）
+
+纠正前轮过宽结论：工程锁定 pptx-react-viewer 3.16.5 / pptx-viewer-core 3.14.3；已有 ImportedPptx 文件编辑组件。使用客户 base-template.pptx 调用公开 PptxHandler.load/save，31 页、1280×720、1 母版、13 版式解析及另存重载通过，warnings 空。ZIP 对比：3 个主题、5 个素材均字节一致；母版和 13 版式均保留但 XML 被重写，不能据此声称完全保真。探针及回执在 .artifacts/ppt-template-probe。底层可以将现有 PPTX 用作编辑基础；content_open 的 Agent 实时工作副本导入尚未接通。浏览器视觉及修改后保真验收未执行，未部署/重启。
+
+## 客户 PPT 模板约束与实时能力冲突纠正（2026-09-14）
+
+用户反馈模板与显示不符。核对 model.ts presentationOpenInput 只有 source:new，existing 为实时 documentId；无任意 PPTX 模板导入。修正 Office presentationGuide：公司标准模板优先，能力核实前不能新建空白、通用风格卡或相似颜色重绘冒充套用；保真需要实际验证，不从 CLI 支持列表推断。没有实现模板导入引擎，没有检查此次实际生成文件。Office typecheck 通过；实际模板导入/渲染保真验收未执行，未部署/重启。
+
+## 技能创建入口纠正（2026-09-14）
+
+按用户要求以 WorkBuddy 的完整创建流程作为 SKILL.md 主体，六步、示例与资源组织直接在入口；DSH 生命周期/安装差异放 dsh-authoring.md，移除重复的 workbuddy-creation-process.md 并修正引用。原配套脚本和许可证保留。skills build、官方 Host 注册/生命周期回归、git diff --check 通过，六步入口与平台引用检查通过；未执行真实模型完整制作试用。本轮未部署或重启。
+
+## 内置技能创建完整流程接入（2026-09-14）
+
+用户授权完整采用 WorkBuddy 创建能力。接入完整方法参考与三个 Python 标准库脚本，保留 Apache-2.0 许可证及修改来源说明；使用唯一 workdsh-skill-creator。适配为工作区草稿初始化、真实资源制作、基础校验/ZIP 交付，正式安装仍经专用导入；单文件继续官方草稿工具。不复制 CodeBuddy 目录/市场元数据，不声称草稿工具新增资源树发布。skills build、官方 Host 注册/生命周期回归、git diff --check 通过；实际 Python 子进程验证初始化、非法名称、占位文件、缺失引用、合法包、输出目录边界、ZIP 二进制素材保留通过。未执行：认证模型完整制作试用、用户页面 ZIP 安装、部署；运行中的 preview 尚未更新，未重启或发布。
+
+## 弹框更新部署与重启（2026-09-14）
+
+按用户要求构建并打包 skills/experts，通过官方 CLI 安装至 preview；两个模块 Host 与 client.browser.js 均与构建产物逐字节一致。已重启，HTTP 401 认证入口响应正常。认证页面实际弹框复验未执行；本轮未提交或发布。
+
+## 全部自有弹框外观统一（2026-09-14）
+
+用户扩大范围至全部弹框；沿用共享 Modal 与现有服务，统一中性灰黑、紧凑字号/间距、SVG 关闭按钮、移动端留边、减弱动效并尊重减少动态设置。覆盖技能详情/目录预览/编辑/资源/卸载/回收/导入，专家详情/导入/草稿编辑/发布确认；原生 Harness 弹框保持官方所有权。官方复用：现有 Client React 与公共 Modal，仅展示样式差异，无新服务。skills/experts typecheck 与 git diff --check 通过。导入实际 React 组件及共享 Modal 技能详情布局的 headless 桌面/375px 边界、关闭热区、字号和长列表滚动检查通过；详情截图使用展示 fixture，不是认证会话。专家各弹框真实操作与全量业务回归未执行；本轮未打包安装、未重启运行应用。
+
+## 导入技能弹框外观切片（2026-09-14）
+
+### Preview 重启与导入弹框部署（2026-09-14）
+
+- 按用户要求重启 preview，并通过官方 CLI 安装本次 skills 构建包；安装后的 Host / Client 入口与工程构建产物逐字节一致。
+- 本地 18989 端口监听正常，HTTP 返回 401（认证入口）；导入弹框外观调整已部署，未进行真实登录后的导入验收。
+- 启动日志仍出现 cost-meter EMFILE 写入失败，既有资源增长问题尚未解决。独立 unit-report-ppt 1.0.1 技能包仍由用户上传更新，本次未替换用户安装的技能。
+
+用户要求改善外观并明确不要重启。仅调整技能导入弹框展示结构和样式：600px紧凑宽度、20px标题、32px桌面关闭按钮、灰黑中性信息卡、单一正文滚动区、固定底部操作栏、按钮文字不换行；窄屏按钮及关闭触控区44px。沿用公共Modal与已有导入服务，不引入新运行底座或外部组件依赖；采用成熟Dialog的视觉布局思路，未声称安装shadcn。移除原导入弹框累积宽度和移动端旧样式，其他弹框未推广。
+
+官方能力复用：现有Harness Client/React装配、公共Modal展示壳及SkillManagementClient保持；仅业务布局差异，不新增服务或Slot。skills typecheck与git diff --check通过；真实React组件headless浏览器在1280px/375px渲染、80项长文件清单、按钮不换行、固定footer/单滚动和边界检查通过；已查看桌面/窄屏截图。截图在.artifacts/import-dialog-visual，使用导入回执fixture而非认证Host真实上传，完整业务导入回归本轮未执行。只改源代码，未打包安装、未重启或修改运行Profile；监听进程仍PID70626。本轮未提交/发布，等待用户外观反馈再推广公共弹框规范。
+
+## 用户专用单位汇报PPT技能包（2026-09-14）
+
+用户要求制作可上传DSH的独立技能及随包基础模板。产物 /Users/techflag/Downloads/WorkDSH-skills/unit-report-ppt-1.0.0.zip，12文件约1.68MiB；独立名称 unit-report-ppt，官方 disable-model-invocation:true/user-invocable:true，仅用户显式调用。包含文字稿转页面、表达模式、版式、绘图、模板策略、运行能力和交付规范，以及用户原始PPT完整副本、内嵌封面缩略图和实际XML提取的模板概况。没有改动通用内置技能或默认工作流；Word正文未纳入默认知识或技能包，后续须附当次文字稿。
+
+验证：实际SkillImportStaging ZIP上传/commit、隔离临时Profile安装、锁定官方filesystem解析、仅用户调用策略、相对引用读取、二进制模板字节保留通过；验证回执保存在同一Downloads目录。首次探针watch:false下提前初始化provider导致新增文件未发现，调整为安装后冷启动官方provider，验证通过，不绕过解析器。认证浏览器上传、实际模型制作PPTX、复杂图形渲染和母版保真未执行；不把原模板骨架当作完整绘图库，不称技能上传可新增模板导入引擎。工程仅记录任务状态，本轮未安装到用户现有技能目录、未提交或发布。
+
+## PPT 四套封面预览候选（2026-09-14）
+
+用户要求继续实现 WorkBuddy 式风格选择。Office 新增 content_preview_styles，通用与红色各四套不同封面，真实标题/副标题/已知落款、五色配色与标签；经同一 Office 身份、授权、存储及 Session 右侧预览保存。内置唯一 PPT 技能改为先需求对齐、预览、官方 ask_user_question 等待选择，再恢复原生 PPT 并应用全局风格；红色不自动认定红金，具体模板/风格及明确快速交付跳过。没有新增 answerer/Agent loop，HTML 卡不直接提交选择；第一版八套固定方案，不代表任意风格自动生成或 WorkBuddy 完整复刻。
+
+证据：Office typecheck、Office/技能 build 通过；Office 内容及封面浏览器回归15项通过，另有技能 Host/生命周期2项及原生输入/HTML浏览器3项通过。覆盖预览持久保存、相同参数重试不抬 revision、跨组织拒绝、取消、卸载、转义、桌面/360px布局；已人工查看生成截图并修正红金底色。截图位于 .test-runtime/ppt-style-preview，是真实渲染测试结果，不是已认证 Session 截图。两包打包并通过官方CLI安装preview，Host入口与内置资源字节核对通过；重启后HTTP401认证响应正常，仍出现既有 cost-meter EMFILE，不宣称启动稳定性根因已修复。
+
+未执行：认证 Web 原生提问 answerer 实测、真实模型从需求确认到选择恢复、三页样稿及最终PPTX视觉和完整交付验收；此前 API 余额问题本轮未处理。下一步必须用实际模型会话验收上述链路，不能将提示词规定视作运行成功。本轮未提交/推送/对外发布，D04/TM-01主线状态不变。官方复用记录见 docs/design/office/NEXT-STAGE.md。
+
+## 内置 PPT 去重（2026-09-14）
+
+用户要求只有一个内置PPT、不使用腾讯命名。合并为 resources/skills/workdsh-ppt-design，保留新接入的设计/叙事/红金等方法和既有图表/交付参考；删除重复 tencent-pptx 注册与目录。显示名称PPT制作，Office默认只加载workdsh-ppt-design。原版研究资料及内部来源说明保留，不作为产品名称。内置数量当前为skills插件5个+experts插件1个，共6个；此前7个记录为历史。旧PPT目录内容完整备份至 ~/.cache/workdsh-builtin-migrations/2026-09-14/workdsh-ppt-design-before-merge。Skills与Office build/pack通过，4项相关回归通过（含唯一PPT入口断言与全部入口参考读取）；check:plan及git diff --check通过。两内容寻址制品经官方CLI安装preview，安装Host字节及唯一PPT目录核对通过，已重启。真实模型制稿与视觉/导出本次未执行，不对外发布。
+
+## 内置技能工程化纠正（2026-09-14）
+
+用户定义：工程精细维护/直接集成的是内置，通过技能管理创建流程制作的是用户技能。本次统一七个现有WorkDSH内置：skills插件六个（skill-creator、PPT/Word/Excel/Web设计、腾讯PPT原生适配），experts插件一个expert-manager。目录统一为所属插件 `resources/skills/<正式技能名>/SKILL.md`，附属references/runtime保留；原TypeScript正文迁回Markdown，skills构建通过锁定官方filesystem Skill provider单向生成注册内容，不增运行解析器/执行器。专家已有Markdown源保留并统一路径。所有权、来源与目录规则写入ARCHITECTURE/PLAN及Skills README。模块版本保持当前源码候选，未对外发布。
+
+腾讯原版研究资料仍在docs；随包提供WorkDSH原生适配和重新编写的设计方法，不复制原版引擎、DSL或脚本。既有第三方插件贡献继续由其原插件包管理，不另拷用户目录；来源不明的其他用户技能不批量迁移，workdsh-import-test为测试资料保留。唯一上轮误放用户根的tencent-pptx副本已完整备份至 `~/.cache/workdsh-builtin-migrations/2026-09-14/tencent-pptx-user-copy` 并撤出活动根，未删除用户创建内容。
+
+证据：两插件build通过；skill-creator-host、skill-plugin-lifecycle、expert-authoring-skill共4项通过。两tgz解包到工程外隔离目录，官方list/get发现7个技能、正文可读及5个入口链接存在，无用户根依赖；官方CLI安装到preview，Host及所有包内技能资源逐文件字节一致并重启。check:plan（29模块/50文档）与git diff --check通过。当前内置仍是技能页只读条目，不宣称页面独立停用开关已实现。真实模型制稿、视觉/导出、浏览器管理交互本次未执行；历史审计快速增长/启动资源不足问题仍需单独修复，不以本次技能工程化标记解决。
+
+## Office PPT 默认设计接入（2026-09-14）
+
+用户授权把本机腾讯技能集成到已有 /office.ppt。复用 Office 已有公开 systemPrompt 注册及官方 skill 工具/目录，不新增命令或执行器：原生 presentationGuide 在打开并提交第一张有用页面后，优先加载实际目录中的 tencent-pptx，无需用户额外输入；缺失时采用已有 workdsh-ppt-design，不声称第三方资源随包提供。编辑仍走原生 content_*，不转交 PPT Master。仅改变设计指令，原版腾讯资源仍本机安装、未纳入产品制品。本次为 preview 候选，未对外发布。Office build/pack、2项 Office 输入回归及 git diff --check通过；内容寻址制品经官方CLI安装到preview，安装入口逐字节核对通过并重启。真实模型自动加载腾讯技能、制稿渲染与导出本次未执行。
+
+## 腾讯 PPT 执行路径更正（2026-09-14）
+
+用户明确要求沿用已有 `/office.ppt`，撤销上一适配中转交 PPT Master 的选择。本机 `~/.agents/skills/tencent-pptx` 入口改为原生 Office content_* 制作：先打开右侧、读取能力/原生 schema、逐页提交、保留用户编辑、导出真实PPTX；腾讯资源仅提供叙事和视觉方法，原版DSL/SDK和强制中间文件不适用。核对现有 Office input、authoring、tools、native-deck 与 README 后修改指令，未修改 Office 实现或卸载用户已有生成插件。上一“腾讯 PPT 技能本机适配”记录为历史，本节覆盖其执行路径。官方文件技能解析及资源检查通过；真实模型制作、浏览器视觉和导出本次未执行。
+
+## 腾讯 PPT 技能本机适配（2026-09-14）
+
+用户授权集成本地 `docs/workbuddyskills/tencent-pptx`（v20260904）。原目录未修改；完整26份源文件复制到用户官方 Agents skills 根 `~/.agents/skills/tencent-pptx`，保存 ORIGINAL-SKILL.md 和逐文件 SHA256 SOURCE-MANIFEST.json，增加 WorkDSH 执行适配入口与说明。官方复用：Harness skills.zh.md 的 filesystem provider、目录包和用户根，发布包 `@deepseek-ai/dsh-skill` / `dsh-skill-filesystem@0.1.5-rc.1` 实测；没有新增解析器或运行器。保留腾讯需求对齐/叙事/视觉/红金资源，通过已有独立 ppt-master 的官方 skill 加载执行；不运行原版 slidep/SlideDSL 或 WorkBuddy editor_sdk。原技能目录未发现许可证，因此仅本机使用，不纳入发布制品；不是原版引擎完整迁移。官方隔离 custom 根与 preview 默认 user-agents 根 list/get、user/model invocation 和5个入口相对引用检查通过。文件生成完整模型任务、视觉渲染、浏览器菜单交互本次未执行；上一会话HTTP402余额不足仍需用户处理。无需改变模块版本或主线阶段；官方 watcher 负责刷新发现。
+
+# WorkDSH 当前开发台账
+
+更新日期：2026-09-15。当前有效状态以本节、`development-order.json` 与 `modules.json` 为准；下方按日期保留的日志记录当时状态，不能据此覆盖后续发行或用户决定。
+
+## 每周发行计划（2026-09-14）
+
+已制定[每周版本计划](WEEKLY-RELEASE-PLAN.md)，首个目标发行日2026-09-18，滚动8周。每周冻结一个可验收闭环；前置未退出则顺延，未达标不抬版本凑数。计划日期/周次及相对链接检查、check:plan（29模块/50文档）与git diff --check通过；产品测试本次未执行。该计划不代表开发/验收已完成，不创建自动发布任务。当前D04、TM-01及暂停范围保持。
+
+## 局域网访问核对（2026-09-14）
+
+用户要求局域网访问；实际CLI拒绝0.0.0.0监听（远程代码执行暴露限制），已恢复127.0.0.1启动配置，未绕过官方限制。SSH隧道使用说明见[开发文档](DEVELOPMENT.md)。跨设备隧道验证未执行。
+
+## preview崩溃恢复（2026-09-14）
+
+用户反馈无法访问，日志确认启动约40秒触及默认4GB堆上限而退出。提高8GB后仍曾出现快速增长；停用cost-meter与中立cwd均未证明根因，原插件配置已恢复。旧依赖备份移出active Profile保留；当前以8GB上限恢复，预览脚本同步该上限，后续仍需定位启动内存增长，不宣称彻底修复。用户数据/技能目录未替换。最终连续30秒三次HTTP401认证响应正常，RSS约1.16—1.18GiB；已越过此前约40秒崩溃窗口。启动脚本语法、check:plan（29模块/50文档）、git diff --check通过；认证后浏览器完整功能与更长时间稳定性未执行。
+
+## 外部PPT Master安装（2026-09-14）
+
+用户授权将https://github.com/pn1024/dsh-ppt-master安装到preview。官方CLI加入`dsh-ppt-master@6.1.0`（link到`/Users/techflag/.cache/workdsh-plugins/dsh-ppt-master`），源ZIP提交`3c956467cd053fec36816cb7d2ca973729a5d4d1`，SHA256 `aab8f8de75180c56d62ec53ce58fd34f2a4155e21c02e826772ad99cf9af177c`。Python3.13独立环境`/Users/techflag/.cache/workdsh-plugins/ppt-master-runtime`，依赖安装及pip check通过；插件`.venv`链接该环境，当前启动PATH包含环境bin。Provider入口最小验证通过（不是付费模型验收）；自带质量检查及一页SVG→真实PPTX转换/ZIP结构检查通过。预览已重启。图片API Key未配置，不替换Office编辑器，不宣称复杂PPT/模板/音频端到端验收。此前PresetMenu修复构建及3项现有菜单回归通过，但尚未安装到preview；稳定性和百万审计记录增长问题仍待修复。
+
+## 状态口径与当前任务
+
+- `implemented`：登记范围已有实现，不等于整个产品或所有业务场景验收通过。
+- `in_progress`：实现或验收仍有明确缺口；已公开 alpha 的模块也可保持此状态。
+- `planned` / `todo`：规划或脚手架，不能当作可用功能。
+- `paused`：保留成果与待办，未经用户恢复不继续开发。
+- 主线仍为 **D04 专家**；优先切片仍为 **TM-01 专家团协作闭环**。本次仅整理台账，不推进阶段、不执行真实模型任务。
+
+## 已实现与待验收
+
+| 范围 | 当前事实 | 未完成边界 |
+| --- | --- | --- |
+| D00—D03、基础治理与技能 | 已登记范围完成；技能管理、导入、编辑、资源与对话式制作已有实现 | 不代表第三方技能依赖环境、企业多租户或整个 P1 完成 |
+| 专家 / 专家团 | 专家制作、发布修订、召唤、共享技能、有限 SOP、指定成员委派、评审及文件版本闸门已实现；故障恢复回归与确定性原生子会话探针通过 | D04 全部专业场景与 TM-01 真实模型完整流程、实际旧任务恢复、AT-T01～T07 未整体验收；D11 全范围仍 todo，不能解释成团队运行完全未实现 |
+| 活动与协作展示 | 独立插件已实现；普通46px / 团队56px、半宽居中、固定修订头像、Siri彩边、动效开关、官方子任务运行期间每3秒刷新 | 最新刷新修复后的真实长任务成员切换未完整重验；没有已验证交接事件，不制造交接动画或签收成功 |
+| Office | Word、当前 React PPT viewer、实验性 Excel、HTML 实时工作副本及 PDF 首版已有实现 | 全功能文件保真、跨平台及真实模型组合验收未完成；任意 PDF 导入/OCR/图片编辑未接入；不是八类编辑器全部完成 |
+| bundle | 可安装组合已发行，8包精确组合的官方 Web Profile 生命周期验证通过 | 不替代各功能验收，不等于 D10 首期全模块集成验收 |
+
+证据：[TM-01](evidence/expert-team-tm01.md)、[发行与验证范围](releases/2026-09-14-development-candidate.md)。历史日志中的临时 `/tmp` 路径只是当时运行记录，不代表可长期复用的验收材料。
+
+## 当前公开发行
+
+2026-09-14 已推送并公开5个 GitHub prerelease：experts `0.1.0-alpha.2`、skills `0.1.0-alpha.28`、activity `0.1.0-alpha.1`、office `0.1.0-alpha.4`、bundle `0.1.0-alpha.41`。源提交 `557d076`；23个公开附件匿名下载回读且 SHA256 一致。未发布 npm，Twitter 由用户自行发布，没有代发。
+
+本批已有验证：完整构建（含类型检查）、115项集成、9项活动测试；8个精确tgz隔离官方 Web Profile安装、两次冷启动、匿名401/认证200、活动及全部模块移除后冷启动通过。环境为 Harness `0.1.5-rc.1` / Node `22.23.2` / macOS。这些是既有证据，本次台账整理没有重跑产品测试。
+
+Office许可证文本收集10项缺项保留原报告；按用户决定用README与依赖清单记录引用，不作为本次发行阻塞，不改成“许可证收集通过”。
+
+## 暂停与未开发
+
+- Office专项仍在 deferredSlices：整体工作暂停保留；Word新增开发、Excel格式/合并/图表扩展暂停。画布与多维表格已移出该专项，Markdown本轮不扩展；这些不删除D15长期路线。
+- D05连接器 → D06资料库 → D07项目 → D08行业应用 → D09后台 → D10首期集成，仍未完成；后续D11整体验收、D12自动化、D13示例、D14团队部署、D15表格/页面/业务场景保留。
+- 本地身份提供方、授权和审计已有实现，不等于组织管理、SSO、模型策略、用量统计和不互信多租户服务已完成。
+- LIMS目前只有讨论，没有开发授权、实现或验收。Desktop兼容与环境管理不因本次整理恢复。
+
+## 下一步、阻塞与本次检查
+
+下一步仍为TM-01有限验收：真实模型执行—评审—交接—交付，核对同版文件、异常恢复及活动栏成员状态。确定性回归不能代替真实任务证据；阶段退出须逐项登记实测，不能只写“等待用户确认”。未开发模块不提前启动。
+
+尚缺上述真实运行验收证据；没有据此断言存在新的已定位代码bug。本次不调用付费模型、不修改preview、不提交或推送。默认 `lefthook.yml` 样例已清理；有意新增的 `scripts/desktop/` 保留且不纳入本批 Web 发布范围。
+
+本次台账检查：计划完整性与文档差异检查在整理后执行，结果见下方整理记录；产品构建、浏览器、真实模型、多平台检查本次均未执行。
+
+## 2026-09-14 开发台账整理记录
+
+已核对发布回执、当前包版本与开发顺序；同步STATUS、PLAN、模块发行字段、TM-01待验收项、Office暂停范围和两份交接入口。历史scope保留至scopeHistory，原始阶段状态未推进。`node scripts/check-plan.mjs`通过（29模块/50文档），`git diff --check`通过。本次产品构建、浏览器、真实模型及多平台检查未执行；未提交、推送或修改preview。
+
+---
+
+# 历史开发记录
+
+以下记录保留当时版本、授权与检查结论；“未发布”“当前”“下一步”等表述仅适用于该条记录的日期。
+
 公开下载回读：5个公开prerelease共23个附件无认证下载成功，SHA256全部一致；源提交557d076，模块tag不随文档回执移动。
 
 2026-09-14 对外发行：本批新增experts alpha.2、skills alpha.28、activity alpha.1、office alpha.4、bundle alpha.41；8个精确tgz隔离官方Web Profile安装、两次冷启动、匿名401/认证200及活动/全部模块移除后冷启动通过。已推送并按模块公开alpha Release，不发布npm、不发送Twitter。保留TM-01和真实长任务成员切换未验收范围。

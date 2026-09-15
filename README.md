@@ -5,7 +5,7 @@
 <p align="center">DeepSeek Harness · Native conversations · Independently versioned modules</p>
 <p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 <p align="center">
-  <a href="https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.24">Download Skill plugin</a> ·
+  <a href="https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28">Download Skill plugin</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="docs/ROADMAP.md">Roadmap</a> ·
   <a href="docs/RELEASES.md">Module releases</a>
@@ -32,7 +32,7 @@ The current **Skill 0.1 development preview** supports local skill discovery, cr
 
 **Word alpha.2:** Word tables and embedded images reuse native MIT Tiptap extensions. The toolbar offers row/column editing, merge/split, width dragging, image upload/resize/alignment; saved working copies and supported DOCX round trips retain structure and text styles. [Scope and limits](packages/plugins/office/README.md). [Download the alpha.2 preview](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.2).
 
-> **Compatibility:** verified with the official Harness **`0.1.5-rc.1` Web Profile**. Skill alpha.24 has a known missing-navigation issue in DSH Desktop using Harness **`0.1.2-rc.1`**, including after restart. This release **does not fix that issue**. See the [compatibility notes](docs/RELEASES.md).
+> **Compatibility:** current Web candidates are verified with the official Harness **`0.1.5-rc.1` Web Profile**. The older DSH Desktop based on Harness **`0.1.2-rc.1`** is outside this release candidate's compatibility target. See the [compatibility notes](docs/RELEASES.md).
 
 ![WorkDSH Skill library](docs/assets/screenshots/skill-management.png)
 
@@ -60,9 +60,9 @@ Experts now ship as an independent Harness Host/Client plugin. One plugin manage
 
 ![Office output selector / Office 输出类型选择](docs/assets/screenshots/office-output-selector.png)
 
-*Select an output type with `/office` in the native task input. Word supports live writing; the other live editor adapters are still pending.*
+*Select an output type with `/office` in the native task input. The current candidate supports the format-specific Word, PPT, Excel, PDF and HTML workflows described in the Office documentation.*
 
-**Office alpha.1 release scope:** the downloadable package contains Word text editing and DOCX original-layout preview only. Experimental Excel/PPT file adapters are excluded from this package. Build the release candidate with `corepack pnpm release:office:pack`; packaging checks bundled license texts and excludes legacy dependencies.
+**Office release scope:** alpha.1/alpha.2 were historical Word-only packages. The current alpha.5 candidate is the complete browser Office plugin with the documented Word, PPT, Excel, PDF and HTML working-copy capabilities. Build it with `corepack pnpm release:office:pack`; the archive includes exact dependency and license inventories. Ten dependency versions still lack collected license text, and the release manifest records those gaps explicitly.
 
 ### Install or remove the Office candidate
 
@@ -74,7 +74,7 @@ cd /Users/techflag/project/workdsh
 # 安装本地候选包 / Install the local candidate
 DSH_HOME="$PWD/.test-runtime/preview" \
   corepack pnpm exec dsh plugin --profile preview add \
-  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.2.tgz"
+  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.5.tgz"
 
 # 启动 / Start
 corepack pnpm preview
@@ -139,8 +139,8 @@ Each installable module has a matching **GitHub prerelease, versioned package, S
 
 | Module | Package version | Download | Scope |
 | --- | --- | --- | --- |
-| Skill management | `workdsh-plugin-skills@0.1.0-alpha.24` | [Skill `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.24/workdsh-plugin-skills-0.1.0-alpha.24.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.24) | Independently installable feature plugin. |
-| WorkDSH presentation | `workdsh-bundle@0.1.0-alpha.39` | [Presentation `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.39/workdsh-bundle-0.1.0-alpha.39.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.39) | Optional brand, theme, and workbench composition. Install Skill separately. |
+| Skill management | `workdsh-plugin-skills@0.1.0-alpha.28` | [Skill `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.28/workdsh-plugin-skills-0.1.0-alpha.28.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28) | Independently installable feature plugin. |
+| WorkDSH presentation | `workdsh-bundle@0.1.0-alpha.41` | [Presentation `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.41/workdsh-bundle-0.1.0-alpha.41.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.41) | Optional brand, theme, and workbench composition. Install Skill separately. |
 
 Workbench `alpha.10` is currently delivered within the presentation bundle. Shared UI `alpha.4`, contracts `alpha.5`, and the local identity/access/audit foundation are development packages, **not standalone end-user plugin downloads in this release**. Other modules remain planned. See the [complete module map](docs/RELEASES.md).
 
@@ -154,7 +154,7 @@ Download the Skill `.tgz` above. Create a dedicated Web Profile and replace the 
 
 ```sh
 dsh --profile workdsh --from-default-profile web --dump-config
-dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.24.tgz
+dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.28.tgz
 dsh --profile workdsh
 ```
 
@@ -306,6 +306,8 @@ Third-party skills and materials retain their providers' terms. Generated archiv
 The current build inventory additionally includes the following package versions. Licenses below are the declarations in the installed package metadata. Existing bundled notices are retained.
 
 当前构建另包含下列依赖版本；许可证栏记录安装包元数据的声明，来源链接指向对应项目。完整199项打包依赖见[Office依赖清单](docs/evidence/office-bundled-dependencies-2026-09-14.md)。
+
+下表 10 项是“已声明许可证、但构建未收集到随包文本”的精确报告。此外，`@univerjs/telemetry@0.25.1` 的安装包元数据没有许可证字段，发布清单单独记录为 `dependenciesWithoutDeclaredLicense`。两类缺项均未伪装为许可证收集完成。
 
 | Dependency / 依赖 | Version / 版本 | Declared license / 声明许可证 |
 | --- | --- | --- |

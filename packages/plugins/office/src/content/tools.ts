@@ -1,11 +1,14 @@
+import type {} from "@deepseek-ai/dsh-fs";
+import { renderStylePreview } from "../presentation/style-preview.js";
 import type { OfficeContentSnapshot } from "workdsh-contracts/office";
 import type { Context } from "@deepseek-ai/cordis";
 import { defineTool, type ToolRunContext } from "@deepseek-ai/dsh-tools";
-import { capabilities, openInput, contentOpenInput, parse } from "./model.js";
+import { capabilities, openInput, contentOpenInput, parse, ensure } from "./model.js";
 import { exportAndPresent } from "./export.js";
 import { registerAuthoringGuide } from "./authoring.js";
 export const name = "workdsh-office-tools";
 export const inject = [
+  "fs",
   "tools",
   "systemPrompt",
   "workdshOfficeContent",
@@ -158,6 +161,7 @@ const sheetOperation={oneOf:[
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"spreadsheet.removeSheet",required:true},sheetId:string}},
 ]} as const;
 const pptOperation={oneOf:[
+ {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.updateText",required:true},slideId:string,elementId:string,expectedText:string,text:string}},
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.updateSlide",required:true},slideId:string,patch:{type:"object",required:true,additionalProperties:false,properties:{elements:{type:"array",items:{type:"object",additionalProperties:true}},name:{type:"string"},backgroundColor:{type:"string"},notes:{type:"string"}}}}},
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.insertSlides",required:true},afterSlideId:{oneOf:[{type:"string"},{type:"null"}],required:true},slides:{type:"array",required:true,items:{type:"object",additionalProperties:true,description:"One pptx-viewer-core native slide: id, slideNumber, elements. Element geometry x,y,width,height; chartData holds chartType,categories,series [{name,values}]."}}}},
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.removeSlide",required:true},slideId:string}},
@@ -185,6 +189,8 @@ function wire(s:OfficeContentSnapshot) {
 }
 export function apply(ctx: Context) {
   for (const toolName of [
+    "content_import_pptx",
+    "content_preview_styles",
     "content_open",
     "content_read",
     "content_capabilities",
@@ -196,6 +202,20 @@ export function apply(ctx: Context) {
       throw new Error(`Office tool name already registered: ${toolName}`);
   }
   registerAuthoringGuide(ctx);
+  ctx.effect(() => ctx.tools.register(defineTool({
+    name:"content_import_pptx",
+    description:"Open a real PPTX template/file as a separate editable live working copy. Read the known file path via the calling Session Harness filesystem. Preserve original package, masters, layouts, theme and media; never modify the source file. Use this instead of source=new when a customer template is required. Reuse operationId and identical file bytes on retries. Inspect imported slides before editing, retain native metadata, and never treat template sample text as report facts. Limit 8 MiB, 50 slides, 200 elements per slide.",
+    parameters:{path:string,title:string,operationId:string},
+    output:{schema:snapshot,render},
+    execute:async(args,exec)=>{
+      const identity=await actor(ctx,exec);
+      ensure(ctx.fs,"UNAVAILABLE","此会话没有 Harness 文件服务，不能导入模板。");
+      const target=await ctx.fs.resolve(args.path,{cwd:exec.agent?.session.header.cwd,signal:exec.signal});
+      const bytes=await ctx.fs.readBytes(target,exec.signal,8*1024*1024);
+      return wire(ctx.workdshOfficeContent.projectForAgent(await ctx.workdshOfficeContent.open(identity,{source:"pptx",kind:"presentation",title:args.title,operationId:args.operationId,bytes:Buffer.from(bytes).toString("base64")},exec.signal)));
+    },
+  })));
+
   ctx.effect(() => ctx.tools.register(
     defineTool({
       name: "content_export",
@@ -232,7 +252,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_open",
       description:
-        "Create or reopen Word, PPT, Excel, PDF or a live single-file HTML webpage. For new PDF use kind=pdf, source=new; read pages and edit one page through pdf.updatePage/insertPage/removePage. Coordinates are top-left points, A4 595.28x841.89. Text and rectangles are supported; Chinese font is bundled. Existing arbitrary PDF import/OCR/image editing is unavailable. For HTML use kind=html, source=new, then html.replaceDocument with a complete self-contained HTML string in each meaningful batch; preview opens immediately and refreshes after committed revisions. Inline scripts/styles work; external dependencies are blocked in preview. For Excel use kind=spreadsheet, source=new; returned state has sheetOrder and sheets with A1-keyed cells. For PPT set input.kind=presentation, source=new, title and operationId; optional brief. Automatically opens the live right-hand editor immediately; no content_present call is needed. New documents start with one empty paragraph. Use content_edit in small meaningful batches as you write so the user sees progress in the document, rather than waiting for the whole report. Reuse operationId on retries. This is not DOCX import.",
+        "Create or reopen Word, PPT, Excel, PDF or a live single-file HTML webpage. For new PDF use kind=pdf, source=new; read pages and edit one page through pdf.updatePage/insertPage/removePage. Coordinates are top-left points, A4 595.28x841.89. Text and rectangles are supported; Chinese font is bundled. Existing arbitrary PDF import/OCR/image editing is unavailable. For HTML use kind=html, source=new, then html.replaceDocument with a complete self-contained HTML string in each meaningful batch; preview opens immediately and refreshes after committed revisions. Inline scripts/styles work; external dependencies are blocked in preview. For Excel use kind=spreadsheet, source=new; returned state has sheetOrder and sheets with A1-keyed cells. For a customer PPTX template call content_import_pptx with its actual path; never substitute a blank deck. For an ordinary new PPT set input.kind=presentation, source=new, title and operationId; optional brief. Automatically opens the live right-hand editor immediately; no content_present call is needed. New documents start with one empty paragraph. Use content_edit in small meaningful batches as you write so the user sees progress in the document, rather than waiting for the whole report. Reuse operationId on retries. This is not DOCX import.",
       parameters: {
         input: {
           oneOf: [
@@ -272,6 +292,23 @@ export function apply(ctx: Context) {
         ),
     }),
   ));
+  ctx.effect(() => ctx.tools.register(defineTool({
+    name: "content_preview_styles",
+    description: "Save four PPT cover style previews in the calling Session right sidebar. This is an HTML planning preview, not a PPT export or a submitted user choice. Then use official ask_user_question with the returned A–D labels and wait. Red means four red directions, not automatically red-gold. After a choice, reopen the original presentation by documentId and apply the selected palette/layout to native slides. Reuse operationId and identical arguments on retries.",
+    parameters: {title:string,subtitle:{type:"string"},footer:{type:"string"},family:{type:"string",enum:["general","red"]},recommended:{type:"string",enum:["A","B","C","D"]},operationId:string},
+    output:{schema:{type:"object",additionalProperties:true},render},
+    execute: async(args,exec) => {
+      const {html,styles}=renderStylePreview(args);
+      const owner=await actor(ctx,exec);
+      const opened=await ctx.workdshOfficeContent.open(owner,{source:"new",kind:"html",title:"PPT 风格预览",operationId:args.operationId},exec.signal);
+      const current=await ctx.workdshOfficeContent.read(owner,opened.documentId,exec.signal);
+      if (current.kind!=="html") throw new Error("Style preview operationId belongs to another document kind");
+      // A lost receipt can be retried without advancing a persisted identical preview.
+      if (current.state.html!==html) await ctx.workdshOfficeContent.editForAgent(owner,{documentId:current.documentId,baseRevision:current.revision,operationId:args.operationId+"-preview",operations:[{op:"html.replaceDocument",html}]},exec.signal);
+      const presented=await ctx.workdshOfficeContent.present(owner,current.documentId,exec.signal);
+      return {documentId:current.documentId,status:presented.status,styles:styles.map(s=>({...s,label:s.id+" · "+s.name})),next:"Ask via ask_user_question, wait, then reopen the original native presentation. Preview cards do not submit answers."};
+    },
+  })));
   ctx.effect(() => ctx.tools.register(
     defineTool({
       name: "content_read",

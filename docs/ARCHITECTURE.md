@@ -1,5 +1,27 @@
 # 架构与目录所有权
 
+## 内置技能目录与管理口径（2026-09-14）
+
+用户确认：由工程精细维护或直接集成的技能属于内置；通过技能管理创建流程制作的是用户技能。内置不是依照当前文件所在用户目录判断。不同插件仍拥有自己的技能，不新建集中技能执行器或万能资源包。
+
+```text
+packages/plugins/skills/resources/skills/
+  workdsh-skill-creator/SKILL.md + references/
+  workdsh-ppt-design/SKILL.md + references/
+  workdsh-word-design/SKILL.md + references/
+  workdsh-excel-design/SKILL.md + references/
+  workdsh-web-design/SKILL.md + references/
+packages/plugins/experts/resources/skills/
+  workdsh-expert-manager/SKILL.md + references/ + runtime/
+docs/workbuddyskills/                 # 原始研究资料，不是运行或打包来源
+```
+
+SKILL.md 是入口、元数据与正文唯一可维护来源；references/assets/scripts按需并随所属插件交付。技能插件构建先用官方 filesystem Skill provider 解析工程资源，再单向生成注册内容；generated TypeScript不能独立编辑。专家管理技能继续从包内Markdown加载，路径统一。Office拥有编辑器和输出指令，Skill拥有设计方法；/office.ppt默认加载唯一内置 workdsh-ppt-design，采用合并后的设计方法，不另设 tencent-pptx 入口。
+
+用户发布目录保持官方 Agents/Profile根，由技能管理服务拥有草稿、发布和修订，不被迁移或覆盖。内置通过官方ctx.skills注册为bundled，技能页沿用现有只读保护；编辑内容回工程，随插件更新。当前只读条目不具备技能页独立停用功能，本次不声称该开关已实现。官方 filesystem/provider拥有发现和调用，不把位置推断当作用户创建来源。
+
+已有第三方插件提供的技能（如dsh-ppt-master）属于装配提供的内置能力，继续由其正式插件包管理，不复制其实现到用户技能或WorkDSH模块；版本、许可证和卸载按该插件。用户Agents根中的其他已有技能来源不明，不能按名字批量收进产品或自动搬走。本次明确迁移的用户根副本只有上轮直接集成的tencent-pptx，备份保留后撤出活动根；workdsh-import-test为测试资料，不计入产品内置。
+
 ## 核心模型
 
 功能插件是可执行模块；bundle 是安装组合层；专家/技能/连接实例/应用是业务对象。三者不能混同。一个功能插件管理多对象，一个提供方插件可贡献多类型预置对象。

@@ -25,17 +25,14 @@ test('skills Host owns a disposable manager and official skill registration', as
     const registered = await ctx.skills.get('workdsh-skill-creator');
     assert.equal(registered.name, 'workdsh-skill-creator');
     assert.equal(registered.source, 'bundled');
-    assert.match(registered.content, /todo_write/);
-    assert.match(registered.content, /resumes after an interruption/);
-    assert.match(registered.content, /workdsh_save_skill_draft/);
-    assert.match(registered.content, /workdsh_validate_skill_draft/);
-    assert.match(registered.content, /workdsh_publish_skill_draft/);
-    assert.match(registered.content, /target already exists/);
-    assert.match(registered.content, /Never overwrite an unrelated skill/);
-    assert.match(registered.content, /filesystem skill provider and watcher/);
+    for (const step of ['Understanding the Skill with Concrete Examples', 'Planning the Reusable Skill Contents', 'Initializing the Skill', 'Edit the Skill', 'Packaging a Skill', 'Iterate']) {
+      assert.ok(registered.content.includes(step));
+    }
+    assert.match(registered.content, /scripts\/init_skill\.py/);
+    assert.match(registered.content, /references\/dsh-authoring\.md/);
     assert.equal(registered.content, skillsHost.skillCreatorContent);
     assert.equal(registered.resourceBase.kind, 'directory');
-    for (const reference of ['creation-methods.md', 'editing-and-delivery.md']) {
+    for (const reference of ['dsh-authoring.md', 'bundle-production.md']) {
       const resource = join(registered.resourceBase.path, 'references', reference);
       assert.ok((await readFile(resource, 'utf8')).length > 100);
     }
@@ -45,12 +42,13 @@ test('skills Host owns a disposable manager and official skill registration', as
       assert.equal(guidance.source, 'bundled');
       assert.equal(guidance.resourceBase.kind, 'directory');
       const references = [...guidance.content.matchAll(/references\/([a-z-]+\.md)/g)];
-      assert.equal(references.length, skillName === 'workdsh-web-design' ? 3 : 2);
+      assert.equal(references.length, skillName === 'workdsh-ppt-design' ? 6 : skillName === 'workdsh-web-design' ? 3 : 2);
       for (const [, reference] of references) {
         assert.ok((await readFile(join(guidance.resourceBase.path, 'references', reference), 'utf8')).length > 100);
       }
       assert.ok(renderSkillContent(guidance).includes(guidance.resourceBase.path));
     }
+    assert.equal(await ctx.skills.get('tencent-pptx'), undefined, 'only one built-in PPT skill is registered');
     assert.equal(typeof ctx.workdshSkills.detail, 'function');
     assert.ok(ctx.tools.get('workdsh_save_skill_draft'));
     assert.ok(ctx.tools.get('workdsh_validate_skill_draft'));

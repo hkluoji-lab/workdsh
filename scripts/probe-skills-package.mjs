@@ -146,15 +146,15 @@ try {
   await expect(catalogInstall).toBeVisible();
   await expect(page.getByRole('button', { name: '安装技能 超限样例技能', exact: true })).toBeDisabled();
   // The catalog preview rides the shared Modal shell (workdsh-ui) while plugin
-  // classes keep it compact: narrow width, 64px mark and calm 24px title.
+  // classes keep it compact: narrow width, 48px mark and calm 20px title.
   await page.getByRole('button', { name: `查看技能 ${catalogSkill}`, exact: true }).click();
   const previewDialog = page.locator('.wd-dialog.catalog-dialog');
   await expect(previewDialog).toBeVisible();
   const previewWidth = (await previewDialog.boundingBox())?.width ?? 0;
   assert.ok(previewWidth <= 760, `catalog dialog stays narrow, got ${previewWidth}px`);
   const previewMarkWidth = (await previewDialog.locator('.skill-icon.large, .skill-mark.large').first().boundingBox())?.width ?? 0;
-  assert.equal(previewMarkWidth, 64);
-  assert.equal(await previewDialog.locator('.detail-title h1').evaluate(node => getComputedStyle(node).fontSize), '24px');
+  assert.equal(previewMarkWidth, 48);
+  assert.equal(await previewDialog.locator('.detail-title h1').evaluate(node => getComputedStyle(node).fontSize), '20px');
   await expect(previewDialog.getByRole('heading', { name: /基本信息/ })).toBeVisible();
   await previewDialog.getByRole('button', { name: '关闭', exact: true }).click();
   await expect(previewDialog).toHaveCount(0);

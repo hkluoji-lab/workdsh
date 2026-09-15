@@ -1,6 +1,6 @@
 {
   "name": "workdsh-plugin-skills",
-  "version": "0.1.0-alpha.28",
+  "version": "0.1.0-alpha.29",
   "private": false,
   "type": "module",
   "exports": {
@@ -21,8 +21,8 @@
     "cordis.patch.yml"
   ],
   "scripts": {
-    "build": "corepack pnpm --filter workdsh-contracts build && corepack pnpm --filter workdsh-ui build && tsc -p tsconfig.json && node ../../../scripts/build-skills.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "build": "node ../../../scripts/generate-builtin-skills.mjs && corepack pnpm --filter workdsh-contracts build && corepack pnpm --filter workdsh-ui build && tsc -p tsconfig.json && node ../../../scripts/build-skills.mjs",
+    "typecheck": "node ../../../scripts/generate-builtin-skills.mjs && tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.2",

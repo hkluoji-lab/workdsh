@@ -81,7 +81,8 @@ export function ImportSkillModal({ open, management, onClose, onInstalled }: Imp
   };
 
   return <Modal open={open} label="导入技能" className="import-skill-dialog" onClose={close}>
-    <h2>导入技能</h2>
+    <header className="import-header"><h2>导入技能</h2><p>添加技能包，扩展你的工作能力。</p></header>
+    <div className="import-content">
     {!staged ? <>
       <button type="button" className={`import-dropzone${dragging ? ' dragging' : ''}`} disabled={busy}
         onClick={() => fileInput.current?.click()}
@@ -103,8 +104,10 @@ export function ImportSkillModal({ open, management, onClose, onInstalled }: Imp
       <dl><dt>来源文件</dt><dd>{staged.fileName}</dd><dt>文件</dt><dd>{staged.inspection.files.length} 个，{sizeOf(staged.inspection.totalBytes)}</dd><dt>安装范围</dt><dd><select value={scope} onChange={event => setScope(event.currentTarget.value as SkillInstallScope)}><option value="shared-agents">所有 WorkDSH 任务（共享）</option><option value="profile">当前 Harness Profile</option></select></dd></dl>
       <details><summary>查看文件清单</summary><ul className="import-file-list">{staged.inspection.files.map(path => <li key={path}>{path}</li>)}</ul></details>
       <p className="import-note">预检已通过。确认后才会写入 Harness 官方技能目录；若已存在同名技能，安装会停止且不会覆盖。</p>
-      <div className="import-actions"><button type="button" onClick={() => busy ? operationAbort.current?.abort() : void discard()}>{busy ? '取消安装' : '重新选择'}</button><button type="button" className="install" disabled={busy} onClick={() => void install()}>{busy ? '正在安装…' : '确认安装'}</button></div>
+
     </section>}
     {error && <p className="error" role="alert">{error}</p>}
+    </div>
+    {staged && <footer className="import-footer"><div className="import-actions"><button type="button" onClick={() => busy ? operationAbort.current?.abort() : void discard()}>{busy ? '取消安装' : '重新选择'}</button><button type="button" className="install" disabled={busy} onClick={() => void install()}>{busy ? '正在安装…' : '确认安装'}</button></div></footer>}
   </Modal>;
 }

@@ -1,3 +1,21 @@
+## 0.1.0-alpha.5 — 2026-09-15
+
+- 支持从客户 PPTX 模板建立独立工作副本，保留母版、版式、主题、媒体与原文件。
+- 修复长任务大文件分块导出和重复媒体膨胀，加入受控模板文字更新与风格预览。
+- 原生 DOCX/PPTX/XLSX 隔离安装探针覆盖当前界面；首次安装优先缓存并只放行 `protobufjs` 构建。
+
+## 长任务 PPT 修复（2026-09-14）
+
+- 所有超过 96 KiB 的导出文件走分块官方 bash 写入，修复模板 PPTX 单命令参数过长；保留 SHA 校验、原子链接、目标冲突保护和失败不交付。
+- 保存前从当前 PPTX 重新绑定已知临时媒体引用，避免 load 生成的新 blob URL 导致未修改背景被误判并反复打包；支持旧 Host 的已失效媒体句柄。
+
+## Unreleased — PPTX template working copies
+
+- Add `content_import_pptx` using the calling Session Harness filesystem and the existing Office ownership, audit, idempotency and live editor flow; retain original PPTX package and never overwrite the template.
+- Add guarded `presentation.updateText` for template text boxes, preserving geometry and native metadata; full text replacement retains the first run style.
+- Bound native imports and allow authorized human PPT saves up to 30 MiB without widening ordinary document or Agent edit limits.
+- Render named DemiBold/Semibold faces at CSS weight 600 to avoid extra heavy CJK glyph painting; stored font/style remains unchanged.
+
 ## Current source candidate — HTML and PDF working copies
 
 - Open self-contained HTML working copies before AI revision updates; sandbox the native preview and retain source/download bytes.
@@ -47,3 +65,7 @@
 Word text working copies only. Tables, images, headers/footers, embedded objects and complete Word pagination are outside the editable semantic model. Text-copy import flattens table paragraphs and clearly warns about unsupported features. Original files remain available. The other seven output types are selectable but their live adapters remain pending.
 
 This is a development preview, not a complete Word replacement or an eight-editor release. Professional layout checks in Word/WPS, OS IME checks, cross-host export recovery and power-loss durability remain separate acceptance work.
+
+## 2026-09-14 PPT 风格预览候选
+
+增加通用/红色各四套真实标题封面预览；通过 Office 持久保存及官方原生提问选择。内置 PPT 不再将红色直接视为红金；具体模板/风格及快速交付跳过选择。卡片不直接提交答案，真实模型完整制作尚待验收。

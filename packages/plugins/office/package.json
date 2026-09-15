@@ -1,6 +1,6 @@
 {
   "name": "workdsh-plugin-office",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "private": true,
   "type": "module",
   "exports": {
@@ -90,7 +90,8 @@
     "@univerjs/preset-docs-core": "0.25.1",
     "@univerjs/slides": "0.25.1",
     "@univerjs/slides-ui": "0.25.1",
-    "workdsh-contracts": "workspace:*"
+    "workdsh-contracts": "workspace:*",
+    "@deepseek-ai/dsh-fs": "0.1.5-rc.1"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
@@ -98,6 +99,12 @@
     "@deepseek-ai/dsh-client-connection": "0.1.5-rc.1",
     "@deepseek-ai/dsh-storage-domain": "0.1.5-rc.1",
     "@deepseek-ai/dsh-system-prompt": "0.1.5-rc.1",
-    "@deepseek-ai/dsh-tools": "0.1.5-rc.1"
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-fs": "0.1.5-rc.1"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-fs": {
+      "optional": true
+    }
   }
 }
