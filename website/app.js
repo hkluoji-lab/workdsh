@@ -1,6 +1,174 @@
-const enViews={ppt:{title:'Watch your slides take shape.',image:'assets/ppt.png',alt:'WorkDSH AI conversation alongside the native PPT editor',description:'AI commits slides in batches. Take over in the same editor, adjust chart data, and download your PPTX.',count:'01 / 03'},skills:{title:'A place for everything you know.',image:'assets/skills.png',alt:'WorkDSH local Skill market with categories and installation controls',description:'Find a skill, inspect its instructions, and make it part of your workflow. The catalog shown is local preview data.',count:'02 / 03'},word:{title:'Keep the conversation. Create the document.',image:'assets/word.png',alt:'WorkDSH Word document preview and native deliverable card',description:'Write in committed batches, continue from a saved working copy, and download supported content as DOCX.',count:'03 / 03'}};
-const zhViews={ppt:{title:'看着你的 PPT 逐页成形。',image:'assets/ppt.png',alt:'WorkDSH 的 AI 对话与原生 PPT 编辑器',description:'AI 分批提交幻灯片。你可以在同一编辑器接手修改、调整图表数据，并下载 PPTX。',count:'01 / 03'},skills:{title:'让你的知识与技能各得其所。',image:'assets/skills.png',alt:'WorkDSH 本地技能市场、分类与安装入口',description:'找到技能，阅读指令，让它融入工作流程。截图中的目录是本地预览数据。',count:'02 / 03'},word:{title:'保留对话，做出文档。',image:'assets/word.png',alt:'WorkDSH Word 文档预览与原生文件产物卡',description:'分批写入，从已保存的工作副本继续，下载支持范围内的 DOCX 内容。',count:'03 / 03'}};
-const views=document.documentElement.lang==='zh-CN'?zhViews:enViews;
-const tabs=[...document.querySelectorAll('[data-view]')];
-function select(button){const view=views[button.dataset.view];for(const tab of tabs){tab.setAttribute('aria-selected',String(tab===button));tab.tabIndex=tab===button?0:-1}document.querySelector('#demo-title').textContent=view.title;const img=document.querySelector('#demo-image');img.src=view.image;img.alt=view.alt;document.querySelector('#demo-description').textContent=view.description;document.querySelector('#demo-count').textContent=view.count;document.querySelector('#demo-panel').setAttribute('aria-labelledby',button.id)}
-for(const button of tabs){button.addEventListener('click',()=>select(button));button.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();let index=tabs.indexOf(button);index=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[index].focus();select(tabs[index])})}
+(() => {
+  'use strict';
+  const $ = (selector, scope = document) => scope.querySelector(selector);
+  const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const compatibilityFaq = $('#compatibility-faq');
+  function revealCompatibilityFaq() {
+    if (location.hash === '#compatibility-faq') compatibilityFaq.open = true;
+  }
+  $('a[href="#compatibility-faq"]').addEventListener('click', () => { compatibilityFaq.open = true; });
+  window.addEventListener('hashchange', revealCompatibilityFaq);
+  revealCompatibilityFaq();
+
+  // Tab activation is shared by the product gallery and source selector.
+  function wireTabs(list, onSelect) {
+    const tabs = $$('[role="tab"]', list);
+    function select(tab) {
+      tabs.forEach(item => {
+        const active = item === tab;
+        item.setAttribute('aria-selected', String(active));
+        item.tabIndex = active ? 0 : -1;
+      });
+      onSelect(tab);
+    }
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => select(tab));
+      tab.addEventListener('keydown', event => {
+        let next;
+        if (event.key === 'ArrowRight' || (list.getAttribute('aria-orientation') === 'vertical' && event.key === 'ArrowDown')) next = (index + 1) % tabs.length;
+        if (event.key === 'ArrowLeft' || (list.getAttribute('aria-orientation') === 'vertical' && event.key === 'ArrowUp')) next = (index - 1 + tabs.length) % tabs.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = tabs.length - 1;
+        if (next !== undefined) {
+          event.preventDefault();
+          select(tabs[next]);
+          tabs[next].focus();
+        }
+      });
+    });
+  }
+  wireTabs($('.product-tabs'), tab => {
+    $$('.product-panel').forEach(panel => { panel.hidden = panel.id !== tab.getAttribute('aria-controls'); });
+  });
+
+  wireTabs($('.workspace-tabs'), tab => {
+    $$('.workspace-panel').forEach(panel => { panel.hidden = panel.id !== tab.getAttribute('aria-controls'); });
+  });
+  let source = 'github';
+  wireTabs($('.source-tabs'), tab => {
+    source = tab.dataset.source;
+    $('[data-repo-url]').textContent = `https://${source}.com/techflag/workdsh.git`;
+    $('#source-code').setAttribute('aria-labelledby', tab.id);
+  });
+  let toastTimer;
+  function toast(message) {
+    clearTimeout(toastTimer);
+    $('.toast').textContent = message;
+    $('.toast').classList.add('visible');
+    toastTimer = setTimeout(() => $('.toast').classList.remove('visible'), 2400);
+  }
+  $('[data-copy]').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    const commands = `git clone https://${source}.com/techflag/workdsh.git\ncd workdsh\ncorepack pnpm install --frozen-lockfile\ncorepack pnpm build\ncorepack pnpm preview:install\ncorepack pnpm preview`;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(commands);
+      } else {
+        const field = document.createElement('textarea');
+        field.value = commands;
+        Object.assign(field.style, {position:'fixed', left:'-9999px', top:'0'});
+        document.body.append(field);
+        field.select();
+        const copied = document.execCommand('copy');
+        field.remove();
+        button.focus();
+        if (!copied) throw new Error('Clipboard unavailable');
+      }
+      toast(button.dataset.copied);
+    } catch { toast(button.dataset.error); }
+  });
+
+  const sourceNavigation = $('.source-navigation');
+  document.addEventListener('click', event => {
+    if (!sourceNavigation.contains(event.target)) sourceNavigation.open = false;
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && sourceNavigation.open) {
+      sourceNavigation.open = false;
+      $('summary', sourceNavigation).focus();
+    }
+  });
+  const menu = $('#navigation');
+  const menuToggle = $('.nav-toggle');
+  function closeMenu() {
+    menu.classList.remove('is-open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+  }
+  menuToggle.addEventListener('click', () => {
+    const expanded = menuToggle.getAttribute('aria-expanded') !== 'true';
+    menuToggle.setAttribute('aria-expanded', String(expanded));
+    menu.classList.toggle('is-open', expanded);
+  });
+  $$('a', menu).forEach(link => link.addEventListener('click', closeMenu));
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && menu.classList.contains('is-open')) {
+      closeMenu();
+      menuToggle.focus();
+    }
+  });
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.site-header')) closeMenu();
+  });
+
+  // Native dialogs supply focus trapping and Escape. Restore the invoking control.
+  let dialogTrigger;
+  function openDialog(dialog, trigger) {
+    dialogTrigger = trigger;
+    closeMenu();
+    dialog.showModal();
+    document.body.classList.add('dialog-open');
+  }
+  $$('dialog').forEach(dialog => {
+    $('[data-close-dialog]', dialog).addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', event => {
+      if (event.target !== dialog) return;
+      const rect = dialog.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+    });
+    dialog.addEventListener('close', () => {
+      document.body.classList.remove('dialog-open');
+      const video = $('video', dialog);
+      if (video) video.pause();
+      dialogTrigger?.focus({preventScroll:true});
+    });
+  });
+  $$('[data-zoom]').forEach(button => button.addEventListener('click', () => {
+    $('#enlarged-image').src = button.dataset.zoom;
+    $('#enlarged-image').alt = $('img', button).alt;
+    $('#enlarged-caption').textContent = $('h3', button.closest('.product-panel')).textContent;
+    openDialog($('#image-dialog'), button);
+  }));
+  $$('[data-open-film]').forEach(button => button.addEventListener('click', () => {
+    const dialog = $('#film-dialog');
+    openDialog(dialog, button);
+    $('video', dialog).play().catch(() => { /* Native playback controls remain available. */ });
+  }));
+
+  if ('IntersectionObserver' in window && !reduceMotion.matches) {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {threshold:0.08});
+    $$('.reveal').forEach(element => observer.observe(element));
+    document.documentElement.classList.add('enhanced');
+  }
+  const art = $('.hero-art');
+  const scene = $('.orbit-scene');
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    art.addEventListener('pointermove', event => {
+      if (reduceMotion.matches) return;
+      const bounds = art.getBoundingClientRect();
+      scene.style.setProperty('--px', `${((event.clientX - bounds.left) / bounds.width - 0.5) * 10}px`);
+      scene.style.setProperty('--py', `${((event.clientY - bounds.top) / bounds.height - 0.5) * 8}px`);
+    });
+    art.addEventListener('pointerleave', () => {
+      scene.style.setProperty('--px', '0px');
+      scene.style.setProperty('--py', '0px');
+    });
+  }
+})();
