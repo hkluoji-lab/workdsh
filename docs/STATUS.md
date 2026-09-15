@@ -1,6 +1,6 @@
 ## 2026-09-15 — README 特色复核与 Office 路线归位
 
-重新检查中英文 README 的产品表达：首屏明确 WorkDSH 是面向 DeepSeek Harness 的独立开源 WorkBuddy 式工作台，并说明并非 WorkBuddy 官方开源版本。特色表突出任务—可见过程—人工介入—可编辑成果闭环、真实文件交付、人与 AI 实时共编、带资源和固定修订的专业能力、可见的专家团队过程、Harness 原生工作流和独立插件交付，同时保留 TM-01 未整体验收等边界。下载区补齐当前五个公开模块，修正 Office alpha.3/alpha.4 和 Word-only 旧描述，英文入口移除重复中文段落。删除开发文档区中孤立且已经过时的“PPT 实时制作 → 其他六类”说明，在 README 路线表补充 Office 0.1，并由 `docs/ROADMAP.md` 统一记录当前公开版本、PPT 开发重点、Word 扩展暂停和真实文件/独立插件生命周期验收要求。`docs/design/office/NEXT-STAGE.md` 仅作为历史阶段与实现记录。此次只修改文档，不改变运行能力、安装包或验收状态。
+重新检查中英文 README 的产品表达：首屏明确 WorkDSH 是面向 DeepSeek Harness 的独立开源 WorkBuddy 式工作台，并说明并非 WorkBuddy 官方开源版本。特色表突出任务—可见过程—人工介入—可编辑成果闭环、真实文件交付、人与 AI 实时共编、带资源和固定修订的专业能力、可见的专家团队过程、Harness 原生工作流和独立插件交付，同时保留 TM-01 未整体验收等边界。下载区补齐当前五个公开模块，修正 Office alpha.3/alpha.4 和 Word-only 旧描述，英文入口移除重复中文段落；顶部导航同时提供 GitHub Releases 与 `https://gitee.com/techflag/workdsh` 国内镜像。删除开发文档区中孤立且已经过时的“PPT 实时制作 → 其他六类”说明，在 README 路线表补充 Office 0.1，并由 `docs/ROADMAP.md` 统一记录当前公开版本、PPT 开发重点、Word 扩展暂停和真实文件/独立插件生命周期验收要求。`docs/design/office/NEXT-STAGE.md` 仅作为历史阶段与实现记录。此次只修改文档，不改变运行能力、安装包或验收状态。
 
 ## 2026-09-15 — README 产品首屏重构
 

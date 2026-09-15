@@ -6,6 +6,7 @@
 <p align="center"><a href="README.md">English</a> · <strong>简体中文</strong></p>
 <p align="center">
   <a href="https://github.com/techflag/workdsh/releases">下载安装包</a> ·
+  <a href="https://gitee.com/techflag/workdsh">Gitee 国内镜像</a> ·
   <a href="#快速开始">三分钟上手</a> ·
   <a href="#看到工作过程也拿到真实成果">产品截图</a> ·
   <a href="docs/ROADMAP.md">开发路线</a> ·

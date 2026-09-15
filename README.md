@@ -6,6 +6,7 @@
 <p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 <p align="center">
   <a href="https://github.com/techflag/workdsh/releases">Download</a> ·
+  <a href="https://gitee.com/techflag/workdsh">Gitee mirror</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#see-the-work-not-just-the-answer">Screenshots</a> ·
   <a href="docs/ROADMAP.md">Roadmap</a> ·
