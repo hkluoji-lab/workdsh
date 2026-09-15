@@ -1,4 +1,6 @@
-## 2026-09-15 DSH 0.1.6 官方 Team 预发布
+## 2026-09-15 DSH 0.1.6 官方 Team 公开发布回执
+
+源码发行提交：`bbda262fd0f7d3332d1a9a864d24e0114b2dc811`。main 与 5 个模块 tag 已推送，5 个 GitHub prerelease 均已公开；共 23 个附件完成无认证 HTTP 200 回读，并与本地发行制品逐字节 SHA-256 一致。
 
 本批使用 DeepSeek Harness `0.1.6-alpha.1`，以官方 Team 替代 WorkDSH 自建专家团执行器。五个独立模块版本为 experts alpha.3、skills alpha.29、activity alpha.2、office alpha.5、bundle alpha.42；专家发行附 identity-local alpha.5、audit alpha.4、access alpha.5。安装包、摘要和 manifest 见各模块发布页；未发布 npm。完整变化、验证与已知边界见[本批发布说明](releases/2026-09-15-dsh-0.1.6-alpha.1.md)。
 

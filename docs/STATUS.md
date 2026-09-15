@@ -1,8 +1,8 @@
-## 2026-09-15：DSH 0.1.6 官方 Team 发布候选
+## 2026-09-15：DSH 0.1.6 官方 Team 已公开发布
 
-本批候选版本为 experts alpha.3、skills alpha.29、activity alpha.2、office alpha.5、bundle alpha.42；配套 identity-local alpha.5、audit alpha.4、access alpha.5。自建专家团执行器已移除，已发布旧团队在下次调用时升级为新的官方 Team 执行修订，历史修订保持不可变。
+本批公开版本为 experts alpha.3、skills alpha.29、activity alpha.2、office alpha.5、bundle alpha.42；配套 identity-local alpha.5、audit alpha.4、access alpha.5。自建专家团执行器已移除，已发布旧团队在下次调用时升级为新的官方 Team 执行修订，历史修订保持不可变。
 
-发布门槛已通过 build、typecheck、integration 102/102、activity 9/9、check:versions、check:plan、P0 acceptance、官方 Team 生产探针和真实 Web 提示词核对。P1 长期台账 52 项继续保留；官方 fork 历史查询缺陷、跨平台、60 分钟资源收敛与 Office 10 项许可证正文缺口写入 alpha 边界。发布说明见 [2026-09-15 DSH 0.1.6 alpha](releases/2026-09-15-dsh-0.1.6-alpha.1.md)。
+源码提交 `bbda262fd0f7d3332d1a9a864d24e0114b2dc811` 与 5 个模块 tag 已推送，5 个 GitHub prerelease、23 个附件已公开；无认证回读全部 HTTP 200，内容与本地制品 SHA-256 一致。发布门槛通过 build、typecheck、integration 102/102、activity 9/9、check:versions、check:plan、P0 acceptance、官方 Team 生产探针和真实 Web 提示词核对。P1 长期台账 52 项继续保留；官方 fork 历史查询缺陷、跨平台、60 分钟资源收敛与 Office 10 项许可证正文缺口写入 alpha 边界。发布说明见 [2026-09-15 DSH 0.1.6 alpha](releases/2026-09-15-dsh-0.1.6-alpha.1.md)。
 
 ## 2026-09-15：官方 Team 替换已实现并完成隔离验证
 
