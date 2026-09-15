@@ -51,6 +51,9 @@ WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终
 <tr>
 <td colspan="2"><img src="docs/assets/screenshots/workdsh-team-activity-preview.png" alt="WorkDSH 专家团队工作动态"><br><strong>专家团始终可见</strong><br>工作动态展示团队和当前成员，同时保留 Harness 原生会话。</td>
 </tr>
+<tr>
+<td colspan="2"><img src="docs/assets/screenshots/workdsh-browser-automation-live.png" alt="WorkDSH 调用官方浏览器自动化执行真实任务"><br><strong>官方浏览器能力进入真实任务</strong><br>DSH 0.1.6 的浏览器操作在原生任务中执行，调用和推理过程留在同一条轨迹里。截图拍摄时任务仍在运行，不代表最终业务结果。</td>
+</tr>
 </table>
 
 ## WorkDSH 的核心特色
