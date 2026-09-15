@@ -1,91 +1,67 @@
+
 <p align="center"><img src="assets/brand/workdsh-logo.svg" width="104" alt="WorkDSH"></p>
 <h1 align="center">WorkDSH</h1>
-<p align="center"><a href="https://techflag.github.io/workdsh/">Product website ↗</a></p>
-<p align="center"><strong>An AI workspace, composed from plugins.</strong></p>
-<p align="center">DeepSeek Harness · Native conversations · Independently versioned modules</p>
+<p align="center"><strong>Give AI a job. Watch it work. Open the result.</strong></p>
+<p align="center">A plugin-composed AI workspace built on DeepSeek Harness.</p>
 <p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 <p align="center">
-  <a href="https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28">Download Skill plugin</a> ·
+  <a href="https://github.com/techflag/workdsh/releases">Download</a> ·
   <a href="#quick-start">Quick start</a> ·
+  <a href="#see-the-work-not-just-the-answer">Screenshots</a> ·
   <a href="docs/ROADMAP.md">Roadmap</a> ·
-  <a href="docs/RELEASES.md">Module releases</a>
+  <a href="https://techflag.github.io/workdsh/">Website</a>
 </p>
 
-WorkDSH brings reusable skills and a work-oriented interface to DeepSeek Harness. Install the **Skill management plugin on its own**, or compose it with the optional **WorkDSH presentation bundle** for the branded workspace.
+WorkDSH adds **skills, experts, team activity, and editable Office deliverables** to the native DeepSeek Harness task experience. You stay in one conversation while the work appears beside it as a real document, spreadsheet, presentation, PDF, or webpage.
 
-The current **Skill 0.1 development preview** supports local skill discovery, creation, import, editing, enablement, and recovery. Individual Experts are available as an alpha; expert teams, connectors, projects, and enterprise administration are on the roadmap; their design documents and navigation placeholders do not represent completed features.
+![WorkDSH creating and presenting a real HTML analysis dashboard](docs/assets/screenshots/workdsh-html-dashboard-preview.png)
 
-## What makes WorkDSH useful
+*Real local preview: the conversation, delivered files, and an editable HTML dashboard remain in the same task. Example data and costs belong to the user's test workspace.*
 
-**Watch the result take shape in your workspace.** Ask for a document and it opens on the right. AI writes in committed batches as you read. Take over, make changes, then let AI read the latest revision and continue. Download the result as Word when ready.
+## Start with one real task
 
-| Feature | What it means in practice |
-| --- | --- |
-| Visible writing progress | Each committed batch appears in the right-hand document; no need to wait for a finished file. |
-| Human and AI take turns | Edit the same saved working copy. Human editing pauses AI writes to prevent overwrites. |
-| Drafts become deliverables | Autosave, reopen, download DOCX, and use native Harness file cards after AI export. |
-| Explicit output intent | `/office` picks an output type; `@` distinguishes reference material from a document to modify. New documents need no reference. |
-| Independently installed capabilities | Office is a Host/Client plugin. Its menus, tools and editor registrations follow plugin installation; saved documents survive removal. |
-| Native Harness workflow | Keep conversations, attachments, models, permissions and queues with the official runtime and composer. |
+Attach your material and ask in plain language:
 
-**Released Word alpha.1 scope:** headings, paragraphs, text formatting, lists, find/replace, zoom, reading follow, and DOCX text-copy import/download. Tables, images, headers/footers and full pagination are outside the unified editing model; imports disclose these limits and retain the original file. All eight output choices are present, while the other seven live adapters remain planned. Word alpha.1 is available as an independent [prerelease package](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1).
+> Review this budget workbook. Flag every missing assumption, show the findings in a dashboard, and deliver the HTML file.
 
-**Word alpha.2:** Word tables and embedded images reuse native MIT Tiptap extensions. The toolbar offers row/column editing, merge/split, width dragging, image upload/resize/alignment; saved working copies and supported DOCX round trips retain structure and text styles. [Scope and limits](packages/plugins/office/README.md). [Download the alpha.2 preview](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.2).
+WorkDSH can keep the source material, model conversation, live result, revisions, and final file together. You can inspect the work, edit it yourself, then ask the AI to continue from the latest saved version.
 
-> **Compatibility:** current Web candidates are verified with the official Harness **`0.1.5-rc.1` Web Profile**. The older DSH Desktop based on Harness **`0.1.2-rc.1`** is outside this release candidate's compatibility target. See the [compatibility notes](docs/RELEASES.md).
+Already using the Harness `0.1.5-rc.1` Web Profile? Install the modules you need from [Releases](https://github.com/techflag/workdsh/releases), or jump to the [quick start](#quick-start). WorkDSH uses the official `dsh plugin` lifecycle rather than a second runtime.
 
-![WorkDSH Skill library](docs/assets/screenshots/skill-management.png)
+## What it gives you
 
-*Actual packaged application with isolated demonstration skills. Example content is not a bundled public catalog.*
+| You need | WorkDSH behavior | Result |
+| --- | --- | --- |
+| A report, brief, or dashboard | Reads the task material, writes in visible batches, and keeps revisions | Editable HTML, Word, PDF, or Markdown working copy within the supported format scope |
+| A presentation | Creates or imports a PPTX working copy, edits slides, and keeps human changes | Editable PPTX with download; complex-template fidelity still requires review |
+| A spreadsheet | Opens a workbook beside the task and preserves supported values and formulas | Editable XLSX working copy with format-specific limits |
+| Repeatable expertise | Installs or creates Markdown skills with resources; experts pin reviewed revisions | Reusable skills and explicit expert identities instead of one-off prompts |
+| Team execution | Shows the team, members, active state, and task activity in the conversation | A visible collaboration trail; complete TM-01 real-model acceptance is still in progress |
 
+## See the work, not just the answer
 
-## 单个专家 alpha / Individual Experts alpha
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/screenshots/workdsh-ppt-live-preview.png" alt="PPT editing beside a WorkDSH task"><br><strong>Live PPT work</strong><br>Review the reasoning and edit slides in the same task.</td>
+<td width="50%"><img src="docs/assets/screenshots/workdsh-skill-market-preview.png" alt="WorkDSH skill market"><br><strong>Skills as managed capabilities</strong><br>Discover, inspect, install, edit, disable, and recover skills.</td>
+</tr>
+<tr>
+<td colspan="2"><img src="docs/assets/screenshots/workdsh-team-activity-preview.png" alt="WorkDSH expert team activity"><br><strong>Expert teams stay visible</strong><br>The activity bar identifies the team and its current members without replacing the native conversation.</td>
+</tr>
+</table>
 
-[下载 Experts 0.1.0-alpha.1 / Download](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.1) · [安装说明 / Installation](packages/plugins/experts/README.md)
+## Why WorkDSH
 
-专家现已作为独立 Harness Host/Client 插件交付：一个插件管理多个专家，专家组合领域经验、专业方法与共享技能。支持对话引导制作、草稿编辑、预览确认发布、固定专家/技能修订，以及原生任务召唤。专家团的多专家＋SOP仍是规划内容。
+- **The deliverable stays real.** Supported outputs are saved working copies and downloadable files. A tool failure is not presented as a finished artifact.
+- **The workspace stays native.** Harness owns tasks, models, attachments, permissions, queues, skills, and plugin loading. WorkDSH extends those public services and UI slots.
+- **Capabilities stay replaceable.** Skills, experts, Office, activity, governance, and presentation are independently versioned modules. Install only the layers your Profile needs.
+- **Human edits remain part of the job.** Open a result, correct it, and let the model continue from the saved revision instead of regenerating from an old prompt.
 
-Experts now ship as an independent Harness Host/Client plugin. One plugin manages multiple experts combining domain experience, methods and shared skills. It supports conversational authoring, drafts, reviewed publication, frozen expert/Skill revisions and native task handoff. Expert teams with SOP remain planned.
+## Current preview status
 
-**Alpha 边界 / Limits:** 实际模型调用与成果链路已验证，专业报告质量尚未全部验收；请核验业务结论。Requires Harness0.1.5-rc.1 Web and matching companion packages; professional report acceptance is incomplete.
+The latest public Web preview was verified on **Harness `0.1.5-rc.1`, Node.js `22.23.2`, and macOS** through packaged installation and cold-start checks. Skills, individual experts, Office working copies, and collaboration activity are available as alpha modules.
 
-![Expert detail / 专家详情](docs/assets/screenshots/expert-detail-alpha1.png)
-
-
-## Office development preview
-
-![WorkDSH Word preview / Word 文档预览](docs/assets/screenshots/office-word-preview.png)
-
-*User-provided application screenshot showing a Word document preview and the native file deliverable card. This screenshot does not demonstrate full Word layout editing or completion of all Office editors.*
-
-![Office output selector / Office 输出类型选择](docs/assets/screenshots/office-output-selector.png)
-
-*Select an output type with `/office` in the native task input. The current candidate supports the format-specific Word, PPT, Excel, PDF and HTML workflows described in the Office documentation.*
-
-**Office release scope:** alpha.1/alpha.2 were historical Word-only packages. The current alpha.5 candidate is the complete browser Office plugin with the documented Word, PPT, Excel, PDF and HTML working-copy capabilities. Build it with `corepack pnpm release:office:pack`; the archive includes exact dependency and license inventories. Ten dependency versions still lack collected license text, and the release manifest records those gaps explicitly.
-
-### Install or remove the Office candidate
-
-These commands target this checkout's configured `preview` Profile and require the development setup and local candidate `.tgz` to exist. This is a [development prerelease](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1); download the `.tgz` from its assets or build it locally. Use Node.js 22.23.2. Stop the running preview with `Ctrl+C` in its terminal before installing and starting:
-
-```bash
-cd /Users/techflag/project/workdsh
-
-# 安装本地候选包 / Install the local candidate
-DSH_HOME="$PWD/.test-runtime/preview" \
-  corepack pnpm exec dsh plugin --profile preview add \
-  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.5.tgz"
-
-# 启动 / Start
-corepack pnpm preview
-```
-To remove Office, stop the preview first, run this command, then run `corepack pnpm preview` and refresh the page:
-
-```bash
-DSH_HOME="$PWD/.test-runtime/preview" \
-  corepack pnpm exec dsh plugin --profile preview remove workdsh-plugin-office
-```
-Use the same `DSH_HOME` and Profile for installation, removal and startup. Removal withdraws Office entries and tools while retaining saved documents and original files; reinstallation restores the entries. To create a new Word document, select `/office` → Word in a task; no `@` reference is required.
+This remains a development preview. Real-model acceptance for complete expert-team workflows, arbitrary Office fidelity, and multi-platform behavior is not finished. The default listener is local; this repository does not claim a production-ready internet-facing multi-tenant deployment. Exact versions, checksums, limits, and evidence are documented below.
 
 ## Plugins are the architecture
 
@@ -163,7 +139,7 @@ Open **专家 · 技能 · 连接器 → 技能** in the sidebar. Use **添加�
 To add the WorkDSH appearance, stop that Profile, install the optional bundle, then restart:
 
 ```sh
-dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.39.tgz
+dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.41.tgz
 dsh --profile workdsh
 ```
 

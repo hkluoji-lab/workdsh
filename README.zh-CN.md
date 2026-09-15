@@ -1,91 +1,67 @@
+
 <p align="center"><img src="assets/brand/workdsh-logo.svg" width="104" alt="WorkDSH"></p>
 <h1 align="center">WorkDSH</h1>
-<p align="center"><a href="https://techflag.github.io/workdsh/">产品网站 ↗</a></p>
-<p align="center"><strong>用插件，组合你的 AI 工作平台。</strong></p>
-<p align="center">DeepSeek Harness · 原生任务体验 · 模块独立版本化</p>
+<p align="center"><strong>交给 AI 一项工作，看着它完成，打开真正的成果。</strong></p>
+<p align="center">构建在 DeepSeek Harness 上、由插件组合的 AI 工作台。</p>
 <p align="center"><a href="README.md">English</a> · <strong>简体中文</strong></p>
 <p align="center">
-  <a href="https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.24">下载技能插件</a> ·
-  <a href="#快速开始">快速开始</a> ·
-  <a href="docs/ROADMAP.md">开发路线图</a> ·
-  <a href="docs/RELEASES.md">模块发布与安装</a>
+  <a href="https://github.com/techflag/workdsh/releases">下载安装包</a> ·
+  <a href="#快速开始">三分钟上手</a> ·
+  <a href="#看到工作过程也拿到真实成果">产品截图</a> ·
+  <a href="docs/ROADMAP.md">开发路线</a> ·
+  <a href="https://techflag.github.io/workdsh/">产品网站</a>
 </p>
 
-WorkDSH 在 DeepSeek Harness 上提供可复用技能与面向工作的界面。你可以**单独安装技能管理插件**，也可以将它与可选的 **WorkDSH 展示组合包**一起使用，获得品牌化工作平台。
+WorkDSH 把**技能、专家、团队动态和可编辑的 Office 成果**装进 DeepSeek Harness 原生任务体验。你不用在聊天、临时网页和本地文件之间来回切换：对话在左边继续，文档、表格、PPT、PDF 或网页在右边实时出现，最后留下可以打开和下载的文件。
 
-当前技能管理与单个专家提供独立预览插件；Office 正在收口 **Word 文本工作副本**。专家团、其余 Office 实时编辑器与企业管理按路线推进，下面区分已实现能力与后续计划。
+![WorkDSH 制作并展示真实 HTML 数据分析看板](docs/assets/screenshots/workdsh-html-dashboard-preview.png)
 
-## 我们的特色
+*真实本地预览：同一个任务中保留对话、交付文件和可打开的 HTML 看板。截图中的示例数据、任务名称与费用来自用户测试工作区。*
 
-**让 AI 的成果在工作区里逐步成形。** 提出需求后，文档自动在右侧打开；AI 分批写入，你边看边读。你可以接手修改，完成编辑后让 AI 读取最新内容继续完善，最后下载 Word 文件。
+## 先用一个真实任务试它
 
-| 特色 | 你能获得的体验 |
-| --- | --- |
-| 写作实时可见 | 每批提交直接出现在右侧文档，无需等整篇完成再打开文件。 |
-| 人与 AI 接续编辑 | 在同一份工作副本里修改；人工编辑期间暂停 AI 写入，避免互相覆盖。 |
-| 从草稿到文件交付 | 自动保存、重开继续、右侧下载 DOCX；AI 导出后使用 Harness 原生文件产物卡。 |
-| 输出类型显式选择 | `/office` 选择输出类型，`@` 指定参考资料或修改对象；新建文档无需引用。 |
-| 能力按需组合 | Office 是独立 Host/Client 插件，菜单、工具和编辑入口随插件装配；卸载保留已保存文档。 |
-| 保留 Harness 原生体验 | 原生会话、附件、模型、权限与任务队列照常使用；不另造执行器或输入框。 |
+把材料拖进来，直接说：
 
-**已发布 Word alpha.1 边界：**支持标题、段落、文字样式、列表、查找替换、缩放、跟随阅读和 DOCX 文本副本导入/下载。表格、图片、页眉页脚及完整分页排版尚未进入统一编辑模型，导入时明确提示并保留原文件。八类类型选择已提供，其余七类实时适配待接入。Word alpha.1 提供独立[预览安装包](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1)。
+> 检查这份预算表，把所有缺失的假设标出来，做成一个数据看板，并交付 HTML 文件。
 
-**Word alpha.2：**表格和图片直接复用 MIT Tiptap 扩展，工具栏提供增删行列、合并拆分、列宽拖动、图片插入/缩放/对齐。AI 与页面共享同一文档接口，保存重开及已支持的 DOCX 导入导出保留结构和文字样式。见[范围与限制](packages/plugins/office/README.md)，[下载 alpha.2 预览安装包](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.2)。
+WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终文件放在同一个任务里。你可以边看边改，也可以让 AI 读取最新保存版本后继续，不必从旧提示词重新生成。
 
-> **兼容范围：**已验证官方 Harness **`0.1.5-rc.1` Web Profile**。使用 Harness **`0.1.2-rc.1`** 的 DSH Desktop 存在 Skill alpha.24 安装后无导航入口的问题，重启后也可能不显示。**本次发布未修复该问题。**详见[兼容说明](docs/RELEASES.md)。
+已经使用 Harness `0.1.5-rc.1` Web Profile？从 [Releases](https://github.com/techflag/workdsh/releases) 下载需要的模块，或直接看[快速开始](#快速开始)。WorkDSH 使用官方 `dsh plugin` 生命周期，没有另造第二套运行时。
 
-![WorkDSH 技能库](docs/assets/screenshots/skill-management.png)
+## 它能替你交付什么
 
-*正式打包应用的真实截图，使用隔离的演示技能；示例内容不代表随包提供公共技能目录。*
+| 你的需求 | WorkDSH 怎么做 | 你拿到什么 |
+| --- | --- | --- |
+| 报告、简报或数据看板 | 读取任务材料，分批写入，在右侧持续显示并保存修订 | 支持范围内可编辑的 HTML、Word、PDF 或 Markdown 工作副本 |
+| 汇报 PPT | 新建或导入 PPTX 工作副本，逐页修改，保留人工调整 | 可编辑、可下载的 PPTX；复杂模板仍需逐页复核 |
+| 数据表格 | 在任务旁打开工作簿，保留已支持的值和公式 | 可编辑的 XLSX 工作副本及明确的格式边界 |
+| 可复用的专业能力 | 安装或创建带资源的 Markdown 技能；专家固定审阅后的技能版本 | 可管理的技能和明确的专家身份，不再依赖一次性提示词 |
+| 团队协作 | 在会话里显示专家团、成员、当前状态和任务动态 | 可见的协作轨迹；TM-01 真实模型完整验收仍在进行 |
 
+## 看到工作过程，也拿到真实成果
 
-## 单个专家 alpha / Individual Experts alpha
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/screenshots/workdsh-ppt-live-preview.png" alt="WorkDSH 任务旁实时编辑 PPT"><br><strong>PPT 在任务旁生成和修改</strong><br>左边核对过程，右边直接编辑幻灯片。</td>
+<td width="50%"><img src="docs/assets/screenshots/workdsh-skill-market-preview.png" alt="WorkDSH 技能市场"><br><strong>技能是可以管理的能力</strong><br>发现、查看、安装、编辑、停用和恢复技能。</td>
+</tr>
+<tr>
+<td colspan="2"><img src="docs/assets/screenshots/workdsh-team-activity-preview.png" alt="WorkDSH 专家团队工作动态"><br><strong>专家团始终可见</strong><br>工作动态展示团队和当前成员，同时保留 Harness 原生会话。</td>
+</tr>
+</table>
 
-[下载 Experts 0.1.0-alpha.1 / Download](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.1) · [安装说明 / Installation](packages/plugins/experts/README.md)
+## 为什么做 WorkDSH
 
-专家现已作为独立 Harness Host/Client 插件交付：一个插件管理多个专家，专家组合领域经验、专业方法与共享技能。支持对话引导制作、草稿编辑、预览确认发布、固定专家/技能修订，以及原生任务召唤。专家团的多专家＋SOP仍是规划内容。
+- **成果必须真实存在。** 已支持的输出会保存为工作副本和可下载文件；工具失败时不会把一段文字冒充已交付文件。
+- **保留 Harness 原生体验。** 任务、模型、附件、权限、队列、技能和插件加载仍由 Harness 负责，WorkDSH 只扩展公开服务和 UI 插槽。
+- **能力可以按需组合。** 技能、专家、Office、活动、治理和展示分别版本化，Profile 只安装真正需要的模块。
+- **人工修改是工作流的一部分。** 打开成果、直接修正，再让模型读取最新修订继续，而不是从旧提示词全部重做。
 
-Experts now ship as an independent Harness Host/Client plugin. One plugin manages multiple experts combining domain experience, methods and shared skills. It supports conversational authoring, drafts, reviewed publication, frozen expert/Skill revisions and native task handoff. Expert teams with SOP remain planned.
+## 当前预览状态
 
-**Alpha 边界 / Limits:** 实际模型调用与成果链路已验证，专业报告质量尚未全部验收；请核验业务结论。Requires Harness0.1.5-rc.1 Web and matching companion packages; professional report acceptance is incomplete.
+最新公开 Web 预览已在 **Harness `0.1.5-rc.1`、Node.js `22.23.2`、macOS** 上完成真实安装包与冷启动验证。技能管理、单个专家、Office 工作副本和协作动态均已有 alpha 模块。
 
-![Expert detail / 专家详情](docs/assets/screenshots/expert-detail-alpha1.png)
-
-
-## Office 开发预览
-
-![WorkDSH Word preview / Word 文档预览](docs/assets/screenshots/office-word-preview.png)
-
-*用户提供的应用截图：右侧 Word 文档预览与原生文件产物卡片。此图不代表完整 Word 排版编辑或所有 Office 编辑器均已完成。*
-
-![Office output selector / Office 输出类型选择](docs/assets/screenshots/office-output-selector.png)
-
-*在原生任务输入框通过 `/office` 选择输出类型。Word 支持实时写作，其余类型的实时编辑适配仍待接入。*
-
-**版本与打包范围：**历史 alpha.1 提供 Word 文本编辑与 DOCX 原始排版预览；当前 `corepack pnpm release:office:pack` 生成alpha.2 Word 预览包，新增表格及嵌入图片。两者均为 Word-only，打包校验实际依赖许可文本并排除旧 Excel/PPT 实验适配器及依赖。
-
-### 安装与卸载 Office 候选包
-
-以下命令用于本仓库已配置的 `preview` Profile，要求完成开发环境准备，先运行 `corepack pnpm release:office:pack` 生成本地 alpha.2 候选 `.tgz`。已发布的 [alpha.1](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.1) 另有下载附件，能力范围以对应版本为准。使用 Node.js 22.23.2。先在运行预览的终端按 `Ctrl+C` 停止应用，再执行安装和启动：
-
-```bash
-cd /Users/techflag/project/workdsh
-
-# 安装本地候选包 / Install the local candidate
-DSH_HOME="$PWD/.test-runtime/preview" \
-  corepack pnpm exec dsh plugin --profile preview add \
-  "$PWD/.artifacts/office-release/workdsh-plugin-office-0.1.0-alpha.2.tgz"
-
-# 启动 / Start
-corepack pnpm preview
-```
-卸载也先停止应用，再执行以下命令，随后运行 `corepack pnpm preview` 并刷新页面：
-
-```bash
-DSH_HOME="$PWD/.test-runtime/preview" \
-  corepack pnpm exec dsh plugin --profile preview remove workdsh-plugin-office
-```
-请保持安装、卸载和启动使用同一 `DSH_HOME` 与 Profile。卸载撤销 Office 入口及工具，保留已保存文档和原文件；重新安装恢复入口。新建 Word 无需 `@` 引用，在任务输入框选择 `/office` → Word 即可。
+它仍是开发预览：专家团完整真实模型流程、任意复杂 Office 文件保真和多平台验收尚未完成；默认只监听本机，也不宣称已经具备可直接暴露公网的生产级多租户能力。下文保留精确版本、校验值、能力边界和验证证据。
 
 ## 插件就是架构
 
@@ -139,8 +115,8 @@ flowchart TB
 
 | 模块 | 包版本 | 下载 | 安装范围 |
 | --- | --- | --- | --- |
-| 技能管理 | `workdsh-plugin-skills@0.1.0-alpha.24` | [技能 `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.24/workdsh-plugin-skills-0.1.0-alpha.24.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.24) | 可独立安装的 Harness 功能插件。 |
-| WorkDSH 展示组合 | `workdsh-bundle@0.1.0-alpha.39` | [展示 `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.39/workdsh-bundle-0.1.0-alpha.39.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.39) | 可选品牌、主题与工作台组合；Skill 需单独安装。 |
+| 技能管理 | `workdsh-plugin-skills@0.1.0-alpha.28` | [技能 `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.28/workdsh-plugin-skills-0.1.0-alpha.28.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28) | 可独立安装的 Harness 功能插件。 |
+| WorkDSH 展示组合 | `workdsh-bundle@0.1.0-alpha.41` | [展示 `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.41/workdsh-bundle-0.1.0-alpha.41.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.41) | 可选品牌、主题与工作台组合；Skill 需单独安装。 |
 
 Workbench `alpha.10` 目前随展示包交付。共享 UI `alpha.4`、contracts `alpha.5` 和本地身份/授权/审计基础属于开发包，**本次不作为面向用户的独立插件下载**。其他模块仍在规划中，见[完整模块对应表](docs/RELEASES.md)。
 
@@ -154,7 +130,7 @@ Workbench `alpha.10` 目前随展示包交付。共享 UI `alpha.4`、contracts 
 
 ```sh
 dsh --profile workdsh --from-default-profile web --dump-config
-dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.24.tgz
+dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.28.tgz
 dsh --profile workdsh
 ```
 
@@ -163,7 +139,7 @@ dsh --profile workdsh
 需要 WorkDSH 外观时，先停止该 Profile，再安装可选展示包并重启：
 
 ```sh
-dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.39.tgz
+dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.41.tgz
 dsh --profile workdsh
 ```
 

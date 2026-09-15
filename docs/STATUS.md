@@ -1,3 +1,9 @@
+## 2026-09-15 — README 产品首屏重构
+
+对照 OpenWorkBuddy 公开 README 后，重构中英文入口的前半部分：首屏先说明“交付真实成果”的定位，以用户真实 HTML 看板截图和一条可直接试用的任务展示闭环，再给出 PPT、表格、技能、专家团的需求—过程—成果映射及三组真实产品截图。版本矩阵、架构、许可与验收边界保留在后半部分；同步清理中文 README 的 skills alpha.24 / bundle alpha.39 旧安装示例。没有照抄对方文案或功能宣称，未将 TM-01、任意 Office 保真和多平台验收写成已完成。
+
+本轮仅修改 `README.md`、`README.zh-CN.md` 与状态记录；未修改运行代码、未重新打包、未部署或重启。变更尚未提交或推送，`scripts/desktop/` 继续保持本地未跟踪。
+
 ## 2026-09-15 — 发布候选清理与打包修复
 
 清理默认 lefthook 样例和 Python 缓存，并为后续缓存增加忽略规则；保留有意新增的 `scripts/desktop/`，该目录不纳入本批 Web 发布范围。根锁定补齐 `@deepseek-ai/dsh-client-store@0.1.5-rc.1`，三个已漂移的浏览器探针按当前技能、专家和 Office UI 修正。Office 原生探针改为可在干净隔离 Home 首次安装的 `--prefer-offline`，仅显式允许 protobufjs 构建脚本；新鲜 Profile 的 DOCX/XLSX/PPTX 打开验证通过。
