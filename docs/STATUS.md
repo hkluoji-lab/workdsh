@@ -1,3 +1,9 @@
+## 2026-09-15：真实网页购物任务截图进入 README
+
+用户在 WorkDSH 真实任务中要求打开京东购买方便面；运行过程已打开京东并取得搜索结果，在用户选品后将指定商品加入购物车，随后把结构化执行结果与真实购物车截图放在同一任务中，并停在结算之前。中英文 README 使用该真实 WorkDSH 画面替换此前仍在运行、未展示业务结果的浏览器截图，文案只声明截图实际证明的“搜索、加入购物车、证据与结算前人工控制”，不宣称已购买或完成支付。
+
+本次截图中的执行标签为 Web Access（浏览器自动化），因此它不替代官方 Computer Use/Playwright MCP 的独立验收证据；官方原生 Computer Use 的截图、桌面感知与可见 Chrome 操作仍按专项证据分别记录。未修改网页执行代码，未触发结算或支付。中英文图片引用、git diff 与规划链接检查通过。
+
 ## 2026-09-15：DSH 0.1.6 官方 Team 已公开发布
 
 本批公开版本为 experts alpha.3、skills alpha.29、activity alpha.2、office alpha.5、bundle alpha.42；配套 identity-local alpha.5、audit alpha.4、access alpha.5。自建专家团执行器已移除，已发布旧团队在下次调用时升级为新的官方 Team 执行修订，历史修订保持不可变。

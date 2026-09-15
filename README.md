@@ -52,7 +52,7 @@ Already using the Harness `0.1.6-alpha.1` Web Profile? Install the modules you n
 <td colspan="2"><img src="docs/assets/screenshots/workdsh-team-activity-preview.png" alt="WorkDSH expert team activity"><br><strong>Expert teams stay visible</strong><br>The activity bar identifies the team and its current members without replacing the native conversation.</td>
 </tr>
 <tr>
-<td colspan="2"><img src="docs/assets/screenshots/workdsh-browser-automation-live.png" alt="WorkDSH running a real task with official browser automation"><br><strong>Official browser capabilities inside a real task</strong><br>DSH 0.1.6 browser operations run in the native task, with tool calls and reasoning preserved in the same trajectory. The task was still running when captured, so the screenshot does not claim a final business result.</td>
+<td colspan="2"><img src="docs/assets/screenshots/workdsh-jd-cart-review.png" alt="WorkDSH adding a selected JD product to the cart and presenting visual evidence before checkout"><br><strong>Real browser action, evidence, then human control</strong><br>In this real WorkDSH task, the agent searched JD, added the selected product to the cart, presented the result and screenshot together, and stopped before checkout.</td>
 </tr>
 </table>
 
