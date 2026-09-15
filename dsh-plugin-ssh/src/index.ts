@@ -1,9 +1,13 @@
+import { HostStore } from './host-store.ts'
+import { AgentOperations } from './agent-operations.ts'
+import { installAgentTools } from './agent-tools.ts'
 import { PasswordStore } from './password-store.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-llm'
-import { sshAiAnswer, validateAiRequest } from './ssh-ai.ts'
+import type {} from '@deepseek-ai/dsh-session'
+import { SshAiError, sshAiAnswer, validateAiRequest } from './ssh-ai.ts'
 import { readFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { basename } from 'node:path'
@@ -11,7 +15,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 import { SshService, type SshCredentials, type SshTarget } from './ssh-service.ts'
 
 export const name = 'dsh-ssh'
-export const inject = ['webServer', 'connection', 'llm']
+export const inject = ['webServer', 'connection', 'llm', 'tools', 'sessions']
 const ROOT = '/ssh-workbench'
 const MAX_BODY = 128 * 1024
 /** Additional local-only fence: no SSH proxy exposed when Harness enables LAN browsing. */
@@ -35,6 +39,9 @@ export function apply(ctx: Context): void {
   if (typeof ctx.connection.requestRejection !== 'function') throw new Error('DSH SSH requires DeepSeek Harness 0.1.2-rc.1 or newer')
   const service = new SshService()
   const passwords = new PasswordStore()
+  const hosts = new HostStore()
+  const operations = new AgentOperations(hosts,passwords,service)
+  installAgentTools(ctx,operations)
   const aiCalls = new Map<string, AbortController>()
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024, perMessageDeflate: false })
   ctx.effect(() => () => { for (const call of aiCalls.values()) call.abort(); service.dispose(); for (const client of sockets.clients) client.terminate(); sockets.close() }, 'ssh: generation cleanup')
@@ -57,10 +64,13 @@ export function apply(ctx: Context): void {
       }
       if (req.method !== 'POST') { json(res, 405, { error: '请求方式无效' }); return }
       if (url.pathname === ROOT + '/upload') {
-        await service.upload(url.searchParams.get('id') ?? '', url.searchParams.get('path') ?? '', req)
+        await service.upload(url.searchParams.get('id') ?? '', url.searchParams.get('path') ?? '', req, undefined, url.searchParams.get('overwrite') === '1')
         json(res, 200, { ok: true }); return
       }
       const data = await body(req)
+      if(url.pathname===ROOT+'/hosts'){json(res,200,await hosts.list());return}
+      if(url.pathname===ROOT+'/hosts-save'){await hosts.save(data.hosts);json(res,200,{ok:true});return}
+      if(url.pathname===ROOT+'/operation'){json(res,200,operations.records.get(String(data.callId))??null);return}
       if (url.pathname === ROOT + '/password-status') { json(res,200,{saved:!!await passwords.get(data as unknown as SshTarget)});return }
       if (url.pathname === ROOT + '/password-save') { await passwords.set(data as unknown as SshTarget,data.password as string);json(res,200,{ok:true});return }
       if (url.pathname === ROOT + '/password-delete') { await passwords.remove(data as unknown as SshTarget);json(res,200,{ok:true});return }
@@ -99,7 +109,7 @@ export function apply(ctx: Context): void {
             res.write(JSON.stringify({ text }) + '\n')
           }
           if (!res.destroyed) res.end(JSON.stringify(call.signal.aborted ? { error: '请求已停止或超时' } : { done: true }) + '\n')
-        } catch { if (!res.destroyed) res.end(JSON.stringify({ error: 'AI 请求失败，请检查模型服务配置或网络' }) + '\n') }
+        } catch (error) { if (!res.destroyed) res.end(JSON.stringify({ error: error instanceof SshAiError ? error.message : 'AI 请求失败，请检查模型服务配置或网络' }) + '\n') }
         finally { clearTimeout(timer); res.off('close',abort); session.shell.off('close',abort); aiCalls.delete(id) }
         return
       }

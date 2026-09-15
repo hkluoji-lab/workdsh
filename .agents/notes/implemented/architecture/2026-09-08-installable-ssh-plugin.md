@@ -26,3 +26,13 @@ Baseline: official npm `@deepseek-ai/dsh@0.1.2-rc.1`, isolated install and DSH_H
 `ssh:check` builds and checks plugin code and runs security, SFTP, AI and client-factory tests. `scripts/smoke-install.mjs` installs the tarball with the official CLI, verifies authenticated pages/assets, graph inclusion, models, input/origin rejection, then removes the bundle. CI declares macOS and Windows jobs; adding the workflow is not evidence those remote jobs have run.
 
 The root upstream gate is unchanged and still needs the pinned source checkout. The missing pin is separate from installing and testing a published-runtime plugin.
+
+## 0.1.0: host conversation and workbench
+
+User authorized the conversation-first workflow while retaining manual SSH. Checkpoint before this change: `8947867f6d`. The plugin now registers uniquely prefixed `dsh_ssh_hosts/exec/read/edit` tools with the Harness tools service. Host records are persisted separately from credentials and shared with the browser; legacy browser records migrate on first workspace/menu use.
+
+Command/read/edit calls preserve upstream denials and request Host approval, fail closed without approval support. Commands use a separate SSH exec channel, explicit cwd, bounded output and timeout, cancellation, and no retries. They never write to the manual PTY. Reviewed edits require exact old text plus version, create a remote backup, then use the existing atomic save. They do not claim a service is healthy.
+
+Client adds a session composer selector and keyed views for its own tool names. Completed card data comes from durable tool results; live output is a bounded same-origin Host cache. Cards open the existing iframe with an origin/source-checked host/file intent. Manual output handoff stages text for explicit insertion into the current composer, never auto-submits. The separate legacy AI sidebar still has independent history.
+
+Validation: 19 tests including local SSH exec, cancellation and subsequent manual PTY use, backup/conflict checks, approval policy preservation, host persistence and slot cleanup. Official 0.1.2-rc.1 install smoke passed. In an isolated official Web host, checked composer menu, host-specific draft creation, and opening the correct host form; no model request or business-server change was made during UI QA. Full live Agent repair, card interaction during a real model run and Windows remain unverified.

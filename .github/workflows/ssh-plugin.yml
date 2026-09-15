@@ -21,8 +21,8 @@ jobs:
       - run: corepack yarn ssh:check
       - run: corepack yarn ssh:pack
       - run: npm install --prefix .test-harness --ignore-scripts --no-audit --no-fund @deepseek-ai/dsh@0.1.2-rc.1
-      - run: node dsh-plugin-ssh/scripts/smoke-install.mjs .test-harness/node_modules/@deepseek-ai/dsh/lib/bin.js dist/dsh-plugin-ssh-v0.1.0-beta.10.tgz
+      - run: node dsh-plugin-ssh/scripts/smoke-install.mjs .test-harness/node_modules/@deepseek-ai/dsh/lib/bin.js dist/dsh-plugin-ssh-v0.1.0.tgz
       - uses: actions/upload-artifact@v4
         with:
           name: dsh-ssh-plugin-${{ matrix.os }}
-          path: dist/dsh-plugin-ssh-v0.1.0-beta.10.tgz
+          path: dist/dsh-plugin-ssh-v0.1.0.tgz

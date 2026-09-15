@@ -1,7 +1,7 @@
 import { answerParts } from './commands.ts'
 import { confirmAction } from './confirm.ts'
 interface AiSession { id: string; label: string; context: () => string; command: (text: string, execute: boolean) => void }
-interface Turn { role: 'user' | 'assistant'; text: string }
+interface Turn { role: 'user' | 'assistant'; text: string; state?: 'waiting' | 'streaming' | 'done' | 'stopped' | 'error'; error?: string }
 /** Per-SSH-session conversations; no terminal content leaves the app before Send. */
 export function installAi(getSession: () => AiSession | undefined): { refresh: () => void } {
   const panel = document.createElement('aside'); panel.className = 'ai-panel'; panel.hidden = true
@@ -18,10 +18,13 @@ export function installAi(getSession: () => AiSession | undefined): { refresh: (
     q<HTMLButtonElement>('ai-stop').disabled = !s || !running.has(s.id)
     q<HTMLButtonElement>('ai-clear').disabled = !!s && running.has(s.id)
     const history = q('ai-history'); history.replaceChildren()
-    for (const turn of conversations.get(s?.id ?? '') ?? []) { const row = document.createElement('div'); row.className='ai-turn'; const label=document.createElement('b'); label.textContent=turn.role==='user'?'你':'AI'; const text=document.createElement('pre'); text.textContent=turn.text; row.append(label)
+    for (const turn of conversations.get(s?.id ?? '') ?? []) { const row = document.createElement('div'); row.className=`ai-turn ${turn.role==='assistant'?'assistant-turn':'user-turn'}`; const label=document.createElement('b'); label.textContent=turn.role==='user'?'你':'AI'; const text=document.createElement('pre'); text.textContent=turn.text; row.append(label)
       if(turn.role==='assistant') {
+        if(turn.state==='waiting'&&!turn.text) {
+          const waiting=document.createElement('div');waiting.className='ai-waiting';waiting.innerHTML='<span class="ai-pulse"><i></i><i></i><i></i></span><span>正在等待模型响应…</span>';row.append(waiting)
+        }
         for(const part of answerParts(turn.text)) {
-          const code=document.createElement('pre');code.textContent=part.text;row.append(code)
+          const code=document.createElement('pre');code.className=part.command?'command-block':'answer-text';code.textContent=part.text;row.append(code)
           if(part.command && !running.has(s?.id??'')) {
             const actions=document.createElement('div');actions.className='command-actions'
             for(const execute of [false,true]) {
@@ -37,6 +40,8 @@ export function installAi(getSession: () => AiSession | undefined): { refresh: (
             row.append(actions)
           }
         }
+        if(turn.state==='streaming') { const caret=document.createElement('span');caret.className='ai-stream-caret';caret.setAttribute('aria-label','AI 正在生成回答');row.append(caret) }
+        if(!turn.text&&(turn.state==='stopped'||turn.state==='error')) { const ended=document.createElement('p');ended.className='ai-ended';ended.textContent=turn.state==='stopped'?'回答已停止':(turn.error??'模型未能返回回答');row.append(ended) }
       } else row.append(text)
       history.append(row) }
     history.scrollTop=history.scrollHeight
@@ -71,17 +76,19 @@ export function installAi(getSession: () => AiSession | undefined): { refresh: (
     const previous=conversations.get(s.id)??[], history=previous.slice(-12).map(t=>({...t,text:t.text.slice(-8000)}))
     // Retain only a bounded history; the current terminal snapshot is sent once and remains editable.
     while(history.reduce((n,t)=>n+t.text.length,0)>48000)history.shift()
-    const assistant:Turn={role:'assistant',text:''}; conversations.set(s.id,[...previous.slice(-18),{role:'user',text:question},assistant])
+    const assistant:Turn={role:'assistant',text:'',state:'waiting'}; conversations.set(s.id,[...previous.slice(-18),{role:'user',text:question},assistant])
     const call=new AbortController();running.set(s.id,call);input.value='';q('ai-error').textContent='';refresh()
     try {
       const res=await fetch('/ssh-workbench/ai',{method:'POST',headers:{'content-type':'application/json'},signal:call.signal,body:JSON.stringify({id:s.id,provider,model:selectedModel,question,context:q<HTMLInputElement>('ai-context-enabled').checked?context.value.slice(-24000):'',history})})
       if(!res.ok){const data=await res.json() as {error?:string};throw new Error(data.error??'AI 请求失败')}
       if(!res.body)throw new Error('未收到响应')
       const reader=res.body.getReader(), decoder=new TextDecoder();let pending='',done=false
-      while(true){const chunk=await reader.read();if(chunk.done)break;pending+=decoder.decode(chunk.value,{stream:true});let newline:number;while((newline=pending.indexOf('\n'))>=0){const event=JSON.parse(pending.slice(0,newline)) as {text?:string;error?:string;done?:boolean};pending=pending.slice(newline+1);if(event.error)throw new Error(event.error);if(event.text)assistant.text+=event.text;if(event.done)done=true}if(getSession()?.id===s.id)refresh()}
+      while(true){const chunk=await reader.read();if(chunk.done)break;pending+=decoder.decode(chunk.value,{stream:true});let newline:number;while((newline=pending.indexOf('\n'))>=0){const event=JSON.parse(pending.slice(0,newline)) as {text?:string;error?:string;done?:boolean};pending=pending.slice(newline+1);if(event.error)throw new Error(event.error);if(event.text){assistant.text+=event.text;assistant.state='streaming'}if(event.done)done=true}if(getSession()?.id===s.id)refresh()}
       if(!done)throw new Error('响应中断')
-    }catch(error){if(getSession()?.id===s.id)q('ai-error').textContent=call.signal.aborted?'已停止':String(error)}
-    finally{running.delete(s.id);if(getSession()?.id===s.id)refresh()}
+      assistant.state='done'
+      if(!assistant.text)throw new Error('模型未返回内容，请重试')
+    }catch(error){assistant.state=call.signal.aborted?'stopped':'error';assistant.error=call.signal.aborted?undefined:(error instanceof Error?error.message:String(error));if(getSession()?.id===s.id)q('ai-error').textContent=call.signal.aborted?'已停止':(assistant.error??'AI 请求失败')}
+    finally{running.delete(s.id);if(assistant.state==='streaming')assistant.state='done';if(getSession()?.id===s.id)refresh()}
   }
   model.onchange=()=>{conversations.clear();refresh()}
   window.addEventListener('beforeunload',()=>{for(const call of running.values())call.abort()})

@@ -9,6 +9,7 @@ function fixture(rejection?: number) {
   let route: WebRoute | undefined, upgrade: WebUpgradeRoute | undefined
   const cleanup: Array<() => void> = []
   const ctx = {
+    tools: { register: () => () => {} }, on: () => () => {},
     webServer: { port: 43120, register: (r: WebRoute) => { route = r; return () => {} }, registerUpgrade: (r: WebUpgradeRoute) => { upgrade = r; return () => {} } },
     connection: { requestRejection: () => rejection },
     effect: (fn: () => (() => void)) => { cleanup.push(fn()) },
