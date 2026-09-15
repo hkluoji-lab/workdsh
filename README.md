@@ -2,7 +2,7 @@
 <p align="center"><img src="assets/brand/workdsh-logo.svg" width="104" alt="WorkDSH"></p>
 <h1 align="center">WorkDSH</h1>
 <p align="center"><strong>Give AI a job. Watch it work. Open the result.</strong></p>
-<p align="center">A plugin-composed AI workspace built on DeepSeek Harness.</p>
+<p align="center">An open-source, WorkBuddy-inspired AI workspace for DeepSeek Harness.</p>
 <p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 <p align="center">
   <a href="https://github.com/techflag/workdsh/releases">Download</a> ·
@@ -13,6 +13,8 @@
 </p>
 
 WorkDSH adds **skills, experts, team activity, and editable Office deliverables** to the native DeepSeek Harness task experience. You stay in one conversation while the work appears beside it as a real document, spreadsheet, presentation, PDF, or webpage.
+
+Think of it as an **independent open-source alternative for a WorkBuddy-style workflow**: assign a real job, watch the work unfold, intervene when needed, and receive editable artifacts. WorkDSH is built independently for DeepSeek Harness and is not an official WorkBuddy release.
 
 ![WorkDSH creating and presenting a real HTML analysis dashboard](docs/assets/screenshots/workdsh-html-dashboard-preview.png)
 
@@ -50,12 +52,17 @@ Already using the Harness `0.1.5-rc.1` Web Profile? Install the modules you need
 </tr>
 </table>
 
-## Why WorkDSH
+## What makes WorkDSH different
 
-- **The deliverable stays real.** Supported outputs are saved working copies and downloadable files. A tool failure is not presented as a finished artifact.
-- **The workspace stays native.** Harness owns tasks, models, attachments, permissions, queues, skills, and plugin loading. WorkDSH extends those public services and UI slots.
-- **Capabilities stay replaceable.** Skills, experts, Office, activity, governance, and presentation are independently versioned modules. Install only the layers your Profile needs.
-- **Human edits remain part of the job.** Open a result, correct it, and let the model continue from the saved revision instead of regenerating from an old prompt.
+| Characteristic | What you experience |
+| --- | --- |
+| **Open-source WorkBuddy-style workflow** | The task, visible process, human checkpoints, and editable result stay together in an implementation you can inspect, install, and extend. |
+| **Real deliverables** | Supported outputs are saved as working copies and downloadable files. A failed tool call is never presented as a finished file. |
+| **Live human–AI editing** | Open a result, correct it directly, and let the model continue from the latest saved revision. |
+| **Reusable professional capability** | Skills carry instructions and resources; experts bind reviewed skill revisions and an explicit identity instead of relying on a one-off role prompt. |
+| **Visible team activity** | The conversation can show the expert team, active member, handoff, and task state. Full TM-01 real-model acceptance remains in progress. |
+| **Native Harness workflow** | Tasks, models, attachments, permissions, queues, skills, and plugin loading remain owned by Harness; WorkDSH extends public services and UI slots. |
+| **Independent plugin delivery** | Skills, experts, Office, activity, governance, and presentation are versioned separately, so a Profile installs only what it needs. |
 
 ## Current preview status
 
@@ -116,9 +123,12 @@ Each installable module has a matching **GitHub prerelease, versioned package, S
 | Module | Package version | Download | Scope |
 | --- | --- | --- | --- |
 | Skill management | `workdsh-plugin-skills@0.1.0-alpha.28` | [Skill `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.28/workdsh-plugin-skills-0.1.0-alpha.28.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28) | Independently installable feature plugin. |
+| Experts | `workdsh-plugin-experts@0.1.0-alpha.2` | [Expert `.tgz`](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.2/workdsh-plugin-experts-0.1.0-alpha.2.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.2) | Expert definitions, reviewed revisions, skills, and native-task handoff. |
+| Activity | `workdsh-plugin-activity@0.1.0-alpha.1` | [Activity `.tgz`](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.1/workdsh-plugin-activity-0.1.0-alpha.1.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.1) | Visible task, skill, and expert-team activity. |
+| Office | `workdsh-plugin-office@0.1.0-alpha.4` | [Office `.tgz`](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.4/workdsh-plugin-office-0.1.0-alpha.4.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4) | Supported editable working copies, previews, and file export. |
 | WorkDSH presentation | `workdsh-bundle@0.1.0-alpha.41` | [Presentation `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.41/workdsh-bundle-0.1.0-alpha.41.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.41) | Optional brand, theme, and workbench composition. Install Skill separately. |
 
-Workbench `alpha.10` is currently delivered within the presentation bundle. Shared UI `alpha.4`, contracts `alpha.5`, and the local identity/access/audit foundation are development packages, **not standalone end-user plugin downloads in this release**. Other modules remain planned. See the [complete module map](docs/RELEASES.md).
+Workbench `alpha.10` is currently delivered within the presentation bundle. Shared UI, contracts, and the local identity/access/audit foundation are supporting packages, **not standalone end-user downloads**. See the [complete module map](docs/RELEASES.md).
 
 ## Quick start
 
@@ -164,6 +174,7 @@ The preview runs at `http://127.0.0.1:18989`; use the authenticated URL printed 
 | --- | --- | --- |
 | Skill 0.1 | Local skill management and independent package delivery | Available on the verified Web baseline. |
 | Experts 0.1 | Definitions, drafts, revisions, shared skill references, and task handoff | Alpha available; professional quality and final stability acceptance incomplete. |
+| Office 0.1 | Real-file creation, live editing, preview, and export; PPT is the current source-development focus | Alpha available; PPT template and real-model visual acceptance remain in progress. Word feature expansion is paused. |
 | Following modules | Connectors → library → projects → industry applications → integration | Planned, delivered one module at a time. |
 | Enterprise | Server + administration Web + Harness execution nodes; organization skills, categories, versions, access, and rollout | Deferred. No public Skill marketplace, SkillHub, or skill suites in this release. |
 
@@ -195,63 +206,51 @@ Feature modules live in `packages/plugins/<domain>`, providers in `packages/prov
 
 Built on [DeepSeek Harness](https://deepseek-harness.github.io/deepseek-harness/); interaction references include [WorkBuddy](https://www.workbuddy.cn/). WorkDSH is an independent project, not an official product of either team.
 
-下一阶段开发计划：[PPT 实时制作 → 其他六类（Word 后续暂停）](docs/design/office/NEXT-STAGE.md)。各阶段以真实文件、实时编辑和独立插件生命周期验收，规划不代表能力已完成。
-
 ## Current development preview
 
 ![WorkDSH Skill market development preview](docs/assets/screenshots/workdsh-skill-market-preview.png)
 
 User-provided screenshot of the current application, showing categories, search, installed-skill management and installation from a local catalog. Third-party skill names and icons belong to their respective providers; they do not demonstrate completed connector integrations. Task names and spending figures are local user state, not bundled defaults.
 
-The current Office development candidate keeps `pptx-react-viewer` as its sole PPT editor, integrated with the native results panel and shared Office content service. It supports incremental slide writing, human editing, native chart data, saved working copies and PPTX download. Chinese UI and design guidance are still being improved; real-model visual quality acceptance is incomplete. This local candidate differs from the published Word-only packages above. See [PPT integration evidence](docs/evidence/office-pptx-integration.md).
+The current Office development candidate keeps `pptx-react-viewer` as its sole PPT editor, integrated with the native results panel and shared Office content service. It supports incremental slide writing, human editing, native chart data, saved working copies and PPTX download. Chinese UI, template fidelity, and real-model visual quality are still being improved. See [PPT integration evidence](docs/evidence/office-pptx-integration.md).
 
-### HTML and PDF working copies / HTML 与 PDF 工作副本
+### HTML and PDF working copies
 
 The current source candidate can open a self-contained HTML page in the native results panel before AI updates its saved revisions. PDF creation supports Chinese text, page updates, preview, manual text changes and actual PDF download/file delivery. PDF rendering uses bundled libraries and an embedded font; end users do not need Python for this PDF workflow. Existing arbitrary PDF import, OCR and image editing are not supported. These additions are source-development features and do not change the older Word-only release archives.
 
-当前源码候选支持自包含 HTML 先展示、AI 更新保存修订；PDF 支持中文新建、分页更新、预览、人工文字修改及真实文件下载/交付。PDF 流程无需用户安装 Python，不支持已有任意 PDF 导入、OCR 或图片编辑。详情见 [HTML working copies](docs/design/office/HTML-LIVE.md) 与 [PDF working copies](docs/design/office/PDF-LIVE.md)。
+See [HTML working copies](docs/design/office/HTML-LIVE.md) and [PDF working copies](docs/design/office/PDF-LIVE.md) for implementation scope and acceptance boundaries.
 
-#### HTML dashboard generation / HTML 看板生成
+#### HTML dashboard generation
 
 ![WorkDSH HTML dashboard generation and native preview / HTML 看板生成与原生预览](docs/assets/screenshots/workdsh-html-dashboard-preview.png)
 
 Generate a self-contained HTML dashboard from task materials, preview the finished page in the native results panel, and receive the HTML files through native deliverable cards. This user-provided screenshot shows a budget dashboard with parameter cards, section navigation and missing-information notices, alongside the delivered dashboard and `index.html` files. It shows local file preview; conversation names, paths and figures belong to this example.
 
-在对话中根据资料生成自包含 HTML 看板，在右侧成果面板预览成品，并通过原生文件卡片交付。截图展示预算分析看板的参数卡片、章节导航与待确认事项，以及看板 HTML 和 `index.html` 文件交付。用户可保存文件，并自行部署到静态网站托管服务。截图为本地文件预览，其中会话、路径和数字属于该示例。
-
 Public expert creation is reusable across domains, with methods, real Skill selection, explicit UI publication and native task trials. Model-generated content still needs user review; synthetic professional evaluations document limitations rather than guaranteeing every answer. See [current evidence](docs/evidence/d04-experts-review-fixes.md).
-
-公共专家制作按用户需求组织方法、真实技能配备、界面确认发布和原生任务试用。模型成果仍需用户审核；专业样本记录用于说明限制，不代表所有专家每次都能正确回答。
 
 ### Native PPT editing preview
 
-[Office alpha.3 source prerelease](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.3) · No new installable archive is attached.
+[Office alpha.4 prerelease and installable archive](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4)
 
 ![WorkDSH 原生 PPT 编辑](docs/assets/screenshots/workdsh-ppt-live-preview.png)
 
 User-provided application screenshot showing incremental AI slide editing in the native results panel. This existing conversation still contains earlier export guidance; the new PPTX content_export implementation is described in the source and has not yet passed a real-session file-card acceptance test.
 
-[2026-09-14 发布候选说明](docs/releases/2026-09-14-development-candidate.md) · 最新alpha制品与验证范围见本页顶部。
+[2026-09-14 development-candidate notes](docs/releases/2026-09-14-development-candidate.md)
 
-### Activity and expert teams / 工作动态与专家团
+### Activity and expert teams
 
 ![WorkDSH 工作动态与 HTML 实时制作](docs/assets/screenshots/workdsh-activity-html-preview.png)
 
 A compact activity strip shows the native task state and the current skill, alongside the original conversation and live HTML working copy. Its colored border animates while processing; animations can be disabled and respect reduced-motion preferences. The strip is centered and uses half the available width on wide screens.
 
-工作动态以紧凑居中的单行展示任务状态和当前技能，保留原生对话、工具调用和右侧 HTML 工作副本。运行时彩色边框循环流动；动画可关闭，并遵守系统减少动态效果设置。
-
 ![WorkDSH 专家团任务与协作动态](docs/assets/screenshots/workdsh-team-activity-preview.png)
 
 Expert-team sessions carry the team name and activity state. Member activity appears when native child sessions exist; the team label alone does not prove multiple members are executing. This example shows zero child agents at the captured moment.
 
-专家团任务展示团队名称与工作动态；有原生成员子任务时呈现成员状态。截图捕获时为 **0 个子代理**，不能据此宣称多位专家已经并行执行。
-
 ![WorkDSH 专家团详情、草稿与成员](docs/assets/screenshots/workdsh-expert-team-detail-preview.png)
 
 Team details show capabilities, starter requests, the lead and members. Saved drafts remain separate from published revisions; summoning uses the published revision until changes are explicitly published. These are user-provided local preview screenshots, including example task names, paths and spending figures; they document the development candidate rather than the older downloadable releases.
-
-专家团详情展示能力、使用示例、主理人和成员。草稿与已发布修订分离，召唤使用已发布版本。这三张用户提供的本地截图用于展示当前开发候选，不代表旧版下载包已包含这些功能，也不代表专家团整体验收完成。
 
 ## Open-source components and acknowledgements
 
@@ -273,7 +272,7 @@ Thank you to these projects and their maintainers. This list covers major direct
 | [Lucide](https://github.com/lucide-icons/lucide) | PPT toolbar icons | ISC |
 | [dsh-cost-meter](https://github.com/Han-1413141/dsh-cost-meter) | Separately installed spending plugin in the local preview Profile; not bundled in WorkDSH releases | See the independent project's license |
 
-Special thanks to **WorkBuddy / CodeBuddy** for product experience and skill-design references. Their experiences informed the Skill market layout, grouped toolbars and PPT design guidance. Locally available `tencent-pptx` and `ppt-implement` skills helped us study narrative, palette and layout methods. This acknowledgement does not classify WorkBuddy, its brand assets or skill resources as open source, indicate a Tencent PPT engine integration, or imply an official partnership or endorsement. DeepSeek Harness remains the execution foundation.
+WorkDSH explicitly takes **WorkBuddy / CodeBuddy** as a product-experience reference: a real task should expose its process and end in an editable artifact. Skill-market organization, grouped toolbars, and PPT design guidance also draw on those experiences. WorkDSH is an independent open-source implementation for DeepSeek Harness; it does not reuse WorkBuddy branding or claim an official partnership, endorsement, or Tencent PPT engine integration.
 
 Third-party skills and materials retain their providers' terms. Generated archives retain copyright and license texts for dependencies actually bundled; see [Office third-party notices](packages/plugins/office/THIRD-PARTY-NOTICES.md).
 

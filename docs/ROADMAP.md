@@ -8,11 +8,17 @@ WorkDSH is developed as a collection of independently versioned modules. Each mo
 
 ### Current preview
 
-Skill `0.1.0-alpha.24` is now distributed independently, with optional presentation bundle `0.1.0-alpha.39`. See [module releases and compatibility](RELEASES.md). The original `v0.1.0-alpha.1` remains a historical repository snapshot.
+The current public previews are Skills `0.1.0-alpha.28`, Experts `0.1.0-alpha.2`, Activity `0.1.0-alpha.1`, Office `0.1.0-alpha.4`, and the optional presentation bundle `0.1.0-alpha.41`. See [module releases and compatibility](RELEASES.md). The original `v0.1.0-alpha.1` remains a historical repository snapshot.
 
 `v0.1.0-alpha.1` delivers the first local/default Skill management preview. It covers the global Skill library, full `SKILL.md` and resource reading, editing with conflict detection, enable/disable, recoverable uninstall, safe import, and native Conversation-based creation.
 
 Clean installation, packaged Web cold-restart acceptance, failure recovery, and authenticated request cancellation are now verified for Skill `0.1`. The published Typert generator's external-workspace limitation remains an upstream compatibility item for later generated Remotes; it does not block the local Skill module, which uses the official Connection exact Fetch extension. Runtime package changes use the documented stopped-Host and restart lifecycle.
+
+### Active Office track
+
+Office `0.1` is developed and accepted as an independent plugin. The current source-development priority is PPT authoring with real template import, per-slide live updates, human editing, save/reopen, and PPTX export. Further Word feature work is paused. Other document types proceed only through scoped milestones; a roadmap entry does not claim complete fidelity or end-to-end model quality.
+
+Exit evidence must use real files and cover editing, export/reopen, packaged installation, cold restart, removal, and reinstall. Historical sequencing and implementation notes remain in the [Office development record](design/office/NEXT-STAGE.md); current results and gaps are tracked in the [status ledger](STATUS.md).
 
 ### Module delivery order
 
@@ -43,11 +49,17 @@ WorkDSH 按独立版本化的模块开发。每个模块开始实现时建立自
 
 ### 当前预览
 
-Skill `0.1.0-alpha.24` 现按模块独立分发，可选展示包为 `0.1.0-alpha.39`。见[模块发布与兼容矩阵](RELEASES.md)。原 `v0.1.0-alpha.1` 保留为历史仓库快照。
+当前公开预览包括技能 `0.1.0-alpha.28`、专家 `0.1.0-alpha.2`、活动 `0.1.0-alpha.1`、Office `0.1.0-alpha.4`，以及可选展示包 `0.1.0-alpha.41`。见[模块发布与兼容矩阵](RELEASES.md)。原 `v0.1.0-alpha.1` 保留为历史仓库快照。
 
 `v0.1.0-alpha.1` 是首个默认/本地 Skill 管理预览，包含全局技能库、完整 `SKILL.md` 与资源读取、带冲突检测的编辑、启停、可恢复卸载、安全导入，以及基于 Harness 原生 Conversation 的创建流程。
 
 Skill `0.1` 的干净安装、真实打包 Web 冷重启、失败恢复和认证请求取消验收已经完成。发布版 Typert 对外部 workspace 的限制保留为后续生成 Remote 的上游兼容事项；本地 Skill 模块使用官方 Connection exact Fetch 扩展面，不受其阻塞。运行包变更采用已记录的“停止 Host、变更、重启”生命周期。
+
+### 当前 Office 开发线
+
+Office `0.1` 作为独立插件开发和验收。当前源码开发重点是 PPT：真实模板导入、逐页实时更新、人工编辑、保存重开和 PPTX 导出。Word 后续功能扩展暂停；其他文档类型只按边界明确的阶段推进。写入路线图不代表格式保真或模型端到端质量已经完成。
+
+退出验收必须使用真实文件，覆盖编辑、导出重开、安装包安装、冷重启、卸载和重装。历史阶段顺序与实现说明保留在 [Office 开发记录](design/office/NEXT-STAGE.md)，当前结果与缺口以[状态台账](STATUS.md)为准。
 
 ### 模块交付顺序
 

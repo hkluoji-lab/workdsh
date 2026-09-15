@@ -2,7 +2,7 @@
 <p align="center"><img src="assets/brand/workdsh-logo.svg" width="104" alt="WorkDSH"></p>
 <h1 align="center">WorkDSH</h1>
 <p align="center"><strong>交给 AI 一项工作，看着它完成，打开真正的成果。</strong></p>
-<p align="center">构建在 DeepSeek Harness 上、由插件组合的 AI 工作台。</p>
+<p align="center">面向 DeepSeek Harness、开源实现 WorkBuddy 式体验的 AI 工作台。</p>
 <p align="center"><a href="README.md">English</a> · <strong>简体中文</strong></p>
 <p align="center">
   <a href="https://github.com/techflag/workdsh/releases">下载安装包</a> ·
@@ -13,6 +13,8 @@
 </p>
 
 WorkDSH 把**技能、专家、团队动态和可编辑的 Office 成果**装进 DeepSeek Harness 原生任务体验。你不用在聊天、临时网页和本地文件之间来回切换：对话在左边继续，文档、表格、PPT、PDF 或网页在右边实时出现，最后留下可以打开和下载的文件。
+
+你可以把它理解为一个**独立开源的 WorkBuddy 式工作台**：交代真实任务，看到执行过程，需要时人工介入，最后拿到可继续编辑的成果。WorkDSH 针对 DeepSeek Harness 独立开发，并非 WorkBuddy 官方开源版本。
 
 ![WorkDSH 制作并展示真实 HTML 数据分析看板](docs/assets/screenshots/workdsh-html-dashboard-preview.png)
 
@@ -50,12 +52,17 @@ WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终
 </tr>
 </table>
 
-## 为什么做 WorkDSH
+## WorkDSH 的核心特色
 
-- **成果必须真实存在。** 已支持的输出会保存为工作副本和可下载文件；工具失败时不会把一段文字冒充已交付文件。
-- **保留 Harness 原生体验。** 任务、模型、附件、权限、队列、技能和插件加载仍由 Harness 负责，WorkDSH 只扩展公开服务和 UI 插槽。
-- **能力可以按需组合。** 技能、专家、Office、活动、治理和展示分别版本化，Profile 只安装真正需要的模块。
-- **人工修改是工作流的一部分。** 打开成果、直接修正，再让模型读取最新修订继续，而不是从旧提示词全部重做。
+| 特色 | 你实际感受到的变化 |
+| --- | --- |
+| **开源的 WorkBuddy 式工作流** | 任务、可见过程、人工检查点和可编辑成果留在一起，代码可以审阅、安装和扩展。 |
+| **交付真实成果** | 已支持的输出会保存为工作副本和可下载文件；工具失败时不会把一段文字冒充已交付文件。 |
+| **人与 AI 实时共编** | 打开成果直接修正，再让模型从最新保存版本继续，不必根据旧提示词全部重做。 |
+| **专业能力可以复用** | 技能携带指令和资源，专家绑定经过审阅的技能修订与明确身份，不依赖一次性的角色提示词。 |
+| **团队作战过程可见** | 会话中可以看到专家团、当前成员、交接和任务状态；TM-01 真实模型完整验收仍在进行。 |
+| **保留 Harness 原生体验** | 任务、模型、附件、权限、队列、技能和插件加载仍由 Harness 负责，WorkDSH 扩展公开服务和 UI 插槽。 |
+| **插件独立交付** | 技能、专家、Office、活动、治理和展示分别版本化，Profile 只安装真正需要的模块。 |
 
 ## 当前预览状态
 
@@ -116,9 +123,12 @@ flowchart TB
 | 模块 | 包版本 | 下载 | 安装范围 |
 | --- | --- | --- | --- |
 | 技能管理 | `workdsh-plugin-skills@0.1.0-alpha.28` | [技能 `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.28/workdsh-plugin-skills-0.1.0-alpha.28.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.28) | 可独立安装的 Harness 功能插件。 |
+| 专家 | `workdsh-plugin-experts@0.1.0-alpha.2` | [专家 `.tgz`](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.2/workdsh-plugin-experts-0.1.0-alpha.2.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.2) | 专家定义、已审阅修订、技能配备和原生任务交接。 |
+| 工作动态 | `workdsh-plugin-activity@0.1.0-alpha.1` | [动态 `.tgz`](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.1/workdsh-plugin-activity-0.1.0-alpha.1.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.1) | 显示任务、技能和专家团队工作状态。 |
+| Office | `workdsh-plugin-office@0.1.0-alpha.4` | [Office `.tgz`](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.4/workdsh-plugin-office-0.1.0-alpha.4.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4) | 支持范围内的可编辑工作副本、预览和文件导出。 |
 | WorkDSH 展示组合 | `workdsh-bundle@0.1.0-alpha.41` | [展示 `.tgz`](https://github.com/techflag/workdsh/releases/download/bundle-v0.1.0-alpha.41/workdsh-bundle-0.1.0-alpha.41.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/bundle-v0.1.0-alpha.41) | 可选品牌、主题与工作台组合；Skill 需单独安装。 |
 
-Workbench `alpha.10` 目前随展示包交付。共享 UI `alpha.4`、contracts `alpha.5` 和本地身份/授权/审计基础属于开发包，**本次不作为面向用户的独立插件下载**。其他模块仍在规划中，见[完整模块对应表](docs/RELEASES.md)。
+Workbench `alpha.10` 目前随展示包交付。共享 UI、contracts 和本地身份/授权/审计基础属于配套包，**不作为面向用户的独立下载项**。完整对应关系见[模块发布说明](docs/RELEASES.md)。
 
 ## 快速开始
 
@@ -164,6 +174,7 @@ corepack pnpm preview
 | --- | --- | --- |
 | Skill 0.1 | 本地技能管理与独立安装交付 | 已在指定 Web 基线上验证。 |
 | 专家 0.1 | 专家定义、草稿、修订、共享技能引用和任务交接 | alpha可安装试用；专业成果质量与稳定性验收尚未完成。 |
+| Office 0.1 | 真实文件创建、实时编辑、预览与导出；当前源码开发重点为 PPT | alpha可安装试用；PPT 模板和真实模型视觉验收仍在进行，Word 功能扩展暂停。 |
 | 后续模块 | 连接器 → 资料库 → 项目 → 行业应用 → 集成 | 按模块逐一交付。 |
 | 企业版 | 服务端 + 管理 Web + Harness 执行节点；组织技能、分类、版本、授权和下发 | 后置。本次没有公共技能市场、SkillHub 或技能套件。 |
 
@@ -195,19 +206,17 @@ corepack pnpm probe:browser
 
 底座采用 [DeepSeek Harness](https://deepseek-harness.github.io/deepseek-harness/)，交互参考包括 [WorkBuddy](https://www.workbuddy.cn/)。WorkDSH 是独立项目，并非上述团队的官方产品。
 
-下一阶段开发计划：[PPT 实时制作 → 其他六类（Word 后续暂停）](docs/design/office/NEXT-STAGE.md)。各阶段以真实文件、实时编辑和独立插件生命周期验收，规划不代表能力已完成。
-
 ## 当前开发预览
 
 ![WorkDSH 技能市场开发预览](docs/assets/screenshots/workdsh-skill-market-preview.png)
 
 用户提供的当前应用截图：技能市场提供分类、搜索、已安装管理及本地目录安装入口。卡片中的第三方技能、图标和名称属于各自提供方，不代表 WorkDSH 拥有这些品牌或已实现全部连接器。截图包含本地任务名称与费用信息；这些是演示时的用户状态，不是随包默认数据。
 
-当前 Office 开发预览仅保留 `pptx-react-viewer` PPT 编辑器，已接入原生右侧成果页与同一 Office 内容服务，支持逐页写入、人工编辑、原生图表数据、保存重开及 PPTX 下载。中文工具栏与设计指导仍在改进，真实模型的美观度尚未完成验收。本地开发候选与上文已发布 Word 安装包的范围不同，详见 [PPT 接入证据](docs/evidence/office-pptx-integration.md)。
+当前 Office 开发预览仅保留 `pptx-react-viewer` PPT 编辑器，已接入原生右侧成果页与同一 Office 内容服务，支持逐页写入、人工编辑、原生图表数据、保存重开及 PPTX 下载。中文工具栏、模板保真和真实模型美观度仍在改进，详见 [PPT 接入证据](docs/evidence/office-pptx-integration.md)。
 
 ### 原生 PPT 编辑预览
 
-[Office alpha.3 源码预览发布](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.3) · 本次未附新的可安装包。
+[Office alpha.4 预发布与安装包](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.4)
 
 ![WorkDSH 原生 PPT 编辑](docs/assets/screenshots/workdsh-ppt-live-preview.png)
 
@@ -230,6 +239,6 @@ corepack pnpm probe:browser
 | [Lucide](https://github.com/lucide-icons/lucide) | PPT 工具栏图标 | ISC |
 | [dsh-cost-meter](https://github.com/Han-1413141/dsh-cost-meter) | 当前预览 Profile 单独安装的费用统计插件，不内置于 WorkDSH 发布包 | 以其独立项目许可为准 |
 
-特别感谢 **WorkBuddy / CodeBuddy** 团队带来的产品体验和技能设计参考。WorkDSH 的技能市场布局、工具栏分组和 PPT 设计指导参考了这些体验；本机 `tencent-pptx` 与 `ppt-implement` 技能帮助我们分析了叙事、配色和版式方法。这里的致谢不将 WorkBuddy、品牌图标或其技能资源声明为开源组件，也不表示已安装腾讯 PPT 引擎或获得官方合作、背书。WorkDSH 的执行底座仍为 DeepSeek Harness。
+WorkDSH 明确以 **WorkBuddy / CodeBuddy** 作为产品体验参考：真实任务应展示工作过程，并以可编辑成果结束；技能市场组织、工具栏分组和 PPT 设计指导也吸收了相关经验。WorkDSH 是面向 DeepSeek Harness 的独立开源实现，不复用 WorkBuddy 品牌，也不代表官方合作、背书或集成了腾讯 PPT 引擎。
 
 第三方技能和素材分别遵循其提供方的许可与使用条件。构建产物保留实际打包依赖的版权和许可文本，见 [Office 第三方声明](packages/plugins/office/THIRD-PARTY-NOTICES.md)。
