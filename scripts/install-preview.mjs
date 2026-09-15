@@ -1,14 +1,18 @@
 import { execFile } from 'node:child_process';
-import { access, copyFile, mkdir, readFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, readFile, realpath } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const rootManifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+const baseVersion = rootManifest.pnpm?.overrides?.['@deepseek-ai/dsh-base'];
 const webAppVersion = rootManifest.pnpm?.overrides?.['@deepseek-ai/dsh-web-app'];
+if (typeof baseVersion !== 'string') throw new Error('Missing pinned @deepseek-ai/dsh-base version in package.json pnpm.overrides.');
 if (typeof webAppVersion !== 'string') throw new Error('Missing pinned @deepseek-ai/dsh-web-app version in package.json pnpm.overrides.');
+const baseSpec = `@deepseek-ai/dsh-base@${baseVersion}`;
 const webAppSpec = `@deepseek-ai/dsh-web-app@${webAppVersion}`;
 const home = resolve(process.env.WORKDSH_PREVIEW_HOME ?? join(root, '.test-runtime/preview'));
 const artifacts = join(root, '.artifacts');
@@ -44,9 +48,25 @@ if (!initialized) await run('@deepseek-ai/dsh/lib/bin.js', ['--profile', 'previe
 // existing preview Profile may have been created by an older DSH release; its
 // bundle list alone does not upgrade the packages that provide newly added Web
 // surfaces such as Terminal and archived-session recovery.
-await run('@deepseek-ai/dsh/lib/bin.js', ['plugin', '--profile', 'preview', 'add', webAppSpec, ...tarballs]);
+await run('@deepseek-ai/dsh/lib/bin.js', ['plugin', '--profile', 'preview', 'add', baseSpec, webAppSpec, ...tarballs]);
+const installedBase = JSON.parse(await readFile(join(home, 'profiles/preview/node_modules/@deepseek-ai/dsh-base/package.json'), 'utf8'));
+if (installedBase.version !== baseVersion) throw new Error(`Installed @deepseek-ai/dsh-base ${installedBase.version} does not match pinned ${baseVersion}.`);
 const installedWebApp = JSON.parse(await readFile(join(home, 'profiles/preview/node_modules/@deepseek-ai/dsh-web-app/package.json'), 'utf8'));
 if (installedWebApp.version !== webAppVersion) throw new Error(`Installed @deepseek-ai/dsh-web-app ${installedWebApp.version} does not match pinned ${webAppVersion}.`);
+// DSH 0.1.6 scopes are module-instance local. Installing only the Web bundle
+// beside a CLI-provided Base bundle can load two physical dsh-scope copies: the
+// Agent Loop tags one copy while Agent Presets reads the other, so every new
+// session fails as an "unscoped context". Resolve both consumers from the
+// Profile and fail installation unless they share the exact same module file.
+const profileRequire = createRequire(join(home, 'profiles/preview/package.json'));
+const resolveProfileDependency = async (consumer, dependency) => {
+  const consumerManifest = profileRequire.resolve(`${consumer}/package.json`);
+  const consumerRequire = createRequire(consumerManifest);
+  return realpath(consumerRequire.resolve(`${dependency}/package.json`));
+};
+const loopScope = await resolveProfileDependency('@deepseek-ai/dsh-agent-loop', '@deepseek-ai/dsh-scope');
+const presetScope = await resolveProfileDependency('@deepseek-ai/dsh-agent-presets', '@deepseek-ai/dsh-scope');
+if (loopScope !== presetScope) throw new Error(`Preview loaded split @deepseek-ai/dsh-scope instances: agent-loop=${loopScope}; agent-presets=${presetScope}.`);
 for (const { directory, manifest } of packages) {
   for (const face of ['.', './client']) {
     const entry = manifest.exports[face]?.default;
