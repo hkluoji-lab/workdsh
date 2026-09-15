@@ -345,9 +345,15 @@ importers:
 
   packages/bundle:
     dependencies:
+      '@deepseek-ai/dsh-browser-use':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))
       '@deepseek-ai/dsh-computer-use':
         specifier: 0.1.6-alpha.1
         version: 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-experimental-browser-use-playwright-mcp':
+        specifier: 0.1.6-alpha.1
+        version: 0.1.6-alpha.1(2f38f8c2d1cf7f11ac6ef22c668138d9)
       '@deepseek-ai/dsh-experimental-computer-use-cua-driver-native':
         specifier: 0.1.6-alpha.1
         version: 0.1.6-alpha.1(081f74383d47475fca62a0a04e057a02)
@@ -1348,6 +1354,12 @@ packages:
     peerDependencies:
       '@deepseek-ai/cordis': ^4.0.2
 
+  '@deepseek-ai/dsh-browser-use@0.1.6-alpha.1':
+    resolution: {integrity: sha512-s+BTH1Emgll7EbGk0scdUhPbjiTIzcvrVMusD6V5DrAhIz7iCHk10TulnswEuUrNCeGGSjgjYkjBYrjUtCld3g==}
+    peerDependencies:
+      '@deepseek-ai/cordis': ^4.0.2
+      '@deepseek-ai/dsh-brand': 0.1.6-alpha.1
+
   '@deepseek-ai/dsh-chunked-list@0.1.6-alpha.1':
     resolution: {integrity: sha512-mNQB8rmjhYHiVEe0KwLBIbj+e+IOYJhDVFuvOnUX61My6vujwoVyslZIQ1fHhbIJrJm+aJyrAbzAOkTX/bvhAA==}
     peerDependencies:
@@ -1760,6 +1772,24 @@ packages:
       '@deepseek-ai/dsh-session-projection': 0.1.6-alpha.1
       '@deepseek-ai/dsh-subagent': 0.1.6-alpha.1
       '@deepseek-ai/dsh-typert-protocol': 0.1.6-alpha.1
+
+  '@deepseek-ai/dsh-experimental-browser-use-playwright-mcp@0.1.6-alpha.1':
+    resolution: {integrity: sha512-8JjusS/GbBK9/OK59DGZVCx5FDvLgBvdD1os5UbJOFK4rj14xEwlphmC8L43e+ybq2ZrjPSl1YoCrB0sNGHxhA==}
+    peerDependencies:
+      '@deepseek-ai/cordis': ^4.0.2
+      '@deepseek-ai/dsh-agent': 0.1.6-alpha.1
+      '@deepseek-ai/dsh-browser-use': ^0.1.6-alpha.1
+      '@deepseek-ai/dsh-system-prompt': 0.1.6-alpha.1
+      '@deepseek-ai/dsh-tools': 0.1.6-alpha.1
+
+  '@deepseek-ai/dsh-experimental-browser-use-runtime@0.1.6-alpha.1':
+    resolution: {integrity: sha512-/XH9duDmfVXFZHrRGUdp2YwJJYhZqUc4/aHFFoohuUX4J4PBSh7Zq2G9bDWzQKDAQxBAbPbXCBQW59W7NN+hpg==}
+    peerDependencies:
+      '@deepseek-ai/cordis': ^4.0.2
+      '@deepseek-ai/dsh-agent': 0.1.6-alpha.1
+      '@deepseek-ai/dsh-browser-use': ^0.1.6-alpha.1
+      '@deepseek-ai/dsh-system-prompt': 0.1.6-alpha.1
+      '@deepseek-ai/dsh-tools': 0.1.6-alpha.1
 
   '@deepseek-ai/dsh-experimental-client-ui-agent-team@0.1.6-alpha.1':
     resolution: {integrity: sha512-ROL2niqbmgr5yKR0yrqIqSuKXDONsQuikqM7tot9400RxpEX8E+8jqnoQJYKbFd7MH2EzxSBijLiObpaCruc2w==}
@@ -3854,6 +3884,11 @@ packages:
 
   '@pdf-lib/upng@1.0.1':
     resolution: {integrity: sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ==}
+
+  '@playwright/mcp@0.0.80':
+    resolution: {integrity: sha512-FOPXHm2SvFhAQylm10jMZ35B/SR2TaMLVkavAlwoG4N2qCb5RqbvhQYcu3zmXNyxR2DW0Ooxe+9XPVt5UjKRCQ==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@playwright/test@1.58.2':
     resolution: {integrity: sha512-akea+6bHYBBfA9uQqSYmlJXn61cTa+jbO87xVLCWbTqbWadRVmhxlXATaOjOgcBaWU4ePo0wB41KMFv3o35IXA==}
@@ -6188,9 +6223,19 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  playwright-core@1.63.0-alpha-2026-08-31:
+    resolution: {integrity: sha512-1ek0Lyr12h6jcs/WTcNoVtzZkQp7D/90PsMuBW/Rm6h3AsWAbzpqj0geMv8+8Tzzr9CSUYvg9kznrVZINQMXXw==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   playwright@1.58.2:
     resolution: {integrity: sha512-vA30H8Nvkq/cPBnNw4Q8TWz1EJyqgpuinBcHET0YVJVFldr8JDNiU9LaWAE1KqSkRYazuaBhTpB5ZzShOezQ6A==}
     engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.63.0-alpha-2026-08-31:
+    resolution: {integrity: sha512-3XAsuznfu8jBVJ4QxdGvBkt0+b8ZFwuwJYyOfiIw5ZjUOrNLNRhKxzLzLuydou3gJ9c6eMwVqgzdiOwhy54Kzw==}
+    engines: {node: '>=20'}
     hasBin: true
 
   pnpm@10.34.5:
@@ -7611,6 +7656,11 @@ snapshots:
     dependencies:
       '@deepseek-ai/cordis': 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
 
+  '@deepseek-ai/dsh-browser-use@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))':
+    dependencies:
+      '@deepseek-ai/cordis': 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-brand': 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)
+
   '@deepseek-ai/dsh-chunked-list@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)':
     dependencies:
       '@deepseek-ai/cordis': 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
@@ -7985,6 +8035,41 @@ snapshots:
       '@deepseek-ai/dsh-typert-protocol': 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/schemastery': 3.18.2
       zod: 4.4.3
+
+  '@deepseek-ai/dsh-experimental-browser-use-playwright-mcp@0.1.6-alpha.1(2f38f8c2d1cf7f11ac6ef22c668138d9)':
+    dependencies:
+      '@deepseek-ai/cordis': 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-agent': 0.1.6-alpha.1(ce40d13c69e7e1ce48818baba37665e1)
+      '@deepseek-ai/dsh-browser-use': 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-experimental-browser-use-runtime': 0.1.6-alpha.1(2f38f8c2d1cf7f11ac6ef22c668138d9)
+      '@deepseek-ai/dsh-system-prompt': 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-llm@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-scope@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)))
+      '@deepseek-ai/dsh-tools': 0.1.6-alpha.1(e89197212305e1b19bd6df05221bc44b)
+      '@playwright/mcp': 0.0.80
+    transitivePeerDependencies:
+      - '@deepseek-ai/dsh-attachment'
+      - '@deepseek-ai/dsh-invariants'
+      - '@deepseek-ai/dsh-llm'
+      - '@deepseek-ai/dsh-mcp-resources'
+      - '@deepseek-ai/dsh-subprocess'
+      - '@deepseek-ai/dsh-timeout'
+
+  '@deepseek-ai/dsh-experimental-browser-use-runtime@0.1.6-alpha.1(2f38f8c2d1cf7f11ac6ef22c668138d9)':
+    dependencies:
+      '@deepseek-ai/cordis': 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-agent': 0.1.6-alpha.1(ce40d13c69e7e1ce48818baba37665e1)
+      '@deepseek-ai/dsh-browser-use': 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-mcp-client': 0.1.6-alpha.1(94992de6e2e4a2b9ef71764c06db2b07)
+      '@deepseek-ai/dsh-scope': 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-system-prompt': 0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-llm@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-scope@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.6-alpha.1(@deepseek-ai/cordis@4.0.2)))
+      '@deepseek-ai/dsh-tools': 0.1.6-alpha.1(e89197212305e1b19bd6df05221bc44b)
+      '@deepseek-ai/schemastery': 3.18.2
+    transitivePeerDependencies:
+      - '@deepseek-ai/dsh-attachment'
+      - '@deepseek-ai/dsh-invariants'
+      - '@deepseek-ai/dsh-llm'
+      - '@deepseek-ai/dsh-mcp-resources'
+      - '@deepseek-ai/dsh-subprocess'
+      - '@deepseek-ai/dsh-timeout'
 
   '@deepseek-ai/dsh-experimental-client-ui-agent-team@0.1.6-alpha.1(b1becabda2def9700904dfc6d18bbbc1)':
     dependencies:
@@ -10352,6 +10437,11 @@ snapshots:
   '@pdf-lib/upng@1.0.1':
     dependencies:
       pako: 1.0.11
+
+  '@playwright/mcp@0.0.80':
+    dependencies:
+      playwright: 1.63.0-alpha-2026-08-31
+      playwright-core: 1.63.0-alpha-2026-08-31
 
   '@playwright/test@1.58.2':
     dependencies:
@@ -13584,11 +13674,17 @@ snapshots:
 
   playwright-core@1.58.2: {}
 
+  playwright-core@1.63.0-alpha-2026-08-31: {}
+
   playwright@1.58.2:
     dependencies:
       playwright-core: 1.58.2
     optionalDependencies:
       fsevents: 2.3.2
+
+  playwright@1.63.0-alpha-2026-08-31:
+    dependencies:
+      playwright-core: 1.63.0-alpha-2026-08-31
 
   pnpm@10.34.5: {}
 

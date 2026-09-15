@@ -1,3 +1,8 @@
+# 0.1.0-alpha.44 — 2026-09-15
+
+- 显式组合 DSH 0.1.6 官方 Browser Use 注册服务与 Playwright MCP 提供方。
+- 默认使用每个活动 Session 独立拥有的无头 Chromium，保留官方跨轮次状态与释放规则。
+
 # 0.1.0-alpha.43 — 2026-09-15
 
 - 显式组合 DSH 0.1.6 官方 Computer Use 注册服务与原生 Cua Driver 提供方。

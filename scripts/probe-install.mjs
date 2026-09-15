@@ -31,7 +31,9 @@ let serverOutput = '';
 async function until(predicate, label) {
   const deadline = Date.now() + 20000;
   while (!predicate()) {
-    if (server?.exitCode !== null && server?.exitCode !== undefined) throw new Error(`Server exited before ${label}`);
+    if (server?.exitCode !== null && server?.exitCode !== undefined) {
+      throw new Error(`Server exited before ${label}: ${serverOutput.replace(/token=[^\s]+/g, 'token=[redacted]').slice(-4000)}`);
+    }
     if (Date.now() > deadline) throw new Error(`Timed out: ${label}`);
     await new Promise(r => setTimeout(r, 100));
   }
@@ -72,6 +74,8 @@ try {
   assert.ok(config.includes('workdsh-installation-probe'));
   assert.ok(config.includes("name: '@deepseek-ai/dsh-computer-use'"));
   assert.ok(config.includes("name: '@deepseek-ai/dsh-experimental-computer-use-cua-driver-native'"));
+  assert.ok(config.includes("name: '@deepseek-ai/dsh-browser-use'"));
+  assert.ok(config.includes("name: '@deepseek-ai/dsh-experimental-browser-use-playwright-mcp'"));
   assert.equal(config.split('id: workdsh-skills').length - 1, 1);
   const installed = JSON.parse(readFileSync(resolve(home, 'profiles/probe/node_modules/workdsh-bundle/package.json'), 'utf8'));
   assert.equal(installed.version, version);
@@ -141,6 +145,8 @@ try {
   assert.ok(!removed.includes('workdsh-installation-probe'));
   assert.ok(!removed.includes("name: '@deepseek-ai/dsh-computer-use'"));
   assert.ok(!removed.includes("name: '@deepseek-ai/dsh-experimental-computer-use-cua-driver-native'"));
+  assert.ok(!removed.includes("name: '@deepseek-ai/dsh-browser-use'"));
+  assert.ok(!removed.includes("name: '@deepseek-ai/dsh-experimental-browser-use-playwright-mcp'"));
   startServer();
   await until(() => /http:\/\/127\.0\.0\.1:\d+/.test(serverOutput), 'restart after removal');
   const removedAddress = serverOutput.match(/http:\/\/127\.0\.0\.1:\d+/)[0];
