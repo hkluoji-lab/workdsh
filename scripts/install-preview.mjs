@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
+const rootManifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+const webAppVersion = rootManifest.pnpm?.overrides?.['@deepseek-ai/dsh-web-app'];
+if (typeof webAppVersion !== 'string') throw new Error('Missing pinned @deepseek-ai/dsh-web-app version in package.json pnpm.overrides.');
+const webAppSpec = `@deepseek-ai/dsh-web-app@${webAppVersion}`;
 const home = resolve(process.env.WORKDSH_PREVIEW_HOME ?? join(root, '.test-runtime/preview'));
 const artifacts = join(root, '.artifacts');
 const env = { ...process.env, DSH_HOME: home, PATH: `${join(root, 'node_modules/.bin')}:${dirname(process.execPath)}:${process.env.PATH}` };
@@ -36,8 +40,13 @@ let initialized = false;
 try { await access(join(home, 'profiles/preview/package.json')); initialized = true; }
 catch (error) { if (error.code !== 'ENOENT') throw error; }
 if (!initialized) await run('@deepseek-ai/dsh/lib/bin.js', ['--profile', 'preview', '--from-default-profile', 'web', '--dump-config']);
-// Official CLI owns dependency resolution and the ordered Profile bundle list.
-await run('@deepseek-ai/dsh/lib/bin.js', ['plugin', '--profile', 'preview', 'add', ...tarballs]);
+// Reinstall the pinned official Web bundle as well as the WorkDSH layers. An
+// existing preview Profile may have been created by an older DSH release; its
+// bundle list alone does not upgrade the packages that provide newly added Web
+// surfaces such as Terminal and archived-session recovery.
+await run('@deepseek-ai/dsh/lib/bin.js', ['plugin', '--profile', 'preview', 'add', webAppSpec, ...tarballs]);
+const installedWebApp = JSON.parse(await readFile(join(home, 'profiles/preview/node_modules/@deepseek-ai/dsh-web-app/package.json'), 'utf8'));
+if (installedWebApp.version !== webAppVersion) throw new Error(`Installed @deepseek-ai/dsh-web-app ${installedWebApp.version} does not match pinned ${webAppVersion}.`);
 for (const { directory, manifest } of packages) {
   for (const face of ['.', './client']) {
     const entry = manifest.exports[face]?.default;
