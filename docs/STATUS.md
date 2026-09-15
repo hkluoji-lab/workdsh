@@ -6,7 +6,7 @@
 
 修复过时的 `release:office:pack`：不再构建 Word-only alpha.2，而是生成当前完整 alpha.5 Office 候选，保留 PPT/Excel 等依赖和多格式 release-scope。tgz 内嵌精确依赖清单、已收集许可文本与原始缺项报告；发布清单如实记录 10 项未收集文本、`licenseTextsComplete:false`，以及 `@univerjs/telemetry@0.25.1` 无声明许可证元数据。根 README 和 Office notice 同步披露，按用户决定不作为本次预览发行阻塞，但不宣称许可证收集完成。
 
-本轮没有提交、推送、创建 Release、发布 npm、部署或重启 preview。真实模型完整长任务、TM-01 整体验收和多平台验收仍未完成，不能据此宣称整套系统完成。
+源码提交 `b4f5309` 已快进推送到 `origin/main`；`scripts/desktop/` 保持本地未跟踪且未进入提交。没有创建 GitHub Release、发布 npm、部署或重启 preview。真实模型完整长任务、TM-01 整体验收和多平台验收仍未完成，不能据此宣称整套系统完成。
 
 已生成六个当前源码候选 tgz（contracts alpha.8、ui alpha.6、skills alpha.29、experts alpha.3、office alpha.5、bundle alpha.42）及统一 SHA256/机器清单，位于忽略目录 `.artifacts/release-candidate-2026-09-15/`。逐包读取 package.json、摘要复核通过；技能包不含 Python 缓存，专家包不再携带旧 `expert-manager` 空目录。候选附件不等于已经完成公开发行。
 
