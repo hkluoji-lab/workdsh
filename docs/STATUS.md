@@ -1,3 +1,11 @@
+## 2026-09-16：合并远端 alpha.5 线并跑通验证（推送被本机凭据阻塞）
+
+用户选择 merge 而非 rebase 处置本地 3 个提交与远端分叉。执行 `git merge origin/main` 得合并提交 `27fa783`：远端线为 v0.1.0-alpha.5（专家团韧性验收、PPT 原生画布坐标修正、office/activity/contracts 更新），本地线为 DSH 0.1.6-alpha.1 同步（文档镜像、退役包名清理、品牌 DSH JOB AI、预览端口 3031）。仅 `docs/STATUS.md` 冲突，README.md、README.zh-CN.md、package.json 自动合并；按本文件倒序流水账规则保留两边全部内容，行数核对为 1706（分叉点）+ 40（本地新增）+ 28（远端新增）= 1774，无内容丢失。
+
+验证全部通过：`pnpm install --frozen-lockfile` 报 Already up to date；`pnpm check:versions` PASS 495 条（含上次新增的反向断言）；`pnpm build`、`pnpm typecheck` 退出码 0；`pnpm test:integration` 108/108 通过（由合并前的 102 增至 108，增量来自远端新增的 office 内容与专家团测试）。
+
+阻塞：**本次未推送**。两个远端都被本机凭据挡下，不是代码问题：`origin`（Gitee）在 keychain 中 `host=gitee.com` 的条目为空（username/password 长度均为 0），git 收到 401 后转 `GIT_ASKPASS`（Trae 的 askpass.sh）交互式提问，该 IPC 在终端环境下不响应，表现为无输出的长时间挂起；`github` 远端存的是 `hkluoji-lab` 的凭据，对 `techflag/workdsh` 推送返回 403 `Permission to techflag/workdsh.git denied`；本机 `~/.ssh/id_ed25519` 未注册到 Gitee（`git@gitee.com: Permission denied (publickey)`），SSH 通道同样不可用。Gitee 与 GitHub 的 HTTPS 连通性正常（`curl` info/refs 均 200，0.3～0.4 秒），排除网络因素。未执行：`git push origin main`、`git push github main`。
+
 ## 2026-09-16：专家团长任务、交接、重连与失败恢复验收
 
 新增 `probe:experts:team:resilience` 与显式 `probe:experts:team:real` 发布验收入口。探针把 identity、audit、access、skills、experts、bundle、activity 七个正式包打包并经官方 CLI 安装到仓库外临时 Profile，使用生产 Host、官方 Agent Teams 服务/工具/Web Client 和真实 Chromium。resilience 模式用本地确定性适配器固定等待、中断和一次成员失败；real 模式另建独立执行，使用 `deepseek-official/deepseek-flash` 的真实 lead 与两名真实成员。
