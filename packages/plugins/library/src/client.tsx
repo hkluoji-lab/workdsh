@@ -6,25 +6,35 @@ import type { ReferenceInsert } from '@deepseek-ai/dsh-client-ui-conversation/cl
 import type { InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client';
 import type {} from '@deepseek-ai/dsh-client-ui-input-trigger/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client';
 import type {} from '@deepseek-ai/dsh-client-ui-slots';
 import type {} from '@deepseek-ai/dsh-api-session-controller/client';
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client';
+import type {} from '@deepseek-ai/dsh-api-workspace-controller/client';
 import { createLibraryClient } from './client/management.js';
 import { LibraryPanel } from './client/LibraryPanel.js';
 import { LibraryPicker } from './client/LibraryPicker.js';
+import { LibraryReferencePage } from './client/LibraryReferencePage.js';
 import { createLibraryPreviewRegistry } from './client/preview-registry.js';
 import type { LibraryOriginalPreviewRegistry } from 'workdsh-contracts/library';
 
 declare module '@deepseek-ai/cordis' { interface Context { workdshLibraryPreview: LibraryOriginalPreviewRegistry; } }
+declare module '@deepseek-ai/dsh-client-ui-sidebar-right/client' { interface SidebarRightTabParamsMap { 'workdsh-library-preview': { assetId: string; revisionId: string; name: string; kind: string }; } }
 
 export const name = 'workdsh-library-client';
-export const inject = ['slots', 'layout', 'connection', 'sessions', 'conversation', 'inputTriggers'];
+export const inject = ['slots', 'layout', 'connection', 'sessions', 'workspaces', 'conversation', 'inputTriggers', 'sidebarRightTabs', 'sidebarRight'];
 export function apply(ctx: Context): void {
   const lifetime = new AbortController(); ctx.effect(() => () => lifetime.abort(), 'workdsh.library.client');
   const management = createLibraryClient(ctx, lifetime.signal);
   const previewRegistry = createLibraryPreviewRegistry();
   ctx.provide('workdshLibraryPreview', previewRegistry);
   const sessions = ctx.sessions as unknown as ISessions;
+  const waitForInput = (milliseconds: number) => new Promise<void>((resolve, reject) => {
+    lifetime.signal.throwIfAborted();
+    const abort = () => { window.clearTimeout(timer); reject(lifetime.signal.reason); };
+    const timer = window.setTimeout(() => { lifetime.signal.removeEventListener('abort', abort); resolve(); }, milliseconds);
+    lifetime.signal.addEventListener('abort', abort, { once: true });
+  });
   type LibraryRef = { assetId: string; revisionId: string; nodeId: string; name: string; kind: string; sessionId?: string };
   const encodeRef = (value: LibraryRef) => encodeURIComponent(JSON.stringify(value));
   const decodeRef = (value: string) => JSON.parse(decodeURIComponent(value)) as LibraryRef;
@@ -39,6 +49,26 @@ export function apply(ctx: Context): void {
     const inserted = binding.ctx.bail(binding.ctx, 'slash/input-insert-reference', { reference: referenceOf(scoped), span: { start: offset, end: offset, draftRev: state.draftRev } }) === true;
     if (inserted) void management.taskSelection(sessionId).then(current => management.setTaskSelection(sessionId, [...new Set([...current.map(row => row.nodeId), value.nodeId])])).catch(() => []);
     return inserted;
+  };
+  const startConversation = async (entry: import('workdsh-contracts/library').LibraryTreeEntry): Promise<void> => {
+    if (!entry.asset || !entry.revision) throw new Error('文件夹不能添加到对话。');
+    const state = sessions.list.getSnapshot();
+    const current = state.current ? state.byId[state.current] : undefined;
+    const workspaces = ctx.workspaces.list.getSnapshot().items;
+    const workspace = workspaces.find(row => row.sessionIds.includes(state.current!))
+      ?? workspaces.find(row => row.path === current?.cwd)
+      ?? workspaces[0];
+    if (!workspace) throw new Error('请先选择工作空间。');
+    const sessionId = await sessions.create({ workspaceId: workspace.workspaceId, cwd: workspace.path });
+    sessions.open(sessionId);
+    ctx.layout.selectPanel(null);
+    const value = { assetId: entry.asset.id, revisionId: entry.revision.id, nodeId: entry.id, name: entry.name, kind: entry.asset.kind };
+    await waitForInput(150);
+    for (let attempt = 0; attempt < 40; attempt++) {
+      if (insertReference(String(sessionId), value)) return;
+      await waitForInput(25);
+    }
+    throw new Error('新对话输入框尚未就绪，请稍后重试。');
   };
   const source: InputTriggerSource = {
     trigger: '@', name: 'workdsh-library', order: 30, showGroupTitle: false,
@@ -58,6 +88,11 @@ export function apply(ctx: Context): void {
       void management.taskSelection(sessionId).then(current => management.setTaskSelection(sessionId, [...new Set([...current.map(row => row.nodeId), value.nodeId])])).catch(() => []);
       return { insert: referenceOf({ ...value, sessionId }) };
     },
+    openReference: (session, reference) => {
+      const value = decodeRef(reference.ref);
+      void ctx.sidebarRight.openTabIn(session.sessionId as never, 'workdsh-library-preview', { params: { assetId: value.assetId, revisionId: value.revisionId, name: value.name, kind: value.kind } });
+      return true;
+    },
     codec: {
       clipboardText: ref => `@资料库/${decodeRef(ref).name}`,
       serialize: async ref => {
@@ -71,7 +106,9 @@ export function apply(ctx: Context): void {
     },
   };
   ctx.effect(() => ctx.inputTriggers.registerSource(source));
-  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'workdsh-library', inject: () => ({ management, previewRegistry, toggleNavigation: () => ctx.layout.toggleSidebar(), currentSessionId: () => { const id = sessions.list.getSnapshot().current; return id ? String(id) : undefined; }, addToConversation: (sessionId: string, entry: import('workdsh-contracts/library').LibraryTreeEntry) => entry.asset && entry.revision ? insertReference(sessionId, { assetId: entry.asset.id, revisionId: entry.revision.id, nodeId: entry.id, name: entry.name, kind: entry.asset.kind }) : false, returnToConversation: () => ctx.layout.selectPanel(null) }) }, LibraryPanel));
+  ctx.effect(() => ctx.sidebarRightTabs.register({ id: 'workdsh-library-preview', kind: 'workdsh-library-preview', title: () => '资料预览' }));
+  ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({ name: 'sidebar.right.pane.tab', key: 'workdsh-library-preview', inject: () => ({ management, previewRegistry }) }, LibraryReferencePage));
+  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'workdsh-library', inject: () => ({ management, previewRegistry, toggleNavigation: () => ctx.layout.toggleSidebar(), startConversation }) }, LibraryPanel));
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
     name: 'conversation.input.left', id: 'workdsh-library-picker', order: 35,
     inject: () => ({ management, openLibrary: () => ctx.layout.selectPanel('workdsh-library' as Parameters<typeof ctx.layout.selectPanel>[0]), openPicker: (sessionId: string, draft: string, draftRev: number) => { const binding = sessions.binding(sessionId as never); if (!binding) return; const offset = draft.length; ctx.inputTriggers.sessionOf(binding.ctx).toggleSource('workdsh-library', { trigger: '@', query: '', quoted: false, position: offset === 0 ? 'leading' : 'inline', span: { start: offset, end: offset, draftRev } }); } }),
