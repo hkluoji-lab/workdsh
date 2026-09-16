@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { Context } from '@deepseek-ai/cordis';
 import Storage from '@deepseek-ai/dsh-storage';
 import * as JsonStorage from '@deepseek-ai/dsh-storage-json';
@@ -60,6 +60,13 @@ test('independent library plugin persists a tree, originals and searchable deriv
     ];
     const imported = [];
     for (const [name, bytes] of samples) imported.push(await ctx.workdshLibrary.importAsset(actor, { parentId: folder.id, name, bytes, operationId: `operation-${name}` }));
+    for (const entry of imported) {
+      const conversion = JSON.parse(await readFile(join(libraryRoot, dirname(entry.revision.contentRelativePath), 'conversion.json'), 'utf8'));
+      assert.equal(conversion.originalSha256, entry.revision.originalSha256);
+      assert.ok(Array.isArray(conversion.locations));
+    }
+    assert.deepEqual(JSON.parse(await readFile(join(libraryRoot, dirname(imported[2].revision.contentRelativePath), 'conversion.json'), 'utf8')).locations[0], { kind: 'paragraph', index: 1, label: '段落 1' });
+    assert.match(JSON.parse(await readFile(join(libraryRoot, dirname(imported[3].revision.contentRelativePath), 'conversion.json'), 'utf8')).locations[0].label, /第 1 页/);
     const repeated = await ctx.workdshLibrary.importAsset(actor, { parentId: folder.id, name: '规则.md', bytes: samples[0][1], operationId: 'operation-规则.md' });
     assert.equal(repeated.asset.id, imported[0].asset.id);
     assert.equal((await ctx.workdshLibrary.list(actor, folder.id)).length, 5);

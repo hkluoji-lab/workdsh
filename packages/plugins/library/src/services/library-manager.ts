@@ -102,7 +102,7 @@ export class LibraryManager extends Service implements LibraryService {
       try {
         await writeFile(join(temporaryDirectory, originalName), originalBytes, { flag: 'wx', mode: 0o600 });
         await writeFile(join(temporaryDirectory, 'content.md'), converted.markdown, { flag: 'wx', mode: 0o600 });
-        await writeFile(join(temporaryDirectory, 'conversion.json'), `${JSON.stringify({ version: 1, kind, originalSha256: sha256(originalBytes), warnings: converted.warnings }, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+        await writeFile(join(temporaryDirectory, 'conversion.json'), `${JSON.stringify({ version: 1, kind, originalSha256: sha256(originalBytes), warnings: converted.warnings, locations: converted.locations }, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
         await mkdir(dirname(finalDirectory), { recursive: true, mode: 0o700 });
         await renameFile(temporaryDirectory, finalDirectory);
       } catch (cause) { await rm(temporaryDirectory, { recursive: true, force: true }); throw cause; }
