@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { InjectFace, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
-import type { LibraryDraft, LibrarySearchHit, LibraryTreeEntry } from 'workdsh-contracts/library';
+import type { LibraryDraft, LibraryOriginalPreviewInput, LibraryOriginalPreviewRegistry, LibrarySearchHit, LibraryTreeEntry } from 'workdsh-contracts/library';
 import type { LibraryClient } from './management.js';
 import { libraryCss } from './styles.js';
 
-type Props = PropsRuntime<'main'> & InjectFace<{ management: LibraryClient; toggleNavigation: () => void; currentSessionId: () => string | undefined }>;
+type Props = PropsRuntime<'main'> & InjectFace<{ management: LibraryClient; previewRegistry: LibraryOriginalPreviewRegistry; toggleNavigation: () => void; currentSessionId: () => string | undefined }>;
 type TreeRow = LibraryTreeEntry & { children?: TreeRow[] };
 type MenuState = { entry?: LibraryTreeEntry; x: number; y: number; create?: boolean };
 type View = 'library' | 'search' | 'recent' | 'outputs';
@@ -13,7 +13,7 @@ type FolderTarget = { id?: string; label: string };
 
 const icon = (entry: LibraryTreeEntry) => entry.kind === 'folder' ? '📁' : entry.asset?.kind === 'pdf' ? 'PDF' : entry.asset?.kind === 'docx' ? 'W' : entry.asset?.kind === 'pptx' ? 'P' : entry.asset?.kind === 'text' ? 'T' : 'M';
 
-export function LibraryPanel({ management, toggleNavigation, currentSessionId }: Props) {
+export function LibraryPanel({ management, previewRegistry, toggleNavigation, currentSessionId }: Props) {
   const [tree, setTree] = useState<readonly TreeRow[]>([]);
   const [selected, setSelected] = useState<LibraryTreeEntry>();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -22,6 +22,7 @@ export function LibraryPanel({ management, toggleNavigation, currentSessionId }:
   const [hits, setHits] = useState<readonly LibrarySearchHit[]>([]);
   const [content, setContent] = useState('');
   const [originalUrl, setOriginalUrl] = useState('');
+  const [officePreview, setOfficePreview] = useState<LibraryOriginalPreviewInput>();
   const [draft, setDraft] = useState<LibraryDraft>();
   const [draftContent, setDraftContent] = useState('');
   const [menu, setMenu] = useState<MenuState>();
@@ -31,10 +32,12 @@ export function LibraryPanel({ management, toggleNavigation, currentSessionId }:
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(true);
   const upload = useRef<HTMLInputElement>(null);
+  const officeHost = useRef<HTMLDivElement>(null);
 
   const clearOriginal = useCallback(() => setOriginalUrl(old => { if (old) URL.revokeObjectURL(old); return ''; }), []);
   useEffect(() => () => { if (originalUrl) URL.revokeObjectURL(originalUrl); }, [originalUrl]);
   useEffect(() => { const close = () => setMenu(undefined); window.addEventListener('click', close); return () => window.removeEventListener('click', close); }, []);
+  useEffect(() => { if (!officePreview || !officeHost.current) return; let dispose: () => void = () => {}; let cancelled = false; void previewRegistry.mount(officeHost.current, officePreview).then(next => { if (cancelled) next(); else dispose = next; }).catch(cause => setError(cause instanceof Error ? cause.message : '原件预览失败。')); return () => { cancelled = true; dispose(); }; }, [officePreview, previewRegistry]);
 
   const loadTree = useCallback(async () => {
     const walk = async (parentId?: string): Promise<TreeRow[]> => Promise.all((await management.list(parentId)).map(async row => row.kind === 'folder' ? { ...row, children: await walk(row.id) } : row));
@@ -47,7 +50,7 @@ export function LibraryPanel({ management, toggleNavigation, currentSessionId }:
   const allEntries = flatten(tree);
   const findById = (id: string) => allEntries.find(row => row.id === id);
   const open = async (entry: LibraryTreeEntry) => {
-    setMenu(undefined); setError(''); setNotice(''); setDraft(undefined); clearOriginal();
+    setMenu(undefined); setError(''); setNotice(''); setDraft(undefined); setOfficePreview(undefined); clearOriginal();
     if (entry.kind === 'folder') { setExpanded(old => { const next = new Set(old); next.has(entry.id) ? next.delete(entry.id) : next.add(entry.id); return next; }); return; }
     setSelected(entry); setView('library'); setContent('');
     if (entry.asset?.status === 'disabled') return;
@@ -55,6 +58,7 @@ export function LibraryPanel({ management, toggleNavigation, currentSessionId }:
       const revisionId = entry.revision?.id ?? hits.find(hit => hit.nodeId === entry.id)?.revisionId;
       setContent(await management.readText(entry.asset!.id, revisionId));
       if (entry.asset?.kind === 'pdf') { const bytes = await management.readOriginal(entry.asset.id, revisionId); setOriginalUrl(URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }))); }
+      if ((entry.asset?.kind === 'docx' || entry.asset?.kind === 'pptx') && previewRegistry.canOpen(entry.asset.kind)) { const bytes = await management.readOriginal(entry.asset.id, revisionId); setOfficePreview({ name: entry.name, kind: entry.asset.kind, bytes }); }
     } catch (cause) { setError(cause instanceof Error ? cause.message : '读取资料失败。'); }
   };
   const runSearch = async (nextView: View = 'search', nextQuery = query) => {
@@ -81,7 +85,7 @@ export function LibraryPanel({ management, toggleNavigation, currentSessionId }:
   return <section className="wd-library"><style>{libraryCss}</style>
     <aside className="wd-library-sidebar"><header><button className="wd-library-nav-toggle" onClick={toggleNavigation}>☰</button><h1>资料库</h1></header><nav className="wd-library-nav"><button className={view === 'search' ? 'active' : ''} onClick={() => { setView('search'); setSelected(undefined); }}>⌕ <span>搜索</span></button><button className={view === 'recent' ? 'active' : ''} onClick={() => void runSearch('recent', '')}>◷ <span>最近</span></button><button className={view === 'outputs' ? 'active' : ''} onClick={() => void runSearch('outputs', '')}>▱ <span>本地产物</span></button></nav><div className="wd-library-section-title"><span>我的资料</span><button aria-label="新建或导入" onClick={event => showMenu(event, { create: true })}>＋</button></div><div className="wd-library-tree" onClick={() => setView('library')}><Tree rows={tree} /></div><footer>本地资料库 · 仅当前设备</footer><input ref={upload} className="wd-library-upload" type="file" multiple accept=".md,.markdown,.txt,.pdf,.docx,.pptx" onChange={event => void files(event.currentTarget.files)} /></aside>
     <main className="wd-library-content">{notice ? <div className="wd-library-toast success">{notice}</div> : null}{error ? <div className="wd-library-toast error">{error}</div> : null}
-      {selected ? <><header className="wd-library-document-header"><div><span>我的资料</span><b>/</b><strong>{selected.name}</strong>{selected.asset?.status === 'disabled' ? <em>已停用</em> : null}</div><div className="wd-library-head-actions">{isEditable(selected) ? <button onClick={() => void beginEdit()}>编辑</button> : null}<button onClick={() => void downloadOriginal()}>下载</button><button onClick={event => showMenu(event, { entry: selected })}>•••</button></div></header><div className="wd-library-document-body">{draft ? <div className="wd-library-editor"><div className="wd-library-editor-bar"><strong>编辑草稿</strong><span>发布后生成新的只读修订</span><button onClick={() => setDraft(undefined)}>取消</button><button className="primary" onClick={() => void publishDraft()}>发布新版本</button></div><textarea value={draftContent} onChange={event => setDraftContent(event.currentTarget.value)} /></div> : selected.asset?.status === 'disabled' ? <div className="wd-library-state">这份资料已停用。重新启用后才能查看或用于任务。</div> : originalUrl ? <iframe className="wd-library-pdf" title={selected.name} src={originalUrl} /> : <article className={`wd-library-original ${selected.asset?.kind ?? ''}`}><div className="wd-library-meta">修订 {selected.revision?.number ?? 1} · {selected.asset?.kind === 'docx' || selected.asset?.kind === 'pptx' ? '检索文本（原始预览接入中）' : '原始内容'}</div><pre>{content}</pre></article>}</div></>
+      {selected ? <><header className="wd-library-document-header"><div><span>我的资料</span><b>/</b><strong>{selected.name}</strong>{selected.asset?.status === 'disabled' ? <em>已停用</em> : null}</div><div className="wd-library-head-actions">{isEditable(selected) ? <button onClick={() => void beginEdit()}>编辑</button> : null}<button onClick={() => void downloadOriginal()}>下载</button><button onClick={event => showMenu(event, { entry: selected })}>•••</button></div></header><div className="wd-library-document-body">{draft ? <div className="wd-library-editor"><div className="wd-library-editor-bar"><strong>编辑草稿</strong><span>发布后生成新的只读修订</span><button onClick={() => setDraft(undefined)}>取消</button><button className="primary" onClick={() => void publishDraft()}>发布新版本</button></div><textarea value={draftContent} onChange={event => setDraftContent(event.currentTarget.value)} /></div> : selected.asset?.status === 'disabled' ? <div className="wd-library-state">这份资料已停用。重新启用后才能查看或用于任务。</div> : originalUrl ? <iframe className="wd-library-pdf" title={selected.name} src={originalUrl} /> : officePreview ? <div ref={officeHost} className="wd-library-office-preview" /> : <article className={`wd-library-original ${selected.asset?.kind ?? ''}`}><div className="wd-library-meta">修订 {selected.revision?.number ?? 1} · {selected.asset?.kind === 'docx' || selected.asset?.kind === 'pptx' ? 'Office 原始预览不可用，显示检索文本' : '原始内容'}</div><pre>{content}</pre></article>}</div></>
       : view === 'search' ? <div className="wd-library-list-view"><h2>搜索</h2><form onSubmit={event => { event.preventDefault(); void runSearch('search'); }}><input autoFocus value={query} onChange={event => setQuery(event.currentTarget.value)} placeholder="搜索资料名称和内容"/><button>搜索</button></form>{busy ? <div className="wd-library-state">正在搜索…</div> : <ResultList rows={resultEntries} open={open} />}</div>
       : view === 'recent' || view === 'outputs' ? <div className="wd-library-list-view"><h2>{view === 'recent' ? '最近' : '本地产物'}</h2>{busy ? <div className="wd-library-state">正在读取…</div> : <ResultList rows={resultEntries} open={open} />}</div>
       : <div className="wd-library-welcome"><div className="wd-library-welcome-icon">▤</div><h2>我的资料</h2><p>从左侧选择资料，在这里查看原始内容。</p><button onClick={event => showMenu(event, { create: true })}>新建或导入资料</button></div>}

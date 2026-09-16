@@ -107,6 +107,21 @@ export interface LibraryDraft {
   readonly updatedAt: string;
 }
 
+export interface LibraryOriginalPreviewInput {
+  readonly name: string;
+  readonly kind: Extract<LibraryAssetKind, 'docx' | 'pptx'>;
+  readonly bytes: Uint8Array;
+}
+
+/** Optional Client capability: Office can contribute original-file viewers without Library importing Office internals. */
+export interface LibraryOriginalPreviewRegistry {
+  register(kinds: readonly LibraryOriginalPreviewInput['kind'][], mount: (target: HTMLElement, input: LibraryOriginalPreviewInput) => void | (() => void) | Promise<void | (() => void)>): () => void;
+  canOpen(kind: LibraryAssetKind): boolean;
+  mount(target: HTMLElement, input: LibraryOriginalPreviewInput): Promise<() => void>;
+  subscribe(listener: () => void): () => void;
+  getRevision(): number;
+}
+
 export interface LibraryService {
   space(actor: ActorContext, signal?: AbortSignal): Promise<LibrarySpace>;
   list(actor: ActorContext, parentId?: string, signal?: AbortSignal): Promise<readonly LibraryTreeEntry[]>;

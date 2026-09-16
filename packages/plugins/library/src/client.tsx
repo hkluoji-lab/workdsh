@@ -9,14 +9,20 @@ import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client';
 import { createLibraryClient } from './client/management.js';
 import { LibraryPanel } from './client/LibraryPanel.js';
 import { LibraryPicker } from './client/LibraryPicker.js';
+import { createLibraryPreviewRegistry } from './client/preview-registry.js';
+import type { LibraryOriginalPreviewRegistry } from 'workdsh-contracts/library';
+
+declare module '@deepseek-ai/cordis' { interface Context { workdshLibraryPreview: LibraryOriginalPreviewRegistry; } }
 
 export const name = 'workdsh-library-client';
 export const inject = ['slots', 'layout', 'connection', 'sessions'];
 export function apply(ctx: Context): void {
   const lifetime = new AbortController(); ctx.effect(() => () => lifetime.abort(), 'workdsh.library.client');
   const management = createLibraryClient(ctx, lifetime.signal);
+  const previewRegistry = createLibraryPreviewRegistry();
+  ctx.provide('workdshLibraryPreview', previewRegistry);
   const sessions = ctx.sessions as unknown as ISessions;
-  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'workdsh-library', inject: () => ({ management, toggleNavigation: () => ctx.layout.toggleSidebar(), currentSessionId: () => { const id = sessions.list.getSnapshot().current; return id ? String(id) : undefined; } }) }, LibraryPanel));
+  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'workdsh-library', inject: () => ({ management, previewRegistry, toggleNavigation: () => ctx.layout.toggleSidebar(), currentSessionId: () => { const id = sessions.list.getSnapshot().current; return id ? String(id) : undefined; } }) }, LibraryPanel));
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
     name: 'conversation.input.left', id: 'workdsh-library-picker', order: 35,
     inject: () => ({ management, openLibrary: () => ctx.layout.selectPanel('workdsh-library' as Parameters<typeof ctx.layout.selectPanel>[0]) }),
