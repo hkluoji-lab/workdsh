@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { InjectFace, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
 import type { ManagedSkillDetail, ManagedSkillResource, ManagedSkillSummary, SkillCatalogEntry, SkillCatalogSummary, SkillDependencyImpact, TrashedSkillSummary } from '../shared.js';
 import type { SkillTaskKind } from './drafts.js';
-import type { SkillManagementClient } from './management.js';
+import { isSkillRequestCancelled, type SkillManagementClient } from './management.js';
 import { ImportSkillModal } from './ImportSkillModal.js';
 import { skillsActionsCss, skillsCss, skillsMarketCss } from './styles.js';
 
@@ -71,23 +71,33 @@ export function SkillsPanel({ toggleNavigation, management, startSkillTask, star
   const installedEntry = useRef<HTMLButtonElement>(null);
   const backLink = useRef<HTMLButtonElement>(null);
   const firstView = useRef(true);
+  const inflight = useRef<AbortController | undefined>(undefined);
 
   const refresh = useCallback(async () => {
+    // focus / visibilitychange / 手动刷新可能在上一次读取未完成时再次触发。取消被取代的请求，
+    // 既避免重复渲染，也让「正常取消」有明确的信号可判定，不必靠猜测错误类型。
+    const superseded = inflight.current;
+    const controller = new AbortController();
+    inflight.current = controller;
+    superseded?.abort();
     setBusy(true); setError('');
     try {
       const [rows, summary] = await Promise.all([
-        management.list(),
-        management.catalog().catch(cause => { console.error('[workdsh:skills:catalog]', cause); return undefined; }),
+        management.list(controller.signal),
+        management.catalog(controller.signal).catch(cause => { if (!controller.signal.aborted && !isSkillRequestCancelled(cause)) console.error('[workdsh:skills:catalog]', cause); return undefined; }),
       ]);
+      if (controller.signal.aborted) return;
       setSkills(rows);
       if (summary) setCatalog(summary);
     }
-    catch (cause) { console.error('[workdsh:skills:list]', cause); setError(messageOf(cause)); }
-    finally { setBusy(false); }
+    // 插件销毁或请求被取代时浏览器会中止飞行中的请求，属于正常取消，不按故障上报。
+    catch (cause) { if (!controller.signal.aborted && !isSkillRequestCancelled(cause)) { console.error('[workdsh:skills:list]', cause); setError(messageOf(cause)); } }
+    finally { if (inflight.current === controller) { inflight.current = undefined; setBusy(false); } }
   }, [management]);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => { void refresh(); return () => inflight.current?.abort(); }, [refresh]);
   useEffect(() => {
-    const revalidate = () => { if (document.visibilityState === 'visible') void refresh(); };
+    // 已有读取在飞行中时不重复触发，避免焦点抖动叠加请求；显式操作（刷新、增删改后）仍会取代旧请求。
+    const revalidate = () => { if (document.visibilityState === 'visible' && !inflight.current) void refresh(); };
     window.addEventListener('focus', revalidate); document.addEventListener('visibilitychange', revalidate);
     return () => { window.removeEventListener('focus', revalidate); document.removeEventListener('visibilitychange', revalidate); };
   }, [refresh]);

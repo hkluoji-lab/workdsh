@@ -1,3 +1,17 @@
+## 2026-09-16：技能页 3 条控制台报错查修（技能客户端取消语义）
+
+用户报告 3031 技能页控制台有 3 条报错，要求查修。实测为：`net::ERR_ABORTED /api/workdsh-skills` + `[workdsh:skills:catalog] TypeError: Failed to fetch` + `[workdsh:skills:list] TypeError: Failed to fetch`。
+
+根因：被中止的 fetch 并不总是抛 `DOMException AbortError`——浏览器在插件生命周期结束（插件销毁或开发态模块热更新）、请求被取代等时机也会给出**不带任何 code** 的 `TypeError: Failed to fetch`，而 [management.ts](../packages/plugins/skills/src/client/management.ts) 的 `request()` 与 [SkillsPanel.tsx](../packages/plugins/skills/src/client/SkillsPanel.tsx) 的调用方只按错误类型判别，于是把正常取消当成技能服务故障无条件打日志并显示错误。浏览器实测堆栈为 `request → call → invoke → list → revalidate`，即触发源就是 `focus`/`visibilitychange` 重新校验。
+
+修复（2 个客户端文件）：`request()` 改为先按我们自己的信号状态归因（`timeout.aborted` → `skill/request-timeout`；`requestSignal.aborted` → `skill/request-cancelled`），再按错误类型兜底，并把服务端业务错误移出传输异常捕获块；`list`/`catalog` 增加可选 `signal`。面板改为「同一时刻只保留一次读取」：本地 `AbortController` 在开启新读取时中止被取代的旧请求，`finally` 按 `inflight.current === controller` 收口 busy，`setState`/日志/错误提示统一以 `controller.signal.aborted || isSkillRequestCancelled(cause)` 守卫，`revalidate` 在已有读取在飞行中时不再叠加。
+
+证据：`typecheck`、`build`、`preview:install` 退出码均为 0（`preview:install` 自带的逐字节比对断言通过）；服务端分发的 `workdsh-plugin-skills/client.js` `rev` 由 `b152d9f367a97819-55` 经 `38854a5dba48`、`d01e464b2d0f` 变为 `1d336a1d1765`（115145 字节），含 `requestSignal.aborted`、`superseded?.abort()`、`!inflight.current` 等新逻辑；`probe:skills` 8 项 PASS（含浏览器市场安装、编辑保存冲突、启停、卸载恢复、冷卸载与重装）。浏览器端复验：全新前台标签冷加载 0 条来自本模块的控制台消息，连续 3 次「刷新」+ 3 轮切走切回后仍为 0 新增，6 次 `/api/workdsh-skills` 全部 200，`counts` 稳定为「共 29 个已安装技能 · 当前显示 29 个」，面板内 `role="alert"`/`.error` 均为 0。
+
+结论与残留：本模块自身的无条件日志已消除。仅当**文档正在被导航或重载**且请求在飞行中时，浏览器仍会记录它自己的 `net::ERR_ABORTED`（官方模块 `/plugins/events`、`/api/workdsh-experts` 同样如此），属平台层噪声且导航默认清空控制台，非本插件缺陷，未做抑制。
+
+未执行：两个源文件未提交、未推送；未新增自动化测试（[packages/plugins/skills/tests](../packages/plugins/skills/tests) 仅有 `.gitkeep`，本插件暂无单测设施），验证依赖 `probe:skills` 与浏览器实测；未对「模块热更新中止飞行中请求」这一时机做定向复现，只在焦点抖动/连点刷新压力场景下验证。
+
 ## 2026-09-16：助理排期登记（D16）与开发顺序依赖图化
 
 用户确认：助理按**独立模块**推进；P1-12 排在 D08 之后，且纳入首期集成与组合验收范围，必须早于 D10 完成。本节取代上一节「P1-12 保持未排期」的表述。
