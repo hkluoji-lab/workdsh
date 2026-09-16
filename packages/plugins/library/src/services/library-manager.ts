@@ -175,14 +175,14 @@ export class LibraryManager extends Service implements LibraryService {
       }
       if (assetIds.size > this.maxSelectionAssets || [...assetIds].reduce((total, assetId) => total + state.assets[assetId]!.byteLength, 0) > this.maxSelectionBytes) throw new Error('library/selection-too-large');
       const selectedAt = now();
-      const references = [...assetIds].map((assetId): LibraryTaskReference => { const asset = state.assets[assetId]!; return { sessionId, nodeId: asset.nodeId, assetId, revisionId: asset.currentRevisionId, selectedAt }; });
+      const references = [...assetIds].map((assetId): LibraryTaskReference => { const asset = state.assets[assetId]!; const node = this.requireNode(state, asset.nodeId); return { sessionId, nodeId: asset.nodeId, assetId, revisionId: asset.currentRevisionId, name: node.name, kind: asset.kind, selectedAt }; });
       await this.states().put(this.key(actor), { ...state, references: { ...state.references, [sessionId]: references } });
       return references;
     });
   }
 
   taskSelection(actor: ActorContext, sessionId: string, signal?: AbortSignal): Promise<readonly LibraryTaskReference[]> {
-    return this.enqueue(async () => [...((await this.ensureState(actor, signal)).references[sessionId] ?? [])]);
+    return this.enqueue(async () => { const state = await this.ensureState(actor, signal); return (state.references[sessionId] ?? []).flatMap(reference => { const asset = state.assets[reference.assetId]; const node = state.nodes[reference.nodeId]; return asset && node ? [{ ...reference, name: node.name, kind: asset.kind }] : []; }); });
   }
 
   createDraft(actor: ActorContext, assetId: string, baseRevisionId?: string, signal?: AbortSignal): Promise<LibraryDraft> {

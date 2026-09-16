@@ -90,6 +90,8 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.deepEqual(await ctx.workdshLibrary.readOriginal(actor, imported[1].asset.id), samples[1][1]);
     const selected = await ctx.workdshLibrary.setTaskSelection(actor, 'session-a', [folder.id]);
     assert.equal(selected.length, 6);
+    assert.equal(selected.find(row => row.assetId === imported[1].asset.id).name, imported[1].name);
+    assert.equal(selected.find(row => row.assetId === imported[1].asset.id).kind, 'text');
     const pinnedRevision = selected.find(row => row.assetId === imported[0].asset.id).revisionId;
     const draft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);
     const concurrentDraft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);

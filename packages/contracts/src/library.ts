@@ -95,6 +95,9 @@ export interface LibraryTaskReference {
   readonly nodeId: string;
   readonly assetId: string;
   readonly revisionId: string;
+  /** Display metadata is carried with the reference so the composer can render it without walking the library tree. */
+  readonly name: string;
+  readonly kind: LibraryAssetKind;
   readonly selectedAt: string;
 }
 

@@ -9,6 +9,7 @@ import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client';
 import { createLibraryClient } from './client/management.js';
 import { LibraryPanel } from './client/LibraryPanel.js';
 import { LibraryPicker } from './client/LibraryPicker.js';
+import { LibrarySelectionChips } from './client/LibrarySelectionChips.js';
 import { createLibraryPreviewRegistry } from './client/preview-registry.js';
 import type { LibraryOriginalPreviewRegistry } from 'workdsh-contracts/library';
 
@@ -27,4 +28,8 @@ export function apply(ctx: Context): void {
     name: 'conversation.input.left', id: 'workdsh-library-picker', order: 35,
     inject: () => ({ management, openLibrary: () => ctx.layout.selectPanel('workdsh-library' as Parameters<typeof ctx.layout.selectPanel>[0]) }),
   }, LibraryPicker));
+  ctx.slots.inject('conversation.input.overlay', () => ctx.slots.register({
+    name: 'conversation.input.overlay', id: 'workdsh-library-selection-chips', order: 30,
+    inject: () => ({ management }),
+  }, LibrarySelectionChips));
 }
