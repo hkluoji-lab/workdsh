@@ -1,0 +1,188 @@
+import { createHash, randomUUID } from 'node:crypto';
+import { homedir } from 'node:os';
+import { basename, dirname, extname, join, resolve, sep } from 'node:path';
+import { mkdir, readFile, rename as renameFile, rm, writeFile } from 'node:fs/promises';
+import { Context, Service } from '@deepseek-ai/cordis';
+import type { KvTable } from '@deepseek-ai/dsh-storage-domain';
+import type {
+  ActorContext, IdentityService, LibraryAsset, LibraryAssetKind, LibraryImportInput, LibraryNode, LibraryRevision,
+  LibrarySearchHit, LibraryService, LibrarySpace, LibraryTreeEntry, ResourceOwner,
+} from 'workdsh-contracts';
+import { convertToMarkdown } from './converters.js';
+import { libraryDomainSpec, stateKey, type LibraryState } from '../storage/domain.js';
+
+declare module '@deepseek-ai/cordis' { interface Context { workdshLibrary: LibraryService; workdshIdentity: IdentityService; } }
+
+const MAX_BYTES = 50 * 1024 * 1024;
+const sha256 = (value: Uint8Array | string): string => createHash('sha256').update(value).digest('hex');
+const now = (): string => new Date().toISOString();
+const cleanName = (value: string): string => {
+  const name = value.trim();
+  if (!name || name.length > 256 || name === '.' || name === '..' || /[\/\\\u0000-\u001f]/.test(name)) throw new Error('library/invalid-name');
+  return name;
+};
+const extensionKinds: Readonly<Record<string, LibraryAssetKind>> = {
+  '.md': 'markdown', '.markdown': 'markdown', '.txt': 'text', '.pdf': 'pdf', '.docx': 'docx', '.pptx': 'pptx',
+};
+const defaultMediaTypes: Readonly<Record<LibraryAssetKind, string>> = {
+  markdown: 'text/markdown', text: 'text/plain', pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+};
+
+export interface LibraryManagerOptions { readonly root?: string; readonly maxBytes?: number; }
+
+export class LibraryManager extends Service implements LibraryService {
+  static inject = ['storageDomain'];
+  private table?: KvTable<string, LibraryState>;
+  private serial: Promise<unknown> = Promise.resolve();
+  private readonly root: string;
+  private readonly maxBytes: number;
+
+  constructor(ctx: Context, options: LibraryManagerOptions = {}) {
+    super(ctx, 'workdshLibrary');
+    this.root = resolve(options.root ?? join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'library'));
+    this.maxBytes = options.maxBytes ?? MAX_BYTES;
+  }
+
+  async [Service.init](): Promise<void> {
+    await mkdir(join(this.root, 'objects'), { recursive: true, mode: 0o700 });
+    await mkdir(join(this.root, '.tmp'), { recursive: true, mode: 0o700 });
+    const domain = await this.ctx.storageDomain.open(libraryDomainSpec);
+    this.table = domain.table('states');
+    this.ctx.effect(() => () => domain.close(), 'workdshLibrary.domainClose');
+  }
+
+  space(actor: ActorContext, signal?: AbortSignal): Promise<LibrarySpace> {
+    return this.enqueue(async () => (await this.ensureState(actor, signal)).space);
+  }
+
+  list(actor: ActorContext, parentId?: string, signal?: AbortSignal): Promise<readonly LibraryTreeEntry[]> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); this.assertFolder(state, parentId);
+      return Object.values(state.nodes).filter((node) => node.parentId === parentId)
+        .sort((a, b) => a.kind === b.kind ? a.name.localeCompare(b.name, 'zh-CN') : a.kind === 'folder' ? -1 : 1)
+        .map((node) => this.entry(state, node));
+    });
+  }
+
+  createFolder(actor: ActorContext, name: string, parentId?: string, signal?: AbortSignal): Promise<LibraryNode> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); this.assertFolder(state, parentId); signal?.throwIfAborted();
+      this.assertUniqueName(state, parentId, cleanName(name));
+      const timestamp = now();
+      const node: LibraryNode = { id: randomUUID(), spaceId: state.space.id, ...(parentId ? { parentId } : {}), kind: 'folder', name: cleanName(name), createdAt: timestamp, updatedAt: timestamp };
+      await this.states().put(this.key(actor), { ...state, nodes: { ...state.nodes, [node.id]: node }, space: { ...state.space, updatedAt: timestamp } });
+      return node;
+    });
+  }
+
+  importAsset(actor: ActorContext, input: LibraryImportInput, signal?: AbortSignal): Promise<LibraryTreeEntry> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal);
+      const prior = state.receipts[input.operationId];
+      if (prior) return this.entry(state, this.requireNode(state, prior.nodeId));
+      const name = cleanName(input.name); this.assertFolder(state, input.parentId); this.assertUniqueName(state, input.parentId, name);
+      if (!input.operationId.trim() || input.operationId.length > 256) throw new Error('library/invalid-operation');
+      if (!input.bytes.byteLength || input.bytes.byteLength > this.maxBytes) throw new Error('library/file-size');
+      signal?.throwIfAborted();
+      const kind = extensionKinds[extname(name).toLowerCase()];
+      if (!kind) throw new Error('library/unsupported-format');
+      // PDF.js transfers/detaches its input buffer. Keep the authoritative original
+      // and the caller-owned buffer intact by converting an independent copy.
+      const originalBytes = Uint8Array.from(input.bytes);
+      const converted = await convertToMarkdown(kind, Uint8Array.from(originalBytes));
+      const timestamp = now(); const assetId = randomUUID(); const nodeId = randomUUID(); const revisionId = randomUUID();
+      const relativeBase = join('objects', assetId, revisionId); const finalDirectory = this.safePath(relativeBase);
+      const temporaryDirectory = this.safePath(join('.tmp', randomUUID()));
+      const originalName = `original${extname(name).toLowerCase()}`;
+      const originalRelativePath = join(relativeBase, originalName); const contentRelativePath = join(relativeBase, 'content.md');
+      await mkdir(temporaryDirectory, { recursive: false, mode: 0o700 });
+      try {
+        await writeFile(join(temporaryDirectory, originalName), originalBytes, { flag: 'wx', mode: 0o600 });
+        await writeFile(join(temporaryDirectory, 'content.md'), converted.markdown, { flag: 'wx', mode: 0o600 });
+        await writeFile(join(temporaryDirectory, 'conversion.json'), `${JSON.stringify({ version: 1, kind, originalSha256: sha256(originalBytes), warnings: converted.warnings }, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+        await mkdir(dirname(finalDirectory), { recursive: true, mode: 0o700 });
+        await renameFile(temporaryDirectory, finalDirectory);
+      } catch (cause) { await rm(temporaryDirectory, { recursive: true, force: true }); throw cause; }
+      const owner = this.owner(actor);
+      const node: LibraryNode = { id: nodeId, spaceId: state.space.id, ...(input.parentId ? { parentId: input.parentId } : {}), kind: 'asset', name, assetId, createdAt: timestamp, updatedAt: timestamp };
+      const asset: LibraryState['assets'][string] = { id: assetId, spaceId: state.space.id, nodeId, kind, mediaType: input.mediaType?.trim() || defaultMediaTypes[kind], byteLength: input.bytes.byteLength, owner, currentRevisionId: revisionId, source: input.source ?? 'upload', ...(input.sourceTaskId ? { sourceTaskId: input.sourceTaskId } : {}), createdAt: timestamp, updatedAt: timestamp };
+      const revision: LibraryState['revisions'][string] = { id: revisionId, assetId, number: 1, originalSha256: sha256(originalBytes), contentSha256: sha256(converted.markdown), originalRelativePath, contentRelativePath, conversionStatus: 'ready', conversionWarnings: [...converted.warnings], createdBy: actor.principalId, createdAt: timestamp };
+      const next: LibraryState = { ...state, space: { ...state.space, updatedAt: timestamp }, nodes: { ...state.nodes, [nodeId]: node }, assets: { ...state.assets, [assetId]: asset }, revisions: { ...state.revisions, [revisionId]: revision }, receipts: { ...state.receipts, [input.operationId]: { operationId: input.operationId, assetId, revisionId, nodeId } } };
+      try { await this.states().put(this.key(actor), next); }
+      catch (cause) { await rm(finalDirectory, { recursive: true, force: true }); throw cause; }
+      return { ...node, asset, revision };
+    });
+  }
+
+  readText(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<string> {
+    return this.enqueue(async () => { const revision = this.resolveRevision(await this.ensureState(actor, signal), assetId, revisionId); return readFile(this.safePath(revision.contentRelativePath), 'utf8'); });
+  }
+
+  readOriginal(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<Uint8Array> {
+    return this.enqueue(async () => { const revision = this.resolveRevision(await this.ensureState(actor, signal), assetId, revisionId); return new Uint8Array(await readFile(this.safePath(revision.originalRelativePath))); });
+  }
+
+  search(actor: ActorContext, query: string, signal?: AbortSignal): Promise<readonly LibrarySearchHit[]> {
+    return this.enqueue(async () => {
+      const needle = query.trim().toLocaleLowerCase(); if (!needle) return [];
+      const state = await this.ensureState(actor, signal); const hits: LibrarySearchHit[] = [];
+      for (const asset of Object.values(state.assets)) {
+        signal?.throwIfAborted(); const node = this.requireNode(state, asset.nodeId); const revision = this.requireRevision(state, asset.currentRevisionId);
+        const text = await readFile(this.safePath(revision.contentRelativePath), 'utf8'); const lower = text.toLocaleLowerCase();
+        const titleMatch = node.name.toLocaleLowerCase().includes(needle); const offset = lower.indexOf(needle); if (!titleMatch && offset < 0) continue;
+        const start = Math.max(0, offset < 0 ? 0 : offset - 80); const excerpt = text.slice(start, start + 240).replace(/\s+/g, ' ').trim();
+        hits.push({ assetId: asset.id, revisionId: revision.id, nodeId: node.id, name: node.name, kind: asset.kind, excerpt, score: titleMatch ? 2 : 1 });
+      }
+      return hits.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'zh-CN')).slice(0, 50);
+    });
+  }
+
+  rename(actor: ActorContext, nodeId: string, name: string, signal?: AbortSignal): Promise<LibraryNode> {
+    return this.changeNode(actor, nodeId, signal, (state, node) => { const value = cleanName(name); this.assertUniqueName(state, node.parentId, value, node.id); return { ...node, name: value, updatedAt: now() }; });
+  }
+
+  move(actor: ActorContext, nodeId: string, parentId: string | undefined, signal?: AbortSignal): Promise<LibraryNode> {
+    return this.changeNode(actor, nodeId, signal, (state, node) => {
+      this.assertFolder(state, parentId); if (parentId === nodeId || this.descendants(state, nodeId).has(parentId ?? '')) throw new Error('library/cycle');
+      this.assertUniqueName(state, parentId, node.name, node.id); return { ...node, parentId, updatedAt: now() };
+    });
+  }
+
+  remove(actor: ActorContext, nodeId: string, signal?: AbortSignal): Promise<void> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); this.requireNode(state, nodeId); signal?.throwIfAborted();
+      const ids = new Set([nodeId, ...this.descendants(state, nodeId)]); const assetIds = Object.values(state.nodes).filter((node) => ids.has(node.id) && node.assetId).map((node) => node.assetId!);
+      const nodes = Object.fromEntries(Object.entries(state.nodes).filter(([id]) => !ids.has(id)));
+      const assets = Object.fromEntries(Object.entries(state.assets).filter(([id]) => !assetIds.includes(id)));
+      const removedRevisionIds = new Set(Object.values(state.revisions).filter((revision) => assetIds.includes(revision.assetId)).map((revision) => revision.id));
+      const revisions = Object.fromEntries(Object.entries(state.revisions).filter(([id]) => !removedRevisionIds.has(id)));
+      const receipts = Object.fromEntries(Object.entries(state.receipts).filter(([, receipt]) => !assetIds.includes(receipt.assetId)));
+      await this.states().put(this.key(actor), { ...state, nodes, assets, revisions, receipts, space: { ...state.space, updatedAt: now() } });
+      await Promise.all(assetIds.map((id) => rm(this.safePath(join('objects', id)), { recursive: true, force: true })));
+    });
+  }
+
+  private changeNode(actor: ActorContext, nodeId: string, signal: AbortSignal | undefined, mutate: (state: LibraryState, node: LibraryNode) => LibraryNode): Promise<LibraryNode> {
+    return this.enqueue(async () => { const state = await this.ensureState(actor, signal); const next = mutate(state, this.requireNode(state, nodeId)); await this.states().put(this.key(actor), { ...state, nodes: { ...state.nodes, [nodeId]: next }, space: { ...state.space, updatedAt: now() } }); return next; });
+  }
+  private async ensureState(actor: ActorContext, signal?: AbortSignal): Promise<LibraryState> {
+    signal?.throwIfAborted(); this.validateActor(actor); const key = this.key(actor); const current = this.states().get(key); if (current) return current;
+    const timestamp = now(); const state: LibraryState = { schemaVersion: 1, space: { id: randomUUID(), title: '我的资料', owner: this.owner(actor), createdAt: timestamp, updatedAt: timestamp }, nodes: {}, assets: {}, revisions: {}, receipts: {} };
+    await this.states().put(key, state); return state;
+  }
+  private entry(state: LibraryState, node: LibraryNode): LibraryTreeEntry { const asset = node.assetId ? state.assets[node.assetId] : undefined; const revision = asset ? state.revisions[asset.currentRevisionId] : undefined; return { ...node, ...(asset ? { asset } : {}), ...(revision ? { revision } : {}) }; }
+  private resolveRevision(state: LibraryState, assetId: string, revisionId?: string): LibraryRevision { const asset = state.assets[assetId]; if (!asset) throw new Error('library/not-found'); return this.requireRevision(state, revisionId ?? asset.currentRevisionId); }
+  private requireNode(state: LibraryState, id: string): LibraryNode { const node = state.nodes[id]; if (!node) throw new Error('library/not-found'); return node; }
+  private requireRevision(state: LibraryState, id: string): LibraryRevision { const revision = state.revisions[id]; if (!revision) throw new Error('library/not-found'); return revision; }
+  private assertFolder(state: LibraryState, id?: string): void { if (id && this.requireNode(state, id).kind !== 'folder') throw new Error('library/not-folder'); }
+  private assertUniqueName(state: LibraryState, parentId: string | undefined, name: string, except?: string): void { if (Object.values(state.nodes).some((node) => node.id !== except && node.parentId === parentId && node.name.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error('library/name-conflict'); }
+  private descendants(state: LibraryState, id: string): Set<string> { const result = new Set<string>(); const queue = [id]; while (queue.length) { const parent = queue.shift()!; for (const node of Object.values(state.nodes)) if (node.parentId === parent && !result.has(node.id)) { result.add(node.id); queue.push(node.id); } } return result; }
+  private owner(actor: ActorContext): ResourceOwner & { scope: 'personal' } { return { organizationId: actor.organizationId, ownerPrincipalId: actor.principalId, scope: 'personal' }; }
+  private key(actor: ActorContext): string { return stateKey(actor.organizationId, actor.principalId); }
+  private validateActor(actor: ActorContext): void { if (!actor.organizationId?.trim() || !actor.principalId?.trim() || !actor.requestId?.trim() || !actor.resolvedBy?.trim()) throw new Error('library/invalid-actor'); }
+  private safePath(relative: string): string { const target = resolve(this.root, relative); if (target !== this.root && !target.startsWith(`${this.root}${sep}`)) throw new Error('library/path-escape'); return target; }
+  private states(): KvTable<string, LibraryState> { if (!this.table) throw new Error('library/unavailable'); return this.table; }
+  private enqueue<T>(run: () => Promise<T>): Promise<T> { const next = this.serial.then(run, run); this.serial = next.catch(() => undefined); return next; }
+}
