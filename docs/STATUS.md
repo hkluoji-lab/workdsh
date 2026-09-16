@@ -1,3 +1,19 @@
+## 2026-09-16：助理功能的使用价值与边界定义（仅文档，不含代码）
+
+用户要求分析左侧「助理」是什么应用、解决什么问题，并结合 WorkBuddy 助理可打开本地文件、唤起小程序与微信/企业微信/飞书机器人的能力，定义 WorkDSH 助理的使用价值与功能边界。
+
+现状核对：助理是 workbench 通过官方 `sidebar.panellist` 贡献的展示占位（id `workdsh-assistant`，与 `main` 同 key 配对），页面只渲染 `BusinessPanel` 的未接入边界声明；workbench `src/domain`、`src/services`、`src/storage`、`src/tools`、`src/remote` 均为空目录。`docs/modules.json`、`PLAN.md`、`ARCHITECTURE.md`、`PROJECT-DESIGN.md`、`TEAM-DESIGN.md`、`ACCEPTANCE.md` 此前全文无助理条目——它是展示占位，不是已排期模块，因此不是缺陷，无需"修复"。
+
+WorkBuddy 侧实测：`~/.workbuddy/connectors-marketplace/` 含 237 个连接器，结构为 `cli.json`（runtime/init/auth/status/unAuth）+ `mcp.json` + 随包 `skills/`；`shunong-assistant`、`tanyuan-assistant`、`haier-assistant`、`teacher-assistant` 是厂商命名的连接器而非独立类别（其 `cli.json` 指向第三方 CLI）；`deeplink` 是深度智联地产数据 MCP，不是唤起能力。因此"助理连微信/企微/飞书"的实质是连接器能力，"打开本地文件、唤起小程序"来自其桌面壳的 OS 权限（`~/.workbuddy/` 下 `artifact-index`、`blobs`、`clipboard-images` 即其本地资产层）。
+
+本轮交付（仅文档与规划目录，无代码）：新增 [ADR-0027](adr/0027-assistant-entry-pack-boundary.md) 设计草案——助理定义为**引用型工作入口包**（职责描述 + 引用的技能与专家修订 + 引用的连接器实例 + 触发方式），给出九条决定、四类能力归属判定表与三项待决事项；[PLAN](PLAN.md) 新增修订 10 与 P1-12 任务定义；`docs/modules.json` 登记 `packages/plugins/assistant`（planned，无 moduleVersion）；建立规划模块目录骨架（README + 8 个目录 `.gitkeep`，**无** `package.json` 与加载入口）。
+
+关键判定：本地文件已有一等公民（原生 workspace、官方 Attachment 准入链、office 内容服务与 `rightbar.session` 文件槽），助理只引用；唤起本机应用或小程序在浏览器沙箱内不可为，只能经官方 computer-use 或用户显式授权命令并经过审批；发消息属连接器域且出站优先，收消息需常驻可达服务，属部署形态。与专家的划界为：专家是能力资产（组织级、带修订、可被多方引用），助理是使用侧入口（个人级、引用专家与技能），避免形成第二套同类底座。
+
+编号说明：`docs/adr/0026-*` 由既有悬空引用 `adr/0026-creatppt-native-editor.md`（该文件从未创建，属既有 `check:plan` 断链之一）占用，本次不擅自占用该编号，故取 0027。
+
+未执行：未实现任何代码，未创建加载入口、bundle 层或工具，未修改 `development-order.json`（P1-12 保持未排期，D00—D15 门槛与顺序不变），未运行任何运行期验证；`check:plan` 的既有 40 条断链不在本次范围内，未修复。
+
 ## 2026-09-16：合并远端 alpha.5 线并跑通验证（推送被本机凭据阻塞）
 
 用户选择 merge 而非 rebase 处置本地 3 个提交与远端分叉。执行 `git merge origin/main` 得合并提交 `27fa783`：远端线为 v0.1.0-alpha.5（专家团韧性验收、PPT 原生画布坐标修正、office/activity/contracts 更新），本地线为 DSH 0.1.6-alpha.1 同步（文档镜像、退役包名清理、品牌 DSH JOB AI、预览端口 3031）。仅 `docs/STATUS.md` 冲突，README.md、README.zh-CN.md、package.json 自动合并；按本文件倒序流水账规则保留两边全部内容，行数核对为 1706（分叉点）+ 40（本地新增）+ 28（远端新增）= 1774，无内容丢失。
@@ -1355,6 +1371,7 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 | P1-09 | 团队基础实现 | P1 | completed |
 | P1-10 | 企业管理后台基础入口 | P1 | todo |
 | P1-11 | 项目配置、待办、任务、资产与交接 | P1 | todo |
+| P1-12 | 助理入口包 | P1 | todo |
 | P2-01 | 专家团模型及执行映射 | P2 | todo |
 | P2-02 | 专家团失败与取消 | P2 | todo |
 | P2-03 | 自动化配置与调度 | P2 | todo |

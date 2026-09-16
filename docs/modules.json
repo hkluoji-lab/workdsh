@@ -62,6 +62,23 @@
     ]
   },
   {
+    "path": "packages/plugins/assistant",
+    "title": "助理",
+    "phase": "P1",
+    "task": "P1-12",
+    "status": "planned",
+    "directories": [
+      "src/domain",
+      "src/services",
+      "src/storage",
+      "src/tools",
+      "src/remote",
+      "src/client/components",
+      "src/harness",
+      "tests"
+    ]
+  },
+  {
     "path": "packages/plugins/experts",
     "title": "专家管理",
     "moduleVersion": "0.1",
