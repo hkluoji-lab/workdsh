@@ -158,5 +158,6 @@ test('library retains an original when an otherwise valid conversion crashes', a
     assert.deepEqual(await ctx.workdshLibrary.readOriginal(actor, entry.asset.id), bytes);
     await assert.rejects(ctx.workdshLibrary.readText(actor, entry.asset.id), /library\/conversion-failed/);
     assert.equal((await ctx.workdshLibrary.search(actor, 'source')).length, 0);
+    assert.equal((await ctx.workdshLibrary.search(actor, '')).at(0).revisionId, entry.revision.id, 'failed conversions remain visible in Recent');
   } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
 });

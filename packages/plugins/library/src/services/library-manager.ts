@@ -148,7 +148,7 @@ export class LibraryManager extends Service implements LibraryService {
         if (filters.updatedAfter && asset.updatedAt < filters.updatedAfter) continue;
         if (filters.updatedBefore && asset.updatedAt > filters.updatedBefore) continue;
         signal?.throwIfAborted(); const node = this.requireNode(state, asset.nodeId); const revision = this.requireRevision(state, asset.currentRevisionId);
-        if (revision.conversionStatus !== 'ready') continue;
+        if (revision.conversionStatus !== 'ready') { if (needle) continue; hits.push({ assetId: asset.id, revisionId: revision.id, nodeId: node.id, name: node.name, kind: asset.kind, source: asset.source, updatedAt: asset.updatedAt, folderPath: this.folderPath(state, node.parentId), excerpt: '', score: 0 }); continue; }
         const text = await readFile(this.safePath(revision.contentRelativePath), 'utf8'); const lower = text.toLocaleLowerCase();
         const titleMatch = Boolean(needle) && node.name.toLocaleLowerCase().includes(needle); const offset = needle ? lower.indexOf(needle) : 0; if (needle && !titleMatch && offset < 0) continue;
         const start = Math.max(0, offset < 0 ? 0 : offset - 80); const excerpt = text.slice(start, start + 240).replace(/\s+/g, ' ').trim();
