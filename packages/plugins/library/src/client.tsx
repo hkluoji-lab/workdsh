@@ -38,7 +38,7 @@ export function apply(ctx: Context): void {
     return binding.ctx.bail(binding.ctx, 'slash/input-insert-reference', { reference: referenceOf(value), span: { start: offset, end: offset, draftRev: state.draftRev } }) === true;
   };
   const source: InputTriggerSource = {
-    trigger: '@', name: '资料库', order: 30, showGroupTitle: true,
+    trigger: '@', name: 'workdsh-library', order: 30, showGroupTitle: false,
     candidates: async (_session, request) => {
       if (!request.query.trim()) {
         const collect = async (parentId?: string): Promise<LibraryRef[]> => (await Promise.all((await management.list(parentId)).map(row => row.kind === 'folder' ? collect(row.id) : Promise.resolve(row.asset && row.revision ? [{ assetId: row.asset.id, revisionId: row.revision.id, nodeId: row.id, name: row.name, kind: row.asset.kind }] : [])))).flat();
@@ -62,6 +62,6 @@ export function apply(ctx: Context): void {
   ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'workdsh-library', inject: () => ({ management, previewRegistry, toggleNavigation: () => ctx.layout.toggleSidebar(), currentSessionId: () => { const id = sessions.list.getSnapshot().current; return id ? String(id) : undefined; }, addToConversation: (sessionId: string, entry: import('workdsh-contracts/library').LibraryTreeEntry) => entry.asset && entry.revision ? insertReference(sessionId, { assetId: entry.asset.id, revisionId: entry.revision.id, nodeId: entry.id, name: entry.name, kind: entry.asset.kind }) : false, returnToConversation: () => ctx.layout.selectPanel(null) }) }, LibraryPanel));
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
     name: 'conversation.input.left', id: 'workdsh-library-picker', order: 35,
-    inject: () => ({ management, openLibrary: () => ctx.layout.selectPanel('workdsh-library' as Parameters<typeof ctx.layout.selectPanel>[0]), openPicker: (sessionId: string, draft: string, draftRev: number) => { const binding = sessions.binding(sessionId as never); if (!binding) return; const offset = draft.length; ctx.inputTriggers.sessionOf(binding.ctx).toggleSource('资料库', { trigger: '@', query: '', quoted: false, position: offset === 0 ? 'leading' : 'inline', span: { start: offset, end: offset, draftRev } }); } }),
+    inject: () => ({ management, openLibrary: () => ctx.layout.selectPanel('workdsh-library' as Parameters<typeof ctx.layout.selectPanel>[0]), openPicker: (sessionId: string, draft: string, draftRev: number) => { const binding = sessions.binding(sessionId as never); if (!binding) return; const offset = draft.length; ctx.inputTriggers.sessionOf(binding.ctx).toggleSource('workdsh-library', { trigger: '@', query: '', quoted: false, position: offset === 0 ? 'leading' : 'inline', span: { start: offset, end: offset, draftRev } }); } }),
   }, LibraryPicker));
 }
