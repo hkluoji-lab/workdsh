@@ -5,8 +5,8 @@ import { mkdir, readFile, rename as renameFile, rm, writeFile } from 'node:fs/pr
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain';
 import type {
-  ActorContext, IdentityService, LibraryAsset, LibraryAssetKind, LibraryImportInput, LibraryNode, LibraryRevision,
-  LibrarySearchHit, LibraryService, LibrarySpace, LibraryTreeEntry, ResourceOwner,
+  ActorContext, IdentityService, LibraryAsset, LibraryAssetKind, LibraryDraft, LibraryImportInput, LibraryNode, LibraryRevision,
+  LibrarySearchHit, LibraryService, LibrarySpace, LibraryTaskReference, LibraryTreeEntry, ResourceOwner,
 } from 'workdsh-contracts';
 import { convertToMarkdown } from './converters.js';
 import { libraryDomainSpec, stateKey, type LibraryState } from '../storage/domain.js';
@@ -139,6 +139,68 @@ export class LibraryManager extends Service implements LibraryService {
     });
   }
 
+  setTaskSelection(actor: ActorContext, sessionId: string, nodeIds: readonly string[], signal?: AbortSignal): Promise<readonly LibraryTaskReference[]> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); if (!sessionId.trim() || nodeIds.length > 32) throw new Error('library/invalid-selection');
+      const assetIds = new Set<string>();
+      for (const nodeId of new Set(nodeIds)) {
+        const node = this.requireNode(state, nodeId);
+        if (node.assetId) assetIds.add(node.assetId);
+        else for (const childId of this.descendants(state, node.id)) { const child = state.nodes[childId]; if (child?.assetId) assetIds.add(child.assetId); }
+      }
+      if (assetIds.size > 200) throw new Error('library/selection-too-large');
+      const selectedAt = now();
+      const references = [...assetIds].map((assetId): LibraryTaskReference => { const asset = state.assets[assetId]!; return { sessionId, nodeId: asset.nodeId, assetId, revisionId: asset.currentRevisionId, selectedAt }; });
+      await this.states().put(this.key(actor), { ...state, references: { ...state.references, [sessionId]: references } });
+      return references;
+    });
+  }
+
+  taskSelection(actor: ActorContext, sessionId: string, signal?: AbortSignal): Promise<readonly LibraryTaskReference[]> {
+    return this.enqueue(async () => [...((await this.ensureState(actor, signal)).references[sessionId] ?? [])]);
+  }
+
+  createDraft(actor: ActorContext, assetId: string, baseRevisionId?: string, signal?: AbortSignal): Promise<LibraryDraft> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); const asset = state.assets[assetId]; if (!asset) throw new Error('library/not-found');
+      if (asset.kind !== 'markdown' && asset.kind !== 'text') throw new Error('library/draft-format');
+      const revision = this.resolveRevision(state, assetId, baseRevisionId); const content = await readFile(this.safePath(revision.contentRelativePath), 'utf8'); const timestamp = now();
+      const draft: LibraryState['drafts'][string] = { id: randomUUID(), assetId, baseRevisionId: revision.id, revision: randomUUID(), content, createdBy: actor.principalId, createdAt: timestamp, updatedAt: timestamp };
+      await this.states().put(this.key(actor), { ...state, drafts: { ...state.drafts, [draft.id]: draft } }); return draft;
+    });
+  }
+
+  updateDraft(actor: ActorContext, draftId: string, content: string, expectedRevision: string, signal?: AbortSignal): Promise<LibraryDraft> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); const current = state.drafts[draftId]; if (!current) throw new Error('library/not-found');
+      if (current.revision !== expectedRevision) throw new Error('library/revision-conflict');
+      if (Buffer.byteLength(content, 'utf8') > 8 * 1024 * 1024) throw new Error('library/file-size');
+      const next: LibraryState['drafts'][string] = { ...current, content, revision: randomUUID(), updatedAt: now() };
+      await this.states().put(this.key(actor), { ...state, drafts: { ...state.drafts, [draftId]: next } }); return next;
+    });
+  }
+
+  publishDraft(actor: ActorContext, draftId: string, expectedRevision: string, signal?: AbortSignal): Promise<LibraryTreeEntry> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); const draft = state.drafts[draftId]; if (!draft) throw new Error('library/not-found');
+      if (draft.revision !== expectedRevision) throw new Error('library/revision-conflict');
+      const asset = state.assets[draft.assetId]; if (!asset) throw new Error('library/not-found');
+      if (asset.currentRevisionId !== draft.baseRevisionId) throw new Error('library/base-revision-conflict');
+      const previous = this.requireRevision(state, draft.baseRevisionId); const extension = extname(previous.originalRelativePath); const bytes = new TextEncoder().encode(draft.content);
+      const revisionId = randomUUID(); const relativeBase = join('objects', asset.id, revisionId); const finalDirectory = this.safePath(relativeBase); const temporaryDirectory = this.safePath(join('.tmp', randomUUID()));
+      const originalRelativePath = join(relativeBase, `original${extension}`); const contentRelativePath = join(relativeBase, 'content.md');
+      await mkdir(temporaryDirectory, { recursive: false, mode: 0o700 });
+      try { await writeFile(join(temporaryDirectory, `original${extension}`), bytes, { flag: 'wx', mode: 0o600 }); await writeFile(join(temporaryDirectory, 'content.md'), draft.content, { flag: 'wx', mode: 0o600 }); await writeFile(join(temporaryDirectory, 'conversion.json'), `${JSON.stringify({ version: 1, kind: asset.kind, originalSha256: sha256(bytes), warnings: [] }, null, 2)}\n`, { flag: 'wx', mode: 0o600 }); await renameFile(temporaryDirectory, finalDirectory); }
+      catch (cause) { await rm(temporaryDirectory, { recursive: true, force: true }); throw cause; }
+      const timestamp = now(); const revision: LibraryState['revisions'][string] = { id: revisionId, assetId: asset.id, number: previous.number + 1, originalSha256: sha256(bytes), contentSha256: sha256(draft.content), originalRelativePath, contentRelativePath, conversionStatus: 'ready', conversionWarnings: [], createdBy: actor.principalId, createdAt: timestamp };
+      const nextAsset: LibraryState['assets'][string] = { ...asset, currentRevisionId: revisionId, byteLength: bytes.byteLength, updatedAt: timestamp };
+      const drafts = { ...state.drafts }; delete drafts[draftId];
+      const next = { ...state, assets: { ...state.assets, [asset.id]: nextAsset }, revisions: { ...state.revisions, [revisionId]: revision }, drafts, nodes: { ...state.nodes, [asset.nodeId]: { ...this.requireNode(state, asset.nodeId), updatedAt: timestamp } } };
+      try { await this.states().put(this.key(actor), next); } catch (cause) { await rm(finalDirectory, { recursive: true, force: true }); throw cause; }
+      return this.entry(next, next.nodes[asset.nodeId]!);
+    });
+  }
+
   rename(actor: ActorContext, nodeId: string, name: string, signal?: AbortSignal): Promise<LibraryNode> {
     return this.changeNode(actor, nodeId, signal, (state, node) => { const value = cleanName(name); this.assertUniqueName(state, node.parentId, value, node.id); return { ...node, name: value, updatedAt: now() }; });
   }
@@ -159,7 +221,9 @@ export class LibraryManager extends Service implements LibraryService {
       const removedRevisionIds = new Set(Object.values(state.revisions).filter((revision) => assetIds.includes(revision.assetId)).map((revision) => revision.id));
       const revisions = Object.fromEntries(Object.entries(state.revisions).filter(([id]) => !removedRevisionIds.has(id)));
       const receipts = Object.fromEntries(Object.entries(state.receipts).filter(([, receipt]) => !assetIds.includes(receipt.assetId)));
-      await this.states().put(this.key(actor), { ...state, nodes, assets, revisions, receipts, space: { ...state.space, updatedAt: now() } });
+      const drafts = Object.fromEntries(Object.entries(state.drafts).filter(([, draft]) => !assetIds.includes(draft.assetId)));
+      const references = Object.fromEntries(Object.entries(state.references).map(([sessionId, rows]) => [sessionId, rows.filter((row) => !assetIds.includes(row.assetId))]));
+      await this.states().put(this.key(actor), { ...state, nodes, assets, revisions, receipts, drafts, references, space: { ...state.space, updatedAt: now() } });
       await Promise.all(assetIds.map((id) => rm(this.safePath(join('objects', id)), { recursive: true, force: true })));
     });
   }
@@ -169,7 +233,7 @@ export class LibraryManager extends Service implements LibraryService {
   }
   private async ensureState(actor: ActorContext, signal?: AbortSignal): Promise<LibraryState> {
     signal?.throwIfAborted(); this.validateActor(actor); const key = this.key(actor); const current = this.states().get(key); if (current) return current;
-    const timestamp = now(); const state: LibraryState = { schemaVersion: 1, space: { id: randomUUID(), title: '我的资料', owner: this.owner(actor), createdAt: timestamp, updatedAt: timestamp }, nodes: {}, assets: {}, revisions: {}, receipts: {} };
+    const timestamp = now(); const state: LibraryState = { schemaVersion: 1, space: { id: randomUUID(), title: '我的资料', owner: this.owner(actor), createdAt: timestamp, updatedAt: timestamp }, nodes: {}, assets: {}, revisions: {}, receipts: {}, references: {}, drafts: {} };
     await this.states().put(key, state); return state;
   }
   private entry(state: LibraryState, node: LibraryNode): LibraryTreeEntry { const asset = node.assetId ? state.assets[node.assetId] : undefined; const revision = asset ? state.revisions[asset.currentRevisionId] : undefined; return { ...node, ...(asset ? { asset } : {}), ...(revision ? { revision } : {}) }; }

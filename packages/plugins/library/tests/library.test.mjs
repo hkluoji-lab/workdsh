@@ -67,13 +67,23 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.equal((await ctx.workdshLibrary.search(actor, 'PptxDelta'))[0].name, '简报.pptx');
     assert.equal((await ctx.workdshLibrary.search(actor, 'UniquePdfEcho'))[0].name, '附件.pdf');
     assert.deepEqual(await ctx.workdshLibrary.readOriginal(actor, imported[1].asset.id), samples[1][1]);
+    const selected = await ctx.workdshLibrary.setTaskSelection(actor, 'session-a', [folder.id]);
+    assert.equal(selected.length, 5);
+    const pinnedRevision = selected.find(row => row.assetId === imported[0].asset.id).revisionId;
+    const draft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);
+    const changed = await ctx.workdshLibrary.updateDraft(actor, draft.id, '# 新规则\n\n唯一词 RevisedFoxtrot', draft.revision);
+    await assert.rejects(ctx.workdshLibrary.updateDraft(actor, draft.id, 'stale', draft.revision), /library\/revision-conflict/);
+    const published = await ctx.workdshLibrary.publishDraft(actor, draft.id, changed.revision);
+    assert.equal(published.revision.number, 2);
+    assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 1);
+    assert.equal((await ctx.workdshLibrary.taskSelection(actor, 'session-a')).find(row => row.assetId === imported[0].asset.id).revisionId, pinnedRevision);
     await ctx.workdshLibrary.rename(actor, folder.id, '项目甲（归档）');
     await ctx.fiber.dispose(); ctx = undefined;
 
     ctx = await boot(storageRoot, libraryRoot);
     const roots = await ctx.workdshLibrary.list(actor);
     assert.equal(roots[0].name, '项目甲（归档）');
-    assert.equal((await ctx.workdshLibrary.search(actor, 'MarkdownAlpha')).length, 1);
+    assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 1);
     await ctx.workdshLibrary.remove(actor, roots[0].id);
     assert.equal((await ctx.workdshLibrary.list(actor)).length, 0);
     assert.equal((await ctx.workdshLibrary.search(actor, 'MarkdownAlpha')).length, 0);

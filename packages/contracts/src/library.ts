@@ -76,6 +76,25 @@ export interface LibrarySearchHit {
   readonly score: number;
 }
 
+export interface LibraryTaskReference {
+  readonly sessionId: string;
+  readonly nodeId: string;
+  readonly assetId: string;
+  readonly revisionId: string;
+  readonly selectedAt: string;
+}
+
+export interface LibraryDraft {
+  readonly id: string;
+  readonly assetId: string;
+  readonly baseRevisionId: string;
+  readonly revision: string;
+  readonly content: string;
+  readonly createdBy: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
 export interface LibraryService {
   space(actor: ActorContext, signal?: AbortSignal): Promise<LibrarySpace>;
   list(actor: ActorContext, parentId?: string, signal?: AbortSignal): Promise<readonly LibraryTreeEntry[]>;
@@ -84,8 +103,12 @@ export interface LibraryService {
   readText(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<string>;
   readOriginal(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<Uint8Array>;
   search(actor: ActorContext, query: string, signal?: AbortSignal): Promise<readonly LibrarySearchHit[]>;
+  setTaskSelection(actor: ActorContext, sessionId: string, nodeIds: readonly string[], signal?: AbortSignal): Promise<readonly LibraryTaskReference[]>;
+  taskSelection(actor: ActorContext, sessionId: string, signal?: AbortSignal): Promise<readonly LibraryTaskReference[]>;
+  createDraft(actor: ActorContext, assetId: string, baseRevisionId?: string, signal?: AbortSignal): Promise<LibraryDraft>;
+  updateDraft(actor: ActorContext, draftId: string, content: string, expectedRevision: string, signal?: AbortSignal): Promise<LibraryDraft>;
+  publishDraft(actor: ActorContext, draftId: string, expectedRevision: string, signal?: AbortSignal): Promise<LibraryTreeEntry>;
   rename(actor: ActorContext, nodeId: string, name: string, signal?: AbortSignal): Promise<LibraryNode>;
   move(actor: ActorContext, nodeId: string, parentId: string | undefined, signal?: AbortSignal): Promise<LibraryNode>;
   remove(actor: ActorContext, nodeId: string, signal?: AbortSignal): Promise<void>;
 }
-

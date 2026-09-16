@@ -19,6 +19,7 @@
     "@deepseek-ai/dsh-api-remotes": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-client-connection": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-client-ui-layout": "0.1.6-alpha.1",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-client-ui-renderer": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-client-ui-slots": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-storage-domain": "0.1.6-alpha.1",
@@ -30,6 +31,7 @@
     "@deepseek-ai/dsh-api-remotes": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-client-connection": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-client-ui-layout": "0.1.6-alpha.1",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-client-ui-renderer": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-client-ui-slots": "0.1.6-alpha.1",
     "@deepseek-ai/dsh-storage": "0.1.6-alpha.1",
@@ -47,5 +49,5 @@
     "pdfjs-dist": "5.4.624",
     "zod": "4.4.3"
   },
-  "dsh": { "bundle": { "patch": "./cordis.patch.yml" }, "client": { "platform": "web", "inject": ["@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-client-ui-renderer", "@deepseek-ai/dsh-client-ui-layout", "@deepseek-ai/dsh-api-remotes"] } }
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" }, "client": { "platform": "web", "inject": ["@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-client-ui-renderer", "@deepseek-ai/dsh-client-ui-layout", "@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-api-remotes"] } }
 }

@@ -1,6 +1,6 @@
 # 资料库
 
-状态：**实施中**。Alpha.1 已建立本地资料领域服务；Client、任务引用和修订审阅仍在开发。
+状态：**实施中**。Alpha.1 已建立本地资料领域服务、Client 页面、对话固定修订引用和 Markdown/TXT 草稿发布流程。
 
 - 实现阶段：P1
 - 主任务：P1-06，详见 [开发计划](../../../docs/PLAN.md)
@@ -15,7 +15,7 @@
 
 ## 验收与下一步
 
-完成对应 PLAN 任务及 [验收矩阵](../../../docs/ACCEPTANCE.md) 场景，记录真实测试证据后才更新为完成。当前 Host 入口可加载，数据保存到 `$DSH_HOME/library`；尚未接入的 Client 与任务闭环不声明完成。
+完成对应 PLAN 任务及 [验收矩阵](../../../docs/ACCEPTANCE.md) 场景，记录真实测试证据后才更新为完成。当前 Host 与 Client 入口可加载，数据保存到 `$DSH_HOME/library`。PDF/Word/PowerPoint 仍以派生文本检索并下载原件，Office 原生预览联动与完整安全样本验收尚未完成。
 
 ## 修订 6 的必做补充
 

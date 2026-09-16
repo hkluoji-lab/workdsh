@@ -36,6 +36,7 @@
     "probe:office:live": "node scripts/probe-office-live.mjs",
     "test:office:content": "node --test tests/integration/office-content.test.mjs",
     "release:office:pack": "node scripts/pack-office-release.mjs",
+    "release:library:pack": "node scripts/pack-library-release.mjs",
     "release:project:pack": "node scripts/pack-project-release.mjs",
     "audit:skills": "node scripts/quality/audit-skills.mjs",
     "test:skill-quality": "node --test scripts/quality/audit-skills.test.mjs",

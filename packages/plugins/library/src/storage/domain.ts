@@ -25,6 +25,8 @@ const revision = z.object({
   createdBy: id, createdAt: iso,
 });
 const receipt = z.object({ operationId: id, assetId: id, revisionId: id, nodeId: id });
+const reference = z.object({ sessionId: id, nodeId: id, assetId: id, revisionId: id, selectedAt: iso });
+const draft = z.object({ id, assetId: id, baseRevisionId: id, revision: id, content: z.string().max(8 * 1024 * 1024), createdBy: id, createdAt: iso, updatedAt: iso });
 
 export const libraryStateSchema = z.object({
   schemaVersion: z.literal(1),
@@ -33,6 +35,8 @@ export const libraryStateSchema = z.object({
   assets: z.record(id, asset),
   revisions: z.record(id, revision),
   receipts: z.record(id, receipt),
+  references: z.record(id, z.array(reference)).default({}),
+  drafts: z.record(id, draft).default({}),
 });
 
 export type LibraryState = z.infer<typeof libraryStateSchema>;
@@ -46,4 +50,3 @@ export const libraryDomainSpec = defineDomain({
 
 export const stateKey = (organizationId: string, principalId: string): string =>
   `${organizationId}_${principalId}`.replace(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 240);
-
