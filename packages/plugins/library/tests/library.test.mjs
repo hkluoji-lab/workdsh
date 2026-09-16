@@ -64,8 +64,12 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.equal(repeated.asset.id, imported[0].asset.id);
     assert.equal((await ctx.workdshLibrary.list(actor, folder.id)).length, 5);
     assert.equal((await ctx.workdshLibrary.search(actor, 'DocxCharlie'))[0].name, '报告.docx');
-    assert.equal((await ctx.workdshLibrary.search(actor, 'PptxDelta'))[0].name, '简报.pptx');
-    assert.equal((await ctx.workdshLibrary.search(actor, 'UniquePdfEcho'))[0].name, '附件.pdf');
+    const pptxHit = (await ctx.workdshLibrary.search(actor, 'PptxDelta'))[0];
+    assert.equal(pptxHit.name, '简报.pptx');
+    assert.match(pptxHit.location, /第 1 页/);
+    const pdfHit = (await ctx.workdshLibrary.search(actor, 'UniquePdfEcho'))[0];
+    assert.equal(pdfHit.name, '附件.pdf');
+    assert.match(pdfHit.location, /第 1 页/);
     assert.deepEqual(await ctx.workdshLibrary.readOriginal(actor, imported[1].asset.id), samples[1][1]);
     const selected = await ctx.workdshLibrary.setTaskSelection(actor, 'session-a', [folder.id]);
     assert.equal(selected.length, 5);

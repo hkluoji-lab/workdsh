@@ -133,7 +133,8 @@ export class LibraryManager extends Service implements LibraryService {
         const text = await readFile(this.safePath(revision.contentRelativePath), 'utf8'); const lower = text.toLocaleLowerCase();
         const titleMatch = node.name.toLocaleLowerCase().includes(needle); const offset = lower.indexOf(needle); if (!titleMatch && offset < 0) continue;
         const start = Math.max(0, offset < 0 ? 0 : offset - 80); const excerpt = text.slice(start, start + 240).replace(/\s+/g, ' ').trim();
-        hits.push({ assetId: asset.id, revisionId: revision.id, nodeId: node.id, name: node.name, kind: asset.kind, excerpt, score: titleMatch ? 2 : 1 });
+        const prefix = text.slice(0, offset < 0 ? text.length : offset); const heading = [...prefix.matchAll(/^#{1,6}\s+(.+)$/gm)].at(-1)?.[1]?.trim();
+        hits.push({ assetId: asset.id, revisionId: revision.id, nodeId: node.id, name: node.name, kind: asset.kind, ...(heading ? { location: heading } : {}), excerpt, score: titleMatch ? 2 : 1 });
       }
       return hits.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'zh-CN')).slice(0, 50);
     });

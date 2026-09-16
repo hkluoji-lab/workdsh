@@ -72,6 +72,7 @@ export interface LibrarySearchHit {
   readonly nodeId: string;
   readonly name: string;
   readonly kind: LibraryAssetKind;
+  readonly location?: string;
   readonly excerpt: string;
   readonly score: number;
 }
