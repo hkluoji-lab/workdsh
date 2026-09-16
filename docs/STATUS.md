@@ -1,3 +1,78 @@
+## 2026-09-16：39 条文档相对链接断链清零（第 3 项）
+
+用户指令：先修第 3 项那 39 条断链。处置方针由用户选定为「去链接 + 如实标注」——不伪造文件、不改写历史事实；PRD 三张参考图的指向由用户选定改为 references/README.md 的「用户补充参考」小节。
+
+诊断（改动前实测）：`corepack pnpm check:plan` 报 39 条断链，全部指向 11 个**从未存在**的路径。逐路径 `git log --all --oneline -- <路径>` 均为 0 条提交，磁盘也无同名文件，因此不是改名或删除，没有任何一条能靠改指向自动修好。按引用次数：`TEAM-IMPLEMENTATION-HANDOFF.md` 7 次、office 试验证据 6 个文件 8 次、`DSH-0.1.6-UPGRADE-PLAN.md` / `WEEKLY-RELEASE-PLAN.md` / `dsh-0.1.6-official-integration.md` 9 次，其余为单次。分布：STATUS.md 26 条、PLAN.md 5 条、MODULE-VERSIONS.md 与 experts/PRD.md(3)、experts/README.md、EXPERT-TEAMS.md、experts/CONTRACTS.md、research/harness-review-closure.md 各 1—3 条。
+
+处置：悬空链接一律改为纯文本路径 + 就地标注（「该文档未创建」/「该证据未入库」/「编号空置」），并按可核对的事实补最小指向（experts 系列统一指向现行的[有限开发计划](design/experts/DEVELOPMENT-PLAN.md)；office PPT 试验统一指向[当前 PPT 编辑器集成](evidence/office-pptx-integration.md)；WorkBuddy 覆盖矩阵指向[专业方法复核](design/experts/WORKBUDDY-REASSESSMENT.md)）。唯一可真实改指向的一处：[HARNESS-INTEGRATION.md](design/office/HARNESS-INTEGRATION.md) 与 [harness-review-closure.md](research/harness-review-closure.md) 引用的 `subsystems/code-runtime.zh.md` 实为 `subsystems/ptc-runtime.zh.md`（官方子系统清单只有后者）。本文件第 113 行的 `Brand.tsx` 是路径少一层（`../../` 应为 `../`），按真实文件改正，未去链接。
+
+结果：`corepack pnpm check:plan` 退出码 0，输出 `PASS: 30 modules; 50 documents; task references, team acceptance and relative links checked.`；`Broken link` 计数 0（改动前 39）。该检查只覆盖脚本白名单内的 50 个文档，因此对 `DEVELOPMENT-PLAN.md`、`adr/0020`、`adr/0025`、`releases/2026-09-15-*`、`design/office/OPEN-SOURCE-STACK.md`、`design/office/HARNESS-INTEGRATION.md` 的同类修改只为一致性，不计入这 39 条。
+
+改动文件共 15 个，全部为文档：STATUS.md、PLAN.md、MODULE-VERSIONS.md、design/experts/{README.md, PRD.md, EXPERT-TEAMS.md, CONTRACTS.md, DEVELOPMENT-PLAN.md, references/README.md}、design/office/{OPEN-SOURCE-STACK.md, HARNESS-INTEGRATION.md}、research/harness-review-closure.md、adr/{0020, 0025}、releases/2026-09-15-dsh-0.1.6-alpha.1.md。**未新增任何文件**。
+
+同源偏差，本轮未处理（如实登记）：[evidence/README.md](evidence/README.md) 正文写「当前仅目录占位，尚无产品验证证据」，而该目录实有 43 个文件；[PRD.md](design/experts/PRD.md) 的 YAML `source_documents.uri` 仍指向 3 个未入库的 png（非 Markdown 链接，`check:plan` 不检查）。
+
+补充执行（同轮后续指令「先执行 test:integration 和 probe:skills」）：`test:integration` 退出码 0，108 项测试 / 108 通过 / 0 失败 / 0 跳过，耗时 15.85s（日志 /tmp/wd-integration.log）；`probe:skills` 退出码 0，8 项检查全部 PASS——独立 tarball 工程外安装且只有一个 Profile 层、无产品 bundle；目录状态/元数据/图标路由/安装资格读真实 Host 事实；浏览器市场显示真实分类并经受管导入路径安装目录条目；已装技能独立页（返回、计数、页内搜索、共用批量管理）；独立 Client 导航与编辑/保存/冲突、启停、卸载/恢复写真实文件；冷移除同时撤下 Host 路由与 Client 导航并保留原生 Web 与用户技能文件；重装与重复安装只激活一次并恢复已编辑数据；目录缺失与损坏降级为如实诊断而不破坏管理。`probe:experts` 未通过（退出码 1），如实登记见下段。本次未提交、未推送。
+
+**`probe:experts` 实测（2026-09-17）：未通过，退出码 1。**
+
+先修掉脚本自身一个必然失败点：[probe-experts-package.mjs](../scripts/probe-experts-package.mjs) 第 84 行原以 `--offline` 安装六个 tarball，但该探针在 `mkdtemp` 的全新临时 HOME 中做首次安装，pnpm store 为空，必须下载 `zod@4.6.5` 等传递依赖，实测报 `ERR_PNPM_NO_OFFLINE_TARBALL`（A package is missing from the store but cannot download it in offline mode）。改为 `--prefer-offline`——与同库 [probe-office-native.mjs](../scripts/probe-office-native.mjs) 第 96 行的既有做法一致（该处注释已写明 a clean machine cannot satisfy a first install with --offline）。本次只改这一处。
+
+改动后连续两次运行（日志 `/tmp/wd-probe-experts-retry.log`、`/tmp/wd-probe-experts-retry2.log`）结果一致：前 3 项 PASS（官方 CLI 仓库外安装六个独立 Profile 层；打包 Experts Host 与真实本地身份/授权/审计服务默认值；创建原生 Session 并校验固定绑定），随后在 [probe-experts-package.mjs](../scripts/probe-experts-package.mjs) 第 124 行失败——点击「用此示例召唤专家」后，5s 内页面上不存在 `[contenteditable="true"]`（原生任务框未出现）。
+
+失败现场（探针自身落盘，只读）：`.artifacts/experts-package/failure-text.txt` 显示页面仍停在专家详情弹框且含「专家操作失败，请重试。」；`failure-inputs.json` 为 `[]`（页面无任何输入框）；`failure-errors.json` 为 `[]`（无 page error / console error）。该文案来自 [connection-api.ts](../packages/plugins/experts/src/services/connection-api.ts) 第 53—58 行 `publicFailure` 的兜底分支，即 Host 抛出的是既非 `ExpertsError`、也不以 `experts/` 开头的异常。
+
+从探针保留的临时 HOME（其 `finally` 只关浏览器与 Host，未删 HOME）取到审计链路：`storages/workdsh_audit/events/4e1d98f9-….json` 记 `session.create` outcome `failed`、code `gateway/internal`、target `session-ac02edd2913d68bda731f91cb508b156`；同一秒 `bb55c6aa-….json` 记 `experts.create-execution` outcome `failed`、code `experts/internal`、target `work-retrospective-advisor`。即失败发生在官方 `sessionController.create`（由 [access/index.ts](../packages/plugins/access/src/index.ts) 第 431 行调用、第 438 行按 `error.code` 记为 `gateway/internal`），不在专家领域逻辑。
+
+触发条件（本轮更正，取代上段的「`workspaceId` 触发」判断）：真正条件是**同一 Host 内的第二个 Agent/Session**。第 1 次 create（API 路径、不带 workspace）成功，浏览器那次是同一 Host 内的第 2 个 Session；受控实验（见下）证实重名与该参数的取值无关。相关代码位置仍为 [experts-manager.ts](../packages/plugins/experts/src/services/experts-manager.ts) 第 1354—1359 行与 [client.tsx](../packages/plugins/experts/src/client.tsx) 第 74—81 行，但两者不是本次失败原因。
+
+**官方错误原文（2026-09-17 续查，隔离 Profile 内取到）**：官方 `LoggerService`（cordis 第 582—635 行）默认 exporter 只把日志 push 进内存 `buffer`（`bufferSize = 1e3`）而不落 stdout，真实负载在 `message.args` 数组里。为取出这条链路，本轮在该隔离 Profile 的 `cordis.patch.yml` 临时 `insert` 一个只读 log exporter（覆盖 `ctx.logger.exporter`），退出后**已还原**（原文件备份 /tmp/wd-cordis.patch.yml.bak，注入模块 `wd-logger-probe` 已删除）。第 2 次 create 的完整官方错误：
+
+```
+[23:51:10.832] scope#2 ← 新 Session(session-821d…) 的 mcp-client 挂载
+[23:51:10.834 error] mcp-client: MCP resource server "playwright-mcp" is already registered in this scope
+[23:51:10.834 error] mcp-client: prompt section "mcp:playwright-mcp" is already registered (for a per-agent override, register through that agent's `agent.ctx` instead)
+[23:51:11.216 error] mcp-client(playwright-mcp): tool registration failed, no tools registered: tool "mcp__playwright-mcp__browser_close" is already registered (for a per-agent variant, register through that agent's `agent.ctx` instead)
+[23:51:11.216 warn]  mcp-client(playwright-mcp): connection attempt failed: <同一条重名错误>
+[23:51:11.224 error] mcp-client(playwright-mcp): connection failed and reconnect is disabled — no tools were registered; reload the plugin or restart the Host to connect
+[23:51:11.224 error] mcp-client(playwright-mcp): initial connection or tool synchronization failed
+```
+
+逐条来源（官方 0.1.6-alpha.1 发布包实测）：`dsh-mcp-resources`、`dsh-system-prompt`、`dsh-tools` 的重名断言；`dsh-mcp-client` 第 731—743 行 `registerServerContext`、第 127—161 行 `syncTools`、第 811—832 行 `apply`（`failOnStartupError` 时第 832 行 `throw`）。完整日志 /tmp/wd-plog4.log；同 Host 的第 3 次 create 出现同样 5 条。
+
+**错误分支判定（是否作用域失效）**：`dsh-tools` 第 2634 行与 `dsh-system-prompt` 第 191 行的重名错误用三元分支区分层：`scope === void 0`（**全局层**）时给出「(for a per-agent variant/override, register through that agent's `agent.ctx` instead)」，`scope !== void 0`（**某个作用域层**）时给出「in this scope」。日志拿到的是前一种文案 ⇒ 工具与 prompt 的重复发生在**全局层**，即官方 `createScope` 打上的 scope 标签对官方注册服务**不可见**。
+
+**机制（受控实验，非推测）**：
+1. `dsh-scope` 第 229 行 `const kScope = Symbol("dsh.scope")` 是**模块私有** Symbol（对比 cordis 第 36 行起全部用 `Symbol.for`）⇒ 同一源码的第二份模块实例 = 第二个 Symbol，标签跨实例不可见。
+2. 该 Host 内确实存在两份 `dsh-scope`：Host 核心用 `node_modules/.pnpm/@deepseek-ai+dsh-scope@0.1.6-alpha.1_…/lib/index.js`，Profile 内官方插件用 `…/profiles/experts/node_modules/@deepseek-ai/dsh-scope/lib/index.js`。实测 `dsh-experimental-browser-use-runtime` 与 Profile 内 `dsh-mcp-client` 的 `require.resolve('@deepseek-ai/dsh-scope')` 都指向后者，而核心的 `dsh-tools`/`dsh-system-prompt`/`dsh-mcp-resources` 指向前者。
+3. 受控实验 /tmp/wd-scope-dup.mjs（同一份源码的两个实例 + 真实官方 `Tools`/`McpResources`/`McpClient`）：用实例 A 建 scope 时 `scopeOf_A` 能读到标签、两个 agent 都成功；用实例 B 建 scope 时 `scopeOf_A=undefined`、`scopeOf_B` 能读到，第二个 agent 即重名失败。
+4. 来源是依赖声明：`@deepseek-ai/dsh-experimental-browser-use-runtime` 把 `@deepseek-ai/dsh-scope` 声明为 **dependencies**（`^0.1.6-alpha.1`），而 `dsh-mcp-client` 把它声明为 peerDependencies ⇒ Profile 安装必然在 Profile 内落地真实副本。
+5. 触发链：`workdsh-bundle` 的 [cordis.patch.yml](../packages/bundle/cordis.patch.yml) 第 8—11 行插入官方 browser-use 与 playwright-mcp（官方各 bundle 的 patch 文件实测 grep 无 `browser-use`，这两个条目只来自 WorkDSH）→ 官方 runtime 在 `agent/created` 时对每个 agent `createScope(ctx, agent)` 挂 mcp-client（`failOnStartupError: true`，`reconnect.enabled: false`）→ 第 1 个 agent 的注册落全局层成功，第 2 个 agent 同 `serverName` 的重名注册抛错 → 官方 `sessionController.create` 失败 → [access/index.ts](../packages/plugins/access/src/index.ts) 第 438 行记 `gateway/internal`。
+
+**判定边界（不得写成已定论）**：本轮已证实该失败与 WorkDSH 传给官方 create 的参数无关，根因位于官方插件与官方 `dsh-scope` 的作用域标识之间（官方插件把 `dsh-scope` 当强依赖 + `kScope` 非全局注册 Symbol）。**未验证**：真实安装拓扑（`~/.dsh/profiles/node_modules` 共享层存在时，Profile 安装是否仍落地本地副本）下是否同样发生——本轮只核对了该共享层为符号链接、Web Profile 的 `@deepseek-ai` 目录为空，未在真实拓扑复跑两次连续 create。官方是否认定其为缺陷、修法归官方（改 `Symbol.for`／把 `dsh-scope` 改回 peer）还是归 WorkDSH（收敛 bundle 或为 Profile 增加去重），均**未决定**；按「只定位、不改产品行为」的指令本轮未改任何产品代码与 bundle 组成。
+
+未执行（本节收口）：`probe:experts` 仍为未通过（退出码 1），其第 4 项及其后的全部检查（草稿编辑、Skill 选择、发布、冷重启绑定）均未执行。临时注入（Profile 的 `cordis.patch.yml` insert 与 `wd-logger-probe` 模块）已还原/删除。工作区随后按用户指令本地提交为两个提交：`0da9e47`（探针安装参数、面板边界、目录构建器入口）与紧随其后的文档提交（本节证据与台账对齐，即含本行的这次提交，其 SHA 因自制引用会随改写变化故不在此登记），提交后工作区干净、`check:plan` 退出码 0。**推送未完成（阻塞）**：`origin`（Gitee）返回 `remote: [session-…] Unauthorized`；`github` 远端返回 `Permission to techflag/workdsh.git denied to hkluoji-lab`（HTTP 403，钥匙串中的 GitHub 凭据无该仓库写权限，`gh` 未登录）。因此本地领先 `origin/main` 10 个提交（领先 `github` 远端 18 个提交）仍只在本地；未改动任何 git 配置或凭据。
+
+## 2026-09-16：目录构建器接线、5 个领域入口占位区分化、文档状态真源对齐
+
+用户指令（对上一轮功能评估报告的选区回复）：第 1、2、4 项先修。第 3 项（`check:plan` 断链）当时未被点名，本次未动；该项已在后续指令中单独修复，见上一节。三项均只改接线、文案与台账，未新增功能、未改任何 `package.json` 版本。
+
+**第 1 项：`build-skill-catalog.mjs` 接线。** 脚本（[build-skill-catalog.mjs](../scripts/build-skill-catalog.mjs)）此前完整可用但无 npm 入口、从未在本仓库运行，这是技能页显示「未发现本地技能目录」的直接原因。[package.json](../package.json) 新增 `catalog:build`；[skills/README.md](../packages/plugins/skills/README.md) 改用它并补写镜像来源与降级说明。
+
+证据（真实执行，非模拟）：无 `--source` 时以明确错误退出 1；用自建夹具（合法条目 + 故意缺 `SKILL.md` 的条目）`--source /tmp/wd-catalog-fixture --dry-run` 输出「目录条目 1 / 市场 2，图标文件 1，分类 1」「跳过：missing-body — 缺少 SKILL.md」且不写入；同夹具实写 `--target /tmp/wd-catalog-out` 产生 `catalog.json`、`icons/demo-skill.svg`、`payloads/demo-skill/SKILL.md`，`catalog.json sha256:660bf890ca87`、schema 1。
+
+**未消除的缺口（不得写成已解决）**：`--source` 要求的是含 `.codebuddy-skill/marketplace.json` 的技能市场镜像，WorkBuddy 的该目录为 `~/.workbuddy/skills-marketplace/`，由客户端首次访问其技能市场时下载生成；本机不存在，且全盘检索无其他副本。本机 `~/.workbuddy/` 下存在的是**插件市场**（`.codebuddy-plugin/marketplace.json`，键为 `plugins`）与**连接器市场**，与脚本契约不同源。因此 3031 技能页仍按 `skill/catalog-missing` 如实显示诊断与路径，「可安装」分区仍为空；本次交付是接线 + 如实诊断 + 文档说明，不是该分区的可用化。
+
+**第 2 项：5 个领域入口占位区分化。** [BusinessPanel.tsx](../packages/plugins/workbench/src/client/components/BusinessPanel.tsx) 的 `BusinessPanelDefinition` 新增必填 `boundary`，5 个面板各自声明「尚未实现（开发顺序 Dxx / 任务号）+ 本页无何种数据 + 一个真实可用的下一步」，组件改为渲染 `boundary` 而非共用硬编码文案；[client.ts](../packages/plugins/workbench/src/harness/client.ts) 的 `main` 席位注入同步透传。依据 [UI-DESIGN](UI-DESIGN.md) 第 109 行「空状态简短说明并给一个主要下一步。规划中的功能标明未实现」。步号取自 [开发顺序](development-order.json)：助理 D16/P1-12、项目 D07/P1-11、定时任务 D12/P2-03、资料库 D06/P1-06、更多 D08/D09/D14/D15。
+
+验证：`--filter workdsh-plugin-workbench typecheck` 退出码 0；`pnpm build` 退出码 0（bundle 的 build 前置编译 ui 与 workbench，客户端产物由 esbuild 内联，`dist/client.js` 实测含 5 条步号）；`preview:install` 退出码 0（其自带的逐字节比对断言通过，比对对象为 bundle 的 `.`/`./client`）；本机 3031 预览重装重启后，安装态 `workdsh-bundle/dist/client.js` 实测含全部 5 条文案。浏览器复验（真实 Chromium，逐个点击）：5 个入口均在左导航存在、h1 与入口名一致、选中态正确，正文各自渲染独立文案与独立「下一步：」引导，5 条两两不同；干净标签页冷加载控制台报错 0 条。截图落盘于 `.trae-cn/trae-browser-screenshots/6aa9cae7766f83583cad1538/`。
+
+**第 4 项：文档状态真源对齐（11 条确认矛盾）。** 先做只读一致性审计取得实际值，再回填文档；统一口径为「步骤状态以 [development-order.json](development-order.json) 为唯一真源、模块状态以 [modules.json](modules.json) 为准、版本以各 `package.json` 为唯一事实」。改动：`modules.json` 5 处（bundle → `0.1.0-alpha.46`、experts → `alpha.4`、activity → `alpha.3`，专家技能路径 `resources/skills/expert-manager` → `workdsh-expert-manager`，skills 内置技能由 1 条补为实际 5 条）；[MODULE-VERSIONS](MODULE-VERSIONS.md) 补连接器版本线并更新三处；[RELEASES](RELEASES.md) 修正开发模块对应表 5 行（ui `alpha.6`、contracts `alpha.8`、identity-local `alpha.5`、access `alpha.5`、audit `alpha.4`）；[CONTRACTS](CONTRACTS.md) contracts → `alpha.8`；[PLUGIN-DELIVERY](PLUGIN-DELIVERY.md) skills → `alpha.29`；[PLAN](PLAN.md) 2 处（修订「D05 及后续未开发」与已发行 `workdsh-plugin-connectors@0.1.0-alpha.1` 的冲突，为 2026-09-12 快照的 `activeSlice` 加快照时效说明）；[STATUS](STATUS.md) 在 2026-09-12 的 `# 当前状态与任务台账` 下加时效说明。
+
+**刻意未做**：`development-order.json` 的 D05 `status` 保持 `todo`，未改成 `in_progress`——[check-plan.mjs](../scripts/check-plan.mjs) 第 87 行规定 `status !== 'todo'` 时全部 `dependsOn` 必须 completed，而 D05 依赖仍为 `in_progress` 的 D04，强改会直接使校验失败；改为在 D05 增 `note` 字段说明「模块已发行不等于该步骤已完成」。同理未改写各 `package.json` 版本去迁就文档。
+
+残留与未执行（本节记录当时状态；下列断链已在上一节修复，实测 39 → 0）：当时 `check:plan` 因 39 条断链失败，集中在 `STATUS.md` 引用的 office 证据、`adr/0026-creatppt-native-editor.md`、`design/experts/TEAM-IMPLEMENTATION-HANDOFF.md` 等从未创建的文件，条数与本节改动前实测一致、无新增；本文件此前记录的 40 条与之相差 1，该计数口径差异未澄清。用户当时未点名第 3 项，断链当时未修。三项改动**均未提交、未推送**（Gitee 凭据阻塞仍在）。本轮当时未运行 `test:integration`、`probe:skills` 与 `probe:experts`（三项已在上一节补跑：前两项通过，`probe:experts` 未通过）；第 1 项只验证了脚本入口与写入路径，未验证技能页在目录存在时的「可安装」分区渲染（本机无可用镜像，该路径不可达）。
+
 ## 2026-09-16：技能页 3 条控制台报错查修（技能客户端取消语义）
 
 用户报告 3031 技能页控制台有 3 条报错，要求查修。实测为：`net::ERR_ABORTED /api/workdsh-skills` + `[workdsh:skills:catalog] TypeError: Failed to fetch` + `[workdsh:skills:list] TypeError: Failed to fetch`。
@@ -90,7 +165,7 @@ WorkBuddy 侧实测：`~/.workbuddy/connectors-marketplace/` 含 237 个连接�
 
 ## 2026-09-16：侧栏品牌名称改为 DSH JOB AI
 
-用户要求把左侧 logo 处改为 `DSH JOB AI`。改动位于 [Brand.tsx](../../packages/bundle/src/client/components/Brand.tsx)：`BrandName` 文本由 `WorkDSH` 改为 `DSH JOB AI`，仍由公开 `sidebar.brand.name` 席位提供，`data-testid="workdsh-brand"` 保留给探针使用；未替换 Sidebar owner，未改动 `sidebar.brand.mark` 与 LogoMark SVG。`scripts/probe-browser.mjs` 的两处品牌断言同步改为 `DSH JOB AI`。bundle 版本 0.1.0-alpha.45 → 0.1.0-alpha.46，CHANGELOG 已记录。
+用户要求把左侧 logo 处改为 `DSH JOB AI`。改动位于 [Brand.tsx](../packages/bundle/src/client/components/Brand.tsx)：`BrandName` 文本由 `WorkDSH` 改为 `DSH JOB AI`，仍由公开 `sidebar.brand.name` 席位提供，`data-testid="workdsh-brand"` 保留给探针使用；未替换 Sidebar owner，未改动 `sidebar.brand.mark` 与 LogoMark SVG。`scripts/probe-browser.mjs` 的两处品牌断言同步改为 `DSH JOB AI`。bundle 版本 0.1.0-alpha.45 → 0.1.0-alpha.46，CHANGELOG 已记录。
 
 验证：build 与 typecheck（含 `workdsh-bundle@0.1.0-alpha.46`）通过，`preview:install` 重新安装 Skill、Expert、Connector、Office、WorkDSH 五层，预览在 3031 重启。真实 Chromium 读取 `[data-testid="workdsh-brand"]` 的 `textContent` 精确为 `DSH JOB AI`，18px、颜色 #e7e7e7，左侧 22×22 蓝色 W 形 SVG 保持显示；无页面运行时异常，仅导航中止产生的 `/plugins/events`、`/@vite/client` 请求中止日志。截图留存 `/tmp/brand-left-sidebar.png`（全视口）与 `/tmp/brand-left-sidebar-zoom.png`（brand 区 3 倍放大）。
 
@@ -144,15 +219,15 @@ WorkBuddy 侧实测：`~/.workbuddy/connectors-marketplace/` 含 237 个连接�
 
 真实 Loader/AgentLoop/Team/Skill/persistence、确定性模型的实测表明：默认队友无需旧 binding 可运行；通过公开 `agent/created`、`tryMembership` 和 `agent.ctx.plugin()` 的 Persona/Skill Filesystem 局部挂载，两名原生队友同时 running，首请求角色和实际读取技能分别正确，父级/兄弟目录未污染。fresh/fork、初始化失败不发请求、官方中断、关闭 runtime 和独立进程通过消息唤醒原队友均已跑到；冷恢复包含原 fresh 与 fork Session ID 的实际新回合。`agent.ctx.loader.create()` 的 Persona 重复注册、把 Context 当 Skill scope 及错误恢复参数均属于探针调用问题，已按公开契约修正后复测。
 
-主流程 9 项、冷进程 3 项断言通过；但官方 `sessionQuery.readSession` 的分叉历史读取在默认组合、局部专家组合和冷恢复中仍报 inherited prefix 错误，总结果明确 partial、退出 2。公开 persistence 读取可用，探针据此继续其他断言，没有把查询失败计为通过。完整 Web Profile 与进一步公开查询方案尚未验证。旧专家 baseline 也已在 0.1.6 复跑，确认旧 binding Guard 阻止默认子代理，不能据此说官方不能运行专家。详见[证据](evidence/dsh-0.1.6-official-integration.md)及 .artifacts/dsh-0.1.6-upgrade/official-expert-composition/。
+主流程 9 项、冷进程 3 项断言通过；但官方 `sessionQuery.readSession` 的分叉历史读取在默认组合、局部专家组合和冷恢复中仍报 inherited prefix 错误，总结果明确 partial、退出 2。公开 persistence 读取可用，探针据此继续其他断言，没有把查询失败计为通过。完整 Web Profile 与进一步公开查询方案尚未验证。旧专家 baseline 也已在 0.1.6 复跑，确认旧 binding Guard 阻止默认子代理，不能据此说官方不能运行专家。详见证据（`evidence/dsh-0.1.6-official-integration.md` 未入库）及 .artifacts/dsh-0.1.6-upgrade/official-expert-composition/。
 
 本轮修改的是探针、命令与迁移计划，生产专家实现尚未切换，用户 preview 未部署重启。下一步验证用户作品/固定修订到官方局部配置的关联、官方工具 Guard 与专业签收，继续定位分叉历史查询与 U16-2 回归。真实模型、用户数据迁移、资源权限、热卸载、Web UI 与整体升级验收未执行；不删除仍在使用的旧路径，不标记 D04/TM-01 完成。
 
 ## 2026-09-15 — 升级范围补齐官方新能力接入
 
-按用户要求，DSH 0.1.6 升级交付同时包含现有功能回归与官方新能力落地。更新[专项计划](DSH-0.1.6-UPGRADE-PLAN.md)及 PLAN，列出 U16-F01—F12：会话工作区、官方 Team、浏览器操作、电脑操作、MCP 资源、SSH 工作区、Headless、自动审核、长任务/PTC、图片与 Messages、可见过程与重连、插件配置恢复。每项均明确官方所有者、WorkDSH 接入责任、实际任务和失败路径验收；V4 最小接点验证不再等同于产品交付。外部环境未就绪保持待办，不静默删功能；保留用户配置和权限。
+按用户要求，DSH 0.1.6 升级交付同时包含现有功能回归与官方新能力落地。更新专项计划（`DSH-0.1.6-UPGRADE-PLAN.md` 未创建）及 PLAN，列出 U16-F01—F12：会话工作区、官方 Team、浏览器操作、电脑操作、MCP 资源、SSH 工作区、Headless、自动审核、长任务/PTC、图片与 Messages、可见过程与重连、插件配置恢复。每项均明确官方所有者、WorkDSH 接入责任、实际任务和失败路径验收；V4 最小接点验证不再等同于产品交付。外部环境未就绪保持待办，不静默删功能；保留用户配置和权限。
 
-核对已发布 0.1.6-alpha.1 的 web-app/base patch、MCP Resources 与 agent-presets README：官方已声明终端、归档、预览、资源工具与公开组合查询。WorkDSH 安装脚本不会重新初始化已有 Profile，旧专家保存的 preset 也须单独迁移验证。四个公开来源的版本/声明及摘要回执见 .artifacts/dsh-0.1.6-upgrade/official-feature-inventory.json，新增[证据记录](evidence/dsh-0.1.6-official-integration.md)。这里只确认公开声明和工程组合方式，不代表最终配置已启用或功能运行通过。
+核对已发布 0.1.6-alpha.1 的 web-app/base patch、MCP Resources 与 agent-presets README：官方已声明终端、归档、预览、资源工具与公开组合查询。WorkDSH 安装脚本不会重新初始化已有 Profile，旧专家保存的 preset 也须单独迁移验证。四个公开来源的版本/声明及摘要回执见 .artifacts/dsh-0.1.6-upgrade/official-feature-inventory.json，新增证据记录（`evidence/dsh-0.1.6-official-integration.md` 未入库）。这里只确认公开声明和工程组合方式，不代表最终配置已启用或功能运行通过。
 
 check:plan 通过（29 模块/50 文档）；12 个独立工作项、三份计划/证据文档的本地引用与空白检查、git diff --check 通过。本轮只更新计划与证据，未执行新增功能运行探针、类型检查、构建、模型任务、部署、重启或发布。F01—F12 待产品验收，下一步继续 U16-2 旧数据/协议/长任务回归及必要适配，再按计划批次推进 U16-3。上一轮隔离升级回归结果保持，D04/TM-01 仍未整体验收。
 
@@ -162,13 +237,13 @@ check:plan 通过（29 模块/50 文档）；12 个独立工作项、三份计�
 
 已建立 codex/dsh-0.1.6-upgrade 分支并保存原有差异。frozen-lockfile 安装、475 项版本锁定、全工程类型和构建通过。首轮 integration 112/123，11 项失败定位到新版官方 Skill path 已规范为真实路径，/var 与 /private/var 别名被原字符串比较误判为不可管理，影响技能编辑/启停/卸载及专家发布冻结。修正 skills/src/services/manager.ts：受管目录与 symlink 检查后对比真实文件身份；同名外部技能仍只读，不能误操作本地副本。新增实际 provider 的别名/重名来源回归，修复后 integration 124/124、activity 9/9、技能 build/typecheck 通过。
 
-七层官方 Web Profile 工程外安装、Host 鉴权、专家原生 Session 固定绑定、DOCX/PPTX/XLSX 原生 Tab 共 6 项通过、浏览器错误 0；现有 --team 确定性协作 10/10、14 个原生子 Session 与实际文件验收通过；修复后的技能独立包浏览器与冷移除/重装 8 项通过。两个隔离 Profile 的 agent/session/skill/skill-filesystem/client-connection 均解析为 0.1.6-alpha.1。证据见 [隔离升级与适配记录](evidence/dsh-0.1.6-official-integration.md)，原始日志、机器汇总及截图位于 .artifacts/dsh-0.1.6-upgrade/20260915-154820/。规划检查 29 模块/50 文档及 git diff --check 通过。
+七层官方 Web Profile 工程外安装、Host 鉴权、专家原生 Session 固定绑定、DOCX/PPTX/XLSX 原生 Tab 共 6 项通过、浏览器错误 0；现有 --team 确定性协作 10/10、14 个原生子 Session 与实际文件验收通过；修复后的技能独立包浏览器与冷移除/重装 8 项通过。两个隔离 Profile 的 agent/session/skill/skill-filesystem/client-connection 均解析为 0.1.6-alpha.1。证据见隔离升级与适配记录（`evidence/dsh-0.1.6-official-integration.md` 未入库），原始日志、机器汇总及截图位于 .artifacts/dsh-0.1.6-upgrade/20260915-154820/。规划检查 29 模块/50 文档及 git diff --check 通过。
 
 下一步继续 U16-2 的真实旧数据/协议/长任务回归，再进入 U16-3 官方新增能力与 Team 替换。当前通过的是原有协作在新底座运行，V1—V3 官方 Team 替换、V4 全部新能力、付费模型、实际用户数据升级/回退和长时间资源检查未执行。用户 preview 未部署重启，未提交/推送/公开发布；D04/TM-01 保持未整体验收。
 
 ## 2026-09-15 — DSH 0.1.6 升级计划复审与验证前置
 
-新增 [DSH 0.1.6 升级计划](DSH-0.1.6-UPGRADE-PLAN.md)，以用户最新要求覆盖早期对话方案：不等 RC、公开预览版、官方运行与自有业务展示；“未找到官方接点”只表示待验证，不直接认定不可实现或删减功能。首要工作是隔离复跑旧 A/B 专家绑定失败场景，并验证默认组合、官方配置及公开 Provider/生命周期/Guard 接点，随后验证技能快照、SOP专业验收、冷恢复和实际 UI。新路径未通过前不删除既有执行适配或业务校验。
+新增 DSH 0.1.6 升级计划（`DSH-0.1.6-UPGRADE-PLAN.md` 未创建），以用户最新要求覆盖早期对话方案：不等 RC、公开预览版、官方运行与自有业务展示；“未找到官方接点”只表示待验证，不直接认定不可实现或删减功能。首要工作是隔离复跑旧 A/B 专家绑定失败场景，并验证默认组合、官方配置及公开 Provider/生命周期/Guard 接点，随后验证技能快照、SOP专业验收、冷恢复和实际 UI。新路径未通过前不删除既有执行适配或业务校验。
 
 计划同时补齐旧 Profile/preset 兼容修订、数据备份与回退演练、Messages/Files API/事件上报配置、不同运行面实验能力的实际条件，以及公开制品回读验证。上轮试升级变更仍未提交；此前版本检查、类型检查、构建通过不代表 0.1.6 功能验收。D04/TM-01 完成状态不变；下一执行项 U16-0 → U16-V1。
 
@@ -312,7 +387,7 @@ check:plan 通过（29 模块/50 文档）；12 个独立工作项、三份计�
 
 ## 每周发行计划（2026-09-14）
 
-已制定[每周版本计划](WEEKLY-RELEASE-PLAN.md)，首个目标发行日2026-09-18，滚动8周。每周冻结一个可验收闭环；前置未退出则顺延，未达标不抬版本凑数。计划日期/周次及相对链接检查、check:plan（29模块/50文档）与git diff --check通过；产品测试本次未执行。该计划不代表开发/验收已完成，不创建自动发布任务。当前D04、TM-01及暂停范围保持。
+已制定每周版本计划（`WEEKLY-RELEASE-PLAN.md` 未创建），首个目标发行日2026-09-18，滚动8周。每周冻结一个可验收闭环；前置未退出则顺延，未达标不抬版本凑数。计划日期/周次及相对链接检查、check:plan（29模块/50文档）与git diff --check通过；产品测试本次未执行。该计划不代表开发/验收已完成，不创建自动发布任务。当前D04、TM-01及暂停范围保持。
 
 ## 局域网访问核对（2026-09-14）
 
@@ -477,7 +552,7 @@ Host 同一 list 增加 expertType 条件，在授权目录分页前分类；摘
 
 ## 2026-09-13：补齐 WorkBuddy 专家制作与交付能力范围
 
-用户明确要求覆盖完整 expert-manager 体系，取消此前将单成员直调与二进制资源列为范围排除项。覆盖矩阵见 [WORKBUDDY-COVERAGE](design/experts/WORKBUDDY-COVERAGE.md)。完整 MD 是源，补齐转换/批量制作纪律、稳定身份检查、成员展示信息与真实头像；二进制原资源和可执行 bin 保存、固定安装、字节与目录漂移核对、原包导入导出。save_resources 从绑定工作区实际读取文件；export_file 经官方 Bash 沙箱写真实 ZIP、读回核对并原生 present，含空格/引号路径通过。
+用户明确要求覆盖完整 expert-manager 体系，取消此前将单成员直调与二进制资源列为范围排除项。覆盖矩阵见 design/experts/WORKBUDDY-COVERAGE.md（该文档未创建；后续复核见 [WorkBuddy 专业方法复核](design/experts/WORKBUDDY-REASSESSMENT.md)）。完整 MD 是源，补齐转换/批量制作纪律、稳定身份检查、成员展示信息与真实头像；二进制原资源和可执行 bin 保存、固定安装、字节与目录漂移核对、原包导入导出。save_resources 从绑定工作区实际读取文件；export_file 经官方 Bash 沙箱写真实 ZIP、读回核对并原生 present，含空格/引号路径通过。
 
 团队增加单成员 team_ask：固定成员真实子 Session，完整输出中转给主理人，不强制独立评审。team_open 可按完整正文 Workflow 形成计划，由 Host 解析当前固定成员；评审可选，无依赖阶段并发预留保留两条绑定，后序收到完整前序产出。未修改上游、未另建执行器；仍复用官方 provider/AgentLoop/Session/StorageDomain/SkillFilesystem/原生沙箱。
 
@@ -527,7 +602,7 @@ Host 同一 list 增加 expertType 条件，在授权目录分页前分类；摘
 
 ## 2026-09-13：TM-01 有限 SOP 验证通过
 
-交接补充：已在[实施入口第0节](design/experts/TEAM-IMPLEMENTATION-HANDOFF.md#0-发给接手-ai-的指令)整理可复制的接手指令、剩余有限范围、最小回归命令及本地未提交/忽略文件的移交说明。其他AI可在同一workdsh工作区接手；尚未创建其他任务、派发执行或提交推送。此次补充仅文档，不新增运行验证结论。
+交接补充：已在实施入口第0节（`design/experts/TEAM-IMPLEMENTATION-HANDOFF.md` 未创建，现行入口见 [有限开发计划](design/experts/DEVELOPMENT-PLAN.md)）整理可复制的接手指令、剩余有限范围、最小回归命令及本地未提交/忽略文件的移交说明。其他AI可在同一workdsh工作区接手；尚未创建其他任务、派发执行或提交推送。此次补充仅文档，不新增运行验证结论。
 
 按用户“SOP你先验证”完成内部业务策略与真实原生子任务探针。`probe-expert-team.mjs --sop`退出0，8组SOP检查（总11组）通过：未验收不放行、指定评审/当前正文版本、有限返工、评审取消不签收不重置预算、单Host存储CAS、执行前撤销复查、provider及真实可见原生工具绕行拒绝。独立Node进程冷读11份one-shot子历史及业务记录，验收版本和预算仍保留，没有恢复执行。
 
@@ -541,7 +616,7 @@ Host 同一 list 增加 expertType 条件，在授权目录分页前分类；摘
 
 `probe-expert-team.mjs --adapter` 6组检查通过/退出0：同一主持人下两个子任务分别读到A/B冻结Skill并completed；错误父任务、重复领取/重放、persona覆盖和continuable启动拒绝；交付前取消无模型调用且清理；活动子任务取消不影响同父另一个活动任务；独立进程读取4份one-shot历史。新增Host测试包含两主体/两组织、并发领取、停用、header不符和冷重启防重复领取，专家集成18/18；专家包build与根typecheck通过。
 
-原Teams基线复跑保持9组观测通过/3缺口/退出2；混装Teams服务及工具时，B子任务读完Skill后被其成员检查拒绝，因此本次明确分开运行组合。**最小适配通过不等于TM-01或专家团整体完成。**下一步只补SOP准入/指定评审/有限返工/工具绕行验证，再冻结生产适配。详见[证据](evidence/expert-team-tm01.md)及[接手顺序](design/experts/TEAM-IMPLEMENTATION-HANDOFF.md)。
+原Teams基线复跑保持9组观测通过/3缺口/退出2；混装Teams服务及工具时，B子任务读完Skill后被其成员检查拒绝，因此本次明确分开运行组合。**最小适配通过不等于TM-01或专家团整体完成。**下一步只补SOP准入/指定评审/有限返工/工具绕行验证，再冻结生产适配。详见[证据](evidence/expert-team-tm01.md)及接手顺序（`design/experts/TEAM-IMPLEMENTATION-HANDOFF.md` 未创建）。
 
 规划检查28模块/50文档、规划测试2/2、两份探针脚本语法与git diff --check通过。未执行：生产Profile安装/浏览器、付费模型、真实审批沙箱、外部写入取消、冷恢复执行及完整AT-T01～07。仅workspaceId而无已解析workspaceRef的父binding明确拒绝；不得猜目录。D04/D11和Office延期范围保持，未提交推送。新证据/交接位于忽略目录，提交时需显式纳入。
 
@@ -555,7 +630,7 @@ Host 同一 list 增加 expertType 条件，在授权目录分页前分类；摘
 
 ## 2026-09-13：专家团设计收敛为实施交接
 
-按用户“设计应能交给一般 AI 开发”的要求，新增 [TEAM-IMPLEMENTATION-HANDOFF](design/experts/TEAM-IMPLEMENTATION-HANDOFF.md)：固定首版产品范围、现有服务复用位置、拟新增领域字段/方法、整团部分发布回执、阶段准入/评审、取消与未知结果规则，以及 TM-01～04 文件级顺序和12条验收场景。TM-01 明确先验证官方 Agent Teams 的两位专家精确组合与自身绑定；公开接点不支持时给出失败证据和有限备选，不虚构 API。
+按用户“设计应能交给一般 AI 开发”的要求，新增 TEAM-IMPLEMENTATION-HANDOFF（该文档未创建，现行入口见 [有限开发计划](design/experts/DEVELOPMENT-PLAN.md)）：固定首版产品范围、现有服务复用位置、拟新增领域字段/方法、整团部分发布回执、阶段准入/评审、取消与未知结果规则，以及 TM-01～04 文件级顺序和12条验收场景。TM-01 明确先验证官方 Agent Teams 的两位专家精确组合与自身绑定；公开接点不支持时给出失败证据和有限备选，不虚构 API。
 
 交接索引、方案、契约历史说明、计划和 ADR 已同步，旧 workflow/one-shot 唯一路线不再作为实施要求。当前仅文档，D04/D11台账未修改；启动优先实施时先记录顺序例外，保留未完成模块。规划完整性检查通过（28模块/50已登记文档），规划测试2/2通过，新交接4个相对链接及12条验收场景核对通过，git diff --check通过；运行构建、团队探针、真实模型和浏览器验证均未执行，未安装 Profile、未提交推送。新交接文件位于仓库忽略的 docs 目录，后续提交须显式纳入，不能只提交引用它的已跟踪文件。
 
@@ -704,31 +779,31 @@ PPT体验样板中文词典覆盖507/3620，补设计菜单提示与文件名标
 
 ## 当前：中文PPT体验样板完成，窄侧栏未达标（2026-09-13）
 
-19093/experience.html提供原生完整组件六页中文演示日报，含70%饼图；271/3620项翻译，六页/公开翻页/pageerror0通过。视觉复核宽窗口内容正常，800px窄窗口属性面板挤占画布和功能区截断，仍不满足桌面侧栏编辑要求。下一步验证公开组合组件布局与必要操作，不直接正式接线。详见[evidence/office-pptx-react-trial.md](evidence/office-pptx-react-trial.md)。原18989未替换，Word暂停。
+19093/experience.html提供原生完整组件六页中文演示日报，含70%饼图；271/3620项翻译，六页/公开翻页/pageerror0通过。视觉复核宽窗口内容正常，800px窄窗口属性面板挤占画布和功能区截断，仍不满足桌面侧栏编辑要求。下一步验证公开组合组件布局与必要操作，不直接正式接线。详见 evidence/office-pptx-react-trial.md（该试验证据未入库；同线现行记录见 [当前 PPT 编辑器集成](evidence/office-pptx-integration.md)）。原18989未替换，Word暂停。
 
 ## 当前：React PPT接入前两项边界试验通过（2026-09-13）
 
-五类原生新建图表工作簿导出增强、原生面板修改后同步写回、重复补全及既有工作簿原字节保留通过；OpenXML验证0错误、LibreOffice打开通过。限定容器CSS挂载/卸载保持宿主按钮/边距/输入正常；图表数据面板文字对比度修正并视觉复核。脚本已保留到scripts/pptx-trial，见[evidence/office-pptx-react-trial.md](evidence/office-pptx-react-trial.md)。19093/scoped.html仅独立体验，默认原生下载尚未自动接补全；18989未替换、Word暂停、费用插件保留。下一步正式React Slot与同一Office服务/导出接线，实际AI逐页跟随、完整主题弹窗、PowerPoint/WPS及发布门禁仍待验。
+五类原生新建图表工作簿导出增强、原生面板修改后同步写回、重复补全及既有工作簿原字节保留通过；OpenXML验证0错误、LibreOffice打开通过。限定容器CSS挂载/卸载保持宿主按钮/边距/输入正常；图表数据面板文字对比度修正并视觉复核。脚本已保留到scripts/pptx-trial，见 evidence/office-pptx-react-trial.md（该试验证据未入库）。19093/scoped.html仅独立体验，默认原生下载尚未自动接补全；18989未替换、Word暂停、费用插件保留。下一步正式React Slot与同一Office服务/导出接线，实际AI逐页跟随、完整主题弹窗、PowerPoint/WPS及发布门禁仍待验。
 
 ## 当前：React PPT图表面板与导出边界验证（2026-09-13）
 
-用户继续授权pptx-react-viewer候选。原生面板人工修改新建/导入饼图并保存回读通过；导入8图/8工作簿保留且chart缓存与xlsx数值同步；新建图表仍无工作簿。LibreOffice独立打开/导出5页和8页通过，不等于PowerPoint/WPS数据编辑签收。900px宿主外部输入及卸载后输入正常，但原样随包CSS全局重置body/button且卸载后保留，正式接入前必须解决。证据见[evidence/office-pptx-react-trial.md](evidence/office-pptx-react-trial.md)。本轮不替换18989、Word暂停、费用插件保留。下一步样式边界/新建工作簿可用路径→正式React Slot同服务接线；实际Harness联测/完整发布门禁未执行。
+用户继续授权pptx-react-viewer候选。原生面板人工修改新建/导入饼图并保存回读通过；导入8图/8工作簿保留且chart缓存与xlsx数值同步；新建图表仍无工作簿。LibreOffice独立打开/导出5页和8页通过，不等于PowerPoint/WPS数据编辑签收。900px宿主外部输入及卸载后输入正常，但原样随包CSS全局重置body/button且卸载后保留，正式接入前必须解决。证据见 evidence/office-pptx-react-trial.md（该试验证据未入库）。本轮不替换18989、Word暂停、费用插件保留。下一步样式边界/新建工作簿可用路径→正式React Slot同服务接线；实际Harness联测/完整发布门禁未执行。
 
 ## 当前：iOfficeAI/OfficeCLI独立PPT验证（2026-09-13）
 
-按用户指定测试既有officecli1.0.149，五类原生PPT图表创建、数据修改关闭重读、OpenXML验证、watch真实SSE刷新及五图视觉检查通过。导出无嵌入工作簿，Office/WPS数据编辑待验；watch goto不支持PPT元素且第五页修改不自动进入视口，不能视为实时焦点需求完成。19094原生预览供体验，原18989/19093不替换、不新增安装或模型配置。见[evidence/officecli-ppt-trial.md](evidence/officecli-ppt-trial.md)。下一步按用户选择明确文件操作工具/可视化编辑器职责；真实模型及Harness接入、全类型/图片表格、发布门禁未执行，Word暂停、费用插件保留。
+按用户指定测试既有officecli1.0.149，五类原生PPT图表创建、数据修改关闭重读、OpenXML验证、watch真实SSE刷新及五图视觉检查通过。导出无嵌入工作簿，Office/WPS数据编辑待验；watch goto不支持PPT元素且第五页修改不自动进入视口，不能视为实时焦点需求完成。19094原生预览供体验，原18989/19093不替换、不新增安装或模型配置。见 evidence/officecli-ppt-trial.md（该试验证据未入库）。下一步按用户选择明确文件操作工具/可视化编辑器职责；真实模型及Harness接入、全类型/图片表格、发布门禁未执行，Word暂停、费用插件保留。
 
 ## 当前：用户指定React PPT编辑器隔离测试（2026-09-13）
 
-pptx-react-viewer3.16.5/core3.14.3独立测试通过：五种常见图表、多页原生React界面、人工文字编辑及翻页、公开API修改/焦点/撤销重做、PPTX保存重载、组件卸载，无pageerror；导出含5原生图表XML但没有嵌入工作簿，PowerPoint/WPS编辑数据未验证。19093本机试验供体验，不替换18989、Word暂停、费用插件保留。区分用户新发的两个同名OfficeCLI项目，仅核对文档和本机既有1.0.149帮助，不新增生成流程。证据见[evidence/office-pptx-react-trial.md](evidence/office-pptx-react-trial.md)。下一步核验图表手工数据编辑与工作簿导出后再确定接入；真实AI/Harness联测及产品全量门禁未执行。
+pptx-react-viewer3.16.5/core3.14.3独立测试通过：五种常见图表、多页原生React界面、人工文字编辑及翻页、公开API修改/焦点/撤销重做、PPTX保存重载、组件卸载，无pageerror；导出含5原生图表XML但没有嵌入工作簿，PowerPoint/WPS编辑数据未验证。19093本机试验供体验，不替换18989、Word暂停、费用插件保留。区分用户新发的两个同名OfficeCLI项目，仅核对文档和本机既有1.0.149帮助，不新增生成流程。证据见 evidence/office-pptx-react-trial.md（该试验证据未入库）。下一步核验图表手工数据编辑与工作簿导出后再确定接入；真实AI/Harness联测及产品全量门禁未执行。
 
 ## 当前：重新调查可嵌入React PPT编辑器（2026-09-13）
 
-按用户要求暂停PPTist接入，调查项目官方文档与npm元数据，找到SlideWise（MIT，发布1.21.1、React19）及pptx-react-viewer（Apache-2.0，发布3.16.5、React18/19）；两者提供正式组件及内容/保存接口。ONLYOFFICE提供正式React集成及全面图表，但需Document Server，外部Automation API为Developer能力。见[候选比较](design/office/PPT-EDITOR-CANDIDATES.md)。建议先隔离验证SlideWise、第二候选pptx-react-viewer；具体图表/新建/UI/导出/焦点/卸载兼容尚未实测，不替换默认编辑器，不改18989。PPTist未完成候选代码保留，Word暂停、费用插件保留；产品全量门禁未执行。
+按用户要求暂停PPTist接入，调查项目官方文档与npm元数据，找到SlideWise（MIT，发布1.21.1、React19）及pptx-react-viewer（Apache-2.0，发布3.16.5、React18/19）；两者提供正式组件及内容/保存接口。ONLYOFFICE提供正式React集成及全面图表，但需Document Server，外部Automation API为Developer能力。见候选比较（`design/office/PPT-EDITOR-CANDIDATES.md` 未创建）。建议先隔离验证SlideWise、第二候选pptx-react-viewer；具体图表/新建/UI/导出/焦点/卸载兼容尚未实测，不替换默认编辑器，不改18989。PPTist未完成候选代码保留，Word暂停、费用插件保留；产品全量门禁未执行。
 
 ## 当前：暂停PPTist实现，先核对官方接入契约（2026-09-13）
 
-按用户要求只做技术核对，未继续接入代码或安装。核对本地官方Client Modules/Slots/Sidebar Right/Web Client/Resources说明及rc.1发布包公开声明：正式页面扩展为React Slot + Tab；没有找到Vue/iframe专用SDK，不能将浏览器隔离策略当作官方推荐。技术结论见[接入边界](design/office/PPTIST-INTEGRATION.md)，修正ADR-0027。下一步优先限定容器的Vue挂载兼容验证，验证后再确定承载。此前新增适配代码仍为未通过候选：隔离桥接未就绪，ProseMirror类型重复；正式接入/迁移/根全量门禁未执行。18989仍为旧候选加费用插件，19092独立演示；Word暂停。
+按用户要求只做技术核对，未继续接入代码或安装。核对本地官方Client Modules/Slots/Sidebar Right/Web Client/Resources说明及rc.1发布包公开声明：正式页面扩展为React Slot + Tab；没有找到Vue/iframe专用SDK，不能将浏览器隔离策略当作官方推荐。技术结论见接入边界（`design/office/PPTIST-INTEGRATION.md` 未创建），修正ADR-0027。下一步优先限定容器的Vue挂载兼容验证，验证后再确定承载。此前新增适配代码仍为未通过候选：隔离桥接未就绪，ProseMirror类型重复；正式接入/迁移/根全量门禁未执行。18989仍为旧候选加费用插件，19092独立演示；Word暂停。
 
 ## 当前：PPTist 直接挂载可行性验证（2026-09-13）
 
@@ -760,29 +835,31 @@ pptx-react-viewer3.16.5/core3.14.3独立测试通过：五种常见图表、多�
 
 ## 当前：PPT 原生应用闭环与真实模型验收（2026-09-12）
 
-CreatPPT 0.1.4 已通过同一 Office ContentService/六工具/官方右侧 Tab 接入；采用发布包原生 Vue/SVG 页面与公开 DeckSpec API，不加载其 DSH 插件或另建存储/服务器。12项内容/原生页面集成、Office构建和类型检查通过；PPT实际Harness应用8项（自动打开、两批同步、人工保存、PPTX下载、刷新重开）及Word应用16项回归通过。详细证据见 [office-creatppt-u2](evidence/office-creatppt-u2.md)。
+CreatPPT 0.1.4 已通过同一 Office ContentService/六工具/官方右侧 Tab 接入；采用发布包原生 Vue/SVG 页面与公开 DeckSpec API，不加载其 DSH 插件或另建存储/服务器。12项内容/原生页面集成、Office构建和类型检查通过；PPT实际Harness应用8项（自动打开、两批同步、人工保存、PPTX下载、刷新重开）及Word应用16项回归通过。详细证据见 office-creatppt-u2（`evidence/office-creatppt-u2.md` 未入库；PPT 同线现行记录见[当前 PPT 编辑器集成](evidence/office-pptx-integration.md)）。
 
 18989 人工预览已通过官方 CLI 安装并重启 alpha.3 本地候选，Host/Client编译字节核对一致；公开Word alpha.2未变，PPT未发布。真实模型新任务自然语言转换已通过：读取Word参考、保留原件、新建6页PPT、自动打开右侧；实际一次内容提交，无脚本/技能绕行。首个PPT约5.46秒、正文约9.81秒。加入全局pptx/elite-powerpoint-designer技能的隔离新任务复测也通过，无脚本/技能绕行；旧会话回放未执行。下一步根据实际工具选择与技能冲突证据收口；不写死“日报转PPT”或新增Agent loop。PPT文件导入、受控文件交付卡、原生浏览器包完整传递许可审查、PPT安装卸载重装全验收与Office/WPS视觉验证未执行；八类路线/D04/D15保留。
 
 ## 当前：CreatPPT 单编辑器接入（2026-09-12）
 
-用户在 19091 体验后确认继续。采用 CreatPPT 0.1.4 发布包，停止自建 PPT 画布扩展；依据 [ADR-0026](adr/0026-creatppt-native-editor.md) 接既有 Office 服务与原生页面。独立页面不等于应用接入完成，PPT 菜单暂不启用。Word 与已发布 alpha.2 保持当前范围。
+用户在 19091 体验后确认继续。采用 CreatPPT 0.1.4 发布包，停止自建 PPT 画布扩展；依据 ADR-0026（`adr/0026-creatppt-native-editor.md` 未创建、编号空置）接既有 Office 服务与原生页面。独立页面不等于应用接入完成，PPT 菜单暂不启用。Word 与已发布 alpha.2 保持当前范围。
 
-本轮薄适配器与原生保存/重开/PPTX 下载实测完成，10/10 内容回归和 Office 类型检查通过。无图默认封面原生阻止导出，纯文字生成改用原生 statement/planSlide；未关闭质量检查。证据 [office-creatppt-u1.md](evidence/office-creatppt-u1.md)。正式服务类型、六工具、右侧页面同步、真实模型与制品生命周期仍未执行；下一步从既有 ContentService 扩展 presentation 分支，不新建存储。
+本轮薄适配器与原生保存/重开/PPTX 下载实测完成，10/10 内容回归和 Office 类型检查通过。无图默认封面原生阻止导出，纯文字生成改用原生 statement/planSlide；未关闭质量检查。证据 office-creatppt-u1.md（该证据未入库）。正式服务类型、六工具、右侧页面同步、真实模型与制品生命周期仍未执行；下一步从既有 ContentService 扩展 presentation 分支，不新建存储。
 
 # 当前状态与任务台账
 
 更新时间：2026-09-12。
 
+> 时效说明（2026-09-16 回填）：本 H1 之后的内容是 2026-09-12 及更早的快照，标题里的“当前”按当时口径。当前状态以本文件顶部摘要与[开发顺序](development-order.json)为准；下文任务台账中的 P1-02 应为 `in_progress`（专家插件已发行 `0.1.0-alpha.4`），P1-04 的 `todo` 只表示 D05 步骤未执行，连接器模块已有 `0.1.0-alpha.1` 实现与发行，两者不矛盾。
+
 ## 当前：PPT方案校正与GenOffice源码复核（2026-09-12）
 
-按用户质疑复核固定GenOffice提交de139a061537bea40f0cc81ef8f09a95f77ac52a：生产结构化页面由自研pptx-engine生成/保存，pptx-render负责布局和RenderTree，Konva/react-konva负责交互；不能把开发依赖PptxGenJS当对方完整生产方案。保留PPT-01新建导出探针，但不提前启用菜单。下一步在PPT-02接线前校正OOXML中心旋转语义和codec/画布边界，随后接原统一服务/工具/右栏。对方private源码包不是已核验发行SDK；本轮只静态审阅，未复制到产品，未决定源码分叉。具体见[复核记录](design/office/GENOFFICE-SLIDES-REVIEW.md)。本轮GenOffice构建/运行、导入往返、应用实时PPT和发布均未执行；Word和18989预览不变。
+按用户质疑复核固定GenOffice提交de139a061537bea40f0cc81ef8f09a95f77ac52a：生产结构化页面由自研pptx-engine生成/保存，pptx-render负责布局和RenderTree，Konva/react-konva负责交互；不能把开发依赖PptxGenJS当对方完整生产方案。保留PPT-01新建导出探针，但不提前启用菜单。下一步在PPT-02接线前校正OOXML中心旋转语义和codec/画布边界，随后接原统一服务/工具/右栏。对方private源码包不是已核验发行SDK；本轮只静态审阅，未复制到产品，未决定源码分叉。具体见复核记录（`design/office/GENOFFICE-SLIDES-REVIEW.md` 未创建；PPT 选型校正在[开源栈方案](design/office/OPEN-SOURCE-STACK.md)）。本轮GenOffice构建/运行、导入往返、应用实时PPT和发布均未执行；Word和18989预览不变。
 
 ## 当前：PPT-01 原生适配器探针通过（2026-09-12）
 
 Word后续开发暂停。新增独立presentation语义模型、原子幻灯片/文字/图片操作、MIT Konva10.5.0原生拖动与Transformer缩放、MIT PptxGenJS4.0.1可编辑PPTX导出。按用户要求核对Konva公开API，记录文字输入/绝对坐标/缩放/持久化/销毁边界；修正元素ID混入载荷、销毁期间图片decode中断、Konva原点与PPTX中心旋转偏移。源码alpha.3未发布，不启用PPT菜单，不改18989人工预览，不改变已发布alpha.2。
 
-Office类型检查通过；4项PPT浏览器/模型/导出探针及7项既有内容服务回归合计11/11通过，git diff --check通过。实际画布截图已查看，仅是技术探针；样例PPTX XML核对可编辑中文文字、两页、尺寸和原图片字节。证据见[evidence/office-presentation-u1.md](evidence/office-presentation-u1.md)。全仓构建/检查、真实模型、应用右侧PPT、PPT插件制品安装/卸载/重装、Office/WPS视觉核验均未执行。下一步PPT-02扩展既有统一内容服务类型适配、六工具与右侧页面，并按官方示例接入DOM文字编辑；不复制第二套存储/授权/租约，不新增Agent执行框架。D04/D15不变。
+Office类型检查通过；4项PPT浏览器/模型/导出探针及7项既有内容服务回归合计11/11通过，git diff --check通过。实际画布截图已查看，仅是技术探针；样例PPTX XML核对可编辑中文文字、两页、尺寸和原图片字节。证据见 evidence/office-presentation-u1.md（该证据未入库）。全仓构建/检查、真实模型、应用右侧PPT、PPT插件制品安装/卸载/重装、Office/WPS视觉核验均未执行。下一步PPT-02扩展既有统一内容服务类型适配、六工具与右侧页面，并按官方示例接入DOM文字编辑；不复制第二套存储/授权/租约，不新增Agent执行框架。D04/D15不变。
 
 ## 最新范围：停止Word后续开发，下一阶段优先PPT（2026-09-12）
 
@@ -988,7 +1065,7 @@ MPL 官方 FAQ 与发布包许可证核对完成：允许商用和专有组合�
 
 ## 本轮：宽松许可浏览器编辑器选型（2026-09-12）
 
-用户确认覆盖六类编辑器并优先 MIT/Apache-2.0。新增[选型证据与有限验证计划](evidence/browser-editors-permissive-selection.md)。PPT 新增 Apache-2.0 的 pptx-viewer 候选；Grist static 官方明确修改不保存、导入导出缺失，不能作为完整多维表格交付。既有 Univer 全组件范围保留，商业 SDK 迁移暂不推进，先按新许可约束验证替代组件。候选实际安装、构建、浏览器与文件回归未执行；未重启、提交或发布。
+用户确认覆盖六类编辑器并优先 MIT/Apache-2.0。新增选型证据与有限验证计划（`evidence/browser-editors-permissive-selection.md` 未入库）。PPT 新增 Apache-2.0 的 pptx-viewer 候选；Grist static 官方明确修改不保存、导入导出缺失，不能作为完整多维表格交付。既有 Univer 全组件范围保留，商业 SDK 迁移暂不推进，先按新许可约束验证替代组件。候选实际安装、构建、浏览器与文件回归未执行；未重启、提交或发布。
 
 ## 本轮：Univer 完整组件范围与原生编辑兼容探针（2026-09-12）
 
@@ -1008,7 +1085,7 @@ Office类型检查与规划/差异检查通过；正式业务全量、真实模�
 
 ## 本轮：WorkDSH 桌面未签名测试版构建与冒烟（2026-09-12）
 
-按用户四项决策（暂缓 Apple 凭据先做未签名测试版、品牌 WorkDSH、预置全部 7 包、应用 ID com.workdsh.app），在锁定 dsh-v0.1.5-rc.1 隔离快照上完成 5 文件 WORKDSH TEST PATCH 并实现全链路贯通：7 包 tarball → 核心包集 248 → unsigned 种子（bundles=内置两层+7 层，integrity 270 文件）→ electron-builder --dir **exit=0**（Electron 44 改走 npmmirror 镜像完成下载）。产物 WorkDSH.app（1.0G，CFBundleIdentifier=com.workdsh.app，adhoc 签名无 quarantine）本机冒烟通过：首启离线安装 248 包至 ~/.dsh/profiles/desktop（7 个 workdsh 全部就位），staging healthCheck 与正式 Host 激活（[workdsh:probe] 生命周期），二次启动快路径，CDP 截图确认 WorkDSH 品牌、侧边导航（新会话/项目/专家·技能·连接器/定时任务/资料库）与真实 session 轨迹完整渲染。旧 desktop profile 残留已备份为重命名目录（保留数据）。Dock 图标已接线：品牌概念图转 10 档 iconset → workdsh-icon.icns，mac.icon 接入后重打包 exit=0，SHA-256 与源一致。窗口壳融合已实施（main.ts hiddenInset 主窗口 + preload-app.ts 注入适配样式）：侧边栏 logoRow 顶部留白 48px（品牌行 y=56，避开红绿灯）、logoRow 与内容 header 为 drag 区、交互控件 no-drag；运行时 CDP 核验 innerHeight=840=outerHeight（原生标题栏已移除）、shellMark=inset、header region=drag；重打包 exit=0（须带 --config electron-builder.config.mjs，首次遗漏误产物 dist/ 已清除）。红绿灯实际落位与窗口拖动、Dock 显示待用户肉眼确认（如 Dock 仍是旧图属缓存，移除重添或 killall Dock）。未执行：正式签名/公证、DMG/ZIP 分发制品、自动更新通道、长会话真实性验收、设置页/全屏视图红绿灯检查；产物仅本机自用不可分发。详见[evidence](evidence/desktop-pack-test.md)。
+按用户四项决策（暂缓 Apple 凭据先做未签名测试版、品牌 WorkDSH、预置全部 7 包、应用 ID com.workdsh.app），在锁定 dsh-v0.1.5-rc.1 隔离快照上完成 5 文件 WORKDSH TEST PATCH 并实现全链路贯通：7 包 tarball → 核心包集 248 → unsigned 种子（bundles=内置两层+7 层，integrity 270 文件）→ electron-builder --dir **exit=0**（Electron 44 改走 npmmirror 镜像完成下载）。产物 WorkDSH.app（1.0G，CFBundleIdentifier=com.workdsh.app，adhoc 签名无 quarantine）本机冒烟通过：首启离线安装 248 包至 ~/.dsh/profiles/desktop（7 个 workdsh 全部就位），staging healthCheck 与正式 Host 激活（[workdsh:probe] 生命周期），二次启动快路径，CDP 截图确认 WorkDSH 品牌、侧边导航（新会话/项目/专家·技能·连接器/定时任务/资料库）与真实 session 轨迹完整渲染。旧 desktop profile 残留已备份为重命名目录（保留数据）。Dock 图标已接线：品牌概念图转 10 档 iconset → workdsh-icon.icns，mac.icon 接入后重打包 exit=0，SHA-256 与源一致。窗口壳融合已实施（main.ts hiddenInset 主窗口 + preload-app.ts 注入适配样式）：侧边栏 logoRow 顶部留白 48px（品牌行 y=56，避开红绿灯）、logoRow 与内容 header 为 drag 区、交互控件 no-drag；运行时 CDP 核验 innerHeight=840=outerHeight（原生标题栏已移除）、shellMark=inset、header region=drag；重打包 exit=0（须带 --config electron-builder.config.mjs，首次遗漏误产物 dist/ 已清除）。红绿灯实际落位与窗口拖动、Dock 显示待用户肉眼确认（如 Dock 仍是旧图属缓存，移除重添或 killall Dock）。未执行：正式签名/公证、DMG/ZIP 分发制品、自动更新通道、长会话真实性验收、设置页/全屏视图红绿灯检查；产物仅本机自用不可分发。详见 evidence/desktop-pack-test.md（该证据未入库）。
 
 打包流程已按用户要求固化为可复用入口：新增 `scripts/desktop/pack-desktop.mjs` 一键脚本（Node 22 自举 → 补丁 SHA-256 校验 → build:desktop → electron-builder → 产物断言，支持 `--skip-build/--check-only/--sync-patches/--restart`）、补丁存档 `scripts/desktop/patches/upstream/`（9 文件防漂移比对）、打包指南 `docs/DESKTOP-PACKAGING.md`（用法/补丁表/快照重建/Windows 说明/常见问题，打包资料主体按用户要求集中于此）与技能触发入口 `.qoder/skills/workdsh-desktop-pack/SKILL.md`（指向指南；个人级副本已移除）。测试：`--check-only`（Node 21→22 自举、9 补丁一致）与完整打包均 exit=0，产物断言全过（1.0G）。macOS 不能产出 Windows 版：官方 `package-target.ts` 的 win-x64 硬门槛要求 Windows x64 主机、`prepare-seed` 需目标平台 Node 生成平台专用种子、Windows 强制 EV 签名且无未签名降级；如需 Windows 版须在 Windows x64 真机/虚拟机复刻并新增等价 unsigned 补丁。技能跨会话触发与快照重建未实测；未提交/推送/发布。
 
@@ -1817,7 +1894,7 @@ Chrome/Playwright 覆盖中英文、1440/1920 桌面与 390/320 手机、功能/
 
 用户提供的真实任务记录确认旧路径把分析图表编码为 PNG/Base64，并以图片块插入 Word；它不能编辑数据，也不属于 Word 原生图表。Office 文档模型现新增 `chart` 块，模型只提交图表类型、分类、系列和值；Client NodeView 由插件绘制 SVG，DOCX 导出生成 `word/charts/chartN.xml`、关系和嵌入 XLSX，禁止用图表图片代替。
 
-Office build/typecheck 以及 content/download/rich-editor 30 项相关测试通过；浏览器断言图表为 SVG 且无 `img`，DOCX 断言存在 `c:chart`、嵌入工作簿数据且无图表媒体文件。现有图片图表不能从像素可靠恢复数据，不自动迁移；外部 DOCX 原生图表反向导入和五类图表逐一 Word/WPS 人工打开仍待验证。证据见 [office-word-native-charts](evidence/office-word-native-charts.md)。preview 已重装并重启，18989 返回认证保护的 HTTP 401，安装包内 Host/Client 均包含新图表实现；已有错误连接器仍会独立报告缺失 `sd` 模块，不影响 Web 服务启动。
+Office build/typecheck 以及 content/download/rich-editor 30 项相关测试通过；浏览器断言图表为 SVG 且无 `img`，DOCX 断言存在 `c:chart`、嵌入工作簿数据且无图表媒体文件。现有图片图表不能从像素可靠恢复数据，不自动迁移；外部 DOCX 原生图表反向导入和五类图表逐一 Word/WPS 人工打开仍待验证。证据见 office-word-native-charts（`evidence/office-word-native-charts.md` 未入库）。preview 已重装并重启，18989 返回认证保护的 HTTP 401，安装包内 Host/Client 均包含新图表实现；已有错误连接器仍会独立报告缺失 `sd` 模块，不影响 Web 服务启动。
 ## 2026-09-16：专家团动态切回真实主理人
 
 修复顶部动态长期停留在已完成队友的问题。官方 Team 的成员 Session 可能在共享任务完成后短暂保持 `running`；现在有任务历史的队友以原生任务状态为准，`completed` 后退出活动候选，仍在 `in_progress` 的任务优先，否则回到运行中的 lead。专家活动身份同时加入 `lead` 映射，顶部和展开详情均显示专家作品中的真实姓名，不再显示内部键 `lead`。Activity 11/11、Activity build、Experts typecheck/build 与 diff 检查通过。preview 已重新安装并重启，安装产物包含新选择逻辑和 lead 身份映射；真实会话的队友任务均结束后，顶部不再停留在“钱日清”，而按终态显示“任务已中断，已有成果保留”。运行中 lead 接管的“郑守衡 · 正在处理”分支由回归测试覆盖。

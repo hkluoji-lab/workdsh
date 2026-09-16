@@ -16,7 +16,7 @@
 
 | 官方专题 | 可复用能力 | WorkDSH 实施边界 |
 | --- | --- | --- |
-| [Code runtime](../deepseek-harness-docs/subsystems/code-runtime.zh.md) | 每次运行隔离、JSON 输入输出、结构化失败与取消 | isolation 标签不证明安全；取消程序后仍需结算已进入 Host 的调用。Python 后端为未发布实验，不作为公开可用能力承诺。 |
+| [PTC 运行时（code runtime）](../deepseek-harness-docs/subsystems/ptc-runtime.zh.md) | 每次运行隔离、JSON 输入输出、结构化失败与取消 | isolation 标签不证明安全；取消程序后仍需结算已进入 Host 的调用。Python 后端为未发布实验，不作为公开可用能力承诺。 |
 | [Extensions](../deepseek-harness-docs/subsystems/extensions.zh.md) | 动态 Plugin/Package/run 标识、Host/Client 激活与检查 | 仅开发实验；Session 所有权与不可变 Package 不等于企业授权或可发布专家对象。旧 run 调用必须拒绝；inspect/inventory 需防跨主体泄露。 |
 | [Feedback](../deepseek-harness-docs/subsystems/feedback.zh.md) | 消息反馈 CAS、持久反馈事件、原生动作 Slot | 原生 Host 不记录认证 actor；团队入口需补授权与审计。删除只撤回当前值，历史日志仍保留。反馈不是业务验收或自动训练。 |
 | [Goal](../deepseek-harness-docs/subsystems/goal.zh.md) | 单 Session 目标、revision CAS、连续轮次与恢复事实 | 持久 active 不等于进程自动继续；受控恢复后才重新激活。不能替代跨会话自动化或项目目标验收。 |

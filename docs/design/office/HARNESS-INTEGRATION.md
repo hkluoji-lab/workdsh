@@ -45,7 +45,7 @@ PTC只处理内容工具允许的严格参数，不能把模型程序送到浏�
 | 需求 | 官方证据 | 锁定版本核对/已有证据 | Office要补的差异与门槛 |
 | --- | --- | --- | --- |
 | 模型调用工具 | [adding-a-tool](../../deepseek-harness-docs/cookbook/adding-a-tool.zh.md)、[tools](../../deepseek-harness-docs/subsystems/tools.zh.md) | dsh-tools@0.1.5-rc.1根exports含defineTool，类型含ToolRuntime/exec.signal/规范output；experts已有工具实现 | content_*严格schema、授权、业务状态与真实模型探针 |
-| 程序调用工具 | 同上PTC节、[code-runtime](../../deepseek-harness-docs/subsystems/code-runtime.zh.md) | 安装树含code-runtime/worker-thread同版本；工具发布声明含PTC类型 | 不新增执行器；验证Native与PTC返回相同修订/失败语义 |
+| 程序调用工具 | 同上PTC节、[PTC 运行时（code runtime）](../../deepseek-harness-docs/subsystems/ptc-runtime.zh.md) | 安装树含code-runtime/worker-thread同版本；工具发布声明含PTC类型 | 不新增执行器；验证Native与PTC返回相同修订/失败语义 |
 | 持久原子提交 | [storage](../../deepseek-harness-docs/subsystems/storage.zh.md) | dsh-storage-domain@0.1.5-rc.1公开KvTable.update同步纯变换；单写链，无跨表事务承诺 | state+revision+receipt一次记录提交；崩溃/重试/容量测试 |
 | Client通信 | [adding-a-remote-api](../../deepseek-harness-docs/cookbook/adding-a-remote-api.zh.md)、[api-gateway](../../deepseek-harness-docs/api-gateway.zh.md) | protocol/generator同版本；[D01生成失败记录](../../evidence/d01-remote.md)；[专家G05已验证Connection路径](../../evidence/d04-experts-g01-g06.md) | 本地版本采用Office专属认证exact Fetch、严格DTO和取消，不复制专家内部协议 |
 | 镜像/恢复 | [web-client](../../deepseek-harness-docs/subsystems/web-client.zh.md) | 官方定义Host→传输→Client model→UI；具体Office流式扩展未验证 | 首版500ms非重叠修订查询/快照、延迟响应防倒退、撤权与重连；不假设官方自动同步任意领域 |

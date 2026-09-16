@@ -85,7 +85,7 @@ Review 必须核对未重复建立 Agent loop、Skill registry/解析器、模�
 ## 版本策略
 
 - 版本单位是模块；详见 [模块版本规划](MODULE-VERSIONS.md)。一个模块维护一条 `主版本.次版本` 能力线，模块内 Host、Client、Remote、资源和内置管理 Skill 同步归入该版本。页面、任务与开发切片不另起产品版本。
-- 功能插件与 provider 模块独立版本化；开始实际开发时在 `modules.json` 声明 `moduleVersion`。首个可评审切片建立 `0.1` 版本线，预览制品使用 `0.1.0-alpha.N`。当前技能模块明确为 `0.1`，其制品为 `workdsh-plugin-skills@0.1.0-alpha.22`。
+- 功能插件与 provider 模块独立版本化；开始实际开发时在 `modules.json` 声明 `moduleVersion`。首个可评审切片建立 `0.1` 版本线，预览制品使用 `0.1.0-alpha.N`。当前技能模块明确为 `0.1`，其制品为 `workdsh-plugin-skills@0.1.0-alpha.29`。
 - contracts、ui 独立版本；破坏性契约在 0.x 阶段也必须显式记录、升级兼容声明并验证消费者，不能因未到 1.0 而随意破坏。
 - bundle 有独立组合版本，交付物记录 Harness 与全部组成模块的精确制品版本及测试证据。bundle 版本不替代模块版本，也不要求未变化模块随组合包锁步升级。workspace 本地链接成功不等于发布包依赖正确。
 - 用户专家/技能/项目修订与 npm 包版本分离；插件升级不覆盖用户对象。数据 schemaVersion 另行管理；回退代码不等于能回退数据库。
