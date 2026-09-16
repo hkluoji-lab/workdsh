@@ -2,6 +2,7 @@ import type { ActorContext, ResourceOwner } from './governance.js';
 
 export type LibraryAssetKind = 'markdown' | 'text' | 'pdf' | 'docx' | 'pptx';
 export type LibraryConversionStatus = 'ready' | 'pending' | 'failed';
+export type LibraryAssetStatus = 'active' | 'disabled';
 
 export interface LibrarySpace {
   readonly id: string;
@@ -30,6 +31,7 @@ export interface LibraryAsset {
   readonly mediaType: string;
   readonly byteLength: number;
   readonly owner: ResourceOwner;
+  readonly status: LibraryAssetStatus;
   readonly currentRevisionId: string;
   readonly source: 'upload' | 'task' | 'created';
   readonly sourceTaskId?: string;
@@ -118,6 +120,7 @@ export interface LibraryService {
   createDraft(actor: ActorContext, assetId: string, baseRevisionId?: string, signal?: AbortSignal): Promise<LibraryDraft>;
   updateDraft(actor: ActorContext, draftId: string, content: string, expectedRevision: string, signal?: AbortSignal): Promise<LibraryDraft>;
   publishDraft(actor: ActorContext, draftId: string, expectedRevision: string, signal?: AbortSignal): Promise<LibraryTreeEntry>;
+  setAssetStatus(actor: ActorContext, assetId: string, status: LibraryAssetStatus, signal?: AbortSignal): Promise<LibraryTreeEntry>;
   rename(actor: ActorContext, nodeId: string, name: string, signal?: AbortSignal): Promise<LibraryNode>;
   move(actor: ActorContext, nodeId: string, parentId: string | undefined, signal?: AbortSignal): Promise<LibraryNode>;
   remove(actor: ActorContext, nodeId: string, signal?: AbortSignal): Promise<void>;

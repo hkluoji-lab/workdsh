@@ -84,6 +84,13 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.equal(published.revision.number, 2);
     assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 1);
     assert.equal((await ctx.workdshLibrary.taskSelection(actor, 'session-a')).find(row => row.assetId === imported[0].asset.id).revisionId, pinnedRevision);
+    const disabled = await ctx.workdshLibrary.setAssetStatus(actor, imported[0].asset.id, 'disabled');
+    assert.equal(disabled.asset.status, 'disabled');
+    await assert.rejects(ctx.workdshLibrary.readText(actor, imported[0].asset.id), /library\/disabled/);
+    await assert.rejects(ctx.workdshLibrary.setTaskSelection(actor, 'session-b', [imported[0].id]), /library\/disabled/);
+    assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 0);
+    await ctx.workdshLibrary.setAssetStatus(actor, imported[0].asset.id, 'active');
+    assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 1);
     await ctx.workdshLibrary.rename(actor, folder.id, '项目甲（归档）');
     await ctx.fiber.dispose(); ctx = undefined;
 

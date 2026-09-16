@@ -5,7 +5,7 @@ import { mkdir, readFile, rename as renameFile, rm, writeFile } from 'node:fs/pr
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain';
 import type {
-  ActorContext, IdentityService, LibraryAsset, LibraryAssetKind, LibraryDraft, LibraryImportInput, LibraryNode, LibraryRevision,
+  ActorContext, IdentityService, LibraryAsset, LibraryAssetKind, LibraryAssetStatus, LibraryDraft, LibraryImportInput, LibraryNode, LibraryRevision,
   LibrarySearchFilters, LibrarySearchHit, LibraryService, LibrarySpace, LibraryTaskReference, LibraryTreeEntry, ResourceOwner,
 } from 'workdsh-contracts';
 import { convertToMarkdown } from './converters.js';
@@ -14,6 +14,7 @@ import { libraryDomainSpec, stateKey, type LibraryState } from '../storage/domai
 declare module '@deepseek-ai/cordis' { interface Context { workdshLibrary: LibraryService; workdshIdentity: IdentityService; } }
 
 const MAX_BYTES = 50 * 1024 * 1024;
+const MAX_SELECTION_BYTES = 32 * 1024 * 1024;
 const sha256 = (value: Uint8Array | string): string => createHash('sha256').update(value).digest('hex');
 const now = (): string => new Date().toISOString();
 const cleanName = (value: string): string => {
@@ -107,7 +108,7 @@ export class LibraryManager extends Service implements LibraryService {
       } catch (cause) { await rm(temporaryDirectory, { recursive: true, force: true }); throw cause; }
       const owner = this.owner(actor);
       const node: LibraryNode = { id: nodeId, spaceId: state.space.id, ...(input.parentId ? { parentId: input.parentId } : {}), kind: 'asset', name, assetId, createdAt: timestamp, updatedAt: timestamp };
-      const asset: LibraryState['assets'][string] = { id: assetId, spaceId: state.space.id, nodeId, kind, mediaType: input.mediaType?.trim() || defaultMediaTypes[kind], byteLength: input.bytes.byteLength, owner, currentRevisionId: revisionId, source: input.source ?? 'upload', ...(input.sourceTaskId ? { sourceTaskId: input.sourceTaskId } : {}), createdAt: timestamp, updatedAt: timestamp };
+      const asset: LibraryState['assets'][string] = { id: assetId, spaceId: state.space.id, nodeId, kind, mediaType: input.mediaType?.trim() || defaultMediaTypes[kind], byteLength: input.bytes.byteLength, owner, status: 'active', currentRevisionId: revisionId, source: input.source ?? 'upload', ...(input.sourceTaskId ? { sourceTaskId: input.sourceTaskId } : {}), createdAt: timestamp, updatedAt: timestamp };
       const revision: LibraryState['revisions'][string] = { id: revisionId, assetId, number: 1, originalSha256: sha256(originalBytes), contentSha256: sha256(converted.markdown), originalRelativePath, contentRelativePath, conversionStatus: 'ready', conversionWarnings: [...converted.warnings], createdBy: actor.principalId, createdAt: timestamp };
       const next: LibraryState = { ...state, space: { ...state.space, updatedAt: timestamp }, nodes: { ...state.nodes, [nodeId]: node }, assets: { ...state.assets, [assetId]: asset }, revisions: { ...state.revisions, [revisionId]: revision }, receipts: { ...state.receipts, [input.operationId]: { operationId: input.operationId, assetId, revisionId, nodeId } } };
       try { await this.states().put(this.key(actor), next); }
@@ -117,11 +118,11 @@ export class LibraryManager extends Service implements LibraryService {
   }
 
   readText(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<string> {
-    return this.enqueue(async () => { const revision = this.resolveRevision(await this.ensureState(actor, signal), assetId, revisionId); return readFile(this.safePath(revision.contentRelativePath), 'utf8'); });
+    return this.enqueue(async () => { const state = await this.ensureState(actor, signal); this.assertActive(state, assetId); const revision = this.resolveRevision(state, assetId, revisionId); return readFile(this.safePath(revision.contentRelativePath), 'utf8'); });
   }
 
   readOriginal(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<Uint8Array> {
-    return this.enqueue(async () => { const revision = this.resolveRevision(await this.ensureState(actor, signal), assetId, revisionId); return new Uint8Array(await readFile(this.safePath(revision.originalRelativePath))); });
+    return this.enqueue(async () => { const state = await this.ensureState(actor, signal); this.assertActive(state, assetId); const revision = this.resolveRevision(state, assetId, revisionId); return new Uint8Array(await readFile(this.safePath(revision.originalRelativePath))); });
   }
 
   search(actor: ActorContext, query: string, filters: LibrarySearchFilters = {}, signal?: AbortSignal): Promise<readonly LibrarySearchHit[]> {
@@ -129,6 +130,7 @@ export class LibraryManager extends Service implements LibraryService {
       const needle = query.trim().toLocaleLowerCase();
       const state = await this.ensureState(actor, signal); const hits: LibrarySearchHit[] = [];
       for (const asset of Object.values(state.assets)) {
+        if (asset.status !== 'active') continue;
         if (filters.kinds?.length && !filters.kinds.includes(asset.kind)) continue;
         if (filters.sources?.length && !filters.sources.includes(asset.source)) continue;
         if (filters.updatedAfter && asset.updatedAt < filters.updatedAfter) continue;
@@ -153,7 +155,8 @@ export class LibraryManager extends Service implements LibraryService {
         if (node.assetId) assetIds.add(node.assetId);
         else for (const childId of this.descendants(state, node.id)) { const child = state.nodes[childId]; if (child?.assetId) assetIds.add(child.assetId); }
       }
-      if (assetIds.size > 200) throw new Error('library/selection-too-large');
+      for (const assetId of assetIds) this.assertActive(state, assetId);
+      if (assetIds.size > 200 || [...assetIds].reduce((total, assetId) => total + state.assets[assetId]!.byteLength, 0) > MAX_SELECTION_BYTES) throw new Error('library/selection-too-large');
       const selectedAt = now();
       const references = [...assetIds].map((assetId): LibraryTaskReference => { const asset = state.assets[assetId]!; return { sessionId, nodeId: asset.nodeId, assetId, revisionId: asset.currentRevisionId, selectedAt }; });
       await this.states().put(this.key(actor), { ...state, references: { ...state.references, [sessionId]: references } });
@@ -167,7 +170,7 @@ export class LibraryManager extends Service implements LibraryService {
 
   createDraft(actor: ActorContext, assetId: string, baseRevisionId?: string, signal?: AbortSignal): Promise<LibraryDraft> {
     return this.enqueue(async () => {
-      const state = await this.ensureState(actor, signal); const asset = state.assets[assetId]; if (!asset) throw new Error('library/not-found');
+      const state = await this.ensureState(actor, signal); const asset = state.assets[assetId]; if (!asset) throw new Error('library/not-found'); this.assertActive(state, assetId);
       if (asset.kind !== 'markdown' && asset.kind !== 'text') throw new Error('library/draft-format');
       const revision = this.resolveRevision(state, assetId, baseRevisionId); const content = await readFile(this.safePath(revision.contentRelativePath), 'utf8'); const timestamp = now();
       const draft: LibraryState['drafts'][string] = { id: randomUUID(), assetId, baseRevisionId: revision.id, revision: randomUUID(), content, createdBy: actor.principalId, createdAt: timestamp, updatedAt: timestamp };
@@ -189,7 +192,7 @@ export class LibraryManager extends Service implements LibraryService {
     return this.enqueue(async () => {
       const state = await this.ensureState(actor, signal); const draft = state.drafts[draftId]; if (!draft) throw new Error('library/not-found');
       if (draft.revision !== expectedRevision) throw new Error('library/revision-conflict');
-      const asset = state.assets[draft.assetId]; if (!asset) throw new Error('library/not-found');
+      const asset = state.assets[draft.assetId]; if (!asset) throw new Error('library/not-found'); this.assertActive(state, asset.id);
       if (asset.currentRevisionId !== draft.baseRevisionId) throw new Error('library/base-revision-conflict');
       const previous = this.requireRevision(state, draft.baseRevisionId); const extension = extname(previous.originalRelativePath); const bytes = new TextEncoder().encode(draft.content);
       const revisionId = randomUUID(); const relativeBase = join('objects', asset.id, revisionId); const finalDirectory = this.safePath(relativeBase); const temporaryDirectory = this.safePath(join('.tmp', randomUUID()));
@@ -203,6 +206,15 @@ export class LibraryManager extends Service implements LibraryService {
       const next = { ...state, assets: { ...state.assets, [asset.id]: nextAsset }, revisions: { ...state.revisions, [revisionId]: revision }, drafts, nodes: { ...state.nodes, [asset.nodeId]: { ...this.requireNode(state, asset.nodeId), updatedAt: timestamp } } };
       try { await this.states().put(this.key(actor), next); } catch (cause) { await rm(finalDirectory, { recursive: true, force: true }); throw cause; }
       return this.entry(next, next.nodes[asset.nodeId]!);
+    });
+  }
+
+  setAssetStatus(actor: ActorContext, assetId: string, status: LibraryAssetStatus, signal?: AbortSignal): Promise<LibraryTreeEntry> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); const asset = state.assets[assetId]; if (!asset) throw new Error('library/not-found');
+      const timestamp = now(); const nextAsset: LibraryState['assets'][string] = { ...asset, status, updatedAt: timestamp };
+      const next: LibraryState = { ...state, assets: { ...state.assets, [assetId]: nextAsset }, nodes: { ...state.nodes, [asset.nodeId]: { ...this.requireNode(state, asset.nodeId), updatedAt: timestamp } }, space: { ...state.space, updatedAt: timestamp } };
+      await this.states().put(this.key(actor), next); return this.entry(next, next.nodes[asset.nodeId]!);
     });
   }
 
@@ -243,6 +255,7 @@ export class LibraryManager extends Service implements LibraryService {
   }
   private entry(state: LibraryState, node: LibraryNode): LibraryTreeEntry { const asset = node.assetId ? state.assets[node.assetId] : undefined; const revision = asset ? state.revisions[asset.currentRevisionId] : undefined; return { ...node, ...(asset ? { asset } : {}), ...(revision ? { revision } : {}) }; }
   private resolveRevision(state: LibraryState, assetId: string, revisionId?: string): LibraryRevision { const asset = state.assets[assetId]; if (!asset) throw new Error('library/not-found'); return this.requireRevision(state, revisionId ?? asset.currentRevisionId); }
+  private assertActive(state: LibraryState, assetId: string): void { const asset = state.assets[assetId]; if (!asset) throw new Error('library/not-found'); if (asset.status !== 'active') throw new Error('library/disabled'); }
   private requireNode(state: LibraryState, id: string): LibraryNode { const node = state.nodes[id]; if (!node) throw new Error('library/not-found'); return node; }
   private requireRevision(state: LibraryState, id: string): LibraryRevision { const revision = state.revisions[id]; if (!revision) throw new Error('library/not-found'); return revision; }
   private assertFolder(state: LibraryState, id?: string): void { if (id && this.requireNode(state, id).kind !== 'folder') throw new Error('library/not-folder'); }

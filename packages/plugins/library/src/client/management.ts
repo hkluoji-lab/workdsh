@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { LibraryDraft, LibraryNode, LibrarySearchFilters, LibrarySearchHit, LibrarySpace, LibraryTaskReference, LibraryTreeEntry } from 'workdsh-contracts/library';
+import type { LibraryAssetStatus, LibraryDraft, LibraryNode, LibrarySearchFilters, LibrarySearchHit, LibrarySpace, LibraryTaskReference, LibraryTreeEntry } from 'workdsh-contracts/library';
 
 const path = '/api/workdsh-library';
 const invoke = async <T>(endpoint: string, payload: unknown, signal?: AbortSignal): Promise<T> => {
@@ -31,6 +31,7 @@ export function createLibraryClient(_ctx: Context, lifetime?: AbortSignal) {
     createDraft: (assetId: string, baseRevisionId?: string) => invoke<LibraryDraft>('create-draft', { assetId, baseRevisionId }, lifetime),
     updateDraft: (draftId: string, content: string, expectedRevision: string) => invoke<LibraryDraft>('update-draft', { draftId, content, expectedRevision }, lifetime),
     publishDraft: (draftId: string, expectedRevision: string) => invoke<LibraryTreeEntry>('publish-draft', { draftId, expectedRevision }, lifetime),
+    setAssetStatus: (assetId: string, status: LibraryAssetStatus) => invoke<LibraryTreeEntry>('set-asset-status', { assetId, status }, lifetime),
     readText: (assetId: string, revisionId?: string) => invoke<string>('read-text', { assetId, revisionId }, lifetime),
     readOriginal: async (assetId: string, revisionId?: string) => decodeBase64((await invoke<{ base64: string }>('read-original', { assetId, revisionId }, lifetime)).base64),
     rename: (nodeId: string, name: string) => invoke<LibraryNode>('rename', { nodeId, name }, lifetime),

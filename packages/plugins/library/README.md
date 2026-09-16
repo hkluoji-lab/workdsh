@@ -15,7 +15,9 @@
 
 ## 验收与下一步
 
-完成对应 PLAN 任务及 [验收矩阵](../../../docs/ACCEPTANCE.md) 场景，记录真实测试证据后才更新为完成。当前 Host 与 Client 入口可加载，数据保存到 `$DSH_HOME/library`。PDF/Word/PowerPoint 仍以派生文本检索并下载原件，Office 原生预览联动与完整安全样本验收尚未完成。
+完成对应 PLAN 任务及 [验收矩阵](../../../docs/ACCEPTANCE.md) 场景，记录真实测试证据后才更新为完成。当前 Host 与 Client 入口可加载，数据保存到 `$DSH_HOME/library`。PDF 可在资料库直接预览；Word/PowerPoint 目前显示派生检索文本并保留原件下载，Office 原生预览联动仍待完成。
+
+发布包可通过 `corepack pnpm probe:library` 验证独立安装、两次冷启动、卸载保留 `$DSH_HOME/library`、重新安装和资料恢复。页面支持类型/来源/更新时间过滤、移动目录、添加到当前任务、停用与重新启用；停用会立即阻断历史任务引用的正文读取。
 
 ## 修订 6 的必做补充
 
