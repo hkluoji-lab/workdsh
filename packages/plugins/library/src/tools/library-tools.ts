@@ -10,7 +10,7 @@ async function actor(ctx: Context, exec: ToolRunContext): Promise<ActorContext> 
 export function registerLibraryTools(ctx: Context): void {
   ctx.tools.register(defineTool({
     name: 'library_search',
-    description: '搜索本次对话已显式选择资料的转换正文。返回固定资料与修订引用；不自动扩大读取范围。',
+    description: '搜索本次对话已显式选择的虚拟资料正文。资料不位于工作区文件系统；无需也不得先用 Bash、Glob 或文件读取工具定位。返回固定资料与修订引用；不自动扩大读取范围。',
     parameters: { query: { type: 'string', required: true, description: '要查找的标题或正文关键词。' }, kind: { type: 'string', enum: ['markdown', 'text', 'pdf', 'docx', 'pptx', 'html'] }, source: { type: 'string', enum: ['upload', 'task', 'created'] } },
     output: {
       schema: {
@@ -31,7 +31,7 @@ export function registerLibraryTools(ctx: Context): void {
   }));
   ctx.tools.register(defineTool({
     name: 'library_read',
-    description: '读取当前用户已授权资料的固定 Markdown 检索视图。必须使用资料库返回的 asset_id，可指定 revision_id。',
+    description: '通过 asset_id 直接读取当前用户已授权的虚拟资料固定 Markdown 检索视图。资料不位于工作区文件系统；无需也不得先用 Bash、Glob 或文件读取工具定位。可指定 revision_id。',
     parameters: { asset_id: { type: 'string', required: true }, revision_id: { type: 'string' }, offset: { type: 'integer', description: '从 0 开始的字符偏移量。' }, limit: { type: 'integer', description: '本次最多返回的字符数，范围 1–20000。' } },
     output: { schema: { type: 'object', additionalProperties: false, properties: { asset_id: { type: 'string', required: true }, revision_id: { type: 'string' }, content: { type: 'string', required: true }, offset: { type: 'integer', required: true }, next_offset: { type: 'integer' }, truncated: { type: 'boolean', required: true } } }, render: (_args, value) => [{ type: 'text', text: value.content }] },
     async execute(args, exec) {

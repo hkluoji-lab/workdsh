@@ -94,6 +94,8 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.equal(selected.find(row => row.assetId === imported[1].asset.id).kind, 'text');
     const modelContext = await buildLibrarySelectionContext(ctx.workdshLibrary, actor, 'session-a');
     assert.match(modelContext, /用户明确添加到当前对话/);
+    assert.match(modelContext, /不是工作区路径或文件系统路径/);
+    assert.match(modelContext, /不要使用 Bash、Glob、文件读取工具/);
     assert.match(modelContext, /MarkdownAlpha/);
     assert.match(modelContext, /DocxCharlie/);
     assert.match(modelContext, /<library-document name="简报.pptx"/);
