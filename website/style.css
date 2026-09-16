@@ -1430,6 +1430,44 @@ h2 span {
 .changelog-cta .button {
   flex-shrink:0
 }
+.search-intent {
+  margin:56px 0 0;
+  padding:40px;
+  border-left:2px solid #4c86ea;
+  background:linear-gradient(90deg,#101c2f,#0b1019 74%)
+}
+.search-intent h2 {
+  margin-top:11px;
+  font-size:28px;
+  letter-spacing:-.7px
+}
+.search-intent>p:not(.eyebrow) {
+  max-width:850px;
+  margin-top:15px;
+  color:#9aa8bd;
+  font-size:15px;
+  line-height:1.9
+}
+.search-intent code {
+  padding:2px 5px;
+  border-radius:4px;
+  background:#ffffff0d;
+  color:#b9cef0;
+  font:12px var(--mono)
+}
+.search-intent>div {
+  display:flex;
+  flex-wrap:wrap;
+  gap:22px;
+  margin-top:19px
+}
+.search-intent a {
+  color:#87b1f6;
+  font-size:12px
+}
+.search-intent a:hover {
+  color:white
+}
 @media(max-width:760px) {
   .changelog-nav {
     display:flex!important;
@@ -1471,6 +1509,13 @@ h2 span {
     flex-direction:column;
     margin-bottom:70px;
     padding:28px 24px
+  }
+  .search-intent {
+    margin-top:38px;
+    padding:28px 22px
+  }
+  .search-intent h2 {
+    font-size:23px
   }
 }
 /* Dialogs and state */
