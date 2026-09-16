@@ -32,13 +32,14 @@ export function registerLibraryTools(ctx: Context): void {
   ctx.tools.register(defineTool({
     name: 'library_read',
     description: '读取当前用户已授权资料的固定 Markdown 检索视图。必须使用资料库返回的 asset_id，可指定 revision_id。',
-    parameters: { asset_id: { type: 'string', required: true }, revision_id: { type: 'string' }, offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer', minimum: 1, maximum: 20_000 } },
+    parameters: { asset_id: { type: 'string', required: true }, revision_id: { type: 'string' }, offset: { type: 'integer', description: '从 0 开始的字符偏移量。' }, limit: { type: 'integer', description: '本次最多返回的字符数，范围 1–20000。' } },
     output: { schema: { type: 'object', additionalProperties: false, properties: { asset_id: { type: 'string', required: true }, revision_id: { type: 'string' }, content: { type: 'string', required: true }, offset: { type: 'integer', required: true }, next_offset: { type: 'integer' }, truncated: { type: 'boolean', required: true } } }, render: (_args, value) => [{ type: 'text', text: value.content }] },
     async execute(args, exec) {
       const current = await actor(ctx, exec); const sessionId = current.sessionId ?? (exec.agent ? String(exec.agent.id) : undefined); if (!sessionId) throw new Error('library/session-required');
       const reference = (await ctx.workdshLibrary.taskSelection(current, sessionId, exec.signal)).find(row => row.assetId === args.asset_id && (!args.revision_id || row.revisionId === args.revision_id));
       if (!reference) throw new Error('library/not-selected');
       const complete = await ctx.workdshLibrary.readText(current, args.asset_id, reference.revisionId, exec.signal); const offset = args.offset ?? 0; const limit = args.limit ?? 12_000;
+      if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 20_000) throw new Error('library/invalid-page');
       const content = complete.slice(offset, offset + limit); const next = offset + content.length; const truncated = next < complete.length;
       return { asset_id: args.asset_id, revision_id: reference.revisionId, content, offset, ...(truncated ? { next_offset: next } : {}), truncated };
     },
