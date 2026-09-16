@@ -1,3 +1,43 @@
+## 2026-09-16：DSH 最新版本分析与同步（镜像 + 版本引用 + 退役包名清理）
+
+用户要求分析并同步 DSH 官网最新版本。结论：本地依赖基线 `@deepseek-ai/dsh@0.1.6-alpha.1` 已是官方当前最新（GitHub release `dsh-v0.1.6-alpha.1`，2026-09-15 发布，对应 npm `alpha` 标签；`latest` 仍为 0.1.5-rc.1、`next` 为 0.1.5-rc.2），因此本轮**不升级依赖版本**，实际同步对象是官方文档镜像、仓库内旧版本表述和退役包名残留。
+
+官方文档镜像：`docs/deepseek-harness-docs` 已与 tag `dsh-v0.1.6-alpha.1` 对齐，530 个文件逐 git blob 哈希一致（补齐 158 个缺失文件、刷新 134 个变化文件），并删除上游已移除的 `subsystems/code-runtime.md`、`.zh.md`、`.i18n.yaml`（该页本版本更名为 `subsystems/ptc-runtime.*`）。审查台账 `docs/research/deepseek-harness-review.json` 同步改名，`pnpm audit:harness-docs` 由断言失败恢复为退出码 0（127/167 已评审、40 待评审）。
+
+退役包名清理（本轮新发现）：`@deepseek-ai/dsh-code-runtime`、`@deepseek-ai/dsh-code-runtime-worker-thread`、`@deepseek-ai/dsh-workflow-worker-thread` 三个包名在本版本族停发（该版本 npm 查询均 404，末次发布 0.1.5-rc.2），新名为 `dsh-ptc-runtime`、`dsh-ptc-runtime-node`、`dsh-workflow-ptc`。仓库 `pnpm.overrides` 残留三个旧名条目，已在 package.json 与 pnpm-lock.yaml overrides 段同步移除；锁文件解析结果此前已只用新名，运行时依赖面未变。同时补上检查缺口：`scripts/check-published-versions.mjs` 原只断言“已解析条目必须有精确 override”，无法发现 override 指向退役包名，已补反向断言。
+
+版本引用统一：`docs/COMPATIBILITY.md`（第 5 行基线 + 新增同步/更名/版本引用/验证四段记录）、`docs/HARNESS-OFFICIAL-DEVELOPMENT.md`（2 处）、`docs/ARCHITECTURE.md`、`docs/PLAN.md`、`docs/DEVELOPMENT.md` 中残留的 `0.1.5-rc.1` 全部改为 `0.1.6-alpha.1`；产品网站 `website/index.html` 与 `website/zh-CN.html` 安装说明里对外宣称的 “Harness CLI 0.1.5-rc.1” 一并改为 0.1.6-alpha.1。全仓库（排除 `node_modules`）已无 `0.1.5-rc.1/2` 残留。
+
+验证：`pnpm install --frozen-lockfile` 报 `Lockfile is up to date`；`pnpm check:versions` PASS 495 条（并新增反向断言后仍通过）；`pnpm build`、`pnpm typecheck` 退出码 0；`pnpm test:integration` 102/102 通过；3031 预览 Host 仍在运行，未带 token 请求返回 401。未执行：升级后的真实模型任务回归、`probe:browser` 全程回归；`docs/research/deepseek-harness-review.json` 评审范围未随镜像扩张，40 份新文档保持待评审。本次未提交、未推送、未发布。
+
+## 2026-09-16：控制台报错排查（未发现 WorkDSH 代码缺陷）
+
+用户报告控制台错误。用一次性 Playwright 脚本（置于 gitignore 的 `.artifacts/`，排查后已删除）对 3031 预览做场景化取证，覆盖：带有效 token 首屏加载、`workdsh-view` 五个视图直达、侧栏六个入口逐一点击（助理／项目／专家·技能·连接器／定时任务／资料库／更多）、设置弹框与 Plugins 标签真实插件清单、开机完成后刷新、开机中途刷新、旧 token 与无 token 访问。
+
+结果：首屏加载、五视图直达、六入口点击、设置与插件清单全部 0 控制台错误、0 警告、0 失败请求、0 个 4xx/5xx。仅有以下可复现现象，均不来自 WorkDSH 代码：开机完成后刷新页面产生 1 条 `net::ERR_ABORTED /plugins/events`（旧页面的官方插件图 SSE 连接被刷新中断，DevTools 显示为红色 “Failed to load resource”）；开机中途刷新使 6 个官方 `/api/*` 请求被中断，官方 `@deepseek-ai/dsh-client-ui-cordis` 与 `dsh-cordis-client-runner` 各记一条 “Failed to fetch”；使用重启前的旧 token（或省略 token）访问返回 401 并记录一条控制台错误，属官方 Web 认证的正常保护。核对服务端 HTML（33021 字节）确认页面不引用 `/@vite/client`，该请求只出现在自动化工具自身注入脚本时，非产品行为。
+
+用户补充了错误原文：`net::ERR_NETWORK_IO_SUSPENDED http://127.0.0.1:3031/plugins/events`。该错误码由 Chrome 在网络 I/O 被系统挂起（睡眠／休眠／标签冻结）时对长连接发出，命中官方插件图事件流。用 CDP `Network.emulateNetworkConditions` 做 10 秒断网挂起实验：挂起期间客户端无任何报错，恢复联网后官方客户端仅打印一条 warning `[connection] connection lost, retry #1`，随后自动恢复，界面仍可正常切换视图（点击“助理”成功进入 `?workdsh-view=assistant`）。归属证据：服务端 `/plugins/events` 返回 `: connected` 加 `data: {"type":"graph"...}` 的 SSE 流，客户端模块来自官方命名空间 `/plugins/??@deepseek-ai/dsh-client-modules/client.js&rev=8c97ded2fa2b`，`packages/` 与 `scripts/` 中不存在 `plugins/events` 或 `connection lost` 任何引用，即该请求与重连日志均属官方客户端。
+
+处置：确认无需修改上游或 WorkDSH 代码；`dsh web --help` 未提供稳定 token 或关闭 HMR/SSE 的开关，预览每次重启都会换发 token，因此“旧标签页必然 401”无法在脚本层消除；系统挂起导致的 SSE 红行属浏览器网络层报告，应用侧会自行重连。未执行：真实模型任务下的控制台观察。本次未提交、未推送。
+
+## 2026-09-16：侧栏品牌名称改为 DSH JOB AI
+
+用户要求把左侧 logo 处改为 `DSH JOB AI`。改动位于 [Brand.tsx](../../packages/bundle/src/client/components/Brand.tsx)：`BrandName` 文本由 `WorkDSH` 改为 `DSH JOB AI`，仍由公开 `sidebar.brand.name` 席位提供，`data-testid="workdsh-brand"` 保留给探针使用；未替换 Sidebar owner，未改动 `sidebar.brand.mark` 与 LogoMark SVG。`scripts/probe-browser.mjs` 的两处品牌断言同步改为 `DSH JOB AI`。bundle 版本 0.1.0-alpha.45 → 0.1.0-alpha.46，CHANGELOG 已记录。
+
+验证：build 与 typecheck（含 `workdsh-bundle@0.1.0-alpha.46`）通过，`preview:install` 重新安装 Skill、Expert、Connector、Office、WorkDSH 五层，预览在 3031 重启。真实 Chromium 读取 `[data-testid="workdsh-brand"]` 的 `textContent` 精确为 `DSH JOB AI`，18px、颜色 #e7e7e7，左侧 22×22 蓝色 W 形 SVG 保持显示；无页面运行时异常，仅导航中止产生的 `/plugins/events`、`/@vite/client` 请求中止日志。截图留存 `/tmp/brand-left-sidebar.png`（全视口）与 `/tmp/brand-left-sidebar-zoom.png`（brand 区 3 倍放大）。
+
+未完成与限制：本机浏览器工具无法设定视口，截图实际 CSS 视口为 697×716（DPR 2），未取得规范要求的 1440×1000 对照图；侧栏折叠态按官方行为只渲染 mark、不渲染品牌名；`WorkDSH 接入验证` 导航项与 workbench “更多”说明仍含 WorkDSH 字样，本轮未改。未执行：`probe-browser.mjs` 全程回归（需临时 Agents home 与自动化探针环境）。本次未提交、未推送。
+
+## 2026-09-16：Gitee 克隆快照同步至 GitHub 主仓库
+
+用户指出 Gitee 克隆代码功能缺失。核对：本工作区 `origin` 即 Gitee，本地 `HEAD` 与 `origin/main` 一致于 `10f61bd`，落后 GitHub 主仓库 `9820cc4` 共 14 个提交，且无任何本地独有提交，可安全快进。经用户授权先丢弃本地未提交改动（预览端口 3031 等 6 个文件），执行 `git merge --ff-only github/main`，工作区恢复干净，`HEAD=9820cc4`。
+
+补齐的实际功能：connectors 插件由空骨架变为完整实现（manager/storage/ConnectorPicker/ConnectorsPanel/example-server 及 build、probe 脚本）；专家团移除自建执行器改用官方 DSH Team（删除 team-sop/team-runs/team-tools/delegation-* 约 1900 行，新增 team-workflow.ts）；启用官方浏览器自动化、Computer Use、自动评审、MCP resources 与 headless 接口；产品网站升级为双语新版并新增真实截图与演示视频；identity-local 及各插件版本线随上游更新。
+
+依赖基线随上游由 `0.1.5-rc.1` 升至 `0.1.6-alpha.1`（AGENTS.md 第 2 条已同步）。npmmirror 尚未同步 `@deepseek-ai/dsh-experimental-auto-review@0.1.6-alpha.1`（404，官方 npm 有），本次以 `--registry=https://registry.npmjs.org/` 单次安装，未改动用户全局 registry 配置。验证通过：install、build、typecheck（含 connectors 0.1.0-alpha.1）、integration 102/102；`preview:install` 安装 Skill、Expert、Connector、Office、WorkDSH 五层；最新代码上重做默认端口 3031 并启动，127.0.0.1:3031 监听正常、直接请求 401、带启动 token 打开浏览器无错误。Playwright chromium 1208 为本次新装（依赖升级要求），此前集成测试失败即浏览器缺失，非代码缺陷。
+
+未通过：`node scripts/check-plan.mjs` 退出 1，36 处文档断链 + 1 处路径缺失（modules.json 声明 `resources/skills/expert-manager`，实际为 `workdsh-expert-manager`）。根因是 `.gitignore` 的 `/docs/` 规则使一批 design/evidence/ADR 文档只存在于开发者本机、从未提交，克隆与新环境必然缺失，内容无法从本仓库恢复。未执行：认证后真实模型任务、AT-T01～T07、整包公开发行与 Gitee 镜像推送。本次未提交、未推送、未发布。
+
 ## 2026-09-15：真实网页购物任务截图进入 README
 
 用户在 WorkDSH 真实任务中要求打开京东购买方便面；运行过程已打开京东并取得搜索结果，在用户选品后将指定商品加入购物车，随后把结构化执行结果与真实购物车截图放在同一任务中，并停在结算之前。中英文 README 使用该真实 WorkDSH 画面替换此前仍在运行、未展示业务结果的浏览器截图，文案只声明截图实际证明的“搜索、加入购物车、证据与结算前人工控制”，不宣称已购买或完成支付。

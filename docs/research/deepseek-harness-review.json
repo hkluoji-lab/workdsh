@@ -8,7 +8,7 @@
     "i18n/terminology.md",
     "i18n/translation-prompt.md",
     "i18n/translation-rules.zh.md",
-    "subsystems/code-runtime.zh.md",
+    "subsystems/ptc-runtime.zh.md",
     "subsystems/extensions.zh.md",
     "subsystems/feedback.zh.md",
     "subsystems/goal.zh.md",

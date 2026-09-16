@@ -1,6 +1,6 @@
 # Harness 官方开发规范
 
-状态：强制执行。适用基线：DeepSeek Harness `0.1.5-rc.1`。
+状态：强制执行。适用基线：DeepSeek Harness `0.1.6-alpha.1`。
 
 本文把官方文档转成 WorkDSH 的开发准入规则。它不复制 Harness 上游仓库的内部构建流程；外部插件只使用发布包的公开 exports、类型、服务、Remote、Resource 和 Slot。
 
@@ -78,7 +78,7 @@
 3. Host/Client 依赖、`inject`、bundle manifest 和 README 一致；无跨插件内部实现导入。
 4. 所有注册可卸载，缺依赖为 PENDING、启动错误为 FAILED、正常运行才是 ACTIVE。
 5. typecheck、build、相关无密钥行为测试和打包安装通过；视觉变更另按 `UI-DESIGN.md` 验证真实 Host。
-6. 官网与 `0.1.5-rc.1` 有差异时，把差异和探针结果写入 `COMPATIBILITY.md`，不能用文档截图代替运行证据。
+6. 官网与 `0.1.6-alpha.1` 有差异时，把差异和探针结果写入 `COMPATIBILITY.md`，不能用文档截图代替运行证据。
 
 ## 官方来源
 

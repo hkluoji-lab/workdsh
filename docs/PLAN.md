@@ -173,7 +173,7 @@ D11 前置仍是 D10；后续 TM-01～04 交付真实成员、唯一主持人、
 
 ### P0-01 环境及版本
 
-- 使用 Node 22.19+ 的 22 LTS 或 Node 24，pnpm 10.34.5。固定 dsh 0.1.5-rc.1。
+- 使用 Node 22.19+ 的 22 LTS 或 Node 24，pnpm 10.34.5。固定 dsh 0.1.6-alpha.1。
 - 查询发布包 exports、peerDependencies、engines 和可用功能；官方在线文档与版本差异记录在 COMPATIBILITY。
 - 创建 pnpm lockfile，验证不引入第二份不兼容 Cordis，不使用上游源码相对路径。
 - 开发 Profile、Harness home 和测试文件位于隔离目录；禁止写默认用户环境。

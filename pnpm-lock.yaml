@@ -84,8 +84,6 @@ overrides:
   '@deepseek-ai/dsh-client-ui-workflow-run': 0.1.6-alpha.1
   '@deepseek-ai/dsh-client-ui-workspace': 0.1.6-alpha.1
   '@deepseek-ai/dsh-cmdline': 0.1.6-alpha.1
-  '@deepseek-ai/dsh-code-runtime': 0.1.6-alpha.1
-  '@deepseek-ai/dsh-code-runtime-worker-thread': 0.1.6-alpha.1
   '@deepseek-ai/dsh-command-compact': 0.1.6-alpha.1
   '@deepseek-ai/dsh-command-feedback': 0.1.6-alpha.1
   '@deepseek-ai/dsh-command-goal': 0.1.6-alpha.1
@@ -244,7 +242,6 @@ overrides:
   '@deepseek-ai/dsh-win32-process': 0.1.6-alpha.1
   '@deepseek-ai/dsh-workflow': 0.1.6-alpha.1
   '@deepseek-ai/dsh-workflow-ptc': 0.1.6-alpha.1
-  '@deepseek-ai/dsh-workflow-worker-thread': 0.1.6-alpha.1
   '@deepseek-ai/dsh-workspace': 0.1.6-alpha.1
   '@deepseek-ai/dsh-client-ui-slots': 0.1.6-alpha.1
   '@deepseek-ai/dsh-typert-generator': 0.1.6-alpha.1
