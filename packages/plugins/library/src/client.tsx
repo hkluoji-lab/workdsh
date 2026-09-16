@@ -38,7 +38,7 @@ export function apply(ctx: Context): void {
   type LibraryRef = { assetId: string; revisionId: string; nodeId: string; name: string; kind: string; sessionId?: string };
   const encodeRef = (value: LibraryRef) => encodeURIComponent(JSON.stringify(value));
   const decodeRef = (value: string) => JSON.parse(decodeURIComponent(value)) as LibraryRef;
-  const referenceOf = (value: LibraryRef): ReferenceInsert => ({ source: 'workdsh-library', ref: encodeRef(value), label: value.name, appearance: 'file', clipboardText: `@资料库/${value.name}` });
+  const referenceOf = (value: LibraryRef): ReferenceInsert => ({ source: 'workdsh-library', ref: encodeRef(value), label: value.name, appearance: 'file', clipboardText: `【资料库：${value.name}】` });
   const insertReference = (sessionId: string, value: LibraryRef): boolean => {
     const binding = sessions.binding(sessionId as never);
     if (!binding) return false;
@@ -65,7 +65,10 @@ export function apply(ctx: Context): void {
     const value = { assetId: entry.asset.id, revisionId: entry.revision.id, nodeId: entry.id, name: entry.name, kind: entry.asset.kind };
     await waitForInput(150);
     for (let attempt = 0; attempt < 40; attempt++) {
-      if (insertReference(String(sessionId), value)) return;
+      if (insertReference(String(sessionId), value)) {
+        await ctx.sidebarRight.openTabIn(sessionId as never, 'workdsh-library-preview', { params: { assetId: value.assetId, revisionId: value.revisionId, name: value.name, kind: value.kind } });
+        return;
+      }
       await waitForInput(25);
     }
     throw new Error('新对话输入框尚未就绪，请稍后重试。');
@@ -94,14 +97,14 @@ export function apply(ctx: Context): void {
       return true;
     },
     codec: {
-      clipboardText: ref => `@资料库/${decodeRef(ref).name}`,
+      clipboardText: ref => `【资料库：${decodeRef(ref).name}】`,
       serialize: async ref => {
         const value = decodeRef(ref);
         if (value.sessionId) {
           const current = await management.taskSelection(value.sessionId);
           if (!current.some(row => row.nodeId === value.nodeId)) await management.setTaskSelection(value.sessionId, [...current.map(row => row.nodeId), value.nodeId]);
         }
-        return `@资料库/${value.name}`;
+        return `【资料库：${value.name}】`;
       },
     },
   };
