@@ -1,3 +1,9 @@
+## 2026-09-16 WorkDSH 项目级 alpha.5
+
+[`v0.1.0-alpha.5`](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.5) 修复项目安装器的升级路径。安装器现在区分新 Profile 与现有 Profile：新装时初始化官方 Web Profile，升级时保留原配置、专家、技能、连接器与凭据，不再重复使用 `--from-default-profile`。安装器还会在修改 Profile 前校验 Harness CLI 必须为 `0.1.6-alpha.1`，避免旧 CLI 产生部分安装。
+
+九个插件包沿用 alpha.4 已验收字节和模块版本；本次更新的是项目发行版本、安装器与升级验收。macOS 已覆盖全新 Profile 冷启动和 `alpha.4 → alpha.5` 原地升级；Windows、Linux、卸载与自动回滚仍未验收。
+
 ## 2026-09-16 WorkDSH 项目级 alpha.4
 
 [`v0.1.0-alpha.4`](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.4) 更新专家团韧性和协作状态展示。正式打包 Web 验收覆盖长任务、浏览器重连、人工停止后由原成员继续、任务与消息交接、成员失败提示及 Host 冷恢复；显式真实模型验收完成 lead→analyst→reviewer 两阶段任务交接。

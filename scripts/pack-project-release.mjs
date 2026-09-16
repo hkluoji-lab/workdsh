@@ -60,7 +60,8 @@ await writeFile(join(destination, 'release-manifest.json'), JSON.stringify({
   packages,
   verified: [
     'full build and typecheck',
-    '105 integration tests and 14 activity tests',
+    '108 integration tests and 14 activity tests',
+    'fresh-profile installation and alpha.4-to-alpha.5 in-place upgrade with user data preserved',
     'planning and exact-version gates',
     'packaged Web expert-team long task, reconnect, interrupt/resume, handoff, failure visibility and cold recovery',
     'explicit real-model lead, analyst and reviewer two-stage Team handoff',
