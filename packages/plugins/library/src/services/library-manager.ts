@@ -32,7 +32,7 @@ const defaultMediaTypes: Readonly<Record<LibraryAssetKind, string>> = {
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 };
 
-export interface LibraryManagerOptions { readonly root?: string; readonly maxBytes?: number; readonly maxTotalBytes?: number; readonly converter?: typeof convertToMarkdown; }
+export interface LibraryManagerOptions { readonly root?: string; readonly maxBytes?: number; readonly maxTotalBytes?: number; readonly maxSelectionBytes?: number; readonly maxSelectionAssets?: number; readonly converter?: typeof convertToMarkdown; }
 
 export class LibraryManager extends Service implements LibraryService {
   static inject = ['storageDomain'];
@@ -42,6 +42,8 @@ export class LibraryManager extends Service implements LibraryService {
   private readonly maxBytes: number;
   private readonly maxTotalBytes: number;
   private readonly converter: typeof convertToMarkdown;
+  private readonly maxSelectionBytes: number;
+  private readonly maxSelectionAssets: number;
 
   constructor(ctx: Context, options: LibraryManagerOptions = {}) {
     super(ctx, 'workdshLibrary');
@@ -49,6 +51,8 @@ export class LibraryManager extends Service implements LibraryService {
     this.maxBytes = options.maxBytes ?? MAX_BYTES;
     this.maxTotalBytes = options.maxTotalBytes ?? MAX_TOTAL_BYTES;
     this.converter = options.converter ?? convertToMarkdown;
+    this.maxSelectionBytes = options.maxSelectionBytes ?? MAX_SELECTION_BYTES;
+    this.maxSelectionAssets = options.maxSelectionAssets ?? 200;
   }
 
   async [Service.init](): Promise<void> {
@@ -165,11 +169,10 @@ export class LibraryManager extends Service implements LibraryService {
       const assetIds = new Set<string>();
       for (const nodeId of new Set(nodeIds)) {
         const node = this.requireNode(state, nodeId);
-        if (node.assetId) assetIds.add(node.assetId);
-        else for (const childId of this.descendants(state, node.id)) { const child = state.nodes[childId]; if (child?.assetId) assetIds.add(child.assetId); }
+        if (node.assetId) { this.assertActive(state, node.assetId); assetIds.add(node.assetId); }
+        else for (const childId of this.descendants(state, node.id)) { const child = state.nodes[childId]; if (child?.assetId && state.assets[child.assetId]?.status === 'active') assetIds.add(child.assetId); }
       }
-      for (const assetId of assetIds) this.assertActive(state, assetId);
-      if (assetIds.size > 200 || [...assetIds].reduce((total, assetId) => total + state.assets[assetId]!.byteLength, 0) > MAX_SELECTION_BYTES) throw new Error('library/selection-too-large');
+      if (assetIds.size > this.maxSelectionAssets || [...assetIds].reduce((total, assetId) => total + state.assets[assetId]!.byteLength, 0) > this.maxSelectionBytes) throw new Error('library/selection-too-large');
       const selectedAt = now();
       const references = [...assetIds].map((assetId): LibraryTaskReference => { const asset = state.assets[assetId]!; return { sessionId, nodeId: asset.nodeId, assetId, revisionId: asset.currentRevisionId, selectedAt }; });
       await this.states().put(this.key(actor), { ...state, references: { ...state.references, [sessionId]: references } });

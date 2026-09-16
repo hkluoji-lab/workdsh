@@ -99,6 +99,7 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.equal(disabled.asset.status, 'disabled');
     await assert.rejects(ctx.workdshLibrary.readText(actor, imported[0].asset.id), /library\/disabled/);
     await assert.rejects(ctx.workdshLibrary.setTaskSelection(actor, 'session-b', [imported[0].id]), /library\/disabled/);
+    assert.equal((await ctx.workdshLibrary.setTaskSelection(actor, 'session-folder', [folder.id])).length, 4, 'folder selection omits disabled descendants');
     assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 0);
     await ctx.workdshLibrary.setAssetStatus(actor, imported[0].asset.id, 'active');
     assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 1);
@@ -140,8 +141,9 @@ test('library rejects name conflicts, unsupported files, cycles and cross-owner 
 test('library enforces an aggregate immutable-revision quota', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workdsh-library-quota-')); let ctx;
   try {
-    ctx = await boot(join(root, 'storage'), join(root, 'library'), { maxTotalBytes: 10 });
-    await ctx.workdshLibrary.importAsset(actor, { name: '一.txt', bytes: new TextEncoder().encode('123456'), operationId: 'quota-1' });
+    ctx = await boot(join(root, 'storage'), join(root, 'library'), { maxTotalBytes: 10, maxSelectionBytes: 5 });
+    const first = await ctx.workdshLibrary.importAsset(actor, { name: '一.txt', bytes: new TextEncoder().encode('123456'), operationId: 'quota-1' });
+    await assert.rejects(ctx.workdshLibrary.setTaskSelection(actor, 'oversized-selection', [first.id]), /library\/selection-too-large/);
     await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '二.txt', bytes: new TextEncoder().encode('abcdef'), operationId: 'quota-2' }), /library\/quota-exceeded/);
     assert.deepEqual((await ctx.workdshLibrary.list(actor)).map(row => row.name), ['一.txt']);
   } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
