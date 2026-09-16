@@ -28,7 +28,7 @@ await writeFile(join(destination, 'SHA256SUMS.txt'), `${sha256}  ${filename}\n`)
 await writeFile(join(destination, 'release-manifest.json'), `${JSON.stringify({
   name: manifest.name, version: manifest.version, harness: '0.1.6-alpha.1', filename, sha256, bytes: bytes.length,
   storage: manifest.workdshRelease.storage, formats: manifest.workdshRelease.formats,
-  limitations: ['Local personal space only', 'Scanned PDF OCR is not included', 'DOCX/PPTX native Office preview handoff is pending'],
+  limitations: ['Local personal space only', 'Scanned PDF OCR is not included', 'DOCX/PPTX original preview requires the optional workdsh-plugin-office client'],
 }, null, 2)}\n`);
 await rm(stage, { recursive: true, force: true });
 console.log(`Library release candidate: ${filename}; files: ${(await readdir(destination)).sort().join(', ')}`);

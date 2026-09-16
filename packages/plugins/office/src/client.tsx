@@ -41,7 +41,7 @@ export const inject = [
   "inputTriggers",
 ];
 export function apply(ctx: Context): void {
-  ctx.inject(["workdshLibraryPreview"], () => ctx.effect(() => ctx.workdshLibraryPreview.register(["docx", "pptx"], async (target, input) => {
+  ctx.inject(["workdshLibraryPreview"], scope => scope.effect(() => scope.workdshLibraryPreview.register(["docx", "pptx"], async (target, input) => {
     target.replaceChildren();
     if (input.kind === "docx") {
       const style = document.createElement("style"); style.textContent = ".docx-wrapper{background:#e9ecf1!important;padding:20px!important;min-height:100%;box-sizing:border-box}.docx-wrapper>section.docx{margin:0 auto 18px;box-shadow:0 2px 12px #0002}";

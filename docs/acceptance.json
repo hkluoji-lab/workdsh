@@ -567,8 +567,12 @@
       "tasks": [
         "P1-06"
       ],
-      "status": "pending",
-      "evidence": []
+      "status": "passed",
+      "evidence": [
+        "docs/evidence/library-alpha1.md",
+        "docs/evidence/library-alpha1-office-preview.json",
+        "docs/evidence/library-alpha1-real-model.json"
+      ]
     },
     {
       "id": "B04",
