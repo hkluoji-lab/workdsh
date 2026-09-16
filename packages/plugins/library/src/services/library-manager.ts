@@ -8,7 +8,7 @@ import type {
   ActorContext, IdentityService, LibraryAsset, LibraryAssetKind, LibraryAssetStatus, LibraryDraft, LibraryImportInput, LibraryNode, LibraryRevision,
   LibrarySearchFilters, LibrarySearchHit, LibraryService, LibrarySpace, LibraryTaskReference, LibraryTreeEntry, ResourceOwner,
 } from 'workdsh-contracts';
-import { convertToMarkdown } from './converters.js';
+import { convertToMarkdown, type ConversionResult } from './converters.js';
 import { libraryDomainSpec, stateKey, type LibraryState } from '../storage/domain.js';
 
 declare module '@deepseek-ai/cordis' { interface Context { workdshLibrary: LibraryService; workdshIdentity: IdentityService; } }
@@ -32,7 +32,7 @@ const defaultMediaTypes: Readonly<Record<LibraryAssetKind, string>> = {
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 };
 
-export interface LibraryManagerOptions { readonly root?: string; readonly maxBytes?: number; readonly maxTotalBytes?: number; }
+export interface LibraryManagerOptions { readonly root?: string; readonly maxBytes?: number; readonly maxTotalBytes?: number; readonly converter?: typeof convertToMarkdown; }
 
 export class LibraryManager extends Service implements LibraryService {
   static inject = ['storageDomain'];
@@ -41,12 +41,14 @@ export class LibraryManager extends Service implements LibraryService {
   private readonly root: string;
   private readonly maxBytes: number;
   private readonly maxTotalBytes: number;
+  private readonly converter: typeof convertToMarkdown;
 
   constructor(ctx: Context, options: LibraryManagerOptions = {}) {
     super(ctx, 'workdshLibrary');
     this.root = resolve(options.root ?? join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'library'));
     this.maxBytes = options.maxBytes ?? MAX_BYTES;
     this.maxTotalBytes = options.maxTotalBytes ?? MAX_TOTAL_BYTES;
+    this.converter = options.converter ?? convertToMarkdown;
   }
 
   async [Service.init](): Promise<void> {
@@ -97,7 +99,12 @@ export class LibraryManager extends Service implements LibraryService {
       // PDF.js transfers/detaches its input buffer. Keep the authoritative original
       // and the caller-owned buffer intact by converting an independent copy.
       const originalBytes = Uint8Array.from(input.bytes);
-      const converted = await convertToMarkdown(kind, Uint8Array.from(originalBytes), signal);
+      let converted: ConversionResult; let conversionStatus: LibraryRevision['conversionStatus'] = 'ready';
+      try { converted = await this.converter(kind, Uint8Array.from(originalBytes), signal); }
+      catch (cause) {
+        if (signal?.aborted || (cause instanceof Error && cause.message.startsWith('library/'))) throw cause;
+        conversionStatus = 'failed'; converted = { markdown: '', locations: [], warnings: [`转换失败：${cause instanceof Error ? cause.message : '未知转换错误'}`] };
+      }
       const timestamp = now(); const assetId = randomUUID(); const nodeId = randomUUID(); const revisionId = randomUUID();
       const relativeBase = join('objects', assetId, revisionId); const finalDirectory = this.safePath(relativeBase);
       const temporaryDirectory = this.safePath(join('.tmp', randomUUID()));
@@ -114,7 +121,7 @@ export class LibraryManager extends Service implements LibraryService {
       const owner = this.owner(actor);
       const node: LibraryNode = { id: nodeId, spaceId: state.space.id, ...(input.parentId ? { parentId: input.parentId } : {}), kind: 'asset', name, assetId, createdAt: timestamp, updatedAt: timestamp };
       const asset: LibraryState['assets'][string] = { id: assetId, spaceId: state.space.id, nodeId, kind, mediaType: input.mediaType?.trim() || defaultMediaTypes[kind], byteLength: input.bytes.byteLength, owner, status: 'active', currentRevisionId: revisionId, source: input.source ?? 'upload', ...(input.sourceTaskId ? { sourceTaskId: input.sourceTaskId } : {}), createdAt: timestamp, updatedAt: timestamp };
-      const revision: LibraryState['revisions'][string] = { id: revisionId, assetId, number: 1, originalSha256: sha256(originalBytes), contentSha256: sha256(converted.markdown), originalByteLength: originalBytes.byteLength, originalRelativePath, contentRelativePath, conversionStatus: 'ready', conversionWarnings: [...converted.warnings], createdBy: actor.principalId, createdAt: timestamp };
+      const revision: LibraryState['revisions'][string] = { id: revisionId, assetId, number: 1, originalSha256: sha256(originalBytes), contentSha256: sha256(converted.markdown), originalByteLength: originalBytes.byteLength, originalRelativePath, contentRelativePath, conversionStatus, conversionWarnings: [...converted.warnings], createdBy: actor.principalId, createdAt: timestamp };
       const next: LibraryState = { ...state, space: { ...state.space, updatedAt: timestamp }, nodes: { ...state.nodes, [nodeId]: node }, assets: { ...state.assets, [assetId]: asset }, revisions: { ...state.revisions, [revisionId]: revision }, receipts: { ...state.receipts, [input.operationId]: { operationId: input.operationId, assetId, revisionId, nodeId, inputSha256 } } };
       try { await this.states().put(this.key(actor), next); }
       catch (cause) { await rm(finalDirectory, { recursive: true, force: true }); throw cause; }
@@ -123,7 +130,7 @@ export class LibraryManager extends Service implements LibraryService {
   }
 
   readText(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<string> {
-    return this.enqueue(async () => { const state = await this.ensureState(actor, signal); this.assertActive(state, assetId); const revision = this.resolveRevision(state, assetId, revisionId); return readFile(this.safePath(revision.contentRelativePath), 'utf8'); });
+    return this.enqueue(async () => { const state = await this.ensureState(actor, signal); this.assertActive(state, assetId); const revision = this.resolveRevision(state, assetId, revisionId); if (revision.conversionStatus !== 'ready') throw new Error(revision.conversionStatus === 'failed' ? 'library/conversion-failed' : 'library/conversion-pending'); return readFile(this.safePath(revision.contentRelativePath), 'utf8'); });
   }
 
   readOriginal(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<Uint8Array> {
@@ -141,6 +148,7 @@ export class LibraryManager extends Service implements LibraryService {
         if (filters.updatedAfter && asset.updatedAt < filters.updatedAfter) continue;
         if (filters.updatedBefore && asset.updatedAt > filters.updatedBefore) continue;
         signal?.throwIfAborted(); const node = this.requireNode(state, asset.nodeId); const revision = this.requireRevision(state, asset.currentRevisionId);
+        if (revision.conversionStatus !== 'ready') continue;
         const text = await readFile(this.safePath(revision.contentRelativePath), 'utf8'); const lower = text.toLocaleLowerCase();
         const titleMatch = Boolean(needle) && node.name.toLocaleLowerCase().includes(needle); const offset = needle ? lower.indexOf(needle) : 0; if (needle && !titleMatch && offset < 0) continue;
         const start = Math.max(0, offset < 0 ? 0 : offset - 80); const excerpt = text.slice(start, start + 240).replace(/\s+/g, ' ').trim();

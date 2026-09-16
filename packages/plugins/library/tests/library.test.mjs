@@ -146,3 +146,17 @@ test('library enforces an aggregate immutable-revision quota', async () => {
     assert.deepEqual((await ctx.workdshLibrary.list(actor)).map(row => row.name), ['一.txt']);
   } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
 });
+
+test('library retains an original when an otherwise valid conversion crashes', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workdsh-library-failed-conversion-')); let ctx;
+  try {
+    ctx = await boot(join(root, 'storage'), join(root, 'library'), { converter: async () => { throw new Error('converter crashed'); } });
+    const bytes = new TextEncoder().encode('source remains intact');
+    const entry = await ctx.workdshLibrary.importAsset(actor, { name: '保留原件.txt', bytes, operationId: 'failed-conversion' });
+    assert.equal(entry.revision.conversionStatus, 'failed');
+    assert.match(entry.revision.conversionWarnings[0], /converter crashed/);
+    assert.deepEqual(await ctx.workdshLibrary.readOriginal(actor, entry.asset.id), bytes);
+    await assert.rejects(ctx.workdshLibrary.readText(actor, entry.asset.id), /library\/conversion-failed/);
+    assert.equal((await ctx.workdshLibrary.search(actor, 'source')).length, 0);
+  } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
+});
