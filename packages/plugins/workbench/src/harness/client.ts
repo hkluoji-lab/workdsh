@@ -22,7 +22,7 @@ export function apply(ctx: Context): void {
       ctx.slots.inject('main', () => ctx.slots.register({
         name: 'main',
         key: panel.id,
-        inject: () => ({ label: panel.label, description: panel.description }),
+        inject: () => ({ label: panel.label, description: panel.description, boundary: panel.boundary }),
       }, BusinessPanel));
     }
     ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({

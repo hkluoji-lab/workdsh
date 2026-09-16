@@ -36,8 +36,10 @@ corepack pnpm probe:browser
 可选：从本地市场镜像生成 WorkDSH 自有技能目录，页面据此展示“可安装”分区，并可用“＋”安装到官方共享技能根（默认 `$DSH_AGENTS_HOME/.workdsh-catalog`，可用 `WORKDSH_SKILL_CATALOG` 覆盖）：
 
 ```sh
-node scripts/build-skill-catalog.mjs --source /path/to/skills-marketplace
+corepack pnpm catalog:build --source ~/.workbuddy/skills-marketplace
 ```
+
+`--source` 必须指向含 `.codebuddy-skill/marketplace.json`、`skills/<source>/SKILL.md` 与 `icons/` 的本地市场镜像。WorkBuddy 的该镜像目录由客户端在首次访问其技能市场时下载生成，因此旧镜像缺失时本目录不会自动存在；此时技能页按 `skill/catalog-missing` 如实显示诊断与路径，`scripts/probe-skills-package.mjs` 同时覆盖目录缺失与损坏两种降级路径，不伪造空市场。
 
 ## 公开服务与依赖
 

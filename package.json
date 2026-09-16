@@ -11,6 +11,7 @@
   "scripts": {
     "preview": "node scripts/start-preview.mjs",
     "check:plan": "node scripts/check-plan.mjs",
+    "catalog:build": "node scripts/build-skill-catalog.mjs",
     "check:acceptance": "node scripts/check-acceptance.mjs",
     "check:env": "node scripts/check-environment.mjs",
     "test:planning": "node --test tests/planning/*.test.mjs",
