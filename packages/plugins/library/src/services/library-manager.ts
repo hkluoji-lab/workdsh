@@ -6,7 +6,7 @@ import { Context, Service } from '@deepseek-ai/cordis';
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain';
 import type {
   ActorContext, IdentityService, LibraryAsset, LibraryAssetKind, LibraryDraft, LibraryImportInput, LibraryNode, LibraryRevision,
-  LibrarySearchHit, LibraryService, LibrarySpace, LibraryTaskReference, LibraryTreeEntry, ResourceOwner,
+  LibrarySearchFilters, LibrarySearchHit, LibraryService, LibrarySpace, LibraryTaskReference, LibraryTreeEntry, ResourceOwner,
 } from 'workdsh-contracts';
 import { convertToMarkdown } from './converters.js';
 import { libraryDomainSpec, stateKey, type LibraryState } from '../storage/domain.js';
@@ -124,19 +124,23 @@ export class LibraryManager extends Service implements LibraryService {
     return this.enqueue(async () => { const revision = this.resolveRevision(await this.ensureState(actor, signal), assetId, revisionId); return new Uint8Array(await readFile(this.safePath(revision.originalRelativePath))); });
   }
 
-  search(actor: ActorContext, query: string, signal?: AbortSignal): Promise<readonly LibrarySearchHit[]> {
+  search(actor: ActorContext, query: string, filters: LibrarySearchFilters = {}, signal?: AbortSignal): Promise<readonly LibrarySearchHit[]> {
     return this.enqueue(async () => {
-      const needle = query.trim().toLocaleLowerCase(); if (!needle) return [];
+      const needle = query.trim().toLocaleLowerCase();
       const state = await this.ensureState(actor, signal); const hits: LibrarySearchHit[] = [];
       for (const asset of Object.values(state.assets)) {
+        if (filters.kinds?.length && !filters.kinds.includes(asset.kind)) continue;
+        if (filters.sources?.length && !filters.sources.includes(asset.source)) continue;
+        if (filters.updatedAfter && asset.updatedAt < filters.updatedAfter) continue;
+        if (filters.updatedBefore && asset.updatedAt > filters.updatedBefore) continue;
         signal?.throwIfAborted(); const node = this.requireNode(state, asset.nodeId); const revision = this.requireRevision(state, asset.currentRevisionId);
         const text = await readFile(this.safePath(revision.contentRelativePath), 'utf8'); const lower = text.toLocaleLowerCase();
-        const titleMatch = node.name.toLocaleLowerCase().includes(needle); const offset = lower.indexOf(needle); if (!titleMatch && offset < 0) continue;
+        const titleMatch = Boolean(needle) && node.name.toLocaleLowerCase().includes(needle); const offset = needle ? lower.indexOf(needle) : 0; if (needle && !titleMatch && offset < 0) continue;
         const start = Math.max(0, offset < 0 ? 0 : offset - 80); const excerpt = text.slice(start, start + 240).replace(/\s+/g, ' ').trim();
         const prefix = text.slice(0, offset < 0 ? text.length : offset); const heading = [...prefix.matchAll(/^#{1,6}\s+(.+)$/gm)].at(-1)?.[1]?.trim();
-        hits.push({ assetId: asset.id, revisionId: revision.id, nodeId: node.id, name: node.name, kind: asset.kind, ...(heading ? { location: heading } : {}), excerpt, score: titleMatch ? 2 : 1 });
+        hits.push({ assetId: asset.id, revisionId: revision.id, nodeId: node.id, name: node.name, kind: asset.kind, source: asset.source, updatedAt: asset.updatedAt, ...(heading ? { location: heading } : {}), excerpt, score: titleMatch ? 2 : needle ? 1 : 0 });
       }
-      return hits.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'zh-CN')).slice(0, 50);
+      return hits.sort((a, b) => b.score - a.score || b.updatedAt.localeCompare(a.updatedAt) || a.name.localeCompare(b.name, 'zh-CN')).slice(0, 50);
     });
   }
 

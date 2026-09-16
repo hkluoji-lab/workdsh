@@ -63,6 +63,9 @@ test('independent library plugin persists a tree, originals and searchable deriv
     const repeated = await ctx.workdshLibrary.importAsset(actor, { parentId: folder.id, name: '规则.md', bytes: samples[0][1], operationId: 'operation-规则.md' });
     assert.equal(repeated.asset.id, imported[0].asset.id);
     assert.equal((await ctx.workdshLibrary.list(actor, folder.id)).length, 5);
+    assert.equal((await ctx.workdshLibrary.search(actor, '')).length, 5, 'empty query powers recent assets');
+    assert.deepEqual((await ctx.workdshLibrary.search(actor, '', { kinds: ['pptx'] })).map(hit => hit.name), ['简报.pptx']);
+    assert.equal((await ctx.workdshLibrary.search(actor, '', { sources: ['task'] })).length, 0);
     assert.equal((await ctx.workdshLibrary.search(actor, 'DocxCharlie'))[0].name, '报告.docx');
     const pptxHit = (await ctx.workdshLibrary.search(actor, 'PptxDelta'))[0];
     assert.equal(pptxHit.name, '简报.pptx');

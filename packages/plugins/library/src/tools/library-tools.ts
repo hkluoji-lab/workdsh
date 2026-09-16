@@ -11,13 +11,13 @@ export function registerLibraryTools(ctx: Context): void {
   ctx.tools.register(defineTool({
     name: 'library_search',
     description: '搜索本次对话已显式选择资料的转换正文。返回固定资料与修订引用；不自动扩大读取范围。',
-    parameters: { query: { type: 'string', required: true, description: '要查找的标题或正文关键词。' } },
+    parameters: { query: { type: 'string', required: true, description: '要查找的标题或正文关键词。' }, kind: { type: 'string', enum: ['markdown', 'text', 'pdf', 'docx', 'pptx'] }, source: { type: 'string', enum: ['upload', 'task', 'created'] } },
     output: {
       schema: {
         type: 'object', additionalProperties: false,
         properties: { hits: { type: 'array', required: true, items: {
           type: 'object', additionalProperties: false,
-          properties: { asset_id: { type: 'string', required: true }, revision_id: { type: 'string', required: true }, name: { type: 'string', required: true }, kind: { type: 'string', required: true }, location: { type: 'string' }, excerpt: { type: 'string', required: true } },
+          properties: { asset_id: { type: 'string', required: true }, revision_id: { type: 'string', required: true }, name: { type: 'string', required: true }, kind: { type: 'string', required: true }, source: { type: 'string', required: true }, updated_at: { type: 'string', required: true }, location: { type: 'string' }, excerpt: { type: 'string', required: true } },
         } } },
       },
       render: (_args, value) => [{ type: 'text', text: value.hits.length ? value.hits.map(hit => `${hit.name}: ${hit.excerpt}`).join('\n') : '没有找到匹配资料。' }],
@@ -25,8 +25,8 @@ export function registerLibraryTools(ctx: Context): void {
     async execute(args, exec) {
       const current = await actor(ctx, exec); const sessionId = current.sessionId ?? (exec.agent ? String(exec.agent.id) : undefined); if (!sessionId) throw new Error('library/session-required');
       const selected = new Map((await ctx.workdshLibrary.taskSelection(current, sessionId, exec.signal)).map(row => [row.assetId, row.revisionId]));
-      const hits = (await ctx.workdshLibrary.search(current, args.query, exec.signal)).filter(hit => selected.get(hit.assetId) === hit.revisionId);
-      return { hits: hits.map(hit => ({ asset_id: hit.assetId, revision_id: hit.revisionId, name: hit.name, kind: hit.kind, ...(hit.location ? { location: hit.location } : {}), excerpt: hit.excerpt })) };
+      const hits = (await ctx.workdshLibrary.search(current, args.query, { ...(args.kind ? { kinds: [args.kind] } : {}), ...(args.source ? { sources: [args.source] } : {}) }, exec.signal)).filter(hit => selected.get(hit.assetId) === hit.revisionId);
+      return { hits: hits.map(hit => ({ asset_id: hit.assetId, revision_id: hit.revisionId, name: hit.name, kind: hit.kind, source: hit.source, updated_at: hit.updatedAt, ...(hit.location ? { location: hit.location } : {}), excerpt: hit.excerpt })) };
     },
   }));
   ctx.tools.register(defineTool({

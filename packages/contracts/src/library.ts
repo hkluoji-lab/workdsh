@@ -72,9 +72,18 @@ export interface LibrarySearchHit {
   readonly nodeId: string;
   readonly name: string;
   readonly kind: LibraryAssetKind;
+  readonly source: LibraryAsset['source'];
+  readonly updatedAt: string;
   readonly location?: string;
   readonly excerpt: string;
   readonly score: number;
+}
+
+export interface LibrarySearchFilters {
+  readonly kinds?: readonly LibraryAssetKind[];
+  readonly sources?: readonly LibraryAsset['source'][];
+  readonly updatedAfter?: string;
+  readonly updatedBefore?: string;
 }
 
 export interface LibraryTaskReference {
@@ -103,7 +112,7 @@ export interface LibraryService {
   importAsset(actor: ActorContext, input: LibraryImportInput, signal?: AbortSignal): Promise<LibraryTreeEntry>;
   readText(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<string>;
   readOriginal(actor: ActorContext, assetId: string, revisionId?: string, signal?: AbortSignal): Promise<Uint8Array>;
-  search(actor: ActorContext, query: string, signal?: AbortSignal): Promise<readonly LibrarySearchHit[]>;
+  search(actor: ActorContext, query: string, filters?: LibrarySearchFilters, signal?: AbortSignal): Promise<readonly LibrarySearchHit[]>;
   setTaskSelection(actor: ActorContext, sessionId: string, nodeIds: readonly string[], signal?: AbortSignal): Promise<readonly LibraryTaskReference[]>;
   taskSelection(actor: ActorContext, sessionId: string, signal?: AbortSignal): Promise<readonly LibraryTaskReference[]>;
   createDraft(actor: ActorContext, assetId: string, baseRevisionId?: string, signal?: AbortSignal): Promise<LibraryDraft>;

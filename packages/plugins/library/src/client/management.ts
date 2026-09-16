@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-import type { LibraryDraft, LibraryNode, LibrarySearchHit, LibrarySpace, LibraryTaskReference, LibraryTreeEntry } from 'workdsh-contracts/library';
+import type { LibraryDraft, LibraryNode, LibrarySearchFilters, LibrarySearchHit, LibrarySpace, LibraryTaskReference, LibraryTreeEntry } from 'workdsh-contracts/library';
 
 const path = '/api/workdsh-library';
 const invoke = async <T>(endpoint: string, payload: unknown, signal?: AbortSignal): Promise<T> => {
@@ -25,7 +25,7 @@ export function createLibraryClient(_ctx: Context, lifetime?: AbortSignal) {
     list: (parentId?: string) => invoke<readonly LibraryTreeEntry[]>('list', { parentId }, lifetime),
     createFolder: (name: string, parentId?: string) => invoke<LibraryNode>('create-folder', { name, parentId }, lifetime),
     importFile: async (file: File, parentId?: string) => invoke<LibraryTreeEntry>('import', { name: file.name, mediaType: file.type, parentId, base64: await fileBase64(file), operationId: crypto.randomUUID() }, lifetime),
-    search: (query: string) => invoke<readonly LibrarySearchHit[]>('search', { query }, lifetime),
+    search: (query: string, filters: LibrarySearchFilters = {}) => invoke<readonly LibrarySearchHit[]>('search', { query, ...filters }, lifetime),
     taskSelection: (sessionId: string) => invoke<readonly LibraryTaskReference[]>('task-selection', { sessionId }, lifetime),
     setTaskSelection: (sessionId: string, nodeIds: readonly string[]) => invoke<readonly LibraryTaskReference[]>('set-task-selection', { sessionId, nodeIds }, lifetime),
     createDraft: (assetId: string, baseRevisionId?: string) => invoke<LibraryDraft>('create-draft', { assetId, baseRevisionId }, lifetime),

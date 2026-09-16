@@ -26,7 +26,11 @@ export function registerLibraryConnection(ctx: Context): void {
         if (endpoint === 'import' && typeof payload.name === 'string' && typeof payload.base64 === 'string' && typeof payload.operationId === 'string') {
           return Response.json(ok(await manager.importAsset(current, { name: payload.name, bytes: Buffer.from(payload.base64, 'base64'), operationId: payload.operationId, ...(typeof payload.parentId === 'string' ? { parentId: payload.parentId } : {}), ...(typeof payload.mediaType === 'string' ? { mediaType: payload.mediaType } : {}) }, request.signal)));
         }
-        if (endpoint === 'search' && typeof payload.query === 'string') return Response.json(ok(await manager.search(current, payload.query, request.signal)));
+        if (endpoint === 'search' && typeof payload.query === 'string') {
+          const kinds = Array.isArray(payload.kinds) && payload.kinds.every(value => typeof value === 'string') ? payload.kinds : undefined;
+          const sources = Array.isArray(payload.sources) && payload.sources.every(value => typeof value === 'string') ? payload.sources : undefined;
+          return Response.json(ok(await manager.search(current, payload.query, { ...(kinds ? { kinds: kinds as never } : {}), ...(sources ? { sources: sources as never } : {}), ...(typeof payload.updatedAfter === 'string' ? { updatedAfter: payload.updatedAfter } : {}), ...(typeof payload.updatedBefore === 'string' ? { updatedBefore: payload.updatedBefore } : {}) }, request.signal)));
+        }
         if (endpoint === 'task-selection' && typeof payload.sessionId === 'string') return Response.json(ok(await manager.taskSelection(current, payload.sessionId, request.signal)));
         if (endpoint === 'set-task-selection' && typeof payload.sessionId === 'string' && Array.isArray(payload.nodeIds) && payload.nodeIds.every(value => typeof value === 'string')) return Response.json(ok(await manager.setTaskSelection(current, payload.sessionId, payload.nodeIds, request.signal)));
         if (endpoint === 'create-draft' && typeof payload.assetId === 'string') return Response.json(ok(await manager.createDraft(current, payload.assetId, typeof payload.baseRevisionId === 'string' ? payload.baseRevisionId : undefined, request.signal)));
