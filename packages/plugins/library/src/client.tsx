@@ -25,7 +25,7 @@ export function apply(ctx: Context): void {
   const previewRegistry = createLibraryPreviewRegistry();
   ctx.provide('workdshLibraryPreview', previewRegistry);
   const sessions = ctx.sessions as unknown as ISessions;
-  type LibraryRef = { assetId: string; revisionId: string; nodeId: string; name: string; kind: string };
+  type LibraryRef = { assetId: string; revisionId: string; nodeId: string; name: string; kind: string; sessionId?: string };
   const encodeRef = (value: LibraryRef) => encodeURIComponent(JSON.stringify(value));
   const decodeRef = (value: string) => JSON.parse(decodeURIComponent(value)) as LibraryRef;
   const referenceOf = (value: LibraryRef): ReferenceInsert => ({ source: 'workdsh-library', ref: encodeRef(value), label: value.name, appearance: 'file', clipboardText: `@资料库/${value.name}` });
@@ -35,7 +35,10 @@ export function apply(ctx: Context): void {
     const input = ctx.conversation.input.for(binding.ctx);
     const state = input.state.getSnapshot();
     const offset = state.draft.length;
-    return binding.ctx.bail(binding.ctx, 'slash/input-insert-reference', { reference: referenceOf(value), span: { start: offset, end: offset, draftRev: state.draftRev } }) === true;
+    const scoped = { ...value, sessionId };
+    const inserted = binding.ctx.bail(binding.ctx, 'slash/input-insert-reference', { reference: referenceOf(scoped), span: { start: offset, end: offset, draftRev: state.draftRev } }) === true;
+    if (inserted) void management.taskSelection(sessionId).then(current => management.setTaskSelection(sessionId, [...new Set([...current.map(row => row.nodeId), value.nodeId])])).catch(() => []);
+    return inserted;
   };
   const source: InputTriggerSource = {
     trigger: '@', name: 'workdsh-library', order: 30, showGroupTitle: false,
@@ -48,13 +51,22 @@ export function apply(ctx: Context): void {
       const hits = await management.search(request.query).catch(() => []);
       return hits.map(hit => ({ name: hit.name, label: hit.name, description: [hit.folderPath, hit.excerpt].filter(Boolean).join(' · '), icon: 'file' as const, value: encodeRef(hit) }));
     },
-    onPick: pick => { void management.setTaskSelection(String(pick.session.sessionId), []).catch(() => []); return pick.candidate.value ? { insert: referenceOf(decodeRef(pick.candidate.value)) } : undefined; },
+    onPick: pick => {
+      if (!pick.candidate.value) return undefined;
+      const value = decodeRef(pick.candidate.value);
+      const sessionId = String(pick.session.sessionId);
+      void management.taskSelection(sessionId).then(current => management.setTaskSelection(sessionId, [...new Set([...current.map(row => row.nodeId), value.nodeId])])).catch(() => []);
+      return { insert: referenceOf({ ...value, sessionId }) };
+    },
     codec: {
       clipboardText: ref => `@资料库/${decodeRef(ref).name}`,
-      serialize: async (ref, signal) => {
+      serialize: async ref => {
         const value = decodeRef(ref);
-        const content = await management.readText(value.assetId, value.revisionId, signal);
-        return `<library-document name="${value.name.replaceAll('&', '&amp;').replaceAll('"', '&quot;')}" asset-id="${value.assetId}" revision-id="${value.revisionId}">\n${content}\n</library-document>`;
+        if (value.sessionId) {
+          const current = await management.taskSelection(value.sessionId);
+          if (!current.some(row => row.nodeId === value.nodeId)) await management.setTaskSelection(value.sessionId, [...current.map(row => row.nodeId), value.nodeId]);
+        }
+        return `@资料库/${value.name}`;
       },
     },
   };
