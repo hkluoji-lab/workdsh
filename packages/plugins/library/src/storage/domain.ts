@@ -25,7 +25,7 @@ const revision = z.object({
   conversionStatus: z.enum(['ready', 'pending', 'failed']), conversionWarnings: z.array(z.string()),
   createdBy: id, createdAt: iso,
 });
-const receipt = z.object({ operationId: id, assetId: id, revisionId: id, nodeId: id });
+const receipt = z.object({ operationId: id, assetId: id, revisionId: id, nodeId: id, inputSha256: id.optional() });
 const reference = z.object({ sessionId: id, nodeId: id, assetId: id, revisionId: id, selectedAt: iso });
 const draft = z.object({ id, assetId: id, baseRevisionId: id, revision: id, content: z.string().max(8 * 1024 * 1024), createdBy: id, createdAt: iso, updatedAt: iso });
 

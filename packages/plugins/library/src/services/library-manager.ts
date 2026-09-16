@@ -82,7 +82,8 @@ export class LibraryManager extends Service implements LibraryService {
     return this.enqueue(async () => {
       const state = await this.ensureState(actor, signal);
       const prior = state.receipts[input.operationId];
-      if (prior) return this.entry(state, this.requireNode(state, prior.nodeId));
+      const inputSha256 = sha256(`${input.parentId ?? ''}\u0000${input.name}\u0000${sha256(input.bytes)}`);
+      if (prior) { if (prior.inputSha256 && prior.inputSha256 !== inputSha256) throw new Error('library/operation-conflict'); return this.entry(state, this.requireNode(state, prior.nodeId)); }
       const name = cleanName(input.name); this.assertFolder(state, input.parentId); this.assertUniqueName(state, input.parentId, name);
       if (!input.operationId.trim() || input.operationId.length > 256) throw new Error('library/invalid-operation');
       if (!input.bytes.byteLength || input.bytes.byteLength > this.maxBytes) throw new Error('library/file-size');
@@ -110,7 +111,7 @@ export class LibraryManager extends Service implements LibraryService {
       const node: LibraryNode = { id: nodeId, spaceId: state.space.id, ...(input.parentId ? { parentId: input.parentId } : {}), kind: 'asset', name, assetId, createdAt: timestamp, updatedAt: timestamp };
       const asset: LibraryState['assets'][string] = { id: assetId, spaceId: state.space.id, nodeId, kind, mediaType: input.mediaType?.trim() || defaultMediaTypes[kind], byteLength: input.bytes.byteLength, owner, status: 'active', currentRevisionId: revisionId, source: input.source ?? 'upload', ...(input.sourceTaskId ? { sourceTaskId: input.sourceTaskId } : {}), createdAt: timestamp, updatedAt: timestamp };
       const revision: LibraryState['revisions'][string] = { id: revisionId, assetId, number: 1, originalSha256: sha256(originalBytes), contentSha256: sha256(converted.markdown), originalRelativePath, contentRelativePath, conversionStatus: 'ready', conversionWarnings: [...converted.warnings], createdBy: actor.principalId, createdAt: timestamp };
-      const next: LibraryState = { ...state, space: { ...state.space, updatedAt: timestamp }, nodes: { ...state.nodes, [nodeId]: node }, assets: { ...state.assets, [assetId]: asset }, revisions: { ...state.revisions, [revisionId]: revision }, receipts: { ...state.receipts, [input.operationId]: { operationId: input.operationId, assetId, revisionId, nodeId } } };
+      const next: LibraryState = { ...state, space: { ...state.space, updatedAt: timestamp }, nodes: { ...state.nodes, [nodeId]: node }, assets: { ...state.assets, [assetId]: asset }, revisions: { ...state.revisions, [revisionId]: revision }, receipts: { ...state.receipts, [input.operationId]: { operationId: input.operationId, assetId, revisionId, nodeId, inputSha256 } } };
       try { await this.states().put(this.key(actor), next); }
       catch (cause) { await rm(finalDirectory, { recursive: true, force: true }); throw cause; }
       return { ...node, asset, revision };

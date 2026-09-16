@@ -69,6 +69,7 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.match(JSON.parse(await readFile(join(libraryRoot, dirname(imported[3].revision.contentRelativePath), 'conversion.json'), 'utf8')).locations[0].label, /第 1 页/);
     const repeated = await ctx.workdshLibrary.importAsset(actor, { parentId: folder.id, name: '规则.md', bytes: samples[0][1], operationId: 'operation-规则.md' });
     assert.equal(repeated.asset.id, imported[0].asset.id);
+    await assert.rejects(ctx.workdshLibrary.importAsset(actor, { parentId: folder.id, name: '规则.md', bytes: new TextEncoder().encode('different'), operationId: 'operation-规则.md' }), /library\/operation-conflict/);
     assert.equal((await ctx.workdshLibrary.list(actor, folder.id)).length, 5);
     assert.equal((await ctx.workdshLibrary.search(actor, '')).length, 5, 'empty query powers recent assets');
     assert.deepEqual((await ctx.workdshLibrary.search(actor, '', { kinds: ['pptx'] })).map(hit => hit.name), ['简报.pptx']);
@@ -86,10 +87,12 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.equal(selected.length, 5);
     const pinnedRevision = selected.find(row => row.assetId === imported[0].asset.id).revisionId;
     const draft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);
+    const concurrentDraft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);
     const changed = await ctx.workdshLibrary.updateDraft(actor, draft.id, '# 新规则\n\n唯一词 RevisedFoxtrot', draft.revision);
     await assert.rejects(ctx.workdshLibrary.updateDraft(actor, draft.id, 'stale', draft.revision), /library\/revision-conflict/);
     const published = await ctx.workdshLibrary.publishDraft(actor, draft.id, changed.revision);
     assert.equal(published.revision.number, 2);
+    await assert.rejects(ctx.workdshLibrary.publishDraft(actor, concurrentDraft.id, concurrentDraft.revision), /library\/base-revision-conflict/);
     assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 1);
     assert.equal((await ctx.workdshLibrary.taskSelection(actor, 'session-a')).find(row => row.assetId === imported[0].asset.id).revisionId, pinnedRevision);
     const disabled = await ctx.workdshLibrary.setAssetStatus(actor, imported[0].asset.id, 'disabled');
