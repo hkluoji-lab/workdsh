@@ -38,7 +38,7 @@ export function apply(ctx: Context): void {
   type LibraryRef = { assetId: string; revisionId: string; nodeId: string; name: string; kind: string; sessionId?: string };
   const encodeRef = (value: LibraryRef) => encodeURIComponent(JSON.stringify(value));
   const decodeRef = (value: string) => JSON.parse(decodeURIComponent(value)) as LibraryRef;
-  const referenceOf = (value: LibraryRef): ReferenceInsert => ({ source: 'workdsh-library', ref: encodeRef(value), label: value.name, appearance: 'file', clipboardText: `【资料库：${value.name}】` });
+  const referenceOf = (value: LibraryRef): ReferenceInsert => ({ source: 'workdsh-library', ref: encodeRef(value), label: value.name, appearance: 'file', clipboardText: `@资料库/${value.name}` });
   const insertReference = (sessionId: string, value: LibraryRef): boolean => {
     const binding = sessions.binding(sessionId as never);
     if (!binding) return false;
@@ -65,10 +65,7 @@ export function apply(ctx: Context): void {
     const value = { assetId: entry.asset.id, revisionId: entry.revision.id, nodeId: entry.id, name: entry.name, kind: entry.asset.kind };
     await waitForInput(150);
     for (let attempt = 0; attempt < 40; attempt++) {
-      if (insertReference(String(sessionId), value)) {
-        await ctx.sidebarRight.openTabIn(sessionId as never, 'workdsh-library-preview', { params: { assetId: value.assetId, revisionId: value.revisionId, name: value.name, kind: value.kind } });
-        return;
-      }
+      if (insertReference(String(sessionId), value)) return;
       await waitForInput(25);
     }
     throw new Error('新对话输入框尚未就绪，请稍后重试。');
@@ -97,18 +94,43 @@ export function apply(ctx: Context): void {
       return true;
     },
     codec: {
-      clipboardText: ref => `【资料库：${decodeRef(ref).name}】`,
+      clipboardText: ref => `@资料库/${decodeRef(ref).name}`,
       serialize: async ref => {
         const value = decodeRef(ref);
         if (value.sessionId) {
           const current = await management.taskSelection(value.sessionId);
           if (!current.some(row => row.nodeId === value.nodeId)) await management.setTaskSelection(value.sessionId, [...current.map(row => row.nodeId), value.nodeId]);
         }
-        return `【资料库：${value.name}】`;
+        return `@资料库/${value.name}`;
       },
     },
   };
   ctx.effect(() => ctx.inputTriggers.registerSource(source));
+  ctx.effect(() => {
+    const openTranscriptReference = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return;
+      const trigger = event.target.closest('a,button');
+      if (!trigger) return;
+      const href = trigger.getAttribute('href') ?? '';
+      const marker = [href, trigger.getAttribute('title'), trigger.getAttribute('aria-label')].filter(Boolean).join(' ');
+      const label = (trigger.textContent ?? '').trim();
+      const path = decodeURIComponent(marker.replace(/^file:\/\//, ''));
+      if (!path.includes('资料库/') && !marker.includes('%E8%B5%84%E6%96%99%E5%BA%93')) return;
+      const name = label || path.split('/').filter(Boolean).at(-1) || '';
+      if (!name) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      void management.search(name).then(hits => {
+        const hit = hits.find(row => row.name === name) ?? hits[0];
+        const sessionId = sessions.list.getSnapshot().current;
+        if (!hit || !sessionId) return;
+        return ctx.sidebarRight.openTabIn(sessionId as never, 'workdsh-library-preview', { params: { assetId: hit.assetId, revisionId: hit.revisionId, name: hit.name, kind: hit.kind } });
+      }).catch(() => undefined);
+    };
+    document.addEventListener('click', openTranscriptReference, true);
+    return () => document.removeEventListener('click', openTranscriptReference, true);
+  }, 'workdsh.library.transcriptReferences');
   ctx.effect(() => ctx.sidebarRightTabs.register({ id: 'workdsh-library-preview', kind: 'workdsh-library-preview', title: () => '资料预览' }));
   ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({ name: 'sidebar.right.pane.tab', key: 'workdsh-library-preview', inject: () => ({ management, previewRegistry }) }, LibraryReferencePage));
   ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'workdsh-library', inject: () => ({ management, previewRegistry, toggleNavigation: () => ctx.layout.toggleSidebar(), startConversation }) }, LibraryPanel));
