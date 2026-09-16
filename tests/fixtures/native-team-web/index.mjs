@@ -13,10 +13,13 @@ export function apply(ctx) {
       const member = ctx.agentTeams.tryMembership(agent);
       const system = JSON.stringify(options.messages.filter(m => m.role === 'system'));
       const all = JSON.stringify(options.messages);
-      if (all.includes('WEB_HOLD_MEMBER')) await new Promise(resolve => setTimeout(resolve, 8000));
+      const latest = JSON.stringify(options.messages.at(-1));
+      if (all.includes('WEB_HOLD_MEMBER')) await new Promise(resolve => setTimeout(resolve, 20000));
+      if (all.includes('WEB_HANDOFF')) await new Promise(resolve => setTimeout(resolve, 8000));
       if (member?.role === 'teammate') assert.ok(system.includes(`ROLE_${member.name.toUpperCase()}`), 'member role must come from its published asset');
       requests.push({ id: agent.id, name: member?.name });
       assert.ok(requests.length < 30, 'bounded fixture requests');
+      if (latest.includes('WEB_FAIL_ONCE')) throw new Error('WEB_FIXTURE_MEMBER_FAILURE');
       let block;
       if (member?.role === 'lead' && all.includes('WEB_SPAWN_ANALYST') && !all.includes('"name":"spawn_teammate"')) {
         block = { type: 'tool-call', id: `spawn-${requests.length}`, name: 'spawn_teammate', arguments: JSON.stringify({ name: 'analyst', description: 'Fixture analyst', prompt: 'Read your method and verify the fixture.', context: 'fresh' }) };
@@ -81,21 +84,78 @@ export function apply(ctx) {
       } else if (input.action === 'view') {
         const { agent } = await ctx.workdshSessionAccess.resolveAgent(input.sessionId, request.signal);
         assert.ok(agent); value = ctx.agentTeams.remoteView(agent);
-      } else if (input.action === 'start-member') {
+      } else if (input.action === 'begin-long-task') {
         stage = 'resolve-resumed-team';
         const before = (await history(input.memberId)).events.filter(e => e.type === 'turn/end').length;
         const { agent } = await ctx.workdshSessionAccess.resolveAgent(input.sessionId, request.signal);
         assert.ok(agent);
+        stage = 'assign-long-task';
+        const created = await ctx.agentTeams.createTask(agent, { subject: '长任务与重连验收', description: '运行中刷新浏览器后，成员与任务归属必须保持可见。', writeScopes: ['fixture/long-report.md'] });
+        const task = await ctx.agentTeams.updateTask(agent, { taskId: created.id, expectedRevision: created.revision, action: 'reassign', owner: input.memberName });
         stage = 'continue-resumed-member';
         const delivered = await ctx.agentTeams.sendMessage(agent, { target: input.memberName, content: blocks('WEB_HOLD_MEMBER：冷恢复后继续官方 Team 成员任务。'), signal: request.signal });
         assert.ok(['accepted', 'queued'].includes(delivered.status));
-        value = { memberId: input.memberId, before };
+        value = { memberId: input.memberId, before, task };
       } else if (input.action === 'wait-member') {
         stage = 'wait-resumed-member';
         await waitFor(async () => (await history(input.memberId)).events.filter(e => e.type === 'turn/end').length > input.before);
         const latest = (await history(input.memberId)).events.filter(e => e.type === 'turn/end').at(-1);
         assert.equal(latest.data.reason.kind, 'completed');
         value = { memberId: input.memberId, completed: true };
+      } else if (input.action === 'complete-task') {
+        stage = 'complete-member-task';
+        const { agent } = await ctx.workdshSessionAccess.resolveAgent(input.sessionId, request.signal);
+        assert.ok(agent);
+        const task = ctx.agentTeams.getTask(agent, input.taskId);
+        assert.equal(task.ownerName, input.memberName, 'Lead may sign off only the expected member-owned task');
+        value = await ctx.agentTeams.updateTask(agent, { taskId: task.id, expectedRevision: task.revision, action: 'complete' });
+      } else if (input.action === 'begin-handoff') {
+        stage = 'resolve-handoff-team';
+        const { agent } = await ctx.workdshSessionAccess.resolveAgent(input.sessionId, request.signal);
+        assert.ok(agent);
+        const members = ctx.agentTeams.listMembers(agent);
+        assert.ok(members.some(member => member.id === input.fromMemberId && member.name === input.fromMemberName));
+        assert.ok(members.some(member => member.id === input.toMemberId && member.name === input.toMemberName));
+        const before = (await history(input.toMemberId)).events.filter(e => e.type === 'turn/end').length;
+        stage = 'assign-handoff-source';
+        const created = await ctx.agentTeams.createTask(agent, { subject: '交接复核验收', description: '分析成员交给复核成员继续处理。', writeScopes: ['fixture/handoff-report.md'] });
+        const sourceTask = await ctx.agentTeams.updateTask(agent, { taskId: created.id, expectedRevision: created.revision, action: 'reassign', owner: input.fromMemberName });
+        stage = 'reassign-handoff-target';
+        const task = await ctx.agentTeams.updateTask(agent, { taskId: sourceTask.id, expectedRevision: sourceTask.revision, action: 'reassign', owner: input.toMemberName });
+        stage = 'deliver-handoff-summary';
+        const delivered = await ctx.agentTeams.sendMessage(agent, { target: input.toMemberName, content: blocks(`WEB_HANDOFF：任务 ${task.id} 已由 ${input.fromMemberName} 交给 ${input.toMemberName}，请复核并继续。`), signal: request.signal });
+        value = { before, delivery: delivered.status, task };
+      } else if (input.action === 'begin-failure') {
+        stage = 'resolve-failure-team';
+        const { agent } = await ctx.workdshSessionAccess.resolveAgent(input.sessionId, request.signal);
+        assert.ok(agent);
+        const member = ctx.agentTeams.listMembers(agent).find(row => row.id === input.memberId && row.name === input.memberName);
+        assert.ok(member);
+        const before = (await history(input.memberId)).events.filter(e => e.type === 'turn/end').length;
+        stage = 'assign-failure-task';
+        const created = await ctx.agentTeams.createTask(agent, { subject: '失败恢复验收', description: '成员首次处理失败，重启后由同一成员恢复。', writeScopes: ['fixture/recovery-report.md'] });
+        const task = await ctx.agentTeams.updateTask(agent, { taskId: created.id, expectedRevision: created.revision, action: 'reassign', owner: input.memberName });
+        stage = 'inject-member-failure';
+        const delivered = await ctx.agentTeams.sendMessage(agent, { target: input.memberName, content: blocks('WEB_FAIL_ONCE：本轮确定性失败，任务不得标记完成。'), signal: request.signal });
+        assert.ok(['accepted', 'queued'].includes(delivered.status));
+        value = { before, task };
+      } else if (input.action === 'wait-failure') {
+        stage = 'wait-member-failure';
+        await waitFor(async () => (await history(input.memberId)).events.filter(e => e.type === 'turn/end').length > input.before);
+        const latestEnd = (await history(input.memberId)).events.filter(e => e.type === 'turn/end').at(-1);
+        assert.notEqual(latestEnd.data.reason.kind, 'completed');
+        value = { memberId: input.memberId, reason: latestEnd.data.reason.kind };
+      } else if (input.action === 'recover-failure') {
+        stage = 'resolve-failed-team-after-restart';
+        const before = (await history(input.memberId)).events.filter(e => e.type === 'turn/end').length;
+        const { agent } = await ctx.workdshSessionAccess.resolveAgent(input.sessionId, request.signal);
+        assert.ok(agent);
+        const member = ctx.agentTeams.listMembers(agent).find(row => row.id === input.memberId && row.name === input.memberName);
+        assert.ok(member);
+        stage = 'resume-failed-member';
+        const delivered = await ctx.agentTeams.sendMessage(agent, { target: input.memberName, content: blocks('WEB_RECOVER_AFTER_FAILURE：沿用原任务归属继续完成。'), signal: request.signal });
+        assert.ok(['accepted', 'queued'].includes(delivered.status));
+        value = { memberId: input.memberId, before };
       } else throw Error('Unknown probe action');
       return Response.json({ ok: true, value });
     } catch (error) { return Response.json({ ok: false, stage, error: error.stack }); }

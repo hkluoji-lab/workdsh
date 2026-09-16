@@ -24,7 +24,19 @@ const dsh = join(root, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), pnpm = join(
 const exec = promisify(execFile);
 const command = async (bin, args, workdir = home) => (await exec(process.execPath, [bin, ...args], { cwd: workdir, env, timeout: 90000, maxBuffer: 8 * 1024 * 1024 })).stdout;
 let server, browser, log = '', page;
-const report = { home, checks: [], browserErrors: [], notRun: ['paid model', 'user preview deployment', 'fork member browser history'] };
+const report = {
+  scope: 'expert-team-resilience',
+  environment: {
+    host: 'production packaged WorkDSH profile',
+    team: 'official DeepSeek Harness Agent Teams service, tools and Web client',
+    browser: 'Playwright Chromium',
+    modelIo: 'deterministic local adapter',
+  },
+  scenarios: {},
+  checks: [],
+  browserErrors: [],
+  notRun: ['paid model', 'user preview deployment', 'fork member browser history'],
+};
 const pass = name => { report.checks.push(name); console.log(`PASS ${name}`); };
 const waitFor = async fn => { const signal = AbortSignal.timeout(30000); while (!await fn()) { signal.throwIfAborted(); await new Promise(r => setTimeout(r, 100)); } };
 const stop = async () => { if (!server || server.exitCode !== null || server.signalCode !== null) return; const ended = new Promise(r => server.once('close', r)); server.kill('SIGTERM'); const timer = setTimeout(() => server.kill('SIGKILL'), 4000); await ended; clearTimeout(timer); };
@@ -102,16 +114,78 @@ try {
   assert.ok(resumed.tasks.some(t => t.subject === '浏览器创建的官方任务'));
   const resumedAnalyst = resumed.members.find(member => member.name === 'analyst');
   assert.ok(resumedAnalyst);
-  const started = await api(host, { action: 'start-member', sessionId: created.sessionId, memberId: resumedAnalyst.id, memberName: resumedAnalyst.name });
+  const longTaskStartedAt = Date.now();
+  const started = await api(host, { action: 'begin-long-task', sessionId: created.sessionId, memberId: resumedAnalyst.id, memberName: resumedAnalyst.name });
   assert.equal(started.memberId, resumedAnalyst.id);
   const activeView = await api(host, { action: 'view', sessionId: created.sessionId });
   assert.equal(activeView.members.find(member => member.id === resumedAnalyst.id)?.status, 'running');
+  assert.ok(activeView.tasks.some(task => task.id === started.task.id && task.status === 'in_progress' && task.ownerName === 'analyst'));
   await open(host, created.sessionId);
-  await expect(page.locator('.wd-activity-action')).toContainText('analyst', { timeout: 7000 });
+  await expect(page.locator('.wd-activity-action')).toContainText('长任务与重连验收', { timeout: 7000 });
   await page.screenshot({ path: join(artifacts, 'official-team-active-member.png'), fullPage: true });
-  pass('activity-strip-names-the-running-official-member');
+  pass('long-running-task-is-owned-by-the-named-official-member');
+  await open(host, created.sessionId);
+  await expect(page.locator('.wd-activity-action')).toContainText('长任务与重连验收', { timeout: 7000 });
+  assert.ok((await api(host, { action: 'view', sessionId: created.sessionId })).tasks.some(task => task.id === started.task.id && task.status === 'in_progress'));
+  pass('browser-reconnect-keeps-the-running-member-and-task-visible');
   assert.deepEqual(await api(host, { action: 'wait-member', memberId: resumedAnalyst.id, before: started.before }), { memberId: resumedAnalyst.id, completed: true });
-  pass('cold-resumed-official-member-passes-expert-binding-guard');
+  const longTaskDurationMs = Date.now() - longTaskStartedAt;
+  assert.ok(longTaskDurationMs >= 15000, `long task ended too early: ${longTaskDurationMs}ms`);
+  await api(host, { action: 'complete-task', sessionId: created.sessionId, memberId: resumedAnalyst.id, memberName: resumedAnalyst.name, taskId: started.task.id });
+  report.scenarios.longTaskReconnect = {
+    taskId: started.task.id,
+    owner: resumedAnalyst.name,
+    memberIdStable: true,
+    fullBrowserConnectionsWhileRunning: 2,
+    durationMs: longTaskDurationMs,
+    finalStatus: 'completed',
+  };
+  pass('cold-resumed-official-member-completes-the-long-task');
+  const resumedReviewer = (await api(host, { action: 'view', sessionId: created.sessionId })).members.find(member => member.name === 'reviewer');
+  assert.ok(resumedReviewer);
+  const handoff = await api(host, { action: 'begin-handoff', sessionId: created.sessionId, fromMemberId: resumedAnalyst.id, fromMemberName: resumedAnalyst.name, toMemberId: resumedReviewer.id, toMemberName: resumedReviewer.name });
+  assert.equal(handoff.task.ownerName, 'reviewer');
+  assert.equal(handoff.task.status, 'in_progress');
+  assert.ok(['accepted', 'queued'].includes(handoff.delivery));
+  await open(host, created.sessionId);
+  await expect(page.locator('.wd-activity-action')).toContainText('交接复核验收', { timeout: 7000 });
+  assert.deepEqual(await api(host, { action: 'wait-member', memberId: resumedReviewer.id, before: handoff.before }), { memberId: resumedReviewer.id, completed: true });
+  const completedHandoff = await api(host, { action: 'complete-task', sessionId: created.sessionId, memberId: resumedReviewer.id, memberName: resumedReviewer.name, taskId: handoff.task.id });
+  assert.equal(completedHandoff.status, 'completed');
+  assert.equal(completedHandoff.ownerName, 'reviewer');
+  report.scenarios.handoff = {
+    taskId: handoff.task.id,
+    from: resumedAnalyst.name,
+    to: resumedReviewer.name,
+    delivery: handoff.delivery,
+    ownerAfterCompletion: completedHandoff.ownerName,
+    finalStatus: completedHandoff.status,
+  };
+  pass('durable-message-and-task-ownership-complete-the-member-handoff');
+  const failed = await api(host, { action: 'begin-failure', sessionId: created.sessionId, memberId: resumedReviewer.id, memberName: resumedReviewer.name });
+  const failedResult = await api(host, { action: 'wait-failure', memberId: resumedReviewer.id, before: failed.before });
+  assert.equal(failedResult.memberId, resumedReviewer.id);
+  assert.notEqual(failedResult.reason, 'completed');
+  pass('member-failure-is-recorded-without-completing-its-owned-task');
+  await stop(); host = await start();
+  const afterFailureRestart = await api(host, { action: 'view', sessionId: created.sessionId });
+  assert.equal(afterFailureRestart.members.find(member => member.name === 'reviewer')?.id, resumedReviewer.id);
+  assert.ok(afterFailureRestart.tasks.some(task => task.id === failed.task.id && task.status === 'in_progress' && task.ownerName === 'reviewer'));
+  const recovery = await api(host, { action: 'recover-failure', sessionId: created.sessionId, memberId: resumedReviewer.id, memberName: resumedReviewer.name });
+  assert.deepEqual(await api(host, { action: 'wait-member', memberId: resumedReviewer.id, before: recovery.before }), { memberId: resumedReviewer.id, completed: true });
+  const recoveredTask = await api(host, { action: 'complete-task', sessionId: created.sessionId, memberId: resumedReviewer.id, memberName: resumedReviewer.name, taskId: failed.task.id });
+  assert.equal(recoveredTask.status, 'completed');
+  const recoveredView = await api(host, { action: 'view', sessionId: created.sessionId });
+  assert.equal(recoveredView.members.filter(member => member.name === 'reviewer').length, 1);
+  report.scenarios.failureRecovery = {
+    taskId: failed.task.id,
+    injectedFailureReason: failedResult.reason,
+    taskRetainedAcrossColdHostRestart: true,
+    memberIdStable: recoveredView.members.find(member => member.name === 'reviewer')?.id === resumedReviewer.id,
+    duplicateMembers: 0,
+    finalStatus: recoveredTask.status,
+  };
+  pass('same-member-cold-restarts-after-failure-and-finishes-the-retained-task');
   await open(host, created.sessionId); await expect(page.getByRole('dialog')).toContainText('浏览器创建的官方任务');
   await page.screenshot({ path: join(artifacts, 'official-team-cold.png'), fullPage: true });
   pass('cold-web-restart-keeps-member-identities-and-ui-created-task');

@@ -1,3 +1,11 @@
+## 2026-09-16：专家团长任务、交接、重连与失败恢复验收
+
+新增 `probe:experts:team:resilience` 发布验收入口。探针把 identity、audit、access、skills、experts、bundle、activity 七个正式包打包并经官方 CLI 安装到仓库外临时 Profile，使用生产 Host、官方 Agent Teams 服务/工具/Web Client 和真实 Chromium；仅模型 I/O 使用本地确定性适配器，以便稳定注入一次成员失败。
+
+四条场景已通过：20 秒成员长任务在两次完整浏览器连接间保持同一成员和 `in_progress` 任务归属；任务先归分析成员、再经官方 reassign 和持久消息交给复核成员，最终仍保留复核成员所有权；模型回合失败没有错误完成任务；Host 冷重启后同一成员 ID、同一任务及所有权恢复，后续消息唤醒该成员完成处理，名册没有重复成员。官方成员回合结束后会释放激活实例，因此由 lead 对仍归属于预期成员的任务执行最终签收，探针没有增加自有团队运行表。
+
+验收结果为 13 项检查通过、浏览器 pageerror 为 0，结构化回执和截图位于 `.artifacts/dsh-0.1.6-upgrade/native-team-web/`，判定边界见 [专家团韧性验收](evidence/expert-team-resilience.md)。本次未运行付费模型、用户 preview 或官方 fork 成员浏览器历史；不将 20 秒确定性长任务写成小时级真实业务稳定性。
+
 ## 2026-09-16：PPT 原生画布坐标修正
 
 用户实际 16:9 演示稿在右侧编辑器中集中于左上区域。根因不是页面 CSS 对齐，而是 AI 按 PowerPoint 的 960×540 point 页面尺寸写入几何坐标，原生 `pptx-viewer-core` 编辑器实际使用 1280×720 CSS pixel 画布；Office 能力和文档状态此前没有暴露权威画布尺寸，新建页也沿用了 960 宽度尺度。
