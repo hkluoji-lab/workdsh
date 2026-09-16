@@ -97,6 +97,12 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.match(modelContext, /MarkdownAlpha/);
     assert.match(modelContext, /DocxCharlie/);
     assert.match(modelContext, /<library-document name="简报.pptx"/);
+    const runtimeSessionId = '6e2918bb-d14f-4eb4-a68a-dc5a96bad20e';
+    await ctx.workdshLibrary.setTaskSelection(actor, `session-${runtimeSessionId}`, [imported[4].id]);
+    assert.equal((await ctx.workdshLibrary.taskSelection(actor, runtimeSessionId))[0].assetId, imported[4].asset.id, 'agent UUID resolves the UI session selection');
+    const legacyRuntimeSessionId = '272cb8fe-29be-42e3-a75d-c06a5015649e';
+    await ctx.workdshLibrary.setTaskSelection(actor, legacyRuntimeSessionId, [imported[3].id]);
+    assert.equal((await ctx.workdshLibrary.taskSelection(actor, `session-${legacyRuntimeSessionId}`))[0].assetId, imported[3].asset.id, 'UI session ID resolves an agent UUID selection');
     const pinnedRevision = selected.find(row => row.assetId === imported[0].asset.id).revisionId;
     const draft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);
     const concurrentDraft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);

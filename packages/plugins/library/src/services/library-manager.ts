@@ -18,6 +18,12 @@ const MAX_TOTAL_BYTES = 5 * 1024 * 1024 * 1024;
 const MAX_SELECTION_BYTES = 32 * 1024 * 1024;
 const sha256 = (value: Uint8Array | string): string => createHash('sha256').update(value).digest('hex');
 const now = (): string => new Date().toISOString();
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const sessionKeys = (sessionId: string): readonly string[] => {
+  if (sessionId.startsWith('session-') && UUID.test(sessionId.slice('session-'.length))) return [sessionId, sessionId.slice('session-'.length)];
+  if (UUID.test(sessionId)) return [sessionId, `session-${sessionId}`];
+  return [sessionId];
+};
 const cleanName = (value: string): string => {
   const name = value.trim();
   if (!name || name.length > 256 || name === '.' || name === '..' || /[\/\\\u0000-\u001f]/.test(name)) throw new Error('library/invalid-name');
@@ -182,7 +188,11 @@ export class LibraryManager extends Service implements LibraryService {
   }
 
   taskSelection(actor: ActorContext, sessionId: string, signal?: AbortSignal): Promise<readonly LibraryTaskReference[]> {
-    return this.enqueue(async () => { const state = await this.ensureState(actor, signal); return (state.references[sessionId] ?? []).flatMap(reference => { const asset = state.assets[reference.assetId]; const node = state.nodes[reference.nodeId]; return asset && node ? [{ ...reference, name: node.name, kind: asset.kind }] : []; }); });
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal);
+      const references = sessionKeys(sessionId).map(key => state.references[key]).find(rows => rows !== undefined) ?? [];
+      return references.flatMap(reference => { const asset = state.assets[reference.assetId]; const node = state.nodes[reference.nodeId]; return asset && node ? [{ ...reference, name: node.name, kind: asset.kind }] : []; });
+    });
   }
 
   createDraft(actor: ActorContext, assetId: string, baseRevisionId?: string, signal?: AbortSignal): Promise<LibraryDraft> {
