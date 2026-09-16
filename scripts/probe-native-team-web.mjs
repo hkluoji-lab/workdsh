@@ -52,6 +52,9 @@ async function open(host, id) {
 }
 try {
   const tarballs = [];
+  // Verify the complete presentation: native Team panel plus the WorkDSH
+  // Siri-style activity strip. Browser Use is disabled in this isolated Team
+  // fixture below because its own lifecycle has a separate packaged probe.
   for (const directory of ['packages/providers/identity-local', 'packages/plugins/audit', 'packages/plugins/access', 'packages/plugins/skills', 'packages/plugins/experts', 'packages/bundle', 'packages/plugins/activity']) {
     const manifest = JSON.parse(await readFile(join(root, directory, 'package.json'), 'utf8'));
     await command(pnpm, ['--filter', manifest.name, 'pack', '--pack-destination', artifacts], root);
@@ -65,6 +68,9 @@ try {
   await command(pnpm, ['pack', '--pack-destination', artifacts], fixture); tarballs.push(join(artifacts, 'workdsh-native-team-probe-0.0.0.tgz'));
   await command(dsh, ['--profile', 'native-team', '--from-default-profile', 'web', '--dump-config']);
   await command(dsh, ['plugin', '--profile', 'native-team', 'add', ...tarballs, '--offline']);
+  const profilePatch = join(home, 'profiles/native-team/cordis.patch.yml');
+  const browserOverride = '- id: browser-use-playwright-mcp\n  disabled: true\n';
+  await writeFile(profilePatch, browserOverride);
   pass('seven-independent-packages-installed-via-official-cli');
   let host = await start();
   const created = await api(host, { action: 'create', cwd, workspaceId });
@@ -75,9 +81,10 @@ try {
   await open(host, created.sessionId);
   const panel = page.getByRole('dialog');
   await expect(panel).toContainText('reviewer'); await expect(panel).toContainText('核对测试数据'); await expect(panel).toContainText('复核测试结论');
-  await expect(page.locator('.wd-activity')).toHaveCount(0);
+  await expect(page.locator('.wd-activity')).toHaveCount(1);
+  await expect(page.locator('.wd-activity')).toHaveAttribute('data-team', 'true');
   await page.screenshot({ path: join(artifacts, 'official-team.png'), fullPage: true });
-  pass('official-roster-and-task-board-render-without-legacy-team-bar');
+  pass('official-roster-and-task-board-render-with-workdsh-activity-strip');
   await panel.getByRole('button', { name: /^(New task|新建任务)$/ }).click();
   await panel.getByRole('textbox', { name: /^(Task subject|任务标题)$/ }).fill('浏览器创建的官方任务');
   await panel.getByRole('textbox', { name: /^(Task description|任务描述)$/ }).fill('真实 Remote 写入，随后冷重启核对。');
@@ -93,6 +100,18 @@ try {
   const resumed = await api(host, { action: 'view', sessionId: created.sessionId });
   assert.deepEqual(resumed.members.map(m => m.id), created.view.members.map(m => m.id));
   assert.ok(resumed.tasks.some(t => t.subject === '浏览器创建的官方任务'));
+  const resumedAnalyst = resumed.members.find(member => member.name === 'analyst');
+  assert.ok(resumedAnalyst);
+  const started = await api(host, { action: 'start-member', sessionId: created.sessionId, memberId: resumedAnalyst.id, memberName: resumedAnalyst.name });
+  assert.equal(started.memberId, resumedAnalyst.id);
+  const activeView = await api(host, { action: 'view', sessionId: created.sessionId });
+  assert.equal(activeView.members.find(member => member.id === resumedAnalyst.id)?.status, 'running');
+  await open(host, created.sessionId);
+  await expect(page.locator('.wd-activity-action')).toContainText('analyst', { timeout: 7000 });
+  await page.screenshot({ path: join(artifacts, 'official-team-active-member.png'), fullPage: true });
+  pass('activity-strip-names-the-running-official-member');
+  assert.deepEqual(await api(host, { action: 'wait-member', memberId: resumedAnalyst.id, before: started.before }), { memberId: resumedAnalyst.id, completed: true });
+  pass('cold-resumed-official-member-passes-expert-binding-guard');
   await open(host, created.sessionId); await expect(page.getByRole('dialog')).toContainText('浏览器创建的官方任务');
   await page.screenshot({ path: join(artifacts, 'official-team-cold.png'), fullPage: true });
   pass('cold-web-restart-keeps-member-identities-and-ui-created-task');

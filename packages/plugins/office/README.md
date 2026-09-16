@@ -2,7 +2,7 @@
 
 # WorkDSH Office 浏览器编辑插件
 
-当前 alpha.5 候选仅保留 pptx-react-viewer 3.16.5 / pptx-viewer-core 3.14.3 作为 PPT 编辑器，沿用已确认的中文桌面工具栏与原生图表侧栏。PPTist、CreatPPT、旧 PPT 预览/画布适配已删除。Word 已发布 alpha.2 保持原版本，后续 Word 开发暂停。
+当前 alpha.5 候选仅保留 pptx-react-viewer 3.16.5 / pptx-viewer-core 3.14.3 作为 PPT 编辑器，沿用已确认的中文桌面工具栏与原生图表侧栏。PPTist、CreatPPT、旧 PPT 预览/画布适配已删除。Word 已发布 alpha.2；当前源码继续增加结构化原生图表能力，发布版本以新的候选验收为准。
 
 PPT 新建、逐页 AI 修改、修订、权限及保存使用同一 Office 内容服务；原生文件 Tab 直接接收 Harness 授权字节，无 iframe。已有 PPTX 在浏览器编辑并下载副本；不静默覆盖原文件。服务新建的 PPT 工作副本支持自动保存、重新打开和下载。原生图表数据直接可编辑，不用图片或扇形拼图。原型构建适配固定版本的工具栏/侧栏并限定 CSS，不修改 Harness 或发布依赖文件；升级需重新复核。
 
@@ -12,7 +12,7 @@ content_open(kind=presentation) 初始化一页；content_edit 的 presentation.
 
 Word 预览版 `0.1.0-alpha.2`（表格/图片增量；历史文本预览版为 `0.1.0-alpha.1`），按官方 Loader/Profile 安装。插件接入原生右侧文件 Tab，文件授权读取与刷新继续由 Harness 拥有；不使用服务端 Office 转换，不依赖本机 Office/LibreOffice，不向第三方上传文件。
 
-当前候选复用 Tiptap 3.31.0 MIT 的 TableKit 与 Image 扩展：工具栏靠前提供「表格」「插入图片」，增删行列、标题行、合并/拆分，以及原生列宽拖动和图片缩放；选中图片后可对齐。AI 使用同一个受授权内容服务分批写入，右侧实时显示。保存重开及 DOCX 导入导出保留已支持的表格结构、嵌入图片和文字样式，导入为独立工作副本，原文件字节不变。每张 PNG/JPEG 512 KiB，表格50行/50列且最多500单元格，批次1 MiB、文档2 MiB。嵌套表格、单元格内图片、复杂浮动布局、完整页眉页脚与 Word 分页仍未完成；其他七类实时适配待开发。DOCX 导入的列表编号、复杂样式继承等仍会告知转换限制，不能保证无损往返。历史记录描述 alpha.1 能力时以对应版本为准。
+当前候选复用 Tiptap 3.31.0 MIT 的 TableKit 与 Image 扩展：工具栏靠前提供「表格」「插入图片」，增删行列、标题行、合并/拆分，以及原生列宽拖动和图片缩放；选中图片后可对齐。Word 图表使用 Office 插件自己的结构化 `chart` 块，浏览器绘制 SVG，DOCX 导出写入原生 Chart XML 和嵌入工作簿，不把图表生成 PNG。AI 使用同一个受授权内容服务分批写入，右侧实时显示。保存重开及 DOCX 导出保留表格、图片、图表数据和文字样式；DOCX 导入为非无损独立工作副本，现阶段不会把任意外部原生图表反向解析成结构化块。每张 PNG/JPEG 512 KiB，图表最多10个系列/50个分类，表格50行/50列且最多500单元格，批次1 MiB、文档2 MiB。嵌套表格、单元格内图片、复杂浮动布局、完整页眉页脚与 Word 分页仍未完成。历史记录描述 alpha.1 能力时以对应版本为准。
 
 
 后续交付范围已扩展为Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown八类，见[组件采用方案](../../../docs/design/office/OPEN-SOURCE-STACK.md)与[统一AI接口](../../../docs/design/office/UNIFIED-API.md)。HTML源码/实时预览、Markdown正文/源码编辑均须接入同一内容服务。当前原生 document 新建/编辑/修订同步已打通；以下文件表格是原有适配器范围，完整八类统一接口尚未完成。

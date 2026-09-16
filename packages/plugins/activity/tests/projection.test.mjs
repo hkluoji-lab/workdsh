@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {projectActivity,activityMessage} from '../dist/projection.js';
 import {createPresentationRegistry} from '../dist/registry.js';
+import {summarizeTeamActivity} from '../dist/team-status.js';
 const e=(type,data={},time=1)=>({event:{type,data,time}});
 test('Host lifecycle prevents stale completed from masquerading as current completion',()=>{
  assert.equal(projectActivity([e('turn/start'),e('turn/end',{reason:{kind:'completed'}})],true).phase,'working');
@@ -46,4 +47,31 @@ test('confirmation pauses activity until the matching result arrives',()=>{
  const events=[e('turn/start'),e('tool/call',{name:'ask_user_question',callId:'q'})];
  assert.equal(projectActivity(events,true).phase,'waiting');
  assert.equal(projectActivity([...events,e('tool/result',{message:{source:{callId:'q'}}})],true).phase,'working');
+});
+test('official Team view identifies the running expert and assigned task',()=>{
+ const view={members:[
+  {id:'lead',name:'lead',role:'lead',status:'idle',diagnostics:[]},
+  {id:'cashier',name:'finance-cashier',role:'teammate',status:'running',description:'资金侧独立复核',diagnostics:[]},
+  {id:'accountant',name:'finance-accountant',role:'teammate',status:'running',description:'账务侧独立复核',diagnostics:[]},
+ ],tasks:[{id:'task-1',revision:2,subject:'核对月度现金流',description:'逐月复核',status:'in_progress',blockedBy:[],writeScopes:[],ownerName:'finance-cashier',ready:true,writeScopeWarnings:[]}]};
+ const summary=summarizeTeamActivity(view,'cashier','正在处理');
+ assert.equal(summary.member.name,'finance-cashier');
+ assert.equal(summary.task.subject,'核对月度现金流');
+ assert.equal(summary.focus,'核对月度现金流');
+ assert.equal(summary.message,'finance-cashier · 核对月度现金流 · 另 1 位专家处理中');
+});
+test('completed teammate task no longer masks a running named lead',()=>{
+ const view={members:[
+  {id:'lead-session',name:'lead',role:'lead',status:'running',description:'',diagnostics:[]},
+  {id:'cashier-session',name:'finance-cashier',role:'teammate',status:'running',description:'资金侧独立复核',diagnostics:[]},
+  {id:'accountant-session',name:'finance-accountant',role:'teammate',status:'idle',description:'账务侧独立复核',diagnostics:[]},
+ ],tasks:[
+  {id:'task-1',revision:4,subject:'资金侧独立复核',description:'逐月复核',status:'completed',blockedBy:[],writeScopes:[],ownerName:'finance-cashier',ready:true,writeScopeWarnings:[]},
+  {id:'task-2',revision:3,subject:'账务侧独立复核',description:'账务复核',status:'completed',blockedBy:[],writeScopes:[],ownerName:'finance-accountant',ready:true,writeScopeWarnings:[]},
+ ]};
+ const summary=summarizeTeamActivity(view,'lead-session','正在处理');
+ assert.equal(summary.member.name,'lead');
+ assert.equal(summary.focus,'正在处理');
+ assert.equal(summary.runningCount,1);
+ assert.equal(summary.message,'lead · 正在处理');
 });

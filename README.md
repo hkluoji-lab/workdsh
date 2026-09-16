@@ -50,7 +50,7 @@ Already using the Harness `0.1.6-alpha.1` Web Profile? Install the modules you n
 <td width="50%"><img src="docs/assets/screenshots/workdsh-skill-market-preview.png" alt="WorkDSH skill market"><br><strong>Skills as managed capabilities</strong><br>Discover, inspect, install, edit, disable, and recover skills.</td>
 </tr>
 <tr>
-<td colspan="2"><img src="docs/assets/screenshots/workdsh-team-activity-preview.png" alt="WorkDSH expert team activity"><br><strong>Expert teams stay visible</strong><br>The activity bar identifies the team and its current members without replacing the native conversation.</td>
+<td colspan="2"><img src="docs/assets/screenshots/workdsh-official-agent-team.png" alt="Official Harness Agent Team panel shown together with the WorkDSH Siri-style activity strip"><br><strong>Native Agent Team and live WorkDSH status stay visible together</strong><br>The native panel owns members, shared tasks, dependencies, and navigation. The Siri-style strip keeps the current team state visible and animates its colored edge while work is running.</td>
 </tr>
 <tr>
 <td colspan="2"><img src="docs/assets/screenshots/workdsh-jd-cart-review.png" alt="WorkDSH adding a selected JD product to the cart and presenting visual evidence before checkout"><br><strong>Real browser action, evidence, then human control</strong><br>In this real WorkDSH task, the agent searched JD, added the selected product to the cart, presented the result and screenshot together, and stopped before checkout.</td>
@@ -134,10 +134,10 @@ Each installable module has a matching **GitHub prerelease, versioned package, S
 | --- | --- | --- | --- |
 | Skill management | `workdsh-plugin-skills@0.1.0-alpha.29` | [Skill `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.29/workdsh-plugin-skills-0.1.0-alpha.29.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.29) | Independently installable feature plugin. |
 | Experts | `workdsh-plugin-experts@0.1.0-alpha.3` | [Expert `.tgz`](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.3/workdsh-plugin-experts-0.1.0-alpha.3.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.3) | Expert definitions and reviewed revisions composed with the official DSH Team runtime. |
-| Connectors | `workdsh-plugin-connectors@0.1.0-alpha.1` | [Connector `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.2/workdsh-plugin-connectors-0.1.0-alpha.1.tgz) · [Project release](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.2) | Multiple stdio/HTTP MCP instances, official credential storage, health/tool discovery, and per-conversation tool isolation. |
+| Connectors | `workdsh-plugin-connectors@0.1.0-alpha.1` | [Connector `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.3/workdsh-plugin-connectors-0.1.0-alpha.1.tgz) · [Project release](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.3) | Multiple stdio/HTTP MCP instances, official credential storage, health/tool discovery, and per-conversation tool isolation. |
 | Activity | `workdsh-plugin-activity@0.1.0-alpha.2` | [Activity `.tgz`](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.2/workdsh-plugin-activity-0.1.0-alpha.2.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.2) | Visible task, skill, and expert-team activity. |
 | Office | `workdsh-plugin-office@0.1.0-alpha.5` | [Office `.tgz`](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.5/workdsh-plugin-office-0.1.0-alpha.5.tgz) · [Release](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5) | Supported editable working copies, previews, and file export. |
-| WorkDSH presentation | `workdsh-bundle@0.1.0-alpha.45` | [Presentation `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.2/workdsh-bundle-0.1.0-alpha.45.tgz) · [Project release](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.2) | Optional brand, theme, and workbench composition. Install feature plugins separately. |
+| WorkDSH presentation | `workdsh-bundle@0.1.0-alpha.45` | [Presentation `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.3/workdsh-bundle-0.1.0-alpha.45.tgz) · [Project release](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.3) | Optional brand, theme, and workbench composition. Install feature plugins separately. |
 
 Workbench `alpha.10` is currently delivered within the presentation bundle. Shared UI, contracts, and the local identity/access/audit foundation are supporting packages, **not standalone end-user downloads**. See the [complete module map](docs/RELEASES.md).
 
@@ -147,22 +147,32 @@ Workbench `alpha.10` is currently delivered within the presentation bundle. Shar
 
 Use **Node.js 22.19+ on the 22 LTS line, or Node 24+**, **pnpm 10.34.5**, and the official **Harness CLI `0.1.6-alpha.1`**. These commands assume `dsh` resolves to that CLI, rather than an older desktop launcher.
 
-Download the Skill `.tgz` above. Create a dedicated Web Profile and replace the example path with your downloaded file's absolute path:
+For the complete product, download every asset from [project release `v0.1.0-alpha.3`](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.3) into one directory. Stop the target profile, `cd` to that directory, and use the checksum-verifying installer:
+
+```sh
+node install-workdsh.mjs --profile workdsh
+dsh --profile workdsh
+```
+
+Use `--dry-run` to inspect the commands. The equivalent manual installation is:
 
 ```sh
 dsh --profile workdsh --from-default-profile web --dump-config
-dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.29.tgz
+dsh plugin --profile workdsh add "$PWD/workdsh-provider-identity-local-0.1.0-alpha.5.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-audit-0.1.0-alpha.4.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-access-0.1.0-alpha.5.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-skills-0.1.0-alpha.29.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-experts-0.1.0-alpha.3.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-connectors-0.1.0-alpha.1.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-activity-0.1.0-alpha.2.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-office-0.1.0-alpha.5.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-bundle-0.1.0-alpha.45.tgz"
 dsh --profile workdsh
 ```
 
-Open **专家 · 技能 · 连接器 → 技能** in the sidebar. Use **添加技能** to import or create a skill, or open a skill and choose **去试试** to prepare a native conversation. Model-backed execution requires your own Harness model configuration.
+Verify the downloads against `SHA256SUMS` first. `workdsh-plugin-experts` composes the official Harness Agent Team Host, nine Team tools, and Client panel; after installation, **Agent Team** appears in the conversation header. Installing only Skills and the presentation bundle does not install Experts, Team, Connectors, or Office.
 
-To add the WorkDSH appearance, stop that Profile, install the optional bundle, then restart:
-
-```sh
-dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.45.tgz
-dsh --profile workdsh
-```
+Open **专家 · 技能 · 连接器** in the sidebar to manage experts, skills, and connectors. Model-backed execution requires your own Harness model configuration.
 
 Follow the official [`dsh plugin … add` flow](https://deepseek-harness.github.io/deepseek-harness/develop/basic/publish). GitHub's **Source code** archives are source snapshots; install the named `.tgz` assets. Installation and removal are verified with the Host stopped and restarted, not as complete live CLI hot-unload operations.
 
@@ -309,7 +319,7 @@ The current build inventory additionally includes the following package versions
 | [react-remove-scroll-bar](https://github.com/theKashey/react-remove-scroll-bar) | 2.3.8 | MIT |
 | [unicount](https://github.com/josephg/unicount) | 1.1.0 | ISC |
 
-## 2026-09-15 Project alpha release / 项目级预览发行
+## 2026-09-16 Project alpha release / 项目级预览发行
 
 本批通过8个精确安装包的隔离官方Web Profile安装、两次冷启动、匿名401/认证200、活动插件移除及全部模块移除后冷启动。完整构建、115项集成测试、9项活动测试通过。验证环境：Harness 0.1.6-alpha.1，Node 22.23.2，macOS。专家团TM-01、真实长任务状态切换及多平台整体验收尚未完成。
 
@@ -317,9 +327,9 @@ The current build inventory additionally includes the following package versions
 | --- | --- | --- |
 | experts | `workdsh-plugin-experts@0.1.0-alpha.3` | [Release](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.3) · [tgz](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.3/workdsh-plugin-experts-0.1.0-alpha.3.tgz) |
 | skills | `workdsh-plugin-skills@0.1.0-alpha.29` | [Release](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.29) · [tgz](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.29/workdsh-plugin-skills-0.1.0-alpha.29.tgz) |
-| connectors | `workdsh-plugin-connectors@0.1.0-alpha.1` | [Project release](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.2) · [tgz](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.2/workdsh-plugin-connectors-0.1.0-alpha.1.tgz) |
+| connectors | `workdsh-plugin-connectors@0.1.0-alpha.1` | [Project release](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.3) · [tgz](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.3/workdsh-plugin-connectors-0.1.0-alpha.1.tgz) |
 | activity | `workdsh-plugin-activity@0.1.0-alpha.2` | [Release](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.2) · [tgz](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.2/workdsh-plugin-activity-0.1.0-alpha.2.tgz) |
 | office | `workdsh-plugin-office@0.1.0-alpha.5` | [Release](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5) · [tgz](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.5/workdsh-plugin-office-0.1.0-alpha.5.tgz) |
-| bundle | `workdsh-bundle@0.1.0-alpha.45` | [Project release](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.2) · [tgz](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.2/workdsh-bundle-0.1.0-alpha.45.tgz) |
+| bundle | `workdsh-bundle@0.1.0-alpha.45` | [Project release](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.3) · [tgz](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.3/workdsh-bundle-0.1.0-alpha.45.tgz) |
 
 下载所需tgz后，使用官方CLI：`dsh plugin --profile <profile> add /absolute/path/<package>.tgz`。基础身份、审计与授权配套见专家发行附件；各模块独立安装。仅发布GitHub alpha附件，未发布npm注册表。Office依赖引用与声明许可证见下文；现有notice及检查报告保留。

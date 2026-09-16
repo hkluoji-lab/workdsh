@@ -25,6 +25,11 @@ export function registerExpertExecutionGuard(ctx: Context): void {
       const unbound = error instanceof ExpertsError && error.code === 'experts/not-found' && error.details?.reason === 'unbound';
       // The trusted create endpoint stores a Lead asset binding after Agent creation.
       // Its first pre-step must still verify the binding before reaching the model.
+      // A resumed official Team child is announced before Team's own serial
+      // recovery listener may have restored its runtime membership. Defer only
+      // this creation edge; agent/pre-step below still requires the recovered
+      // root binding and rejects a genuinely unbound expert child.
+      if (unbound && creating && !membership && header.parentSession) return;
       if (unbound && (!header.agentPreset?.startsWith('wd-exp-') || creating && root === agent && !header.parentSession)) return;
       throw error;
     }

@@ -53,3 +53,21 @@ test('DOCX preserves merged table, resized embedded image and text styles on exp
   assert.ok(rejected.warnings.includes('图片/图表'));assert.ok(!rejected.blocks.some(b=>b.type==='image'));assert.deepEqual(requests,[]);
   await writeFile('.artifacts/office-rich/roundtrip.docx',new Uint8Array(result.bytes));
 }));
+test('Structured chart is rendered by the Word plugin as SVG and roundtrips without becoming an image',async()=>withPage(async page=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  const result=await page.evaluate(()=>{
+    const chart={chartType:'bar',title:'12个月期末现金余额',categories:['1月','2月','3月'],series:[{name:'现金余额',values:[120,330,480],color:'#2563eb'},{name:'最低保有量',values:[500,500,500],color:'#f97316'}],width:640,height:360,alignment:'center',legend:'bottom',yAxisTitle:'万元'};
+    const state={modelVersion:1,blockIds:['chart-1'],blocks:{'chart-1':{blockId:'chart-1',type:'chart',runs:[],chart}}};
+    e.commands.setContent(RichOffice.editorContent(state));
+    return {diff:RichOffice.documentDiff(state,e.getJSON()),json:e.getJSON()};
+  });
+  await page.locator('.wd-office-chart svg').waitFor();
+  assert.equal(await page.locator('.wd-office-chart rect').count(),6);
+  assert.equal(await page.locator('.wd-office-chart img').count(),0);
+  assert.equal(await page.locator('.wd-office-chart-legend span').count(),2);
+  assert.equal(await page.locator('.wd-office-chart figcaption').textContent(),'12个月期末现金余额');
+  assert.equal(result.json.content[0].type,'officeChart');
+  assert.deepEqual(result.diff,[]);
+  assert.deepEqual(errors,[]);
+  await page.screenshot({path:'.artifacts/office-rich/native-word-chart.png',fullPage:true});
+}));

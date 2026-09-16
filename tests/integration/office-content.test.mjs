@@ -479,6 +479,21 @@ test("Tables and embedded images share tools, human leases, atomic validation an
   } finally {await h.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
 });
 
+test("content_edit accepts one JSON-wrapped input object and rejects malformed wrappers", async () => {
+  const root = await mkdtemp(join(tmpdir(), "office-json-wrapper-"));
+  const h = await boot(root);
+  try {
+    const first = await create(h.s);
+    const exec = {agent:{id:"session-a"}, signal:new AbortController().signal, callId:"json-wrapper"};
+    const input = {documentId:first.documentId,baseRevision:0,operationId:"wrapped-edit",operations:[{op:"document.replaceBlock",blockId:first.state.blockIds[0],expectedText:"",block:block("兼容字符串包装")}]};
+    const receipt = await h.ctx.tools.get("content_edit").execute({input:JSON.stringify(input)},exec);
+    assert.equal(receipt.revision,1);
+    assert.equal((await h.s.read(actor(),first.documentId)).state.blocks[first.state.blockIds[0]].runs[0].text,"兼容字符串包装");
+    await assert.rejects(h.ctx.tools.get("content_edit").execute({input:"{bad json"},exec),{code:"INVALID_INPUT"});
+    await assert.rejects(h.ctx.tools.get("content_edit").execute({input:"[]"},exec),{code:"INVALID_INPUT"});
+  } finally {await h.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
+});
+
 test("AI image references copy across authorized documents and reject changed or unauthorized sources", async () => {
   const root = await mkdtemp(join(tmpdir(), "office-image-reference-"));
   const h = await boot(root);
@@ -535,10 +550,16 @@ test('Native PPT shares native tools, pending/ACK, CAS, human leases, ownership 
   const input={source:'new',kind:'presentation',title:'门店经营汇报',operationId:'ppt-create',brief:'# 门店经营汇报\n\n## 经营概况\n\n- 经营资料待补'};
   const first=await h.ctx.tools.get('content_open').execute({input},exec);
   assert.equal(first.kind,'presentation');assert.equal(first.state.deck.slides.length,1);assert.equal(first.state.blocks,undefined);
+  assert.deepEqual(first.state.deck.canvas,{width:1280,height:720,unit:'css-px'});
+  const capabilities=await h.ctx.tools.get('content_capabilities').execute({},exec);
+  assert.deepEqual(capabilities.presentation.canvas.default,{width:1280,height:720,unit:'css-px'});
+  assert.equal(capabilities.presentation.canvas.authoritativePath,'state.deck.canvas');
+  assert.equal(capabilities.presentation.fontSizeUnit,'points');
   const pending=await h.s.pending(actor());assert.ok(pending.some(item=>item.documentId===first.documentId));
   const request=pending.find(item=>item.documentId===first.documentId);
   await h.s.acknowledge(actor(),{documentId:first.documentId,requestId:request.requestId,clientId:'ppt-client',appliedRevision:0});
   const batch={documentId:first.documentId,baseRevision:0,operationId:'ppt-add-slide',operations:[{op:'presentation.insertSlides',afterSlideId:first.state.deck.slides.at(-1).id,slides:[{id:'new-action-slide',slideNumber:2,elements:[],name:'行动建议'}]}]};
+  await assert.rejects(h.s.editForAgent(actor(),{...batch,operationId:'out-of-canvas',operations:[{op:'presentation.insertSlides',afterSlideId:first.state.deck.slides.at(-1).id,slides:[{id:'bad-slide',slideNumber:2,elements:[{id:'bad',type:'text',x:1200,y:40,width:160,height:40,text:'越界'}]}]}]}),/1280×720/);
   await assert.rejects(h.s.editForAgent(actor(),{...batch,operationId:'multi-page-rejected',operations:[{...batch.operations[0],slides:[...batch.operations[0].slides,{id:'second-content-page',slideNumber:3,elements:[]}]}]}),{code:'INVALID_INPUT'});
   assert.equal((await h.s.read(actor(),first.documentId)).revision,0);
   const receipt=await h.ctx.tools.get('content_edit').execute({input:batch},exec);assert.equal(receipt.revision,1);
