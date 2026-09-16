@@ -91,7 +91,7 @@ export class LibraryManager extends Service implements LibraryService {
       // PDF.js transfers/detaches its input buffer. Keep the authoritative original
       // and the caller-owned buffer intact by converting an independent copy.
       const originalBytes = Uint8Array.from(input.bytes);
-      const converted = await convertToMarkdown(kind, Uint8Array.from(originalBytes));
+      const converted = await convertToMarkdown(kind, Uint8Array.from(originalBytes), signal);
       const timestamp = now(); const assetId = randomUUID(); const nodeId = randomUUID(); const revisionId = randomUUID();
       const relativeBase = join('objects', assetId, revisionId); const finalDirectory = this.safePath(relativeBase);
       const temporaryDirectory = this.safePath(join('.tmp', randomUUID()));

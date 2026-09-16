@@ -102,6 +102,14 @@ test('library rejects name conflicts, unsupported files, cycles and cross-owner 
     await assert.rejects(ctx.workdshLibrary.createFolder(actor, '合同'), /library\/name-conflict/);
     await assert.rejects(ctx.workdshLibrary.move(actor, folder.id, folder.id), /library\/cycle/);
     await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '程序.exe', bytes: new Uint8Array([1]), operationId: 'bad-format' }), /library\/unsupported-format/);
+    await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '伪装.pdf', bytes: new TextEncoder().encode('not a pdf'), operationId: 'fake-pdf' }), /library\/invalid-pdf/);
+    await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '伪装.docx', bytes: new TextEncoder().encode('not a zip'), operationId: 'fake-docx' }), /library\/invalid-office-file/);
+    await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '坏编码.txt', bytes: new Uint8Array([0xff, 0xfe, 0xfd]), operationId: 'bad-utf8' }), /library\/invalid-text/);
+    const bomb = new JSZip(); bomb.file('word/document.xml', 'A'.repeat(2 * 1024 * 1024));
+    await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '压缩炸弹.docx', bytes: new Uint8Array(await bomb.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 9 } })), operationId: 'zip-bomb' }), /library\/archive-limit/);
+    const cancelled = new AbortController(); cancelled.abort();
+    await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '取消.md', bytes: new TextEncoder().encode('cancelled'), operationId: 'cancelled' }, cancelled.signal), /AbortError/);
+    assert.equal((await ctx.workdshLibrary.list(actor)).length, 1, 'failed and cancelled imports create no asset');
     const item = await ctx.workdshLibrary.importAsset(actor, { name: '私有.txt', bytes: new TextEncoder().encode('private'), operationId: 'private' });
     const other = { ...actor, principalId: 'owner-b', requestId: 'request-b' };
     await assert.rejects(ctx.workdshLibrary.readText(other, item.asset.id), /library\/not-found/);
