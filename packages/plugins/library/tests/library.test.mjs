@@ -9,7 +9,7 @@ import * as JsonStorage from '@deepseek-ai/dsh-storage-json';
 import * as StorageDomain from '@deepseek-ai/dsh-storage-domain';
 import JSZip from 'jszip';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { LibraryManager } from '../dist/index.js';
+import { buildLibrarySelectionContext, LibraryManager } from '../dist/index.js';
 
 const actor = {
   principalId: 'owner-a', organizationId: 'organization-a', requestId: 'request-a', resolvedBy: 'test',
@@ -92,6 +92,11 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.equal(selected.length, 6);
     assert.equal(selected.find(row => row.assetId === imported[1].asset.id).name, imported[1].name);
     assert.equal(selected.find(row => row.assetId === imported[1].asset.id).kind, 'text');
+    const modelContext = await buildLibrarySelectionContext(ctx.workdshLibrary, actor, 'session-a');
+    assert.match(modelContext, /用户明确添加到当前对话/);
+    assert.match(modelContext, /MarkdownAlpha/);
+    assert.match(modelContext, /DocxCharlie/);
+    assert.match(modelContext, /<library-document name="简报.pptx"/);
     const pinnedRevision = selected.find(row => row.assetId === imported[0].asset.id).revisionId;
     const draft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);
     const concurrentDraft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);
