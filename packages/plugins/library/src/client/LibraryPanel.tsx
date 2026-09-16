@@ -5,9 +5,8 @@ import type { LibraryAsset, LibraryAssetKind, LibraryDraft, LibraryOriginalPrevi
 import { Modal } from 'workdsh-ui';
 import type { LibraryClient } from './management.js';
 import { libraryCss } from './styles.js';
-import { notifyLibrarySelectionChanged } from './selection-events.js';
 
-type Props = PropsRuntime<'main'> & InjectFace<{ management: LibraryClient; previewRegistry: LibraryOriginalPreviewRegistry; toggleNavigation: () => void; currentSessionId: () => string | undefined; returnToConversation: () => void }>;
+type Props = PropsRuntime<'main'> & InjectFace<{ management: LibraryClient; previewRegistry: LibraryOriginalPreviewRegistry; toggleNavigation: () => void; currentSessionId: () => string | undefined; addToConversation: (sessionId: string, entry: LibraryTreeEntry) => boolean; returnToConversation: () => void }>;
 type TreeRow = LibraryTreeEntry & { children?: TreeRow[] };
 type MenuState = { entry?: LibraryTreeEntry; x: number; y: number; create?: boolean; parentId?: string };
 type View = 'library' | 'search' | 'recent' | 'outputs';
@@ -16,7 +15,7 @@ type ActionDialog = { kind: 'create-markdown' | 'create-text' | 'create-folder';
 
 const icon = (entry: LibraryTreeEntry) => entry.kind === 'folder' ? '📁' : entry.asset?.kind === 'pdf' ? 'PDF' : entry.asset?.kind === 'docx' ? 'W' : entry.asset?.kind === 'pptx' ? 'P' : entry.asset?.kind === 'html' ? '</>' : entry.asset?.kind === 'text' ? 'T' : 'M';
 
-export function LibraryPanel({ management, previewRegistry, toggleNavigation, currentSessionId, returnToConversation }: Props) {
+export function LibraryPanel({ management, previewRegistry, toggleNavigation, currentSessionId, addToConversation, returnToConversation }: Props) {
   const [tree, setTree] = useState<readonly TreeRow[]>([]);
   const [selected, setSelected] = useState<LibraryTreeEntry>();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -80,7 +79,7 @@ export function LibraryPanel({ management, previewRegistry, toggleNavigation, cu
   const files = async (list: FileList | null) => { if (!list?.length) return; setBusy(true); try { for (const file of list) await management.importFile(file, uploadParent.current); await loadTree(); } catch (cause) { setError(cause instanceof Error ? cause.message : '导入文件失败。'); } finally { setBusy(false); uploadParent.current = undefined; if (upload.current) upload.current.value = ''; } };
   const remove = async (entry: LibraryTreeEntry) => { try { await management.remove(entry.id); if (selected?.id === entry.id) setSelected(undefined); await loadTree(); } catch (cause) { setError(cause instanceof Error ? cause.message : '删除失败。'); } };
   const rename = async (entry: LibraryTreeEntry, name: string) => { try { await management.rename(entry.id, name); if (selected?.id === entry.id) setSelected({ ...selected, name }); await loadTree(); } catch (cause) { setError(cause instanceof Error ? cause.message : '重命名失败。'); } };
-  const addToTask = async (entry: LibraryTreeEntry) => { const sessionId = currentSessionId(); if (!sessionId) { setError('请先打开一个对话，再添加资料。'); return; } try { const current = await management.taskSelection(sessionId); await management.setTaskSelection(sessionId, [...new Set([...current.map(row => row.nodeId), entry.id])]); notifyLibrarySelectionChanged(sessionId); setMenu(undefined); returnToConversation(); } catch (cause) { setError(cause instanceof Error ? cause.message : '添加到对话失败。'); } };
+  const addToTask = async (entry: LibraryTreeEntry) => { const sessionId = currentSessionId(); if (!sessionId) { setError('请先打开一个对话，再添加资料。'); return; } if (!addToConversation(sessionId, entry)) { setError('当前对话暂时无法接收资料。'); return; } setMenu(undefined); returnToConversation(); };
   const setStatus = async (entry: LibraryTreeEntry) => { if (!entry.asset) return; const status = entry.asset.status === 'disabled' ? 'active' : 'disabled'; try { const next = await management.setAssetStatus(entry.asset.id, status); if (selected?.id === entry.id) setSelected(next); await loadTree(); } catch (cause) { setError(cause instanceof Error ? cause.message : '更新状态失败。'); } };
   const entryPath = (entry: LibraryTreeEntry): string => { const names = [entry.name]; let parentId = entry.parentId; const seen = new Set<string>(); while (parentId && !seen.has(parentId)) { seen.add(parentId); const parent = findById(parentId); if (!parent) break; names.unshift(parent.name); parentId = parent.parentId; } return `我的资料 / ${names.join(' / ')}`; };
   const beginMove = (entry: LibraryTreeEntry) => { setMoving(entry); setFolderTargets([{ label: '我的资料（根目录）' }, ...allEntries.filter(row => row.kind === 'folder').map(row => ({ id: row.id, label: entryPath(row) }))]); };

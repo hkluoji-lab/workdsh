@@ -1,29 +1,25 @@
 import * as React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
-import type { LibraryTaskReference, LibraryTreeEntry } from 'workdsh-contracts/library';
 import type { LibraryClient } from './management.js';
-import { libraryPickerRequestedEvent, listenForLibrarySelection, notifyLibrarySelectionChanged } from './selection-events.js';
+import { libraryPickerRequestedEvent } from './selection-events.js';
 
-type Props = PropsRuntime<'conversation.input.left'> & { management: LibraryClient; openLibrary: () => void };
-const css = `
-.wd-library-picker{position:relative;display:flex;align-items:center}.wd-library-picker button{font:inherit}.wd-library-picker-trigger{display:flex;align-items:center;gap:7px;max-width:210px;height:36px;padding:0 9px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary,#aaa);cursor:pointer}.wd-library-picker-trigger:hover,.wd-library-picker-trigger[aria-expanded=true]{background:var(--dsw-alias-bg-layer-3,#363636);color:#eee}.wd-library-picker-trigger .icon{display:grid;place-items:center;width:23px;height:23px;border-radius:7px;background:#303030}.wd-library-picker-trigger .icon.active{background:#177c58;color:#fff}.wd-library-picker-trigger .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wd-library-picker-trigger .count{font-size:11px;color:#999}
-.wd-library-picker-popover{position:absolute;z-index:90;left:0;bottom:calc(100% + 10px);width:350px;max-height:min(430px,60vh);overflow:auto;padding:8px;border:1px solid #3b3b3b;border-radius:15px;background:#242424;color:#ededed;box-shadow:0 18px 52px #000a}.wd-library-picker-head{display:flex;align-items:center;gap:8px;padding:5px 6px 9px}.wd-library-picker-head strong{flex:1}.wd-library-picker-head button{border:0;background:transparent;color:#aaa;cursor:pointer}.wd-library-picker-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;min-height:52px;padding:5px;border-radius:10px}.wd-library-picker-row:hover{background:#303030}.wd-library-picker-main{display:flex;align-items:center;gap:10px;min-width:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}.wd-library-picker-main .copy{min-width:0}.wd-library-picker-main strong,.wd-library-picker-main small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wd-library-picker-main small{font-size:11px;color:#999}.wd-library-picker-use{border:0;border-radius:8px;background:transparent;color:#aaa;padding:6px 8px;cursor:pointer}.wd-library-picker-use[aria-pressed=true]{color:#66d39a}.wd-library-picker-empty{padding:25px;text-align:center;color:#999}.wd-library-picker-manage{width:100%;margin-top:6px;padding:10px 8px 5px;border:0;border-top:1px solid #3a3a3a;background:transparent;color:#ccc;text-align:left;cursor:pointer}@media(max-width:560px){.wd-library-picker-popover{position:fixed;left:12px;right:12px;bottom:86px;width:auto}.wd-library-picker-trigger .name{display:none}}
-`;
+type Props = PropsRuntime<'conversation.input.left'> & {
+  management: LibraryClient;
+  openLibrary: () => void;
+  openPicker: (sessionId: string, draft: string, draftRev: number) => void;
+};
 
-export function LibraryPicker({ management, openLibrary, sessionId, useSession }: Props) {
-  const root = useRef<HTMLDivElement>(null); const blank = useSession(snapshot => snapshot.blank);
-  const initialized = useRef<string | undefined>(undefined); const [open, setOpen] = useState(false); const [stack, setStack] = useState<LibraryTreeEntry[]>([]);
-  const [rows, setRows] = useState<readonly LibraryTreeEntry[]>([]); const [refs, setRefs] = useState<readonly LibraryTaskReference[]>([]); const [changing, setChanging] = useState('');
-  const parent = stack.at(-1);
-  const refresh = useCallback(async () => { const [items, selection] = await Promise.all([management.list(parent?.id).catch(() => []), management.taskSelection(String(sessionId)).catch(() => [])]); setRows(items); setRefs(selection); }, [management, parent?.id, sessionId]);
-  useEffect(() => { const run = async () => { if (blank && initialized.current !== String(sessionId)) { initialized.current = String(sessionId); await management.setTaskSelection(String(sessionId), []).catch(() => []); } await refresh(); }; void run(); }, [blank, management, refresh, sessionId]);
-  useEffect(() => { if (open) void refresh(); }, [open, refresh]);
-  useEffect(() => listenForLibrarySelection(String(sessionId), () => void refresh()), [refresh, sessionId]);
-  useEffect(() => { const show = () => setOpen(true); window.addEventListener(libraryPickerRequestedEvent, show); return () => window.removeEventListener(libraryPickerRequestedEvent, show); }, []);
-  useEffect(() => { if (!open) return; const close = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false); }; document.addEventListener('pointerdown', close); return () => document.removeEventListener('pointerdown', close); }, [open]);
-  const selectedNodeIds = refs.map(row => row.nodeId);
-  const update = (next: readonly LibraryTaskReference[]) => { setRefs(next); notifyLibrarySelectionChanged(String(sessionId)); };
-  const toggle = async (entry: LibraryTreeEntry) => { setChanging(entry.id); try { const next = entry.asset && selectedNodeIds.includes(entry.id) ? selectedNodeIds.filter(id => id !== entry.id) : [...selectedNodeIds, entry.id]; update(await management.setTaskSelection(String(sessionId), next)); } finally { setChanging(''); } };
-  return <><style>{css}</style><div className="wd-library-picker" ref={root}><button type="button" className="wd-library-picker-trigger" aria-label="添加资料" aria-expanded={open} onClick={() => setOpen(value => !value)}><span className={`icon${refs.length ? ' active' : ''}`}>📚</span><span className="name">资料库</span>{refs.length ? <span className="count">{refs.length}</span> : null}</button>{open ? <div className="wd-library-picker-popover" role="menu"><div className="wd-library-picker-head">{parent ? <button onClick={() => setStack(value => value.slice(0,-1))}>←</button> : null}<strong>{parent?.name ?? '添加到当前对话'}</strong>{refs.length ? <button onClick={() => void management.setTaskSelection(String(sessionId), []).then(update)}>清空 {refs.length}</button> : <span>未选择</span>}</div>{rows.map(row => <div className="wd-library-picker-row" key={row.id}><button className="wd-library-picker-main" onClick={() => row.kind === 'folder' ? setStack(value => [...value,row]) : void toggle(row)}><span>{row.kind === 'folder' ? '📁' : '📄'}</span><span className="copy"><strong>{row.name}</strong><small>{row.kind === 'folder' ? '文件夹' : row.asset?.kind.toUpperCase()}</small></span></button><button className="wd-library-picker-use" disabled={changing === row.id} aria-pressed={row.kind === 'asset' && selectedNodeIds.includes(row.id)} onClick={() => void toggle(row)}>{changing === row.id ? '处理中' : row.kind === 'folder' ? '使用目录' : selectedNodeIds.includes(row.id) ? '已选' : '使用'}</button></div>)}{!rows.length ? <div className="wd-library-picker-empty">这里还没有资料</div> : null}<button className="wd-library-picker-manage" onClick={() => { setOpen(false); openLibrary(); }}>↗ 管理资料库</button></div> : null}</div></>;
+const css = `.wd-library-picker-trigger{display:flex;align-items:center;gap:7px;height:36px;padding:0 9px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary,#aaa);font:inherit;cursor:pointer}.wd-library-picker-trigger:hover{background:var(--dsw-alias-bg-layer-3,#363636);color:#eee}.wd-library-picker-trigger .icon{display:grid;place-items:center;width:23px;height:23px;border-radius:7px;background:#177c58;color:#fff}`;
+
+export function LibraryPicker({ sessionId, useInput, openPicker }: Props) {
+  const draft = useInput(state => state.draft);
+  const draftRev = useInput(state => state.draftRev);
+  const launch = () => openPicker(String(sessionId), draft, draftRev);
+  useEffect(() => {
+    const show = () => launch();
+    window.addEventListener(libraryPickerRequestedEvent, show);
+    return () => window.removeEventListener(libraryPickerRequestedEvent, show);
+  }, [draft, draftRev, sessionId]);
+  return <><style>{css}</style><button type="button" className="wd-library-picker-trigger" aria-label="从资料库添加到对话" onClick={launch}><span className="icon">📚</span><span>资料库</span></button></>;
 }
