@@ -1,5 +1,6 @@
 import JSZip from "jszip";
-import type { OfficeSnapshot, OfficeBlockInput } from "workdsh-contracts/office";
+import ExcelJS from "exceljs";
+import type { OfficeSnapshot, OfficeBlockInput, OfficeChart } from "workdsh-contracts/office";
 const xml = (text: string) =>
   text
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "")
@@ -14,6 +15,18 @@ export async function documentDocx(snapshot: OfficeSnapshot): Promise<Blob> {
   const numbers: { abstract: string; num: string }[] = [];
   const listStack: { type: string; start: number; numId: number }[] = [];
   const images: {id:string;extension:string;data:string}[]=[];
+  const charts:{id:string;chart:OfficeChart}[]=[];
+  const seriesColour=(chart:OfficeChart,index:number)=>chart.series[index]?.color?.slice(1) ?? ["2563EB","F97316","16A34A","9333EA","DC2626","0891B2"][index%6]!;
+  const cache=(values:(string|number)[],numeric=false)=>`<c:${numeric?"num":"str"}Cache>${numeric?'<c:formatCode>General</c:formatCode>':""}<c:ptCount val="${values.length}"/>${values.map((value,index)=>`<c:pt idx="${index}"><c:v>${xml(String(value))}</c:v></c:pt>`).join("")}</c:${numeric?"num":"str"}Cache>`;
+  const titleXml=(title:string)=>`<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="zh-CN"/><a:t>${xml(title)}</a:t></a:r></a:p></c:rich></c:tx><c:layout/><c:overlay val="0"/></c:title>`;
+  function chartXml(chart:OfficeChart,index:number){
+    const rowEnd=chart.categories.length+1,axis1=120000+index*2,axis2=axis1+1;
+    const series=chart.series.map((item,si)=>`<c:ser><c:idx val="${si}"/><c:order val="${si}"/><c:tx><c:strRef><c:f>Sheet1!$${String.fromCharCode(66+si)}$1</c:f>${cache([item.name])}</c:strRef></c:tx><c:spPr><a:solidFill><a:srgbClr val="${seriesColour(chart,si)}"/></a:solidFill><a:ln><a:noFill/></a:ln></c:spPr><c:cat><c:strRef><c:f>Sheet1!$A$2:$A$${rowEnd}</c:f>${cache(chart.categories)}</c:strRef></c:cat><c:val><c:numRef><c:f>Sheet1!$${String.fromCharCode(66+si)}$2:$${String.fromCharCode(66+si)}$${rowEnd}</c:f>${cache(item.values,true)}</c:numRef></c:val>${chart.chartType==="line"?'<c:marker><c:symbol val="circle"/><c:size val="5"/></c:marker>':""}</c:ser>`).join("");
+    const axes=`<c:catAx><c:axId val="${axis1}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/>${chart.xAxisTitle?titleXml(chart.xAxisTitle):""}<c:numFmt formatCode="General" sourceLinked="1"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="${axis2}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/></c:catAx><c:valAx><c:axId val="${axis2}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/>${chart.yAxisTitle?titleXml(chart.yAxisTitle):""}<c:majorGridlines/><c:numFmt formatCode="General" sourceLinked="1"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="${axis1}"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>`;
+    const body=chart.chartType==="pie"?`<c:pieChart><c:varyColors val="1"/>${series}<c:firstSliceAng val="0"/></c:pieChart>`:chart.chartType==="doughnut"?`<c:doughnutChart><c:varyColors val="1"/>${series}<c:firstSliceAng val="0"/><c:holeSize val="55"/></c:doughnutChart>`:chart.chartType==="bar"?`<c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="0"/>${series}<c:gapWidth val="90"/><c:axId val="${axis1}"/><c:axId val="${axis2}"/></c:barChart>`:chart.chartType==="line"?`<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>${series}<c:marker val="1"/><c:smooth val="0"/><c:axId val="${axis1}"/><c:axId val="${axis2}"/></c:lineChart>`:`<c:areaChart><c:grouping val="standard"/><c:varyColors val="0"/>${series}<c:axId val="${axis1}"/><c:axId val="${axis2}"/></c:areaChart>`;
+    const legend=chart.legend==="none"?"":`<c:legend><c:legendPos val="${({top:"t",right:"r",bottom:"b",left:"l"} as const)[chart.legend ?? "bottom"]}"/><c:layout/><c:overlay val="0"/></c:legend>`;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:date1904 val="0"/><c:lang val="zh-CN"/><c:roundedCorners val="0"/><c:chart>${chart.title?titleXml(chart.title):""}<c:autoTitleDeleted val="${chart.title?0:1}"/><c:plotArea><c:layout/>${body}${["pie","doughnut"].includes(chart.chartType)?"":axes}<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr></c:plotArea>${legend}<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/><c:showDLblsOverMax val="0"/></c:chart><c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData></c:chartSpace>`;
+  }
   function paragraphXml(block:OfficeBlockInput):string {
       const paragraph: string[] = [];
       if (block.type === "heading")
@@ -105,6 +118,10 @@ export async function documentDocx(snapshot: OfficeSnapshot): Promise<Blob> {
       const cx=Math.round(image.width*9525),cy=Math.round(image.height*9525),n=images.length;
       return `<w:p><w:pPr><w:jc w:val="${image.alignment ?? "left"}"/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${n}" name="${id}" descr="${xml(image.alt ?? "")}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${n}" name="${id}" descr="${xml(image.alt ?? "")}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
     }
+    if(block.type==="chart") {
+      const chart=block.chart!,id=`chart${charts.length+1}`,n=images.length+charts.length+1,cx=Math.round(chart.width*9525),cy=Math.round(chart.height*9525);charts.push({id,chart});
+      return `<w:p><w:pPr><w:jc w:val="${chart.alignment ?? "left"}"/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${n}" name="${xml(chart.title ?? id)}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart r:id="${id}"/></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+    }
     if(block.type!=="table") return paragraphXml(block);
     listStack.length=0;
     const rows=block.table!.rows, grid:({cell:typeof rows[number]["cells"][number];origin:boolean}|undefined)[][]=rows.map(()=>[]);
@@ -122,9 +139,17 @@ export async function documentDocx(snapshot: OfficeSnapshot): Promise<Blob> {
   }
   const body = snapshot.state.blockIds.map(id=>blockXml(snapshot.state.blocks[id]!)).join("");
   for(const image of images) zip.file(`word/media/${image.id}.${image.extension}`,image.data,{base64:true});
+  for(let index=0;index<charts.length;index++){
+    const {id,chart}=charts[index]!,workbook=new ExcelJS.Workbook(),sheet=workbook.addWorksheet("Sheet1");
+    sheet.addRow(["分类",...chart.series.map(series=>series.name)]);
+    chart.categories.forEach((category,row)=>sheet.addRow([category,...chart.series.map(series=>series.values[row])]));
+    zip.file(`word/charts/${id}.xml`,chartXml(chart,index));
+    zip.file(`word/charts/_rels/${id}.xml.rels`,`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" Target="../embeddings/Microsoft_Excel_Worksheet${index+1}.xlsx"/></Relationships>`);
+    zip.file(`word/embeddings/Microsoft_Excel_Worksheet${index+1}.xlsx`,await workbook.xlsx.writeBuffer());
+  }
   zip.file(
     "[Content_Types].xml",
-    `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>${numbers.length ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' : ""}</Types>`,
+    `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="xlsx" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>${charts.map(({id})=>`<Override PartName="/word/charts/${id}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`).join("")}${numbers.length ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' : ""}</Types>`,
   );
   zip.file(
     "_rels/.rels",
@@ -132,7 +157,7 @@ export async function documentDocx(snapshot: OfficeSnapshot): Promise<Blob> {
   );
   zip.file(
     "word/_rels/document.xml.rels",
-    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${images.map(image=>`<Relationship Id="${image.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${image.id}.${image.extension}"/>`).join("")}${numbers.length ? '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' : ""}</Relationships>`,
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${images.map(image=>`<Relationship Id="${image.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${image.id}.${image.extension}"/>`).join("")}${charts.map(({id})=>`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="charts/${id}.xml"/>`).join("")}${numbers.length ? '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' : ""}</Relationships>`,
   );
   if (numbers.length)
     zip.file(
@@ -141,7 +166,7 @@ export async function documentDocx(snapshot: OfficeSnapshot): Promise<Blob> {
     );
   zip.file(
     "word/document.xml",
-    `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080"/></w:sectPr></w:body></w:document>`,
+    `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080"/></w:sectPr></w:body></w:document>`,
   );
   zip.file(
     "word/styles.xml",

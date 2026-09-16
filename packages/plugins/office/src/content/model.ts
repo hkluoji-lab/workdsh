@@ -84,6 +84,24 @@ export const imageInput = z.object({
   width: z.number().min(24).max(4096), height: z.number().min(24).max(4096),
   alignment: z.enum(["left", "center", "right"]).optional(),
 }).strict();
+export const chartInput = z.object({
+  chartType: z.enum(["bar", "line", "pie", "doughnut", "area"]),
+  title: z.string().trim().max(200).optional(),
+  categories: z.array(z.string().max(100)).min(1).max(50),
+  series: z.array(z.object({
+    name: z.string().max(100),
+    values: z.array(z.number().finite()).min(1).max(50),
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  }).strict()).min(1).max(10),
+  width: z.number().min(240).max(1200),
+  height: z.number().min(160).max(800),
+  alignment: z.enum(["left", "center", "right"]).optional(),
+  legend: z.enum(["none", "top", "right", "bottom", "left"]).optional(),
+  xAxisTitle: z.string().trim().max(100).optional(),
+  yAxisTitle: z.string().trim().max(100).optional(),
+}).strict().refine(chart => chart.series.every(series => series.values.length === chart.categories.length), "Each chart series must contain one value per category")
+  .refine(chart => !["pie","doughnut"].includes(chart.chartType) || chart.series.length === 1, "Pie and doughnut charts require exactly one series")
+  .refine(chart => !["pie","doughnut"].includes(chart.chartType) || chart.series[0]!.values.every(value => value >= 0), "Pie and doughnut values must be non-negative");
 function validListOutline(blocks:OfficeBlockInput[]):boolean {
   const outline:{type:string;start?:number}[]=[];
   for(const block of blocks){const list=block.list;if(!list){outline.length=0;continue;}
@@ -116,14 +134,14 @@ export const tableInput = z.object({rows:z.array(z.object({cells:z.array(z.objec
   return width>0 && grid.every(row=>row.length===width && Array.from({length:width},(_,i)=>row[i]).every(Boolean));
 }, "Table must be a complete rectangular grid without overlapping merges");
 export const blockInput = z.object({
-  type:z.enum(["paragraph","heading","table","image"]),
+  type:z.enum(["paragraph","heading","table","image","chart"]),
   level:z.number().int().min(1).max(6).optional(),
   runs:z.array(runInput).max(1000), style:paragraphStyle.optional(),list:listStyle.optional(),
-  table:tableInput.optional(), image:imageInput.optional(),
+  table:tableInput.optional(), image:imageInput.optional(), chart:chartInput.optional(),
 }).strict().refine(b => {
-  if(b.type==="table" || b.type==="image") return b.runs.length===0 && !b.level && !b.style && !b.list &&
-    (b.type==="table" ? !!b.table && !b.image : !!b.image && !b.table);
-  return !b.table && !b.image && (b.type==="heading" ? b.level!==undefined : b.level===undefined);
+  if(b.type==="table" || b.type==="image" || b.type==="chart") return b.runs.length===0 && !b.level && !b.style && !b.list &&
+    (b.type==="table" ? !!b.table && !b.image && !b.chart : b.type==="image" ? !!b.image && !b.table && !b.chart : !!b.chart && !b.table && !b.image);
+  return !b.table && !b.image && !b.chart && (b.type==="heading" ? b.level!==undefined : b.level===undefined);
 }, "Block payload must match its type");
 export const operation = z.discriminatedUnion("op", [
   z
@@ -204,7 +222,7 @@ export function parse<T>(schema: z.ZodType<T>, value: unknown): T {
 }
 export const textOf = (block: OfficeBlockInput): string =>
   block.type === "table" ? block.table!.rows.map(row=>row.cells.map(cell=>cell.paragraphs.map(textOf).join("\n")).join("\t")).join("\n") :
-  block.type === "image" ? block.image!.alt ?? "" : block.runs.map((r) => r.text).join("");
+  block.type === "image" ? block.image!.alt ?? "" : block.type === "chart" ? block.chart!.title ?? block.chart!.series.map(series=>series.name).join("、") : block.runs.map((r) => r.text).join("");
 
 /** Pure bounded block reducer. A failed operation cannot mutate the stored state. */
 export function applyOperations(
@@ -220,9 +238,9 @@ export function applyOperations(
     blockId: string,
     previous?: OfficeBlock,
   ): OfficeBlock {
-    if (input.type === "table" || input.type === "image") {
-      ensure(textOf(input).length <= 20000, "LIMIT_REACHED", "表格文本最多20000字符。");
-      return {blockId,type:input.type,runs:[],...(input.table ? {table:structuredClone(input.table)} : {}),...(input.image ? {image:structuredClone(input.image)} : {})};
+    if (input.type === "table" || input.type === "image" || input.type === "chart") {
+      ensure(textOf(input).length <= 20000, "LIMIT_REACHED", "结构化内容文本最多20000字符。");
+      return {blockId,type:input.type,runs:[],...(input.table ? {table:structuredClone(input.table)} : {}),...(input.image ? {image:structuredClone(input.image)} : {}),...(input.chart ? {chart:structuredClone(input.chart)} : {})};
     }
     const reusable = [...(previous?.runs ?? [])];
     const runs = input.runs
@@ -350,9 +368,10 @@ export const capabilities = {
     "document.replaceBlock",
     "document.removeBlock",
   ],
-  blocks: ["paragraph", "heading", "table", "image"],
+  blocks: ["paragraph", "heading", "table", "image", "chart"],
   tables: {maxRows:50,maxColumns:50,maxCells:500,mergedCells:true,columnWidths:true},
   images: {formats:["png","jpeg"],maxBytes:524288,embedded:true},
+  charts: {native:true,editableData:true,types:["bar","line","pie","doughnut","area"],maxCategories:50,maxSeries:10,docxChartPart:true,embeddedWorkbook:true},
   marks: ["bold", "italic", "underline", "strike"],
   textStyle: ["fontFamily", "fontSize", "color", "backgroundColor"],
   paragraphStyle: ["alignment", "lineHeight", "indent"],

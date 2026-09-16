@@ -9,11 +9,12 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type { ActivityIdentity, ActivityPresentation } from 'workdsh-contracts/activity';
 import { createPresentationRegistry } from './registry.js';
 import { activityMessage, projectActivity } from './projection.js';
+import { summarizeTeamActivity, type TeamView } from './team-status.js';
 import { css } from './styles.js';
 
 declare module '@deepseek-ai/cordis' { interface Context { activityPresentation: ActivityPresentation; } }
 export const name = 'workdsh-activity-client';
-export const inject = ['slots', 'sessions'];
+export const inject = ['slots', 'sessions', 'remote'];
 const motionKey = 'workdsh.activity.motion.v1';
 function readMotion() { try { return localStorage.getItem(motionKey) !== 'off'; } catch { return true; } }
 function Face({ identity, phase }: { identity?: ActivityIdentity; phase: string }) {
@@ -24,7 +25,15 @@ function Face({ identity, phase }: { identity?: ActivityIdentity; phase: string 
 
 export function apply(ctx: Context): void {
   const registry = createPresentationRegistry();
+  let teamRemote: { view(id: string): Promise<{ ok: true; value: TeamView } | { ok: false }> } | undefined;
   ctx.provide('activityPresentation', registry);
+  // The official Team UI mounts its generated Remote namespace dynamically.
+  // Bind to that exact service lifecycle instead of sampling `ctx.remote`
+  // before the contribution exists.
+  ctx.inject(['remote.agentTeams'], teamCtx => {
+    teamRemote = (teamCtx as unknown as { remote: { agentTeams: typeof teamRemote } }).remote.agentTeams;
+    return () => { teamRemote = undefined; };
+  });
   const sessions = ctx.sessions as unknown as ISessions;
   ctx.effect(() => { const style = document.createElement('style'); style.textContent = css; style.dataset.workdshActivity = 'true'; document.head.append(style); return () => style.remove(); });
 
@@ -42,46 +51,104 @@ export function apply(ctx: Context): void {
     const [clock, setClock] = React.useState(Date.now);
     const [identities, setIdentities] = React.useState<ReadonlyMap<string, ActivityIdentity>>(new Map());
     const [labels, setLabels] = React.useState<ReadonlyMap<string,string>>(new Map());
-    const catalog = list.subagentsByParent[props.sessionId];
+    const address = session.subagent?.address;
+    const rootSessionId = address?.parentSessionId ?? props.sessionId;
+    const catalog = list.subagentsByParent[rootSessionId];
     const children = catalog?.entries.filter(row => row.kind === 'child').slice(-20) ?? [];
     const ids = children.map(row => row.id).join('|');
     React.useEffect(() => {
       const cancel = new AbortController();
-      for (const id of [props.sessionId, ...ids.split('|').filter(Boolean)]) {
+      for (const id of [props.sessionId, rootSessionId, ...ids.split('|').filter(Boolean)]) {
         void registry.resolveIdentity(id, cancel.signal).then(identity => { if (!cancel.signal.aborted) setIdentities(previous => { const next = new Map(previous); if (identity) next.set(id, identity); else next.delete(id); return next; }); }).catch(() => { /* optional identity or cancelled session */ });
       }
       void registry.resolveSkillLabels().then(value => { if (!cancel.signal.aborted) setLabels(value); });
       return () => cancel.abort();
-    }, [props.sessionId, ids, revision]);
+    }, [props.sessionId, rootSessionId, ids, revision]);
     React.useEffect(() => { setIdentities(new Map()); setExpanded(false); }, [props.sessionId]);
     // The catalog is a sampled driver state, not a continuously running child feed.
     React.useEffect(() => {
       let disposed = false;
-      const refresh = () => { if (!disposed) void sessions.refreshSubagents(props.sessionId).catch(() => { /* native catalog carries its error; retry while running */ }); };
+      const refresh = () => { if (!disposed) void sessions.refreshSubagents(rootSessionId).catch(() => { /* native catalog carries its error; retry while running */ }); };
       refresh();
       const timer = session.running ? windowGlobal.setInterval(refresh, 3000) : undefined;
       return () => { disposed = true; if (timer !== undefined) windowGlobal.clearInterval(timer); };
-    }, [props.sessionId, session.running]);
+    }, [rootSessionId, session.running]);
+
+    const rootIdentity = identities.get(rootSessionId) ?? identities.get(props.sessionId);
+    const isTeam = rootIdentity?.kind === 'team' || children.length > 0 || !!address;
+    const [teamView, setTeamView] = React.useState<TeamView>();
+    React.useEffect(() => {
+      setTeamView(undefined);
+      if (!isTeam) return;
+      let disposed = false;
+      const refresh = async () => {
+        try {
+          if (!teamRemote) return;
+          const result = await teamRemote.view(String(rootSessionId));
+          if (!disposed && result.ok) setTeamView(result.value);
+        } catch { /* Team Remote is optional for ordinary activity installations. */ }
+      };
+      void refresh();
+      // A teammate can be running while the Lead Session itself is idle.
+      const timer = windowGlobal.setInterval(refresh, 1500);
+      return () => { disposed = true; windowGlobal.clearInterval(timer); };
+    }, [rootSessionId, isTeam, session.running]);
+    const memberIds = teamView?.members.map(member => String(member.id)).join('|') ?? '';
+    const [memberTerminalPhases, setMemberTerminalPhases] = React.useState<ReadonlyMap<string, 'failed' | 'interrupted'>>(new Map());
+    React.useEffect(() => {
+      const cleanups: Array<() => void> = [];
+      const bindings = memberIds.split('|').filter(Boolean).map(id => {
+        const sessionId = id as Parameters<ISessions['scope']>[0];
+        sessions.scope(sessionId);
+        return sessions.binding(sessionId);
+      }).filter((value): value is NonNullable<typeof value> => !!value);
+      const refresh = () => {
+        const next = new Map<string, 'failed' | 'interrupted'>();
+        for (const memberBinding of bindings) {
+          const memberWindow = memberBinding.eventSource.getSnapshot();
+          const memberSnapshot = memberBinding.session.getSnapshot();
+          const phase = projectActivity(memberWindow?.entries ?? [], memberSnapshot.running).phase;
+          if (phase === 'failed' || phase === 'interrupted') next.set(String(memberBinding.sessionId), phase);
+        }
+        setMemberTerminalPhases(next);
+      };
+      for (const memberBinding of bindings) {
+        cleanups.push(memberBinding.eventSource.subscribe(refresh));
+        cleanups.push(memberBinding.session.subscribe(refresh));
+      }
+      refresh();
+      return () => { for (const cleanup of cleanups) cleanup(); };
+    }, [memberIds]);
 
     React.useEffect(() => { if (!session.running) return; setClock(Date.now()); const timer = windowGlobal.setInterval(() => setClock(Date.now()), 1000); return () => windowGlobal.clearInterval(timer); }, [session.running, props.sessionId]);
     React.useEffect(() => { const update = () => setMotion(readMotion()); windowGlobal.addEventListener('storage', update); return () => windowGlobal.removeEventListener('storage', update); }, []);
     React.useEffect(() => { if (!expanded) return; const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setExpanded(false); }; windowGlobal.addEventListener('keydown', escape); return () => windowGlobal.removeEventListener('keydown', escape); }, [expanded]);
     if (session.blank) return null;
-    const identity = identities.get(props.sessionId);
+    const identity = rootIdentity;
     // The official Team panel owns roster, task board and member navigation.
-    // Keep this strip for individual activity; do not show a second team status.
-    if (identity?.kind === 'team' || children.length > 0) return null;
+    // This strip remains the compact, glanceable execution state for both
+    // individual and Team sessions; it never duplicates Team controls.
+    const team = isTeam;
     const elapsed = state.startedAt ? Math.max(0, Math.floor((clock - state.startedAt)/1000)) : 0;
     const stale = session.running && state.lastProgressAt && clock - state.lastProgressAt > 120000;
     const text = stale ? '暂未收到新进展' : activityMessage(state);
+    const teamSummary = summarizeTeamActivity(teamView, String(address?.childSessionId ?? props.sessionId), text, memberTerminalPhases);
+    const activeIdentity = teamSummary.member
+      ? identity?.members?.find(member => member.key === teamSummary.member?.name) ?? { name: teamSummary.member.name, kind: 'expert' as const }
+      : identity;
+    const teamExtra = teamSummary.member && teamSummary.runningCount > 1 ? ` · 另 ${teamSummary.runningCount - 1} 位专家处理中` : '';
+    const displayText = team
+      ? teamSummary.member ? `${activeIdentity?.name ?? teamSummary.member.name} · ${teamSummary.focus ?? '正在处理'}${teamExtra}` : teamSummary.message
+      : text;
+    const displayPhase = teamSummary.phase ?? (team && teamSummary.runningCount > 0 ? 'working' : state.phase);
     const changeMotion = (value: boolean) => { setMotion(value); try { localStorage.setItem(motionKey, value ? 'on' : 'off'); } catch { /* session-only fallback */ } };
-    return <section className="wd-activity" aria-label="活动与协作进度" data-phase={state.phase} data-motion={motion} data-long={elapsed >= 480}>
+    return <section className="wd-activity" aria-label="活动与协作进度" data-phase={displayPhase} data-motion={motion} data-long={elapsed >= 480} data-team={team}>
       <div className="wd-activity-bar">
-        <span className="wd-activity-people"><Face identity={identity} phase={state.phase}/></span>
+        <span className="wd-activity-people"><Face identity={activeIdentity} phase={displayPhase}/></span>
         <div className="wd-activity-copy">
-          <span className="wd-activity-title">工作动态</span>
-          <span className="wd-activity-action" title={text}>
-            {`${text}${state.skill ? ` · ${labels.get(state.skill) ?? state.skill}` : ''}`}
+          <span className="wd-activity-title">{team ? identity?.teamName ?? identity?.name ?? '团队协作' : '工作动态'}</span>
+          <span className="wd-activity-action" title={displayText}>
+            {`${displayText}${state.skill ? ` · ${labels.get(state.skill) ?? state.skill}` : ''}`}
           </span>
         </div>
         {session.running && elapsed >= 60 && <span className="wd-activity-time">{Math.floor(elapsed/60)}分{elapsed%60}秒</span>}
@@ -93,6 +160,11 @@ export function apply(ctx: Context): void {
 
         {state.skill && <p>已加载技能：{labels.get(state.skill) ?? state.skill}</p>}
         {state.tool && <p>当前工具：{state.tool}</p>}
+        {teamView?.members.map(member => {
+          const task = teamView.tasks.find(row => row.ownerName === member.name && row.status === 'in_progress');
+          const person = identity?.members?.find(row => row.key === member.name);
+          return <div className="wd-activity-person" key={String(member.id)}><span className="wd-activity-status"/><span className="wd-activity-name">{person?.name ?? member.name}</span><span>{task?.subject ?? member.description ?? member.status}</span></div>;
+        })}
         <label><input type="checkbox" checked={motion} onChange={event => changeMotion(event.target.checked)}/>启用轻量动画</label><small>关闭后状态照常更新。遵循系统“减少动态效果”设置。</small>
       </div>}
     </section>;

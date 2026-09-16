@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const project = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 const tag = `v${project.version}`;
+const releaseNotes = join(root, 'docs', 'releases', `${tag}.md`);
 const destination = join(root, '.artifacts', `project-${tag}`);
 const packageDirectories = [
   'packages/providers/identity-local',
@@ -51,7 +52,7 @@ await writeFile(join(destination, 'release-manifest.json'), JSON.stringify({
   project: 'WorkDSH',
   version: project.version,
   tag,
-  channel: 'github-prerelease',
+  channel: 'github-release',
   sourceCommit,
   harness: '0.1.6-alpha.1',
   node: process.version,
@@ -59,19 +60,23 @@ await writeFile(join(destination, 'release-manifest.json'), JSON.stringify({
   packages,
   verified: [
     'full build and typecheck',
-    '102 integration tests and 9 activity tests',
+    '108 integration tests and 14 activity tests',
+    'fresh-profile installation and alpha.4-to-alpha.5 in-place upgrade with user data preserved',
     'planning and exact-version gates',
+    'packaged Web expert-team long task, reconnect, interrupt/resume, handoff, failure visibility and cold recovery',
+    'explicit real-model lead, analyst and reviewer two-stage Team handoff',
     'connector tool/resource discovery, lifecycle, multi-instance and per-session isolation probe',
     'real Tencent Docs token connection and read-only account query in WorkDSH',
   ],
   limitations: [
     'alpha preview; package APIs and stored data may change',
     'interactive OAuth, connector multi-account switching and public authorization are not complete',
-    'complete expert-team long runs, arbitrary Office fidelity and cross-platform acceptance remain incomplete',
+    'hour-scale expert-team soak, official fork-member browser history, arbitrary Office fidelity and cross-platform acceptance remain incomplete',
     'packages are GitHub assets and are not published to the npm registry',
   ],
 }, null, 2) + '\n');
-await copyFile(join(root, 'docs/releases/v0.1.0-alpha.2.md'), join(destination, 'RELEASE-NOTES.md'));
+await copyFile(join(root, 'scripts/install-project-release.mjs'), join(destination, 'install-workdsh.mjs'));
+await copyFile(releaseNotes, join(destination, 'RELEASE-NOTES.md'));
 
 const files = (await readdir(destination)).sort();
 console.log(`Project release candidate ${tag}: ${packages.length} packages; files: ${files.join(', ')}`);

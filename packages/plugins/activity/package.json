@@ -1,6 +1,6 @@
 {
   "name": "workdsh-plugin-activity",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "type": "module",
   "private": false,
   "description": "Compact animated activity presentation for standard DSH sessions",
@@ -59,6 +59,7 @@
     "client": {
       "platform": "web",
       "inject": [
+        "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-api-session-controller",
         "@deepseek-ai/dsh-client-ui-conversation",
         "@deepseek-ai/dsh-client-ui-session",

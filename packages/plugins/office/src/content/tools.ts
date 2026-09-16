@@ -86,7 +86,7 @@ const run = {
   },
 } as const;
 const blockProperties = {
-  type: { type: "string", enum: ["paragraph", "heading", "table", "image"], required: true },
+  type: { type: "string", enum: ["paragraph", "heading", "table", "image", "chart"], required: true },
   level: {
     type: "integer",
     description: "Required for heading (1–6); omit for paragraph.",
@@ -99,6 +99,7 @@ const paragraphBlock = {type:"object",additionalProperties:false,properties:{...
 const extendedBlockProperties = {...blockProperties,
   table:{type:"object",additionalProperties:false,properties:{rows:{type:"array",required:true,items:{type:"object",additionalProperties:false,properties:{cells:{type:"array",required:true,items:{type:"object",additionalProperties:false,properties:{colspan:{type:"integer",required:true},rowspan:{type:"integer",required:true},header:{type:"boolean"},colwidth:{type:"array",items:{type:"integer"}},paragraphs:{type:"array",required:true,items:paragraphBlock}}}}}}}}},
   image:{type:"object",additionalProperties:false,properties:{src:{type:"string",required:true,description:"Use office-image:sourceDocumentId:blockId:hash returned by content_read to copy an image from an authorized Office document. New image: embedded PNG/JPEG data URL, up to 512 KiB. Remote URLs unsupported."},alt:{type:"string"},width:{type:"number",required:true},height:{type:"number",required:true},alignment:{type:"string",enum:["left","center","right"]}}},
+  chart:{type:"object",additionalProperties:false,description:"Native editable Word chart. Supply structured data; never render a chart to PNG.",properties:{chartType:{type:"string",enum:["bar","line","pie","doughnut","area"],required:true},title:{type:"string"},categories:{type:"array",required:true,items:{type:"string"}},series:{type:"array",required:true,items:{type:"object",additionalProperties:false,properties:{name:{type:"string",required:true},values:{type:"array",required:true,items:{type:"number"}},color:{type:"string",description:"Optional #rrggbb series colour"}}}},width:{type:"number",required:true,description:"Display width in CSS pixels, 240–1200"},height:{type:"number",required:true,description:"Display height in CSS pixels, 160–800"},alignment:{type:"string",enum:["left","center","right"]},legend:{type:"string",enum:["none","top","right","bottom","left"]},xAxisTitle:{type:"string"},yAxisTitle:{type:"string"}}},
 } as const;
 const block = {
   type: "object",
@@ -163,7 +164,7 @@ const sheetOperation={oneOf:[
 const pptOperation={oneOf:[
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.updateText",required:true},slideId:string,elementId:string,expectedText:string,text:string}},
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.updateSlide",required:true},slideId:string,patch:{type:"object",required:true,additionalProperties:false,properties:{elements:{type:"array",items:{type:"object",additionalProperties:true}},name:{type:"string"},backgroundColor:{type:"string"},notes:{type:"string"}}}}},
- {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.insertSlides",required:true},afterSlideId:{oneOf:[{type:"string"},{type:"null"}],required:true},slides:{type:"array",required:true,items:{type:"object",additionalProperties:true,description:"One pptx-viewer-core native slide: id, slideNumber, elements. Element geometry x,y,width,height; chartData holds chartType,categories,series [{name,values}]."}}}},
+ {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.insertSlides",required:true},afterSlideId:{oneOf:[{type:"string"},{type:"null"}],required:true},slides:{type:"array",required:true,items:{type:"object",additionalProperties:true,description:"One pptx-viewer-core native slide. Use state.deck.canvas exactly; geometry x,y,width,height is top-left CSS pixels and must remain inside the canvas. textStyle.fontSize is points, not a canvas coordinate. chartData holds chartType,categories,series [{name,values}]."}}}},
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.removeSlide",required:true},slideId:string}},
  {type:"object",additionalProperties:false,properties:{op:{type:"string",const:"presentation.moveSlide",required:true},slideId:string,afterSlideId:{oneOf:[{type:"string"},{type:"null"}],required:true}}},
 ]} as const;
@@ -183,6 +184,17 @@ function jsonValue(value:unknown):WireValue {
   if(Array.isArray(value)) return value.map(jsonValue);
   if(typeof value==="object") return Object.fromEntries(Object.entries(value).filter(([,v])=>v!==undefined).map(([k,v])=>[k,jsonValue(v)]));
   throw new Error("Invalid Office wire value");
+}
+function objectInput(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  ensure(Buffer.byteLength(value) <= capabilities.limits.batchBytes,
+    "LIMIT_REACHED", "单批编辑不能超过 1 MiB。");
+  let decoded: unknown;
+  try { decoded = JSON.parse(value); }
+  catch { ensure(false, "INVALID_INPUT", "input JSON 字符串无法解析。"); }
+  ensure(decoded !== null && typeof decoded === "object" && !Array.isArray(decoded),
+    "INVALID_INPUT", "input JSON 必须解码为对象。");
+  return decoded;
 }
 function wire(s:OfficeContentSnapshot) {
  return {...s,state:jsonValue(s.state) as {[key:string]:WireValue}};
@@ -330,7 +342,7 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_capabilities",
       description:
-        "Discover implemented operations and limits. Currently native document paragraphs/headings/tables/embedded images; DOCX export through content_export is available when official bash/present tools are mounted; Browser DOCX working-copy import is available; pptx-react-viewer presentations support native slides and editable charts; PPTX download is available in the right-hand editor, content_export delivers the saved PPTX through the official file card. Excel supports new live workbooks, A1 cell values/formulas, and sheet add/rename/remove; browser Univer computes formulas, Host does not. Formatting/charts and live XLSX import remain unavailable.",
+        "Discover implemented operations and limits. Word supports native paragraphs/headings/tables/embedded images and structured editable charts; DOCX export writes Office chart parts with embedded workbooks instead of chart pictures. Browser DOCX working-copy import is available but complex objects are not lossless. pptx-react-viewer presentations support native slides and editable charts; PPTX download is available in the right-hand editor, content_export delivers the saved PPTX through the official file card. Excel supports new live workbooks, A1 cell values/formulas, and sheet add/rename/remove; browser Univer computes formulas, Host does not. Excel formatting/charts and live XLSX import remain unavailable.",
       parameters: {},
       output: {
         schema: {
@@ -351,18 +363,23 @@ export function apply(ctx: Context) {
     defineTool({
       name: "content_edit",
       description:
-        "Atomically commit at most 100 typed operations / 1 MiB. Each batch is visible without waiting for the whole answer. Use baseRevision from content_read and a new operationId. Retry uncertain delivery with exactly the same payload and ID. HUMAN_EDITING: user holds the editor; stop writing and wait, do not repeatedly call. A committed receipt is durable content, not an exported Office file.",
+        "Atomically commit a small streamed batch: at most 4 typed operations / 1 MiB; Word insert calls contain at most 8 top-level blocks, with a table in its own call. Each batch is visible without waiting for the whole answer. Use baseRevision from content_read and a new operationId. Retry uncertain delivery with exactly the same payload and ID. HUMAN_EDITING: user holds the editor; stop writing and wait, do not repeatedly call. A committed receipt is durable content, not an exported Office file.",
       parameters: {
         input: {
-          type: "object",
-          additionalProperties: false,
+          oneOf: [{
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              documentId: string,
+              baseRevision: { type: "integer", required: true },
+              operationId: string,
+              operations: { type: "array", required: true, description: "Keep streamed JSON bounded. For Word, insert no more than 8 top-level blocks per call and put a table or chart in its own call.", items: {oneOf:[...operation.oneOf,...pdfOperation,{type:"object",additionalProperties:false,properties:{op:{type:"string",const:"html.replaceDocument",required:true},html:string}},...(ctx.workdshOfficeContent.spreadsheetEnabled?sheetOperation.oneOf:[]),...(ctx.workdshOfficeContent.presentationEnabled?pptOperation.oneOf:[])]} },
+            },
+          }, {
+            type: "string",
+            description: "Compatibility only: one JSON-encoded input object. Prefer the object form.",
+          }],
           required: true,
-          properties: {
-            documentId: string,
-            baseRevision: { type: "integer", required: true },
-            operationId: string,
-            operations: { type: "array", required: true, items: {oneOf:[...operation.oneOf,...pdfOperation,{type:"object",additionalProperties:false,properties:{op:{type:"string",const:"html.replaceDocument",required:true},html:string}},...(ctx.workdshOfficeContent.spreadsheetEnabled?sheetOperation.oneOf:[]),...(ctx.workdshOfficeContent.presentationEnabled?pptOperation.oneOf:[])]} },
-          },
         },
       },
       output: {
@@ -386,7 +403,7 @@ export function apply(ctx: Context) {
       execute: async (args, exec) =>
         ctx.workdshOfficeContent.editForAgent(
           await actor(ctx, exec),
-          args.input,
+          objectInput(args.input),
           exec.signal,
         ),
     }),

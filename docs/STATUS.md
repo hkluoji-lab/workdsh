@@ -1,3 +1,19 @@
+## 2026-09-16：专家团长任务、交接、重连与失败恢复验收
+
+新增 `probe:experts:team:resilience` 与显式 `probe:experts:team:real` 发布验收入口。探针把 identity、audit、access、skills、experts、bundle、activity 七个正式包打包并经官方 CLI 安装到仓库外临时 Profile，使用生产 Host、官方 Agent Teams 服务/工具/Web Client 和真实 Chromium。resilience 模式用本地确定性适配器固定等待、中断和一次成员失败；real 模式另建独立执行，使用 `deepseek-official/deepseek-flash` 的真实 lead 与两名真实成员。
+
+六条场景已通过：20 秒成员长任务在两次完整浏览器连接间保持同一成员和 `in_progress` 任务归属；人工停止产生 `aborted` 终态但保留原成员和任务，恢复消息由同一成员继续；任务经官方 reassign 和持久消息从分析成员交给复核成员；失败回合没有错误完成任务，活动条明确显示“本轮未完成”；Host 冷重启后同一成员 ID、任务及所有权恢复且没有重复成员；真实 lead 创建 `REAL-ANALYZE` / `REAL-REVIEW`，通过官方消息、`wait_agent` 与状态读取完成 analyst→reviewer 两阶段交接，两名成员 Session 均新增完成回合。官方成员回合结束后会释放激活实例，因此由 lead 对仍归属于预期成员的任务执行最终签收，探针没有增加自有团队运行表。
+
+真实模式结果为 16 项检查通过、浏览器 pageerror 为 0；活动投影单测为 14/14。结构化回执和截图位于 `.artifacts/dsh-0.1.6-upgrade/native-team-web/`，判定边界见 [专家团韧性验收](evidence/expert-team-resilience.md)。真实密钥只复制到一次性 DSH Home 的凭据引用，退出时删除，命令参数、报告与脱敏日志不含密钥。本次未部署用户 preview，也未运行官方 fork 成员浏览器历史；不将有界真实交接或 20 秒确定性长任务写成小时级专业业务稳定性。
+
+## 2026-09-16：PPT 原生画布坐标修正
+
+用户实际 16:9 演示稿在右侧编辑器中集中于左上区域。根因不是页面 CSS 对齐，而是 AI 按 PowerPoint 的 960×540 point 页面尺寸写入几何坐标，原生 `pptx-viewer-core` 编辑器实际使用 1280×720 CSS pixel 画布；Office 能力和文档状态此前没有暴露权威画布尺寸，新建页也沿用了 960 宽度尺度。
+
+原生演示稿状态现保存 `state.deck.canvas`，新建 16:9 文档为 1280×720 css-px，导入模板读取模板自身尺寸；`content_capabilities`、工具 schema 和写作指南明确几何坐标使用 CSS pixel，`textStyle.fontSize` 仍使用 point。插入或替换页面时校验所有带几何信息的元素完整、有限、正尺寸且不越界。新建文档的首个标题页按 1280×720 布局初始化。浏览器人工保存后也会持久化重新解析得到的画布尺寸。
+
+现有 10 页预算演示稿已通过同一 Office 内容服务逐页迁移，仅将 x/y/width/height 及对应 EMU 几何值按 4/3 等比换算，文字字号和图表数据保持原值；文档修订从 11 到 21，保存画布为 1280×720。LibreOffice 实际渲染 10 页通过，重点抽查第 1、6、8 页，压力情景页已使用主要横向空间且文本完整；另生成布局修正版 PPTX 供文件交付。Office typecheck 与内容集成测试 21/21 通过，Preview 重装并重启，18989 返回认证保护的 HTTP 401。启动时既有错误连接器仍会独立报告缺失 `sd` 模块，不影响 Web 服务。
+
 ## 2026-09-16：DSH 最新版本分析与同步（镜像 + 版本引用 + 退役包名清理）
 
 用户要求分析并同步 DSH 官网最新版本。结论：本地依赖基线 `@deepseek-ai/dsh@0.1.6-alpha.1` 已是官方当前最新（GitHub release `dsh-v0.1.6-alpha.1`，2026-09-15 发布，对应 npm `alpha` 标签；`latest` 仍为 0.1.5-rc.1、`next` 为 0.1.5-rc.2），因此本轮**不升级依赖版本**，实际同步对象是官方文档镜像、仓库内旧版本表述和退役包名残留。
@@ -1744,3 +1760,15 @@ Chrome/Playwright 覆盖中英文、1440/1920 桌面与 390/320 手机、功能/
 用户授权后，将中英文页面、样式、交互、真实截图与视频统一随 `website/` 提交，发布提交为 `52f3a7f`，已推送 `origin/main`。既有 Pages 流程成功：[部署 34939425911](https://github.com/techflag/workdsh/actions/runs/34939425911)。中文官网为 https://techflag.github.io/workdsh/zh-CN.html ，英文入口为 https://techflag.github.io/workdsh/ 。
 
 公网逐字节核对 `zh-CN.html`、`index.html`、`style.css`、`app.js` 与本地提交一致；品牌图、四张产品截图、短片封面均 HTTP 200，视频 Range 请求 HTTP 206 且返回指定 1024 字节。未重新启动应用或发布应用安装包，无关 `scripts/desktop/` 保留未跟踪。Gitee 本轮只核对 Pages 可用性，未配置网站托管或推送镜像；官方服务页检索仍有暂停说明，本仓库 Pages 入口返回 404，未确认服务恢复。
+## 2026-09-16：Word 图表改为插件原生结构化图表
+
+用户提供的真实任务记录确认旧路径把分析图表编码为 PNG/Base64，并以图片块插入 Word；它不能编辑数据，也不属于 Word 原生图表。Office 文档模型现新增 `chart` 块，模型只提交图表类型、分类、系列和值；Client NodeView 由插件绘制 SVG，DOCX 导出生成 `word/charts/chartN.xml`、关系和嵌入 XLSX，禁止用图表图片代替。
+
+Office build/typecheck 以及 content/download/rich-editor 30 项相关测试通过；浏览器断言图表为 SVG 且无 `img`，DOCX 断言存在 `c:chart`、嵌入工作簿数据且无图表媒体文件。现有图片图表不能从像素可靠恢复数据，不自动迁移；外部 DOCX 原生图表反向导入和五类图表逐一 Word/WPS 人工打开仍待验证。证据见 [office-word-native-charts](evidence/office-word-native-charts.md)。preview 已重装并重启，18989 返回认证保护的 HTTP 401，安装包内 Host/Client 均包含新图表实现；已有错误连接器仍会独立报告缺失 `sd` 模块，不影响 Web 服务启动。
+## 2026-09-16：专家团动态切回真实主理人
+
+修复顶部动态长期停留在已完成队友的问题。官方 Team 的成员 Session 可能在共享任务完成后短暂保持 `running`；现在有任务历史的队友以原生任务状态为准，`completed` 后退出活动候选，仍在 `in_progress` 的任务优先，否则回到运行中的 lead。专家活动身份同时加入 `lead` 映射，顶部和展开详情均显示专家作品中的真实姓名，不再显示内部键 `lead`。Activity 11/11、Activity build、Experts typecheck/build 与 diff 检查通过。preview 已重新安装并重启，安装产物包含新选择逻辑和 lead 身份映射；真实会话的队友任务均结束后，顶部不再停留在“钱日清”，而按终态显示“任务已中断，已有成果保留”。运行中 lead 接管的“郑守衡 · 正在处理”分支由回归测试覆盖。
+
+## 2026-09-16：Office 工具兼容一次 JSON 字符串包装
+
+修复部分模型调用 `content_edit` 时把规范对象再次 `JSON.stringify`，导致工具参数层直接报 `invalid arguments: "input" must be an object` 的问题。工具 Schema 现在仍以对象为首选，同时允许一次 JSON 字符串包装；执行入口只解包一层，随后继续使用原有文档类型、操作、权限、批量上限和 CAS 严格校验。畸形 JSON、数组及超限载荷仍会拒绝。Office typecheck 与 21/21 内容集成测试通过；preview 已用 Node 22.23.2 重新安装并重启，安装产物包含兼容入口，18989 返回认证保护的 HTTP 401。
