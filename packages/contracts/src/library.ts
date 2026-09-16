@@ -1,6 +1,6 @@
 import type { ActorContext, ResourceOwner } from './governance.js';
 
-export type LibraryAssetKind = 'markdown' | 'text' | 'pdf' | 'docx' | 'pptx';
+export type LibraryAssetKind = 'markdown' | 'text' | 'pdf' | 'docx' | 'pptx' | 'html';
 export type LibraryConversionStatus = 'ready' | 'pending' | 'failed';
 export type LibraryAssetStatus = 'active' | 'disabled';
 

@@ -734,6 +734,9 @@ importers:
       workdsh-contracts:
         specifier: workspace:*
         version: link:../../contracts
+      workdsh-ui:
+        specifier: workspace:*
+        version: link:../../ui
 
   packages/plugins/office:
     dependencies:

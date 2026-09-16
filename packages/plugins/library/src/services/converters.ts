@@ -40,6 +40,26 @@ const decodeXml = (value: string): string => value.replace(/&(#x[0-9a-f]+|#\d+|\
   const point = code[1].toLowerCase() === 'x' ? Number.parseInt(code.slice(2), 16) : Number.parseInt(code.slice(1), 10);
   return Number.isFinite(point) ? String.fromCodePoint(point) : whole;
 });
+
+function html(bytes: Uint8Array): ConversionResult {
+  let source: string;
+  try { source = new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+  catch { throw new Error('library/invalid-text'); }
+  if (!/<(?:html|head|body|main|article|section|div|p|h[1-6])(?:\s|>)/i.test(source)) throw new Error('library/invalid-html');
+  const locations: ConversionResult['locations'][number][] = [];
+  let headingIndex = 0;
+  for (const match of source.matchAll(/<h([1-6])(?:\s[^>]*)?>([\s\S]*?)<\/h\1>/gi)) {
+    const title = decodeXml((match[2] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+    if (title) { headingIndex += 1; locations.push({ kind: 'paragraph', index: headingIndex, label: `标题 ${headingIndex}：${title}` }); }
+  }
+  const safe = source.replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<(script|style|noscript|template|svg|canvas)(?:\s[^>]*)?>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<(br|hr)\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|section|article|main|header|footer|li|tr|h[1-6])>/gi, '\n');
+  const blocks = safe.replace(/<[^>]+>/g, ' ').split(/\n+/)
+    .map(raw => decodeXml(raw).replace(/[\t ]+/g, ' ').trim()).filter(Boolean);
+  return { markdown: `${blocks.join('\n\n')}\n`, locations, warnings: ['脚本、样式、SVG 和画布内容不进入检索文本；原始 HTML 仍保留并在隔离预览中打开。'] };
+}
 const textNodes = (xml: string): string[] => [...xml.matchAll(/<(?:w:t|a:t)(?:\s[^>]*)?>([\s\S]*?)<\/(?:w:t|a:t)>/g)]
   .map((match) => decodeXml(match[1] ?? '').trim()).filter(Boolean);
 
@@ -110,5 +130,6 @@ export async function convertToMarkdown(kind: LibraryAssetKind, bytes: Uint8Arra
   }
   if (kind === 'docx') return docx(bytes, signal);
   if (kind === 'pptx') return pptx(bytes, signal);
+  if (kind === 'html') return html(bytes);
   return pdf(bytes, signal);
 }

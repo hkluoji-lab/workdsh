@@ -54,6 +54,7 @@ test('independent library plugin persists a tree, originals and searchable deriv
     const samples = [
       ['规则.md', new TextEncoder().encode('# 规则\n\n唯一词 MarkdownAlpha')],
       ['记录.txt', new TextEncoder().encode('唯一词 TextBravo')],
+      ['看板.html', new TextEncoder().encode('<!doctype html><html><head><style>.card{color:teal}</style></head><body><main><h1>运营看板</h1><p class="card">唯一词 HtmlGolf</p><script>window.__not_searchable="ScriptHotel"</script></main></body></html>')],
       ['报告.docx', await docxBytes('唯一词 DocxCharlie')],
       ['简报.pptx', await pptxBytes('季度简报', '唯一词 PptxDelta')],
       ['附件.pdf', await pdfBytes('UniquePdfEcho')],
@@ -65,17 +66,21 @@ test('independent library plugin persists a tree, originals and searchable deriv
       assert.equal(conversion.originalSha256, entry.revision.originalSha256);
       assert.ok(Array.isArray(conversion.locations));
     }
-    assert.deepEqual(JSON.parse(await readFile(join(libraryRoot, dirname(imported[2].revision.contentRelativePath), 'conversion.json'), 'utf8')).locations[0], { kind: 'paragraph', index: 1, label: '段落 1' });
-    assert.match(JSON.parse(await readFile(join(libraryRoot, dirname(imported[3].revision.contentRelativePath), 'conversion.json'), 'utf8')).locations[0].label, /第 1 页/);
+    assert.match(JSON.parse(await readFile(join(libraryRoot, dirname(imported[2].revision.contentRelativePath), 'conversion.json'), 'utf8')).locations[0].label, /运营看板/);
+    assert.deepEqual(JSON.parse(await readFile(join(libraryRoot, dirname(imported[3].revision.contentRelativePath), 'conversion.json'), 'utf8')).locations[0], { kind: 'paragraph', index: 1, label: '段落 1' });
+    assert.match(JSON.parse(await readFile(join(libraryRoot, dirname(imported[4].revision.contentRelativePath), 'conversion.json'), 'utf8')).locations[0].label, /第 1 页/);
     const repeated = await ctx.workdshLibrary.importAsset(actor, { parentId: folder.id, name: '规则.md', bytes: samples[0][1], operationId: 'operation-规则.md' });
     assert.equal(repeated.asset.id, imported[0].asset.id);
     await assert.rejects(ctx.workdshLibrary.importAsset(actor, { parentId: folder.id, name: '规则.md', bytes: new TextEncoder().encode('different'), operationId: 'operation-规则.md' }), /library\/operation-conflict/);
-    assert.equal((await ctx.workdshLibrary.list(actor, folder.id)).length, 5);
-    assert.equal((await ctx.workdshLibrary.search(actor, '')).length, 5, 'empty query powers recent assets');
+    assert.equal((await ctx.workdshLibrary.list(actor, folder.id)).length, 6);
+    assert.equal((await ctx.workdshLibrary.search(actor, '')).length, 6, 'empty query powers recent assets');
     assert.deepEqual((await ctx.workdshLibrary.search(actor, '', { kinds: ['pptx'] })).map(hit => hit.name), ['简报.pptx']);
     assert.equal((await ctx.workdshLibrary.search(actor, '', { sources: ['task'] })).length, 0);
     assert.equal((await ctx.workdshLibrary.search(actor, 'DocxCharlie'))[0].name, '报告.docx');
     assert.equal((await ctx.workdshLibrary.search(actor, 'DocxCharlie'))[0].folderPath, '我的资料 / 项目甲');
+    const htmlHit = (await ctx.workdshLibrary.search(actor, 'HtmlGolf'))[0];
+    assert.equal(htmlHit.name, '看板.html');
+    assert.equal((await ctx.workdshLibrary.search(actor, 'ScriptHotel')).length, 0, 'scripts do not enter search text');
     const pptxHit = (await ctx.workdshLibrary.search(actor, 'PptxDelta'))[0];
     assert.equal(pptxHit.name, '简报.pptx');
     assert.match(pptxHit.location, /第 1 页/);
@@ -84,7 +89,7 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.match(pdfHit.location, /第 1 页/);
     assert.deepEqual(await ctx.workdshLibrary.readOriginal(actor, imported[1].asset.id), samples[1][1]);
     const selected = await ctx.workdshLibrary.setTaskSelection(actor, 'session-a', [folder.id]);
-    assert.equal(selected.length, 5);
+    assert.equal(selected.length, 6);
     const pinnedRevision = selected.find(row => row.assetId === imported[0].asset.id).revisionId;
     const draft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);
     const concurrentDraft = await ctx.workdshLibrary.createDraft(actor, imported[0].asset.id);
@@ -99,7 +104,7 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.equal(disabled.asset.status, 'disabled');
     await assert.rejects(ctx.workdshLibrary.readText(actor, imported[0].asset.id), /library\/disabled/);
     await assert.rejects(ctx.workdshLibrary.setTaskSelection(actor, 'session-b', [imported[0].id]), /library\/disabled/);
-    assert.equal((await ctx.workdshLibrary.setTaskSelection(actor, 'session-folder', [folder.id])).length, 4, 'folder selection omits disabled descendants');
+    assert.equal((await ctx.workdshLibrary.setTaskSelection(actor, 'session-folder', [folder.id])).length, 5, 'folder selection omits disabled descendants');
     assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 0);
     await ctx.workdshLibrary.setAssetStatus(actor, imported[0].asset.id, 'active');
     assert.equal((await ctx.workdshLibrary.search(actor, 'RevisedFoxtrot')).length, 1);
@@ -127,6 +132,7 @@ test('library rejects name conflicts, unsupported files, cycles and cross-owner 
     await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '伪装.pdf', bytes: new TextEncoder().encode('not a pdf'), operationId: 'fake-pdf' }), /library\/invalid-pdf/);
     await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '伪装.docx', bytes: new TextEncoder().encode('not a zip'), operationId: 'fake-docx' }), /library\/invalid-office-file/);
     await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '坏编码.txt', bytes: new Uint8Array([0xff, 0xfe, 0xfd]), operationId: 'bad-utf8' }), /library\/invalid-text/);
+    await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '伪装.html', bytes: new TextEncoder().encode('plain text only'), operationId: 'fake-html' }), /library\/invalid-html/);
     const bomb = new JSZip(); bomb.file('word/document.xml', 'A'.repeat(2 * 1024 * 1024));
     await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '压缩炸弹.docx', bytes: new Uint8Array(await bomb.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 9 } })), operationId: 'zip-bomb' }), /library\/archive-limit/);
     const cancelled = new AbortController(); cancelled.abort();

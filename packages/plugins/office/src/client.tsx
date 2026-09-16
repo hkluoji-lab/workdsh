@@ -44,7 +44,7 @@ export function apply(ctx: Context): void {
   ctx.inject(["workdshLibraryPreview"], scope => scope.effect(() => scope.workdshLibraryPreview.register(["docx", "pptx"], async (target, input) => {
     target.replaceChildren();
     if (input.kind === "docx") {
-      const style = document.createElement("style"); style.textContent = ".docx-wrapper{background:#e9ecf1!important;padding:20px!important;min-height:100%;box-sizing:border-box}.docx-wrapper>section.docx{margin:0 auto 18px;box-shadow:0 2px 12px #0002}";
+      const style = document.createElement("style"); style.textContent = ".docx-wrapper{background:#e9ecf1!important;padding:24px!important;min-height:100%;box-sizing:border-box}.docx-wrapper>section.docx{width:min(816px,calc(100% - 20px))!important;min-height:1056px!important;margin:0 auto 20px!important;padding:72px 80px!important;box-sizing:border-box!important;box-shadow:0 2px 14px #0003}.docx-wrapper table{width:100%!important;table-layout:auto!important}.docx-wrapper td,.docx-wrapper th{min-width:72px!important;word-break:normal!important;overflow-wrap:break-word!important;white-space:normal!important}.docx-wrapper p{word-break:normal!important;overflow-wrap:break-word!important}";
       target.append(style);
       const host = document.createElement("div"); host.style.cssText = "height:100%;overflow:auto;background:#e9ecf1"; target.append(host);
       await renderAsync(input.bytes.slice().buffer, host, undefined, { renderAltChunks: false });

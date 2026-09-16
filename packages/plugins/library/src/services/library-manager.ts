@@ -24,12 +24,13 @@ const cleanName = (value: string): string => {
   return name;
 };
 const extensionKinds: Readonly<Record<string, LibraryAssetKind>> = {
-  '.md': 'markdown', '.markdown': 'markdown', '.txt': 'text', '.pdf': 'pdf', '.docx': 'docx', '.pptx': 'pptx',
+  '.md': 'markdown', '.markdown': 'markdown', '.txt': 'text', '.pdf': 'pdf', '.docx': 'docx', '.pptx': 'pptx', '.html': 'html', '.htm': 'html',
 };
 const defaultMediaTypes: Readonly<Record<LibraryAssetKind, string>> = {
   markdown: 'text/markdown', text: 'text/plain', pdf: 'application/pdf',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  html: 'text/html',
 };
 
 export interface LibraryManagerOptions { readonly root?: string; readonly maxBytes?: number; readonly maxTotalBytes?: number; readonly maxSelectionBytes?: number; readonly maxSelectionAssets?: number; readonly converter?: typeof convertToMarkdown; }

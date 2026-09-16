@@ -11,7 +11,7 @@ export function registerLibraryTools(ctx: Context): void {
   ctx.tools.register(defineTool({
     name: 'library_search',
     description: '搜索本次对话已显式选择资料的转换正文。返回固定资料与修订引用；不自动扩大读取范围。',
-    parameters: { query: { type: 'string', required: true, description: '要查找的标题或正文关键词。' }, kind: { type: 'string', enum: ['markdown', 'text', 'pdf', 'docx', 'pptx'] }, source: { type: 'string', enum: ['upload', 'task', 'created'] } },
+    parameters: { query: { type: 'string', required: true, description: '要查找的标题或正文关键词。' }, kind: { type: 'string', enum: ['markdown', 'text', 'pdf', 'docx', 'pptx', 'html'] }, source: { type: 'string', enum: ['upload', 'task', 'created'] } },
     output: {
       schema: {
         type: 'object', additionalProperties: false,
