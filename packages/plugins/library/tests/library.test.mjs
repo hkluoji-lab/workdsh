@@ -15,13 +15,13 @@ const actor = {
   principalId: 'owner-a', organizationId: 'organization-a', requestId: 'request-a', resolvedBy: 'test',
 };
 
-async function boot(storageRoot, libraryRoot) {
+async function boot(storageRoot, libraryRoot, options = {}) {
   const ctx = new Context();
   try {
     await ctx.plugin(Storage);
     await ctx.plugin(JsonStorage, { root: storageRoot });
     await ctx.plugin(StorageDomain, { backend: 'json' });
-    await ctx.plugin(LibraryManager, { root: libraryRoot });
+    await ctx.plugin(LibraryManager, { root: libraryRoot, ...options });
     return ctx;
   } catch (error) { await ctx.fiber.dispose(); throw error; }
 }
@@ -134,5 +134,15 @@ test('library rejects name conflicts, unsupported files, cycles and cross-owner 
     const item = await ctx.workdshLibrary.importAsset(actor, { name: '私有.txt', bytes: new TextEncoder().encode('private'), operationId: 'private' });
     const other = { ...actor, principalId: 'owner-b', requestId: 'request-b' };
     await assert.rejects(ctx.workdshLibrary.readText(other, item.asset.id), /library\/not-found/);
+  } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
+});
+
+test('library enforces an aggregate immutable-revision quota', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workdsh-library-quota-')); let ctx;
+  try {
+    ctx = await boot(join(root, 'storage'), join(root, 'library'), { maxTotalBytes: 10 });
+    await ctx.workdshLibrary.importAsset(actor, { name: '一.txt', bytes: new TextEncoder().encode('123456'), operationId: 'quota-1' });
+    await assert.rejects(ctx.workdshLibrary.importAsset(actor, { name: '二.txt', bytes: new TextEncoder().encode('abcdef'), operationId: 'quota-2' }), /library\/quota-exceeded/);
+    assert.deepEqual((await ctx.workdshLibrary.list(actor)).map(row => row.name), ['一.txt']);
   } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
 });

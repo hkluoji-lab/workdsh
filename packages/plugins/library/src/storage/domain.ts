@@ -21,6 +21,7 @@ const asset = z.object({
 });
 const revision = z.object({
   id, assetId: id, number: z.number().int().positive(), originalSha256: id, contentSha256: id,
+  originalByteLength: z.number().int().nonnegative().default(0),
   originalRelativePath: id, contentRelativePath: id,
   conversionStatus: z.enum(['ready', 'pending', 'failed']), conversionWarnings: z.array(z.string()),
   createdBy: id, createdAt: iso,

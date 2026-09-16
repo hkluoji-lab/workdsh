@@ -45,6 +45,7 @@ export interface LibraryRevision {
   readonly number: number;
   readonly originalSha256: string;
   readonly contentSha256: string;
+  readonly originalByteLength: number;
   readonly originalRelativePath: string;
   readonly contentRelativePath: string;
   readonly conversionStatus: LibraryConversionStatus;

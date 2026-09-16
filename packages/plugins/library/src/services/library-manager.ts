@@ -14,6 +14,7 @@ import { libraryDomainSpec, stateKey, type LibraryState } from '../storage/domai
 declare module '@deepseek-ai/cordis' { interface Context { workdshLibrary: LibraryService; workdshIdentity: IdentityService; } }
 
 const MAX_BYTES = 50 * 1024 * 1024;
+const MAX_TOTAL_BYTES = 5 * 1024 * 1024 * 1024;
 const MAX_SELECTION_BYTES = 32 * 1024 * 1024;
 const sha256 = (value: Uint8Array | string): string => createHash('sha256').update(value).digest('hex');
 const now = (): string => new Date().toISOString();
@@ -31,7 +32,7 @@ const defaultMediaTypes: Readonly<Record<LibraryAssetKind, string>> = {
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 };
 
-export interface LibraryManagerOptions { readonly root?: string; readonly maxBytes?: number; }
+export interface LibraryManagerOptions { readonly root?: string; readonly maxBytes?: number; readonly maxTotalBytes?: number; }
 
 export class LibraryManager extends Service implements LibraryService {
   static inject = ['storageDomain'];
@@ -39,11 +40,13 @@ export class LibraryManager extends Service implements LibraryService {
   private serial: Promise<unknown> = Promise.resolve();
   private readonly root: string;
   private readonly maxBytes: number;
+  private readonly maxTotalBytes: number;
 
   constructor(ctx: Context, options: LibraryManagerOptions = {}) {
     super(ctx, 'workdshLibrary');
     this.root = resolve(options.root ?? join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'library'));
     this.maxBytes = options.maxBytes ?? MAX_BYTES;
+    this.maxTotalBytes = options.maxTotalBytes ?? MAX_TOTAL_BYTES;
   }
 
   async [Service.init](): Promise<void> {
@@ -87,6 +90,7 @@ export class LibraryManager extends Service implements LibraryService {
       const name = cleanName(input.name); this.assertFolder(state, input.parentId); this.assertUniqueName(state, input.parentId, name);
       if (!input.operationId.trim() || input.operationId.length > 256) throw new Error('library/invalid-operation');
       if (!input.bytes.byteLength || input.bytes.byteLength > this.maxBytes) throw new Error('library/file-size');
+      if (Object.values(state.revisions).reduce((total, revision) => total + revision.originalByteLength, 0) + input.bytes.byteLength > this.maxTotalBytes) throw new Error('library/quota-exceeded');
       signal?.throwIfAborted();
       const kind = extensionKinds[extname(name).toLowerCase()];
       if (!kind) throw new Error('library/unsupported-format');
@@ -110,7 +114,7 @@ export class LibraryManager extends Service implements LibraryService {
       const owner = this.owner(actor);
       const node: LibraryNode = { id: nodeId, spaceId: state.space.id, ...(input.parentId ? { parentId: input.parentId } : {}), kind: 'asset', name, assetId, createdAt: timestamp, updatedAt: timestamp };
       const asset: LibraryState['assets'][string] = { id: assetId, spaceId: state.space.id, nodeId, kind, mediaType: input.mediaType?.trim() || defaultMediaTypes[kind], byteLength: input.bytes.byteLength, owner, status: 'active', currentRevisionId: revisionId, source: input.source ?? 'upload', ...(input.sourceTaskId ? { sourceTaskId: input.sourceTaskId } : {}), createdAt: timestamp, updatedAt: timestamp };
-      const revision: LibraryState['revisions'][string] = { id: revisionId, assetId, number: 1, originalSha256: sha256(originalBytes), contentSha256: sha256(converted.markdown), originalRelativePath, contentRelativePath, conversionStatus: 'ready', conversionWarnings: [...converted.warnings], createdBy: actor.principalId, createdAt: timestamp };
+      const revision: LibraryState['revisions'][string] = { id: revisionId, assetId, number: 1, originalSha256: sha256(originalBytes), contentSha256: sha256(converted.markdown), originalByteLength: originalBytes.byteLength, originalRelativePath, contentRelativePath, conversionStatus: 'ready', conversionWarnings: [...converted.warnings], createdBy: actor.principalId, createdAt: timestamp };
       const next: LibraryState = { ...state, space: { ...state.space, updatedAt: timestamp }, nodes: { ...state.nodes, [nodeId]: node }, assets: { ...state.assets, [assetId]: asset }, revisions: { ...state.revisions, [revisionId]: revision }, receipts: { ...state.receipts, [input.operationId]: { operationId: input.operationId, assetId, revisionId, nodeId, inputSha256 } } };
       try { await this.states().put(this.key(actor), next); }
       catch (cause) { await rm(finalDirectory, { recursive: true, force: true }); throw cause; }
@@ -196,12 +200,13 @@ export class LibraryManager extends Service implements LibraryService {
       const asset = state.assets[draft.assetId]; if (!asset) throw new Error('library/not-found'); this.assertActive(state, asset.id);
       if (asset.currentRevisionId !== draft.baseRevisionId) throw new Error('library/base-revision-conflict');
       const previous = this.requireRevision(state, draft.baseRevisionId); const extension = extname(previous.originalRelativePath); const bytes = new TextEncoder().encode(draft.content);
+      if (Object.values(state.revisions).reduce((total, revision) => total + revision.originalByteLength, 0) + bytes.byteLength > this.maxTotalBytes) throw new Error('library/quota-exceeded');
       const revisionId = randomUUID(); const relativeBase = join('objects', asset.id, revisionId); const finalDirectory = this.safePath(relativeBase); const temporaryDirectory = this.safePath(join('.tmp', randomUUID()));
       const originalRelativePath = join(relativeBase, `original${extension}`); const contentRelativePath = join(relativeBase, 'content.md');
       await mkdir(temporaryDirectory, { recursive: false, mode: 0o700 });
       try { await writeFile(join(temporaryDirectory, `original${extension}`), bytes, { flag: 'wx', mode: 0o600 }); await writeFile(join(temporaryDirectory, 'content.md'), draft.content, { flag: 'wx', mode: 0o600 }); await writeFile(join(temporaryDirectory, 'conversion.json'), `${JSON.stringify({ version: 1, kind: asset.kind, originalSha256: sha256(bytes), warnings: [] }, null, 2)}\n`, { flag: 'wx', mode: 0o600 }); await renameFile(temporaryDirectory, finalDirectory); }
       catch (cause) { await rm(temporaryDirectory, { recursive: true, force: true }); throw cause; }
-      const timestamp = now(); const revision: LibraryState['revisions'][string] = { id: revisionId, assetId: asset.id, number: previous.number + 1, originalSha256: sha256(bytes), contentSha256: sha256(draft.content), originalRelativePath, contentRelativePath, conversionStatus: 'ready', conversionWarnings: [], createdBy: actor.principalId, createdAt: timestamp };
+      const timestamp = now(); const revision: LibraryState['revisions'][string] = { id: revisionId, assetId: asset.id, number: previous.number + 1, originalSha256: sha256(bytes), contentSha256: sha256(draft.content), originalByteLength: bytes.byteLength, originalRelativePath, contentRelativePath, conversionStatus: 'ready', conversionWarnings: [], createdBy: actor.principalId, createdAt: timestamp };
       const nextAsset: LibraryState['assets'][string] = { ...asset, currentRevisionId: revisionId, byteLength: bytes.byteLength, updatedAt: timestamp };
       const drafts = { ...state.drafts }; delete drafts[draftId];
       const next = { ...state, assets: { ...state.assets, [asset.id]: nextAsset }, revisions: { ...state.revisions, [revisionId]: revision }, drafts, nodes: { ...state.nodes, [asset.nodeId]: { ...this.requireNode(state, asset.nodeId), updatedAt: timestamp } } };
