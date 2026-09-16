@@ -62,7 +62,7 @@ export async function probeBrowser(address, sessionCookie, screenshotPath, { ins
     }
 
     // Harness stays the sole Sidebar owner; WorkDSH contributes only public slots.
-    await expect(page.getByTestId('workdsh-brand')).toHaveText('WorkDSH', { timeout: 30000 });
+    await expect(page.getByTestId('workdsh-brand')).toHaveText('DSH JOB AI', { timeout: 30000 });
     await expect(page.getByTestId('workdsh-sidebar')).toHaveCount(0);
     await expect(page.getByRole('button', { name: '专家 · 技能 · 连接器', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: '返回 WorkDSH', exact: true })).toHaveCount(0);
@@ -240,7 +240,7 @@ export async function probeProductWithoutSkills(address, sessionCookie) {
     await page.context().addCookies(sessionCookies(address, sessionCookie));
     await page.goto(`${address}/?workdsh-view=skills`);
     await dismissSetup(page);
-    await expect(page.getByTestId('workdsh-brand')).toHaveText('WorkDSH');
+    await expect(page.getByTestId('workdsh-brand')).toHaveText('DSH JOB AI');
     await expect(page.getByRole('button', { name: '专家 · 技能 · 连接器', exact: true })).toHaveCount(0);
     await expect.poll(() => new URL(page.url()).searchParams.get('workdsh-view')).toBe('conversation');
     const graph = await page.evaluate(() => window.__DSH_BOOT__.entries.map(row => row.id));

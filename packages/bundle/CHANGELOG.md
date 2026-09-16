@@ -1,3 +1,8 @@
+# 0.1.0-alpha.46 — 2026-09-16
+
+- 按用户要求把侧栏品牌名称由 `WorkDSH` 改为 `DSH JOB AI`，继续由公开 `sidebar.brand.name` 席位提供，未改动 mark 与 owner。
+- 同步 `scripts/probe-browser.mjs` 中的品牌断言文本。
+
 # 0.1.0-alpha.45 — 2026-09-15
 
 - 显式安装 DSH 0.1.6 官方实验性 Auto review 层。
