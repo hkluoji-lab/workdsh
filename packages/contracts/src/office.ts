@@ -41,6 +41,19 @@ export interface OfficeImage {
   height: number;
   alignment?: "left" | "center" | "right";
 }
+export type OfficeChartType = "bar" | "line" | "pie" | "doughnut" | "area";
+export interface OfficeChart {
+  chartType: OfficeChartType;
+  title?: string;
+  categories: string[];
+  series: { name: string; values: number[]; color?: string }[];
+  width: number;
+  height: number;
+  alignment?: "left" | "center" | "right";
+  legend?: "none" | "top" | "right" | "bottom" | "left";
+  xAxisTitle?: string;
+  yAxisTitle?: string;
+}
 export interface OfficeParagraphInput {
   type: "paragraph" | "heading";
   level?: number;
@@ -49,9 +62,10 @@ export interface OfficeParagraphInput {
   list?: OfficeList;
 }
 export interface OfficeBlockInput extends Omit<OfficeParagraphInput, "type"> {
-  type: "paragraph" | "heading" | "table" | "image";
+  type: "paragraph" | "heading" | "table" | "image" | "chart";
   table?: OfficeTable;
   image?: OfficeImage;
+  chart?: OfficeChart;
   level?: number;
   runs: OfficeRunInput[];
   style?: OfficeParagraphStyle;

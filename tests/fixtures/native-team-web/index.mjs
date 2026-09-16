@@ -13,6 +13,7 @@ export function apply(ctx) {
       const member = ctx.agentTeams.tryMembership(agent);
       const system = JSON.stringify(options.messages.filter(m => m.role === 'system'));
       const all = JSON.stringify(options.messages);
+      if (all.includes('WEB_HOLD_MEMBER')) await new Promise(resolve => setTimeout(resolve, 8000));
       if (member?.role === 'teammate') assert.ok(system.includes(`ROLE_${member.name.toUpperCase()}`), 'member role must come from its published asset');
       requests.push({ id: agent.id, name: member?.name });
       assert.ok(requests.length < 30, 'bounded fixture requests');
@@ -40,29 +41,38 @@ export function apply(ctx) {
     assert.equal((await history(id)).events.filter(e => e.type === 'turn/end').at(-1).data.reason.kind, 'completed');
   };
   ctx.effect(() => ctx.connection.fetch.register({ path: '/api/native-team-probe', methods: ['POST'], requestBody: 'buffered', async fetch(request) {
+    let stage = 'request';
     try {
       const input = await request.json();
       let value;
       if (input.action === 'create') {
+        stage = 'identity';
         const actor = await ctx.workdshIdentity.resolve({}, request.signal);
+        stage = 'draft';
         const draft = await ctx.workdshExperts.createDraft(actor, { ...definition('lead'), team: { members: ['analyst', 'reviewer'].map(key => ({ key, definition: definition(key) })), workflows: [{ id: 'report', title: '测试报告', trigger: '核对测试数据', deliverable: '测试结论', stages: [{ id: 'draft', worker: 'analyst', reviewer: 'reviewer', dependsOn: [] }] }] } }, { operationId: 'web-team-create' });
+        stage = 'validate';
         const validation = await ctx.workdshExperts.validate(actor, draft.expertId, draft.revision);
         assert.ok(validation.publishable, JSON.stringify(validation.issues));
         const confirmation = await ctx.workdshExperts.requestPublishConfirmation(actor, draft.expertId, draft.revision);
         const proof = await ctx.workdshExperts.confirmPublish(actor, confirmation.confirmationToken);
         await ctx.workdshExperts.publish(actor, draft.expertId, draft.revision, validation.dependencyLockDigest, proof, { operationId: 'web-team-publish' });
+        stage = 'prepare-execution';
         const plan = await ctx.workdshExperts.prepareExecution(actor, draft.expertId, undefined, input.cwd, undefined, undefined, request.signal, input.workspaceId);
+        stage = 'create-execution';
         const execution = await ctx.workdshExperts.createExecution(actor, plan.executionPlanId, { operationId: 'web-team-execution' });
         await ctx.sessionController.selectModel({ sessionId: execution.sessionId, provider: 'native-team-fixture', model: 'fixture' });
         const { agent } = await ctx.workdshSessionAccess.resolveAgent(execution.sessionId, request.signal);
         assert.ok(agent);
         agent.followup(createMessage({ role: 'user', source: { kind: 'user' }, content: blocks('WEB_SPAWN_ANALYST：用官方 Team 处理本次隔离验证。') }));
+        stage = 'settle-lead';
         await settle(agent.id);
         const analyst = ctx.agentTeams.listMembers(agent).find(m => m.name === 'analyst');
-        assert.ok(analyst, 'real model tool call created analyst'); await settle(analyst.id);
+        assert.ok(analyst, 'real model tool call created analyst'); stage = 'settle-analyst'; await settle(analyst.id);
         assert.ok((await history(agent.id)).events.some(e => e.type === 'tool/call' && e.data.name === 'spawn_teammate'));
         for (const name of ['reviewer']) {
+          stage = `spawn-${name}`;
           const result = await ctx.agentTeams.spawnTeammate(agent, { name, description: name, prompt: blocks('Verify the supplied fixture.'), provider: 'spawn', context: 'fresh', signal: request.signal });
+          stage = `settle-${name}`;
           await settle(result.member.id);
         }
         const draftTask = await ctx.agentTeams.createTask(agent, { subject: '核对测试数据', description: '实际官方任务', writeScopes: ['fixture/report.md'] });
@@ -71,8 +81,23 @@ export function apply(ctx) {
       } else if (input.action === 'view') {
         const { agent } = await ctx.workdshSessionAccess.resolveAgent(input.sessionId, request.signal);
         assert.ok(agent); value = ctx.agentTeams.remoteView(agent);
+      } else if (input.action === 'start-member') {
+        stage = 'resolve-resumed-team';
+        const before = (await history(input.memberId)).events.filter(e => e.type === 'turn/end').length;
+        const { agent } = await ctx.workdshSessionAccess.resolveAgent(input.sessionId, request.signal);
+        assert.ok(agent);
+        stage = 'continue-resumed-member';
+        const delivered = await ctx.agentTeams.sendMessage(agent, { target: input.memberName, content: blocks('WEB_HOLD_MEMBER：冷恢复后继续官方 Team 成员任务。'), signal: request.signal });
+        assert.ok(['accepted', 'queued'].includes(delivered.status));
+        value = { memberId: input.memberId, before };
+      } else if (input.action === 'wait-member') {
+        stage = 'wait-resumed-member';
+        await waitFor(async () => (await history(input.memberId)).events.filter(e => e.type === 'turn/end').length > input.before);
+        const latest = (await history(input.memberId)).events.filter(e => e.type === 'turn/end').at(-1);
+        assert.equal(latest.data.reason.kind, 'completed');
+        value = { memberId: input.memberId, completed: true };
       } else throw Error('Unknown probe action');
       return Response.json({ ok: true, value });
-    } catch (error) { return Response.json({ ok: false, error: error.stack }); }
+    } catch (error) { return Response.json({ ok: false, stage, error: error.stack }); }
   } }));
 }

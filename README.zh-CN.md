@@ -50,7 +50,7 @@ WorkDSH 会把参考材料、模型过程、实时成果、人工修改和最终
 <td width="50%"><img src="docs/assets/screenshots/workdsh-skill-market-preview.png" alt="WorkDSH 技能市场"><br><strong>技能是可以管理的能力</strong><br>发现、查看、安装、编辑、停用和恢复技能。</td>
 </tr>
 <tr>
-<td colspan="2"><img src="docs/assets/screenshots/workdsh-team-activity-preview.png" alt="WorkDSH 专家团队工作动态"><br><strong>专家团始终可见</strong><br>工作动态展示团队和当前成员，同时保留 Harness 原生会话。</td>
+<td colspan="2"><img src="docs/assets/screenshots/workdsh-official-agent-team.png" alt="Harness 官方 Agent Team 面板与 WorkDSH Siri 风格活动条同时显示"><br><strong>官方 Agent Team 与 WorkDSH 实时状态同时可见</strong><br>原生面板负责成员、共享任务、依赖关系和会话跳转；Siri 风格活动条继续显示团队当前状态，并在处理任务时启用彩色环绕动效。</td>
 </tr>
 <tr>
 <td colspan="2"><img src="docs/assets/screenshots/workdsh-jd-cart-review.png" alt="WorkDSH 将选定的京东商品加入购物车并在结算前展示截图证据"><br><strong>真实网页操作、可核对证据、关键步骤由人接管</strong><br>这次真实任务里，WorkDSH 搜索京东、把用户选定的商品加入购物车，将执行结果和截图放在一起，并停在结算之前。</td>
@@ -134,10 +134,10 @@ flowchart TB
 | --- | --- | --- | --- |
 | 技能管理 | `workdsh-plugin-skills@0.1.0-alpha.29` | [技能 `.tgz`](https://github.com/techflag/workdsh/releases/download/skills-v0.1.0-alpha.29/workdsh-plugin-skills-0.1.0-alpha.29.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/skills-v0.1.0-alpha.29) | 可独立安装的 Harness 功能插件。 |
 | 专家 | `workdsh-plugin-experts@0.1.0-alpha.3` | [专家 `.tgz`](https://github.com/techflag/workdsh/releases/download/experts-v0.1.0-alpha.3/workdsh-plugin-experts-0.1.0-alpha.3.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/experts-v0.1.0-alpha.3) | 专家定义、已审阅修订及其与官方 DSH Team 运行时的组合。 |
-| 连接器 | `workdsh-plugin-connectors@0.1.0-alpha.1` | [连接器 `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.2/workdsh-plugin-connectors-0.1.0-alpha.1.tgz) · [项目发行](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.2) | 多 stdio/HTTP MCP 实例、官方凭据存储、健康与工具发现、按对话隔离工具。 |
+| 连接器 | `workdsh-plugin-connectors@0.1.0-alpha.1` | [连接器 `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.3/workdsh-plugin-connectors-0.1.0-alpha.1.tgz) · [项目发行](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.3) | 多 stdio/HTTP MCP 实例、官方凭据存储、健康与工具发现、按对话隔离工具。 |
 | 工作动态 | `workdsh-plugin-activity@0.1.0-alpha.2` | [动态 `.tgz`](https://github.com/techflag/workdsh/releases/download/activity-v0.1.0-alpha.2/workdsh-plugin-activity-0.1.0-alpha.2.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/activity-v0.1.0-alpha.2) | 显示任务、技能和专家团队工作状态。 |
 | Office | `workdsh-plugin-office@0.1.0-alpha.5` | [Office `.tgz`](https://github.com/techflag/workdsh/releases/download/office-v0.1.0-alpha.5/workdsh-plugin-office-0.1.0-alpha.5.tgz) · [发布页](https://github.com/techflag/workdsh/releases/tag/office-v0.1.0-alpha.5) | 支持范围内的可编辑工作副本、预览和文件导出。 |
-| WorkDSH 展示组合 | `workdsh-bundle@0.1.0-alpha.45` | [展示 `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.2/workdsh-bundle-0.1.0-alpha.45.tgz) · [项目发行](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.2) | 可选品牌、主题与工作台组合；功能插件按需独立安装。 |
+| WorkDSH 展示组合 | `workdsh-bundle@0.1.0-alpha.45` | [展示 `.tgz`](https://github.com/techflag/workdsh/releases/download/v0.1.0-alpha.3/workdsh-bundle-0.1.0-alpha.45.tgz) · [项目发行](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.3) | 可选品牌、主题与工作台组合；功能插件按需独立安装。 |
 
 Workbench `alpha.10` 目前随展示包交付。共享 UI、contracts 和本地身份/授权/审计基础属于配套包，**不作为面向用户的独立下载项**。完整对应关系见[模块发布说明](docs/RELEASES.md)。
 
@@ -147,22 +147,32 @@ Workbench `alpha.10` 目前随展示包交付。共享 UI、contracts 和本地�
 
 使用 **Node.js 22 LTS 的 22.19+ 或 Node 24+**、**pnpm 10.34.5**，以及官方 **Harness CLI `0.1.6-alpha.1`**。以下命令要求 `dsh` 指向该版本 CLI，而不是旧桌面应用的启动器。
 
-下载上方技能 `.tgz`，使用独立 Web Profile，将示例路径替换为已下载文件的绝对路径：
+完整产品请把[项目发行 `v0.1.0-alpha.3`](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.3)的全部资产下载到同一目录。停止目标 Profile，进入下载目录后使用带校验的安装器：
+
+```sh
+node install-workdsh.mjs --profile workdsh
+dsh --profile workdsh
+```
+
+可先加 `--dry-run` 查看命令。对应的手动安装方式是：
 
 ```sh
 dsh --profile workdsh --from-default-profile web --dump-config
-dsh plugin --profile workdsh add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.29.tgz
+dsh plugin --profile workdsh add "$PWD/workdsh-provider-identity-local-0.1.0-alpha.5.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-audit-0.1.0-alpha.4.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-access-0.1.0-alpha.5.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-skills-0.1.0-alpha.29.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-experts-0.1.0-alpha.3.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-connectors-0.1.0-alpha.1.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-activity-0.1.0-alpha.2.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-plugin-office-0.1.0-alpha.5.tgz"
+dsh plugin --profile workdsh add "$PWD/workdsh-bundle-0.1.0-alpha.45.tgz"
 dsh --profile workdsh
 ```
 
-在侧栏打开 **专家 · 技能 · 连接器 → 技能**。通过**添加技能**导入或创建，或在技能详情中选择**去试试**，准备原生会话。需要模型执行时，使用你自己的 Harness 模型配置。
+请先用 Release 中的 `SHA256SUMS` 核对下载文件。`workdsh-plugin-experts` 同时组合 Harness 官方 Agent Team Host、九项工具和 Client 面板；安装成功后，会话顶部会显示 **Agent Team**。只安装技能包与展示包不会获得专家、官方 Team、连接器或 Office。
 
-需要 WorkDSH 外观时，先停止该 Profile，再安装可选展示包并重启：
-
-```sh
-dsh plugin --profile workdsh add /absolute/path/workdsh-bundle-0.1.0-alpha.45.tgz
-dsh --profile workdsh
-```
+在侧栏打开 **专家 · 技能 · 连接器** 管理专家、技能和连接器。需要模型执行时，使用你自己的 Harness 模型配置。
 
 安装遵循官方 [`dsh plugin … add` 流程](https://deepseek-harness.github.io/deepseek-harness/develop/basic/publish)。GitHub 的 **Source code** 是源码快照，安装插件请下载对应的 `.tgz`。当前安装与移除验收采用“停止 Host → 修改组合 → 重启”，不声称完成运行中 CLI 热卸载验收。
 

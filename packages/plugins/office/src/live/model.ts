@@ -222,7 +222,7 @@ export function createDocumentModel(
         const e = editor.current!,
           tr = e.state.tr;
         e.state.doc.descendants((node, pos) => {
-          if (!["paragraph", "heading", "table", "image"].includes(node.type.name)) return;
+          if (!["paragraph", "heading", "table", "image", "officeChart"].includes(node.type.name)) return;
           const mapped = receipt.ids[String(node.attrs.blockId)];
           if (mapped)
             tr.setNodeMarkup(pos, undefined, {
@@ -517,7 +517,7 @@ export function createDocumentModel(
               e.state.selection.from,
               e.state.selection.to,
               (node, pos) => {
-                if (["paragraph", "heading", "table", "image"].includes(node.type.name))
+                if (["paragraph", "heading", "table", "image", "officeChart"].includes(node.type.name))
                   tr.setNodeMarkup(pos, undefined, {
                     ...node.attrs,
                     indent: Math.max(

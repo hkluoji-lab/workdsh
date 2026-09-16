@@ -49,7 +49,11 @@ export function apply(ctx: Context): void {
   const management = createExpertManagementClient(ctx, lifetime.signal);
   installExpertPresetMenu(ctx, management);
   ctx.inject(['activityPresentation'], (scope) => scope.effect(() => scope.activityPresentation.registerIdentity(async (sessionId, signal) => {
-    const binding = await management.verifyBinding(sessionId, signal);
+    // Official Team member conversations are continuable child Sessions. Their
+    // immutable expert binding belongs to the Lead Session, exactly like the
+    // official Team Client resolves its panel through parentSessionId.
+    const rootSessionId = (sessions.binding(sessionId as SessionId)?.session.getSnapshot().subagent?.address.parentSessionId ?? sessionId) as SessionId;
+    const binding = await management.verifyBinding(rootSessionId, signal);
     const detail = await management.get(binding.expertRevisionRef.expertId, binding.expertRevisionRef.revisionId, signal);
     const definition = detail.revision?.definition;
     if (!definition) return undefined;
@@ -62,7 +66,8 @@ export function apply(ctx: Context): void {
       const avatar = asset && /\.(png|jpe?g|webp)$/i.test(path) ? `data:image/${/\.webp$/i.test(path) ? 'webp' : /\.jpe?g$/i.test(path) ? 'jpeg' : 'png'};base64,${asset.base64}` : value.avatarRef;
       return { name: local(metadata.displayName) || value.name, profession: local(metadata.profession), avatar };
     };
-    return { ...identityOf(definition), kind: definition.team ? 'team' : 'expert', ...(definition.team ? { teamName: definition.name, members: definition.team.members.map(member => ({ ...identityOf(member.definition), kind: 'expert' as const })) } : {}) };
+    const leadIdentity = identityOf(definition);
+    return { ...leadIdentity, kind: definition.team ? 'team' : 'expert', ...(definition.team ? { teamName: definition.name, members: [{ key: 'lead', ...leadIdentity, kind: 'expert' as const }, ...definition.team.members.map(member => ({ key: member.key, ...identityOf(member.definition), kind: 'expert' as const }))] } : {}) };
   })));
 
 

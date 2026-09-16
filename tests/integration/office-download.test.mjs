@@ -35,6 +35,9 @@ const { createRequire } = await import("node:module");
 const JSZip = createRequire(resolve("packages/plugins/office/package.json"))(
   "jszip",
 );
+const ExcelJS = createRequire(resolve("packages/plugins/office/package.json"))(
+  "exceljs",
+);
 const snapshot = {
   documentId: "doc1",
   kind: "document",
@@ -84,6 +87,28 @@ test("DOCX snapshot preserves text, marks, headings, whitespace and OOXML relati
   assert.ok(zip.file("_rels/.rels"));
   assert.ok(zip.file("word/_rels/document.xml.rels"));
   assert.ok(zip.file("word/styles.xml"));
+});
+test("Structured Word charts remain native Office charts with an editable embedded workbook", async () => {
+  const chart={chartType:"bar",title:"月末现金余额",categories:["1月","2月","3月"],series:[{name:"余额",values:[120,330,480],color:"#2563eb"},{name:"保有量",values:[500,500,500],color:"#f97316"}],width:640,height:360,alignment:"center",legend:"bottom",yAxisTitle:"万元"};
+  const state={modelVersion:1,blockIds:["chart-1"],blocks:{"chart-1":{blockId:"chart-1",type:"chart",runs:[],chart}}};
+  const json=editorContent(state),blocks=editorBlocks(json);
+  assert.deepEqual(blocks[0].chart,chart);
+  assert.deepEqual(documentDiff(state,json),[]);
+  const zip=await JSZip.loadAsync(await (await documentDocx({...snapshot,state})).arrayBuffer());
+  const document=await zip.file("word/document.xml").async("string"),rels=await zip.file("word/_rels/document.xml.rels").async("string"),chartXml=await zip.file("word/charts/chart1.xml").async("string");
+  assert.match(document,/<c:chart r:id="chart1"\/>/);
+  assert.match(rels,/relationships\/chart/);
+  assert.match(chartXml,/<c:barChart>/);
+  assert.match(chartXml,/月末现金余额/);
+  assert.match(chartXml,/<c:externalData r:id="rId1">/);
+  assert.equal(Object.keys(zip.files).filter(name=>name.startsWith("word/media/")).length,0,"chart must not be exported as a raster image");
+  const workbookBytes=await zip.file("word/embeddings/Microsoft_Excel_Worksheet1.xlsx").async("uint8array"),workbook=new ExcelJS.Workbook();
+  await workbook.xlsx.load(workbookBytes);
+  const sheet=workbook.getWorksheet("Sheet1");
+  assert.equal(sheet.getCell("A2").value,"1月");
+  assert.equal(sheet.getCell("B4").value,480);
+  assert.equal(sheet.getCell("C1").value,"保有量");
+  assert.deepEqual(parse(editInput,{documentId:"doc1",baseRevision:2,operationId:"chart-edit",operations:[{op:"document.insertBlocks",afterBlockId:"b2",blocks:[{type:"chart",runs:[],chart,clientRef:"chart"}]}]}).operations[0].blocks[0].chart,chart);
 });
 test("Rich semantic styles and nested lists survive editor roundtrip and DOCX download", async () => {
   const state = {

@@ -15,7 +15,7 @@ export const BlockIdentity = Extension.create({
   addGlobalAttributes() {
     return [
       {
-        types: ["paragraph", "heading", "table", "image"],
+        types: ["paragraph", "heading", "table", "image", "officeChart"],
         attributes: {
           blockId: {
             default: null,
@@ -60,7 +60,7 @@ export const BlockIdentity = Extension.create({
           const seen = new Set<string>(),
             tr = state.tr;
           state.doc.descendants((node, pos) => {
-            if (!["paragraph", "heading", "table", "image"].includes(node.type.name)) return;
+            if (!["paragraph", "heading", "table", "image", "officeChart"].includes(node.type.name)) return;
             let key = node.attrs.blockId as string | null;
             if (!key || seen.has(key)) {
               key = `tmp-${crypto.randomUUID()}`;
@@ -129,6 +129,9 @@ export const editorContent = (state: OfficeDocumentState): JSONContent => {
     }
     if (b.type === "image") {
       stack.length=0; root.content!.push({type:"image",attrs:{blockId:id,...b.image}}); continue;
+    }
+    if (b.type === "chart") {
+      stack.length=0; root.content!.push({type:"officeChart",attrs:{blockId:id,chart:b.chart}}); continue;
     }
     const paragraph: JSONContent = {
       type: b.type,
@@ -263,6 +266,8 @@ export function editorBlocks(
         }))}))}});
       } else if (node.type === "image") {
         const a=node.attrs ?? {}; blocks.push({type:"image",blockId:String(a.blockId),runs:[],image:{src:String(a.src),width:Number(a.width),height:Number(a.height),...(a.alt ? {alt:String(a.alt)} : {}),...(a.alignment ? {alignment:a.alignment} : {})}});
+      } else if (node.type === "officeChart") {
+        const a=node.attrs ?? {}; blocks.push({type:"chart",blockId:String(a.blockId),runs:[],chart:structuredClone(a.chart) as NonNullable<OfficeBlockInput["chart"]>});
       } else if (["paragraph", "heading"].includes(node.type!)) paragraph(node);
       else throw new Error("当前文档包含尚未支持的内容，请撤销该操作。");
     }
@@ -274,6 +279,7 @@ const input = (b: OfficeBlockInput): OfficeBlockInput => ({
   type: b.type,
   ...(b.table ? {table:{rows:b.table.rows.map(row=>({cells:row.cells.map(cell=>({...cell,paragraphs:cell.paragraphs.map(p=>({...input(p),type:p.type}))}))}))}} : {}),
   ...(b.image ? {image:b.image} : {}),
+  ...(b.chart ? {chart:b.chart} : {}),
   ...(b.level ? { level: b.level } : {}),
   ...(b.style && Object.keys(b.style).length ? { style: b.style } : {}),
   ...(b.list ? { list: b.list } : {}),
@@ -287,7 +293,7 @@ const input = (b: OfficeBlockInput): OfficeBlockInput => ({
 const comparable = (value:unknown):string => JSON.stringify(value,(_key,item)=>
   item && typeof item === "object" && !Array.isArray(item)
     ? Object.fromEntries(Object.entries(item).sort(([a],[b])=>a.localeCompare(b))) : item);
-export const blockText = (b:OfficeBlockInput):string => b.table ? b.table.rows.map(row=>row.cells.map(cell=>cell.paragraphs.map(blockText).join("\n")).join("\t")).join("\n") : b.image ? b.image.alt ?? "" : b.runs.map(r=>r.text).join("");
+export const blockText = (b:OfficeBlockInput):string => b.table ? b.table.rows.map(row=>row.cells.map(cell=>cell.paragraphs.map(blockText).join("\n")).join("\t")).join("\n") : b.image ? b.image.alt ?? "" : b.chart ? b.chart.title ?? b.chart.series.map(series=>series.name).join("、") : b.runs.map(r=>r.text).join("");
 export function documentDiff(
   base: OfficeDocumentState,
   json: JSONContent,
