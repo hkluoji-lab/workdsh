@@ -67,6 +67,7 @@ test('independent library plugin persists a tree, originals and searchable deriv
     assert.deepEqual((await ctx.workdshLibrary.search(actor, '', { kinds: ['pptx'] })).map(hit => hit.name), ['简报.pptx']);
     assert.equal((await ctx.workdshLibrary.search(actor, '', { sources: ['task'] })).length, 0);
     assert.equal((await ctx.workdshLibrary.search(actor, 'DocxCharlie'))[0].name, '报告.docx');
+    assert.equal((await ctx.workdshLibrary.search(actor, 'DocxCharlie'))[0].folderPath, '我的资料 / 项目甲');
     const pptxHit = (await ctx.workdshLibrary.search(actor, 'PptxDelta'))[0];
     assert.equal(pptxHit.name, '简报.pptx');
     assert.match(pptxHit.location, /第 1 页/);

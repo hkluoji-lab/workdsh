@@ -140,7 +140,7 @@ export class LibraryManager extends Service implements LibraryService {
         const titleMatch = Boolean(needle) && node.name.toLocaleLowerCase().includes(needle); const offset = needle ? lower.indexOf(needle) : 0; if (needle && !titleMatch && offset < 0) continue;
         const start = Math.max(0, offset < 0 ? 0 : offset - 80); const excerpt = text.slice(start, start + 240).replace(/\s+/g, ' ').trim();
         const prefix = text.slice(0, offset < 0 ? text.length : offset); const heading = [...prefix.matchAll(/^#{1,6}\s+(.+)$/gm)].at(-1)?.[1]?.trim();
-        hits.push({ assetId: asset.id, revisionId: revision.id, nodeId: node.id, name: node.name, kind: asset.kind, source: asset.source, updatedAt: asset.updatedAt, ...(heading ? { location: heading } : {}), excerpt, score: titleMatch ? 2 : needle ? 1 : 0 });
+        hits.push({ assetId: asset.id, revisionId: revision.id, nodeId: node.id, name: node.name, kind: asset.kind, source: asset.source, updatedAt: asset.updatedAt, folderPath: this.folderPath(state, node.parentId), ...(heading ? { location: heading } : {}), excerpt, score: titleMatch ? 2 : needle ? 1 : 0 });
       }
       return hits.sort((a, b) => b.score - a.score || b.updatedAt.localeCompare(a.updatedAt) || a.name.localeCompare(b.name, 'zh-CN')).slice(0, 50);
     });
@@ -261,6 +261,7 @@ export class LibraryManager extends Service implements LibraryService {
   private assertFolder(state: LibraryState, id?: string): void { if (id && this.requireNode(state, id).kind !== 'folder') throw new Error('library/not-folder'); }
   private assertUniqueName(state: LibraryState, parentId: string | undefined, name: string, except?: string): void { if (Object.values(state.nodes).some((node) => node.id !== except && node.parentId === parentId && node.name.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error('library/name-conflict'); }
   private descendants(state: LibraryState, id: string): Set<string> { const result = new Set<string>(); const queue = [id]; while (queue.length) { const parent = queue.shift()!; for (const node of Object.values(state.nodes)) if (node.parentId === parent && !result.has(node.id)) { result.add(node.id); queue.push(node.id); } } return result; }
+  private folderPath(state: LibraryState, parentId?: string): string { const parts: string[] = []; let current = parentId; const seen = new Set<string>(); while (current && !seen.has(current)) { seen.add(current); const node = state.nodes[current]; if (!node) break; parts.unshift(node.name); current = node.parentId; } return parts.length ? `我的资料 / ${parts.join(' / ')}` : '我的资料'; }
   private owner(actor: ActorContext): ResourceOwner & { scope: 'personal' } { return { organizationId: actor.organizationId, ownerPrincipalId: actor.principalId, scope: 'personal' }; }
   private key(actor: ActorContext): string { return stateKey(actor.organizationId, actor.principalId); }
   private validateActor(actor: ActorContext): void { if (!actor.organizationId?.trim() || !actor.principalId?.trim() || !actor.requestId?.trim() || !actor.resolvedBy?.trim()) throw new Error('library/invalid-actor'); }

@@ -76,6 +76,7 @@ export interface LibrarySearchHit {
   readonly kind: LibraryAssetKind;
   readonly source: LibraryAsset['source'];
   readonly updatedAt: string;
+  readonly folderPath: string;
   readonly location?: string;
   readonly excerpt: string;
   readonly score: number;
