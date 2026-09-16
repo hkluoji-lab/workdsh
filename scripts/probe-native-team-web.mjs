@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
 import { spawn, execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, writeFile, realpath, copyFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile, realpath, copyFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { chromium, expect } from '@playwright/test';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
+const realModel = process.argv.includes('--real-model');
 const artifacts = join(root, '.artifacts/dsh-0.1.6-upgrade/native-team-web');
 const home = await realpath(await mkdtemp(join(tmpdir(), 'workdsh-native-team-web-')));
 const cwd = join(home, 'workspace'), workspaceId = randomUUID();
@@ -24,18 +26,19 @@ const dsh = join(root, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), pnpm = join(
 const exec = promisify(execFile);
 const command = async (bin, args, workdir = home) => (await exec(process.execPath, [bin, ...args], { cwd: workdir, env, timeout: 90000, maxBuffer: 8 * 1024 * 1024 })).stdout;
 let server, browser, log = '', page;
+let credential = '';
 const report = {
   scope: 'expert-team-resilience',
   environment: {
     host: 'production packaged WorkDSH profile',
     team: 'official DeepSeek Harness Agent Teams service, tools and Web client',
     browser: 'Playwright Chromium',
-    modelIo: 'deterministic local adapter',
+    modelIo: realModel ? 'deterministic fault adapter plus explicit DeepSeek real-model handoff' : 'deterministic local adapter',
   },
   scenarios: {},
   checks: [],
   browserErrors: [],
-  notRun: ['paid model', 'user preview deployment', 'fork member browser history'],
+  notRun: [...(realModel ? [] : ['paid model']), 'user preview deployment', 'fork member browser history'],
 };
 const pass = name => { report.checks.push(name); console.log(`PASS ${name}`); };
 const waitFor = async fn => { const signal = AbortSignal.timeout(30000); while (!await fn()) { signal.throwIfAborted(); await new Promise(r => setTimeout(r, 100)); } };
@@ -51,7 +54,7 @@ const start = async () => {
   const cookie = response.headers.getSetCookie().map(c => c.split(';')[0]).join('; '); assert.ok(cookie);
   return { address: new URL(url).origin, cookie };
 };
-const api = async (host, input) => { const response = await fetch(`${host.address}/api/native-team-probe`, { method: 'POST', headers: { cookie: host.cookie, 'content-type': 'application/json' }, body: JSON.stringify(input), signal: AbortSignal.timeout(45000) }); const result = await response.json(); assert.ok(result.ok, JSON.stringify(result)); return result.value; };
+const api = async (host, input) => { const response = await fetch(`${host.address}/api/native-team-probe`, { method: 'POST', headers: { cookie: host.cookie, 'content-type': 'application/json' }, body: JSON.stringify(input), signal: AbortSignal.timeout(input.action === 'begin-real-model' ? 300000 : 45000) }); const result = await response.json(); assert.ok(result.ok, JSON.stringify(result)); return result.value; };
 async function open(host, id) {
   await page.context().clearCookies();
   await page.context().addCookies(host.cookie.split('; ').map(pair => { const at = pair.indexOf('='); return { name: pair.slice(0, at), value: pair.slice(at + 1), url: host.address }; }));
@@ -63,6 +66,14 @@ async function open(host, id) {
   await expect(page.getByRole('dialog')).toContainText('analyst');
 }
 try {
+  if (realModel) {
+    const require = createRequire(join(root, 'packages/plugins/experts/package.json'));
+    const { parseDocument, stringify } = require('yaml');
+    const source = parseDocument(await readFile(join(root, '.test-runtime/preview/.credentials.yaml'), 'utf8')).toJSON();
+    credential = source.refs?.DEEPSEEK_API_KEY;
+    assert.ok(typeof credential === 'string' && credential.trim(), 'Configure the preview DeepSeek model first');
+    await writeFile(join(home, '.credentials.yaml'), stringify({ version: 1, records: {}, refs: { DEEPSEEK_API_KEY: credential } }), { mode: 0o600 });
+  }
   const tarballs = [];
   // Verify the complete presentation: native Team panel plus the WorkDSH
   // Siri-style activity strip. Browser Use is disabled in this isolated Team
@@ -141,6 +152,30 @@ try {
     finalStatus: 'completed',
   };
   pass('cold-resumed-official-member-completes-the-long-task');
+  const interrupted = await api(host, { action: 'begin-interrupt', sessionId: created.sessionId, memberId: resumedAnalyst.id, memberName: resumedAnalyst.name });
+  assert.equal(interrupted.task.ownerName, resumedAnalyst.name);
+  assert.equal(interrupted.task.status, 'in_progress');
+  await open(host, created.sessionId);
+  await expect(page.locator('.wd-activity-action')).toContainText('人工停止与恢复验收', { timeout: 7000 });
+  const stopped = await api(host, { action: 'interrupt-member', sessionId: created.sessionId, memberId: resumedAnalyst.id, memberName: resumedAnalyst.name, before: interrupted.before, taskId: interrupted.task.id });
+  assert.equal(stopped.memberId, resumedAnalyst.id);
+  assert.ok(['aborted', 'interrupted', 'cancelled'].includes(stopped.reason));
+  assert.equal(stopped.task.status, 'in_progress');
+  const resumedInterrupted = await api(host, { action: 'resume-interrupted', sessionId: created.sessionId, memberId: resumedAnalyst.id, memberName: resumedAnalyst.name });
+  assert.deepEqual(await api(host, { action: 'wait-member', memberId: resumedAnalyst.id, before: resumedInterrupted.before }), { memberId: resumedAnalyst.id, completed: true });
+  const completedInterrupted = await api(host, { action: 'complete-task', sessionId: created.sessionId, memberId: resumedAnalyst.id, memberName: resumedAnalyst.name, taskId: interrupted.task.id });
+  const afterInterrupt = await api(host, { action: 'view', sessionId: created.sessionId });
+  assert.equal(afterInterrupt.members.filter(member => member.name === resumedAnalyst.name).length, 1);
+  report.scenarios.interruptRecovery = {
+    taskId: interrupted.task.id,
+    owner: resumedAnalyst.name,
+    interruptionReason: stopped.reason,
+    taskRetainedAfterInterrupt: stopped.task.status === 'in_progress',
+    memberIdStable: afterInterrupt.members.find(member => member.name === resumedAnalyst.name)?.id === resumedAnalyst.id,
+    duplicateMembers: 0,
+    finalStatus: completedInterrupted.status,
+  };
+  pass('manual-interrupt-retains-the-owned-task-and-resumes-the-same-member-once');
   const resumedReviewer = (await api(host, { action: 'view', sessionId: created.sessionId })).members.find(member => member.name === 'reviewer');
   assert.ok(resumedReviewer);
   const handoff = await api(host, { action: 'begin-handoff', sessionId: created.sessionId, fromMemberId: resumedAnalyst.id, fromMemberName: resumedAnalyst.name, toMemberId: resumedReviewer.id, toMemberName: resumedReviewer.name });
@@ -163,9 +198,13 @@ try {
   };
   pass('durable-message-and-task-ownership-complete-the-member-handoff');
   const failed = await api(host, { action: 'begin-failure', sessionId: created.sessionId, memberId: resumedReviewer.id, memberName: resumedReviewer.name });
-  const failedResult = await api(host, { action: 'wait-failure', memberId: resumedReviewer.id, before: failed.before });
+  const failedResult = await api(host, { action: 'wait-failure', sessionId: created.sessionId, memberId: resumedReviewer.id, before: failed.before });
   assert.equal(failedResult.memberId, resumedReviewer.id);
   assert.notEqual(failedResult.reason, 'completed');
+  await open(host, created.sessionId);
+  await expect(page.locator('.wd-activity-action')).toContainText('失败恢复验收 · 本轮未完成', { timeout: 7000 });
+  await expect(page.locator('.wd-activity')).toHaveAttribute('data-phase', 'failed');
+  pass('failed-member-and-unfinished-task-remain-visible-in-the-team-activity-strip');
   pass('member-failure-is-recorded-without-completing-its-owned-task');
   await stop(); host = await start();
   const afterFailureRestart = await api(host, { action: 'view', sessionId: created.sessionId });
@@ -186,9 +225,38 @@ try {
     finalStatus: recoveredTask.status,
   };
   pass('same-member-cold-restarts-after-failure-and-finishes-the-retained-task');
+  if (realModel) {
+    const real = await api(host, { action: 'begin-real-model', expertId: created.expertId, cwd, workspaceId });
+    const deadline = Date.now() + 480000;
+    let status;
+    while (Date.now() < deadline) {
+      status = await api(host, { action: 'real-model-status', sessionId: real.sessionId });
+      const memberAdvanced = Object.entries(real.memberTurnEnds).every(([id, before]) => (status.memberTurnEnds[id] ?? 0) > before);
+      const tasks = status.view.tasks.filter(task => ['REAL-ANALYZE', 'REAL-REVIEW'].includes(task.subject));
+      if (status.leadTurnEnds > real.beforeLeadTurnEnds && memberAdvanced && tasks.length === 2 && tasks.every(task => task.status === 'completed')) break;
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+    assert.ok(status, 'real model status unavailable');
+    const realCalls = status.leadToolCalls.slice(real.beforeLeadToolCalls);
+    assert.ok(realCalls.filter(name => name === 'team_task_create').length >= 2, JSON.stringify(realCalls));
+    assert.ok(realCalls.includes('send_message'), JSON.stringify(realCalls));
+    assert.ok(realCalls.includes('wait_agent') || realCalls.filter(name => name === 'list_agents').length >= 2, JSON.stringify(realCalls));
+    const realTasks = status.view.tasks.filter(task => ['REAL-ANALYZE', 'REAL-REVIEW'].includes(task.subject));
+    assert.equal(realTasks.length, 2, JSON.stringify(status.view.tasks));
+    assert.ok(realTasks.every(task => task.status === 'completed'));
+    assert.ok(Object.entries(real.memberTurnEnds).every(([id, before]) => (status.memberTurnEnds[id] ?? 0) > before));
+    report.scenarios.realModelHandoff = {
+      provider: 'deepseek-official', model: 'deepseek-flash',
+      memberIdsStable: status.view.members.filter(member => member.role === 'teammate').every(member => real.memberIds[member.name] === member.id),
+      tasks: realTasks.map(task => ({ subject: task.subject, owner: task.ownerName, status: task.status })),
+      leadToolCalls: realCalls,
+      coordinationObservation: realCalls.includes('wait_agent') ? 'wait_agent' : 'list_agents',
+    };
+    pass('real-model-lead-and-members-complete-two-stage-official-task-handoff');
+  }
   await open(host, created.sessionId); await expect(page.getByRole('dialog')).toContainText('浏览器创建的官方任务');
   await page.screenshot({ path: join(artifacts, 'official-team-cold.png'), fullPage: true });
   pass('cold-web-restart-keeps-member-identities-and-ui-created-task');
   assert.deepEqual(report.browserErrors, []); pass('no-browser-page-errors'); report.status = 'passed';
 } catch (error) { report.status = 'failed'; report.error = error.stack; console.error(error); process.exitCode = 1; if (page) await page.screenshot({ path: join(artifacts, 'failure.png'), fullPage: true }).catch(() => {}); }
-finally { await browser?.close(); await stop(); await writeFile(join(artifacts, 'host.log'), log.replace(/token=[^\s]+/g, 'token=[redacted]')); await writeFile(join(artifacts, 'result.json'), JSON.stringify(report, null, 2)); }
+finally { await browser?.close(); await stop(); await unlink(join(home, '.credentials.yaml')).catch(() => {}); await writeFile(join(artifacts, 'host.log'), log.replaceAll(credential || '\0', '[redacted]').replace(/token=[^\s]+/g, 'token=[redacted]')); await writeFile(join(artifacts, 'result.json'), JSON.stringify(report, null, 2)); }

@@ -1,10 +1,10 @@
 ## 2026-09-16：专家团长任务、交接、重连与失败恢复验收
 
-新增 `probe:experts:team:resilience` 发布验收入口。探针把 identity、audit、access、skills、experts、bundle、activity 七个正式包打包并经官方 CLI 安装到仓库外临时 Profile，使用生产 Host、官方 Agent Teams 服务/工具/Web Client 和真实 Chromium；仅模型 I/O 使用本地确定性适配器，以便稳定注入一次成员失败。
+新增 `probe:experts:team:resilience` 与显式 `probe:experts:team:real` 发布验收入口。探针把 identity、audit、access、skills、experts、bundle、activity 七个正式包打包并经官方 CLI 安装到仓库外临时 Profile，使用生产 Host、官方 Agent Teams 服务/工具/Web Client 和真实 Chromium。resilience 模式用本地确定性适配器固定等待、中断和一次成员失败；real 模式另建独立执行，使用 `deepseek-official/deepseek-flash` 的真实 lead 与两名真实成员。
 
-四条场景已通过：20 秒成员长任务在两次完整浏览器连接间保持同一成员和 `in_progress` 任务归属；任务先归分析成员、再经官方 reassign 和持久消息交给复核成员，最终仍保留复核成员所有权；模型回合失败没有错误完成任务；Host 冷重启后同一成员 ID、同一任务及所有权恢复，后续消息唤醒该成员完成处理，名册没有重复成员。官方成员回合结束后会释放激活实例，因此由 lead 对仍归属于预期成员的任务执行最终签收，探针没有增加自有团队运行表。
+六条场景已通过：20 秒成员长任务在两次完整浏览器连接间保持同一成员和 `in_progress` 任务归属；人工停止产生 `aborted` 终态但保留原成员和任务，恢复消息由同一成员继续；任务经官方 reassign 和持久消息从分析成员交给复核成员；失败回合没有错误完成任务，活动条明确显示“本轮未完成”；Host 冷重启后同一成员 ID、任务及所有权恢复且没有重复成员；真实 lead 创建 `REAL-ANALYZE` / `REAL-REVIEW`，通过官方消息、`wait_agent` 与状态读取完成 analyst→reviewer 两阶段交接，两名成员 Session 均新增完成回合。官方成员回合结束后会释放激活实例，因此由 lead 对仍归属于预期成员的任务执行最终签收，探针没有增加自有团队运行表。
 
-验收结果为 13 项检查通过、浏览器 pageerror 为 0，结构化回执和截图位于 `.artifacts/dsh-0.1.6-upgrade/native-team-web/`，判定边界见 [专家团韧性验收](evidence/expert-team-resilience.md)。本次未运行付费模型、用户 preview 或官方 fork 成员浏览器历史；不将 20 秒确定性长任务写成小时级真实业务稳定性。
+真实模式结果为 16 项检查通过、浏览器 pageerror 为 0；活动投影单测为 14/14。结构化回执和截图位于 `.artifacts/dsh-0.1.6-upgrade/native-team-web/`，判定边界见 [专家团韧性验收](evidence/expert-team-resilience.md)。真实密钥只复制到一次性 DSH Home 的凭据引用，退出时删除，命令参数、报告与脱敏日志不含密钥。本次未部署用户 preview，也未运行官方 fork 成员浏览器历史；不将有界真实交接或 20 秒确定性长任务写成小时级专业业务稳定性。
 
 ## 2026-09-16：PPT 原生画布坐标修正
 
