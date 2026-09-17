@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain';
 import type { ActorContext } from 'workdsh-contracts';
-import { PROJECT_INSTRUCTION_TOKEN_BUDGET, estimateProjectInstructionTokens, type CreateProjectInput, type Project, type ProjectActivity, type ProjectAssetRef, type ProjectConfig, type ProjectConfigRevision, type ProjectInputRef, type ProjectService, type ProjectSnapshot, type ProjectTaskLink, type ProjectTemplate, type ProjectWorkItem } from 'workdsh-contracts/projects';
+import type { CreateProjectInput, Project, ProjectActivity, ProjectAssetRef, ProjectConfig, ProjectConfigRevision, ProjectInputRef, ProjectService, ProjectSnapshot, ProjectTaskLink, ProjectTemplate, ProjectWorkItem } from 'workdsh-contracts/projects';
+import { PROJECT_INSTRUCTION_TOKEN_BUDGET, estimateProjectInstructionTokens } from '../instruction-budget.js';
 import { projectDomainSpec, projectStateKey, type ProjectState } from '../storage/domain.js';
 declare module '@deepseek-ai/cordis' { interface Context { workdshProjects: ProjectService; } }
 const timestamp = () => new Date().toISOString();

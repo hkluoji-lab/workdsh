@@ -5,15 +5,6 @@ export type WorkItemStatus = 'todo' | 'doing' | 'review' | 'done' | 'cancelled';
 export type WorkItemPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent';
 export type ProjectCapabilityKind = 'skill' | 'expert' | 'connector';
 
-/** Reserved project-instruction budget before task text, assets and tool context are added. */
-export const PROJECT_INSTRUCTION_TOKEN_BUDGET = 8_000;
-/** Conservative tokenizer-independent estimate: CJK/emoji cost one token, Latin runs four chars per token. */
-export function estimateProjectInstructionTokens(value: string): number {
-  let wide = 0, narrow = 0;
-  for (const character of value) (/[^\u0000-\u00ff]/u.test(character) ? wide++ : narrow++);
-  return wide + Math.ceil(narrow / 4);
-}
-
 export interface ProjectCapabilityRef { readonly kind: ProjectCapabilityKind; readonly id: string; readonly revision?: string; readonly label: string; readonly scope?: 'personal' | 'public'; }
 export interface ProjectConfig { readonly instruction: string; readonly capabilities: readonly ProjectCapabilityRef[]; }
 export interface ProjectConfigRevision extends ProjectConfig { readonly id: string; readonly projectId: string; readonly number: number; readonly createdBy: string; readonly createdAt: string; }

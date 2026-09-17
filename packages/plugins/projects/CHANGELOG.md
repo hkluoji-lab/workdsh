@@ -5,3 +5,4 @@
 - Add project center, project templates and persistent project workspaces.
 - Add activity, planning, native task links and Library asset references.
 - Add revisioned instructions and optional Skill, Expert and Connector configuration.
+- Submit Project composer messages into native Sessions and reopen linked tasks from the task list.

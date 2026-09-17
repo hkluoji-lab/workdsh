@@ -1732,3 +1732,7 @@ Office build/typecheck 以及 content/download/rich-editor 30 项相关测试通
 ## 2026-09-16：Office 工具兼容一次 JSON 字符串包装
 
 修复部分模型调用 `content_edit` 时把规范对象再次 `JSON.stringify`，导致工具参数层直接报 `invalid arguments: "input" must be an object` 的问题。工具 Schema 现在仍以对象为首选，同时允许一次 JSON 字符串包装；执行入口只解包一层，随后继续使用原有文档类型、操作、权限、批量上限和 CAS 严格校验。畸形 JSON、数组及超限载荷仍会拒绝。Office typecheck 与 21/21 内容集成测试通过；preview 已用 Node 22.23.2 重新安装并重启，安装产物包含兼容入口，18989 返回认证保护的 HTTP 401。
+
+## 2026-09-17：项目输入闭环到原生任务
+
+修复项目输入区只创建 Session 和任务关联、却仅写入草稿并落到空白新会话的问题。项目提交现在经官方 Session Controller `prompt` 接口获得接纳结果后保存项目任务关联，再打开同一个原生会话；任务列表行可重新打开对应会话。真实 preview 提交后显示用户消息、完成模型回合并返回“测试通过”，随后从项目任务列表成功回到相同结果。项目包测试与类型检查通过，证据见 [projects-alpha-task-closure](evidence/projects-alpha-task-closure.md)。
