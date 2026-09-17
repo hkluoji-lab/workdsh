@@ -51,7 +51,7 @@
 
 **判定边界（不得写成已定论）**：本轮已证实该失败与 WorkDSH 传给官方 create 的参数无关，根因位于官方插件与官方 `dsh-scope` 的作用域标识之间（官方插件把 `dsh-scope` 当强依赖 + `kScope` 非全局注册 Symbol）。**未验证**：真实安装拓扑（`~/.dsh/profiles/node_modules` 共享层存在时，Profile 安装是否仍落地本地副本）下是否同样发生——本轮只核对了该共享层为符号链接、Web Profile 的 `@deepseek-ai` 目录为空，未在真实拓扑复跑两次连续 create。官方是否认定其为缺陷、修法归官方（改 `Symbol.for`／把 `dsh-scope` 改回 peer）还是归 WorkDSH（收敛 bundle 或为 Profile 增加去重），均**未决定**；按「只定位、不改产品行为」的指令本轮未改任何产品代码与 bundle 组成。
 
-未执行（本节收口）：`probe:experts` 仍为未通过（退出码 1），其第 4 项及其后的全部检查（草稿编辑、Skill 选择、发布、冷重启绑定）均未执行。临时注入（Profile 的 `cordis.patch.yml` insert 与 `wd-logger-probe` 模块）已还原/删除。工作区随后按用户指令本地提交为两个提交：`0da9e47`（探针安装参数、面板边界、目录构建器入口）与紧随其后的文档提交（本节证据与台账对齐，即含本行的这次提交，其 SHA 因自制引用会随改写变化故不在此登记），提交后工作区干净、`check:plan` 退出码 0。**推送未完成（阻塞）**：`origin`（Gitee）返回 `remote: [session-…] Unauthorized`；`github` 远端返回 `Permission to techflag/workdsh.git denied to hkluoji-lab`（HTTP 403，钥匙串中的 GitHub 凭据无该仓库写权限，`gh` 未登录）。因此本地领先 `origin/main` 10 个提交（领先 `github` 远端 18 个提交）仍只在本地；未改动任何 git 配置或凭据。
+未执行（本节收口）：`probe:experts` 仍为未通过（退出码 1），其第 4 项及其后的全部检查（草稿编辑、Skill 选择、发布、冷重启绑定）均未执行。临时注入（Profile 的 `cordis.patch.yml` insert 与 `wd-logger-probe` 模块）已还原/删除。工作区随后按用户指令本地提交为两个提交：`0da9e47`（探针安装参数、面板边界、目录构建器入口）与紧随其后的文档提交（本节证据与台账对齐；其 SHA 不在此登记，避免自制引用随改写失效），提交后工作区干净、`check:plan` 退出码 0。**推送未完成（阻塞，2026-09-17 续查）**：`origin` = `https://gitee.com/techflag/workdsh`，仓库属于 Gitee 账号 `techflag`、且匿名可读（`git ls-remote origin` 无凭据即成功）。在 Trae 的 git 凭据弹窗中填入「Gitee 用户名 + 私人令牌」后再推，Gitee 返回 `remote: [session-…] Access denied` / `HTTP 403` —— 不是 401，说明凭据本身被接受，是**该账号对仓库没有写权限**；随后用户确认**无法登录 `techflag` 账号**，故本机现有账号无法完成推送。解除条件：仓库所有者把所用账号加为仓库成员（权限≥开发者），或改用对该仓库有写权限的账号；在此之前不再重试推送。`github` 远端同样被拒：`Permission to techflag/workdsh.git denied to hkluoji-lab`（HTTP 403，`gh` 未登录）。钥匙串中无 `gitee.com` 条目（403 后 git 走 reject 不落库），因此每次推送都需重新输入凭据。本地领先 `origin/main` 10 个提交（领先 `github` 远端 18 个提交）仍只在本地；全程未改动任何 git 配置或凭据，也未使用对话中出现过的任何令牌值。
 
 ## 2026-09-16：目录构建器接线、5 个领域入口占位区分化、文档状态真源对齐
 
@@ -123,7 +123,7 @@ WorkBuddy 侧实测：`~/.workbuddy/connectors-marketplace/` 含 237 个连接�
 
 验证全部通过：`pnpm install --frozen-lockfile` 报 Already up to date；`pnpm check:versions` PASS 495 条（含上次新增的反向断言）；`pnpm build`、`pnpm typecheck` 退出码 0；`pnpm test:integration` 108/108 通过（由合并前的 102 增至 108，增量来自远端新增的 office 内容与专家团测试）。
 
-阻塞：**本次未推送**。两个远端都被本机凭据挡下，不是代码问题：`origin`（Gitee）在 keychain 中 `host=gitee.com` 的条目为空（username/password 长度均为 0），git 收到 401 后转 `GIT_ASKPASS`（Trae 的 askpass.sh）交互式提问，该 IPC 在终端环境下不响应，表现为无输出的长时间挂起；`github` 远端存的是 `hkluoji-lab` 的凭据，对 `techflag/workdsh` 推送返回 403 `Permission to techflag/workdsh.git denied`；本机 `~/.ssh/id_ed25519` 未注册到 Gitee（`git@gitee.com: Permission denied (publickey)`），SSH 通道同样不可用。Gitee 与 GitHub 的 HTTPS 连通性正常（`curl` info/refs 均 200，0.3～0.4 秒），排除网络因素。未执行：`git push origin main`、`git push github main`。
+阻塞：**本次未推送**。两个远端都被本机凭据挡下，不是代码问题：`origin`（Gitee）在 keychain 中 `host=gitee.com` 的条目为空（username/password 长度均为 0），git 收到 401 后转 `GIT_ASKPASS`（Trae 的 askpass.sh）交互式提问，该 IPC 在终端环境下不响应，表现为无输出的长时间挂起（2026-09-17 续查更正：该 askpass IPC 实际可用——在弹窗中填入账号与令牌后 git 拿到了凭据，失败原因是该账号无仓库写权限，见本节末尾的「推送未完成（阻塞，2026-09-17 续查）」）；`github` 远端存的是 `hkluoji-lab` 的凭据，对 `techflag/workdsh` 推送返回 403 `Permission to techflag/workdsh.git denied`；本机 `~/.ssh/id_ed25519` 未注册到 Gitee（`git@gitee.com: Permission denied (publickey)`），SSH 通道同样不可用。Gitee 与 GitHub 的 HTTPS 连通性正常（`curl` info/refs 均 200，0.3～0.4 秒），排除网络因素。未执行：`git push origin main`、`git push github main`。
 
 ## 2026-09-16：专家团长任务、交接、重连与失败恢复验收
 
