@@ -7,6 +7,7 @@ import { Context } from '@deepseek-ai/cordis';
 import Storage from '@deepseek-ai/dsh-storage';
 import * as JsonStorage from '@deepseek-ai/dsh-storage-json';
 import * as StorageDomain from '@deepseek-ai/dsh-storage-domain';
+import { renderSkillContent } from '@deepseek-ai/dsh-skill';
 import JSZip from 'jszip';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { buildLibrarySelectionContext, LibraryManager } from '../dist/index.js';
@@ -182,5 +183,33 @@ test('library retains an original when an otherwise valid conversion crashes', a
     await assert.rejects(ctx.workdshLibrary.readText(actor, entry.asset.id), /library\/conversion-failed/);
     assert.equal((await ctx.workdshLibrary.search(actor, 'source')).length, 0);
     assert.equal((await ctx.workdshLibrary.search(actor, '')).at(0).revisionId, entry.revision.id, 'failed conversions remain visible in Recent');
+  } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
+});
+
+test('selected library revisions and an explicitly invoked skill coexist in one model step', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workdsh-library-skill-integration-')); let ctx;
+  try {
+    ctx = await boot(join(root, 'storage'), join(root, 'library'));
+    const imported = await ctx.workdshLibrary.importAsset(actor, {
+      name: '客户访谈.md',
+      bytes: new TextEncoder().encode('# 客户访谈\n\n客户希望下周交付。负责人是王工。风险是原料延期。'),
+      operationId: 'library-skill-integration',
+    });
+    const sessionId = 'library-skill-session';
+    const selected = await ctx.workdshLibrary.setTaskSelection(actor, sessionId, [imported.id]);
+    const libraryContext = await buildLibrarySelectionContext(ctx.workdshLibrary, actor, sessionId);
+    const skillContext = renderSkillContent({
+      name: 'material-organizer',
+      provider: 'integration-test',
+      content: '按主题、结论、负责人、时间和风险整理资料；不得遗漏原文中的明确事实。',
+    });
+    const userMessage = '/material-organizer 整理已添加资料，输出结构化摘要。';
+
+    assert.equal(selected[0].revisionId, imported.revision.id, 'the conversation pins the selected revision');
+    assert.match(libraryContext, /<library-document name="客户访谈.md"/);
+    assert.match(libraryContext, /客户希望下周交付/);
+    assert.match(skillContext, /<skill_content name="material-organizer">/);
+    assert.match(skillContext, /按主题、结论、负责人、时间和风险整理资料/);
+    assert.equal(userMessage, '/material-organizer 整理已添加资料，输出结构化摘要。');
   } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
 });
