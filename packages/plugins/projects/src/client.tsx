@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { Context } from '@deepseek-ai/cordis';
+import type {} from '@deepseek-ai/dsh-client-connection/client';
 import type {} from '@deepseek-ai/dsh-client-ui-slots';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client';
@@ -9,7 +10,7 @@ import type {} from '@deepseek-ai/dsh-api-workspace-controller/client';
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client';
 import type { ProjectSnapshot } from 'workdsh-contracts/projects';
 import { createProjectClient } from './client/management.js'; import { ProjectsPanel } from './client/ProjectsPanel.js';
-export const name='workdsh-projects-client'; export const inject=['slots','layout','sessions','workspaces','conversation'];
+export const name='workdsh-projects-client'; export const inject=['slots','layout','connection','sessions','workspaces','conversation'];
 export function apply(ctx:Context){const lifetime=new AbortController();ctx.effect(()=>()=>lifetime.abort(),'workdsh.projects.client');const management=createProjectClient(lifetime.signal),sessions=ctx.sessions as unknown as ISessions;
 const startTask=async(snapshot:ProjectSnapshot,prompt:string)=>{const state=sessions.list.getSnapshot(),current=state.current?state.byId[state.current]:undefined,workspaces=ctx.workspaces.list.getSnapshot().items,workspace=workspaces.find(x=>x.sessionIds.includes(state.current!))??workspaces.find(x=>x.path===current?.cwd)??workspaces[0];if(!workspace)throw new Error('请先选择工作空间。');const sessionId=await sessions.create({workspaceId:workspace.workspaceId,cwd:workspace.path});await management.linkTask(snapshot.project.id,String(sessionId),prompt.slice(0,80)||snapshot.project.name);
 const invoke=async(path:string,endpoint:string,payload:unknown)=>fetch(path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({endpoint,payload})});
