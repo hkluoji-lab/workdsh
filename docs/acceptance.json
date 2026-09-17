@@ -524,8 +524,10 @@
       "tasks": [
         "P1-08"
       ],
-      "status": "pending",
-      "evidence": []
+      "status": "passed",
+      "evidence": [
+        "docs/evidence/projects-alpha-ui13.md"
+      ]
     },
     {
       "id": "UI14",
