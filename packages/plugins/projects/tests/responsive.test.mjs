@@ -6,9 +6,9 @@ import { chromium } from '@playwright/test';
 const source = await readFile(new URL('../src/client/styles.ts', import.meta.url), 'utf8');
 const css = source.match(/`([\s\S]*)`;/)?.[1];
 if (!css) throw new Error('projects CSS template not found');
-const markup = `<style>${css}</style><section class="wd-projects"><div class="wd-p-shell"><header class="wd-p-top"><button>项目</button><div><button class="wd-p-primary" disabled>邀请</button></div></header><main class="wd-p-main"><nav class="wd-p-tabs"><button>动态</button><button>计划</button><button>任务</button><button>资产</button></nav><textarea>保留的项目草稿</textarea></main><aside class="wd-p-aside">项目配置</aside></div></section>`;
+const markup = `<style>${css}</style><section class="wd-projects"><div class="wd-p-shell"><header class="wd-p-top"><button>项目</button><div></div></header><main class="wd-p-main"><nav class="wd-p-tabs"><button>活动记录</button><button>计划</button><button>任务</button><button>资产</button></nav><textarea>保留的项目草稿</textarea></main><aside class="wd-p-aside">项目配置</aside></div></section>`;
 
-test('project workspace uses a responsive configuration drawer and themed disabled action', async () => {
+test('project workspace uses a responsive configuration drawer without collaboration controls', async () => {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -16,9 +16,8 @@ test('project workspace uses a responsive configuration drawer and themed disabl
     const wide = await page.locator('.wd-p-aside').evaluate(node => ({ position: getComputedStyle(node).position, width: node.getBoundingClientRect().width }));
     assert.equal(wide.position, 'static');
     assert.ok(wide.width >= 350);
-    const disabled = await page.locator('.wd-p-primary').evaluate(node => getComputedStyle(node).backgroundColor);
-    assert.notEqual(disabled, 'rgb(255, 255, 255)');
-    assert.equal(await page.locator('.wd-p-tabs button').allTextContents().then(rows => rows.join(',')), '动态,计划,任务,资产');
+    assert.equal(await page.getByRole('button', { name: '邀请', exact: true }).count(), 0);
+    assert.equal(await page.locator('.wd-p-tabs button').allTextContents().then(rows => rows.join(',')), '活动记录,计划,任务,资产');
     assert.equal(await page.locator('textarea').inputValue(), '保留的项目草稿');
 
     await page.setViewportSize({ width: 720, height: 900 });

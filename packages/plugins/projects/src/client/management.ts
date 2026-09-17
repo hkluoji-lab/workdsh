@@ -1,6 +1,5 @@
 import type {
   Project,
-  ProjectActivity,
   ProjectAssetRef,
   ProjectConfig,
   ProjectConfigRevision,
@@ -52,7 +51,6 @@ export function createProjectClient(lifetime?: AbortSignal) {
     removeAsset: (projectId: string, refId: string) => invoke<void>('remove-asset', { projectId, refId }, lifetime),
     validateInputRefs: (projectId: string, references: readonly ProjectInputRef[]) => invoke<readonly ProjectInputRef[]>('validate-input-refs', { projectId, references }, lifetime),
     linkTask: (projectId: string, sessionId: string, title: string, workItemId?: string, references: readonly ProjectInputRef[] = []) => invoke<ProjectTaskLink>('link-task', { projectId, sessionId, title, workItemId, references }, lifetime),
-    postMessage: (projectId: string, text: string) => invoke<ProjectActivity>('post-message', { projectId, text }, lifetime),
   };
 }
 

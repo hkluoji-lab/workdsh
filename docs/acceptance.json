@@ -467,8 +467,10 @@
       "tasks": [
         "P1-08"
       ],
-      "status": "pending",
-      "evidence": []
+      "status": "passed",
+      "evidence": [
+        "docs/evidence/projects-alpha-ui06.md"
+      ]
     },
     {
       "id": "UI07",

@@ -15,7 +15,7 @@ export interface ProjectAssetRef { readonly id: string; readonly projectId: stri
 export type ProjectInputRefKind = 'work-item' | 'asset' | 'skill';
 export interface ProjectInputRef { readonly kind: ProjectInputRefKind; readonly id: string; readonly revision: string; readonly label: string; }
 export interface ProjectTaskLink { readonly id: string; readonly projectId: string; readonly sessionId: string; readonly title: string; readonly configRevisionId: string; readonly workItemId?: string; readonly references: readonly ProjectInputRef[]; readonly createdAt: string; }
-export interface ProjectActivity { readonly id: string; readonly projectId: string; readonly kind: 'message' | 'project' | 'work-item' | 'asset' | 'task'; readonly text: string; readonly actorId: string; readonly createdAt: string; }
+export interface ProjectActivity { readonly id: string; readonly projectId: string; readonly kind: 'project' | 'work-item' | 'asset' | 'task'; readonly text: string; readonly actorId: string; readonly createdAt: string; }
 export interface ProjectSnapshot { readonly project: Project; readonly config: ProjectConfigRevision; readonly workItems: readonly ProjectWorkItem[]; readonly assets: readonly ProjectAssetRef[]; readonly tasks: readonly ProjectTaskLink[]; readonly activity: readonly ProjectActivity[]; }
 export interface CreateProjectInput { readonly name: string; readonly description?: string; readonly templateId?: string; }
 
@@ -32,5 +32,4 @@ export interface ProjectService {
   removeAsset(actor: ActorContext, projectId: string, refId: string, signal?: AbortSignal): Promise<void>;
   validateInputRefs(actor: ActorContext, projectId: string, references: readonly ProjectInputRef[], signal?: AbortSignal): Promise<readonly ProjectInputRef[]>;
   linkTask(actor: ActorContext, projectId: string, sessionId: string, title: string, workItemId?: string, references?: readonly ProjectInputRef[], signal?: AbortSignal): Promise<ProjectTaskLink>;
-  postMessage(actor: ActorContext, projectId: string, text: string, signal?: AbortSignal): Promise<ProjectActivity>;
 }
