@@ -324,8 +324,10 @@
       "tasks": [
         "P1-08"
       ],
-      "status": "pending",
-      "evidence": []
+      "status": "passed",
+      "evidence": [
+        "docs/evidence/projects-alpha-j01.md"
+      ]
     },
     {
       "id": "J02",
@@ -333,8 +335,10 @@
       "tasks": [
         "P1-08"
       ],
-      "status": "pending",
-      "evidence": []
+      "status": "passed",
+      "evidence": [
+        "docs/evidence/projects-alpha-j02.md"
+      ]
     },
     {
       "id": "J03",
@@ -351,8 +355,10 @@
       "tasks": [
         "P1-08"
       ],
-      "status": "pending",
-      "evidence": []
+      "status": "passed",
+      "evidence": [
+        "docs/evidence/projects-alpha-j04.md"
+      ]
     },
     {
       "id": "J05",
