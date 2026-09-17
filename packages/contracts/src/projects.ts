@@ -1,7 +1,7 @@
 import type { ActorContext, ResourceOwner } from './governance.js';
 
 export type ProjectStatus = 'active' | 'archived';
-export type WorkItemStatus = 'todo' | 'doing' | 'done';
+export type WorkItemStatus = 'todo' | 'doing' | 'review' | 'done' | 'cancelled';
 export type WorkItemPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent';
 export type ProjectCapabilityKind = 'skill' | 'expert' | 'connector';
 
