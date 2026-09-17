@@ -4,6 +4,7 @@ import type {
   ProjectAssetRef,
   ProjectConfig,
   ProjectConfigRevision,
+  ProjectInputRef,
   ProjectSnapshot,
   ProjectTaskLink,
   ProjectTemplate,
@@ -49,7 +50,8 @@ export function createProjectClient(lifetime?: AbortSignal) {
     updateWorkItem: (projectId: string, item: Pick<ProjectWorkItem, 'id'|'title'|'status'|'assignee'|'priority'|'tags'>, expectedRevision: string) => invoke<ProjectWorkItem>('update-work-item', { projectId, item, expectedRevision }, lifetime),
     addAsset: (projectId: string, asset: Omit<ProjectAssetRef, 'id'|'projectId'|'createdAt'>) => invoke<ProjectAssetRef>('add-asset', { projectId, asset }, lifetime),
     removeAsset: (projectId: string, refId: string) => invoke<void>('remove-asset', { projectId, refId }, lifetime),
-    linkTask: (projectId: string, sessionId: string, title: string, workItemId?: string) => invoke<ProjectTaskLink>('link-task', { projectId, sessionId, title, workItemId }, lifetime),
+    validateInputRefs: (projectId: string, references: readonly ProjectInputRef[]) => invoke<readonly ProjectInputRef[]>('validate-input-refs', { projectId, references }, lifetime),
+    linkTask: (projectId: string, sessionId: string, title: string, workItemId?: string, references: readonly ProjectInputRef[] = []) => invoke<ProjectTaskLink>('link-task', { projectId, sessionId, title, workItemId, references }, lifetime),
     postMessage: (projectId: string, text: string) => invoke<ProjectActivity>('post-message', { projectId, text }, lifetime),
   };
 }
