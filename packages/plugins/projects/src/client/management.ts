@@ -5,6 +5,7 @@ import type {
   ProjectConfigRevision,
   ProjectInputRef,
   ProjectSnapshot,
+  ProjectStatus,
   ProjectTaskLink,
   ProjectTemplate,
   ProjectWorkItem,
@@ -40,10 +41,11 @@ async function invoke<T>(endpoint: string, payload: unknown, signal?: AbortSigna
 export function createProjectClient(lifetime?: AbortSignal) {
   return {
     templates: () => invoke<readonly ProjectTemplate[]>('templates', {}, lifetime),
-    list: (query = '') => invoke<readonly Project[]>('list', { query }, lifetime),
+    list: (query = '', status: ProjectStatus = 'active') => invoke<readonly Project[]>('list', { query, status }, lifetime),
     create: (name: string, description = '', templateId?: string) => invoke<ProjectSnapshot>('create', { name, description, templateId }, lifetime),
     get: (projectId: string) => invoke<ProjectSnapshot>('get', { projectId }, lifetime),
     archive: (projectId: string) => invoke<Project>('archive', { projectId }, lifetime),
+    restore: (projectId: string) => invoke<Project>('restore', { projectId }, lifetime),
     updateConfig: (projectId: string, config: ProjectConfig, expectedRevisionId: string) => invoke<ProjectConfigRevision>('update-config', { projectId, config, expectedRevisionId }, lifetime),
     addWorkItem: (projectId: string, title: string) => invoke<ProjectWorkItem>('add-work-item', { projectId, title }, lifetime),
     updateWorkItem: (projectId: string, item: Pick<ProjectWorkItem, 'id'|'title'|'status'|'assignee'|'priority'|'tags'>, expectedRevision: string) => invoke<ProjectWorkItem>('update-work-item', { projectId, item, expectedRevision }, lifetime),

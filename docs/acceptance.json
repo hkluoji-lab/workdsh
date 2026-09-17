@@ -406,7 +406,9 @@
         "P1-08"
       ],
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "docs/evidence/projects-alpha-archive-lifecycle.md"
+      ]
     },
     {
       "id": "UI01",

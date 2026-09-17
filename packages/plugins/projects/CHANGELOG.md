@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add confirmed project archiving, archived-project filtering, and restoration while preserving project history.
+
 ## 0.1.0-alpha.1
 
 - Add project center, project templates and persistent project workspaces.

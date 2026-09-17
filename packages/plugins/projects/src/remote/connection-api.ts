@@ -10,10 +10,11 @@ const record=(v:unknown):Record<string,unknown>|undefined=>v!==null&&typeof v===
 const actor=(ctx:Context):ActorContext=>{const p=ctx.workdshIdentity.profile();return{principalId:p.principalId,organizationId:p.organization.id,requestId:`projects-ui-${randomUUID()}`,resolvedBy:p.resolvedBy};};
 export function registerProjectConnection(ctx:Context){const connection=(ctx as Context&{connection:HostConnectionHandle}).connection;const unregister=connection.fetch.register({path:projectManagementPath,methods:['POST'],requestBody:'buffered',fetch:async request=>{try{const body=record(await request.json()),endpoint=body?.endpoint,p=record(body?.payload)??{},a=actor(ctx),m=ctx.workdshProjects;
 if(endpoint==='templates')return Response.json(ok(await m.templates()));
-if(endpoint==='list')return Response.json(ok(await m.list(a,typeof p.query==='string'?p.query:'',request.signal)));
+if(endpoint==='list')return Response.json(ok(p.status==='archived'?await m.listArchived(a,typeof p.query==='string'?p.query:'',request.signal):await m.list(a,typeof p.query==='string'?p.query:'',request.signal)));
 if(endpoint==='create'&&typeof p.name==='string')return Response.json(ok(await m.create(a,{name:p.name,...(typeof p.description==='string'?{description:p.description}:{}),...(typeof p.templateId==='string'?{templateId:p.templateId}:{})},request.signal)));
 if(endpoint==='get'&&typeof p.projectId==='string')return Response.json(ok(await m.get(a,p.projectId,request.signal)));
 if(endpoint==='archive'&&typeof p.projectId==='string')return Response.json(ok(await m.archive(a,p.projectId,request.signal)));
+if(endpoint==='restore'&&typeof p.projectId==='string')return Response.json(ok(await m.restore(a,p.projectId,request.signal)));
 if(endpoint==='update-config'&&typeof p.projectId==='string'&&record(p.config)&&typeof p.expectedRevisionId==='string')return Response.json(ok(await m.updateConfig(a,p.projectId,p.config as unknown as ProjectConfig,p.expectedRevisionId,request.signal)));
 if(endpoint==='add-work-item'&&typeof p.projectId==='string'&&typeof p.title==='string')return Response.json(ok(await m.addWorkItem(a,p.projectId,p.title,request.signal)));
 if(endpoint==='update-work-item'&&typeof p.projectId==='string'&&record(p.item)&&typeof p.expectedRevision==='string')return Response.json(ok(await m.updateWorkItem(a,p.projectId,p.item as unknown as Pick<ProjectWorkItem,'id'|'title'|'status'|'assignee'|'priority'|'tags'>,p.expectedRevision,request.signal)));

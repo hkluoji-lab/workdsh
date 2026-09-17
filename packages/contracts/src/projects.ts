@@ -22,9 +22,11 @@ export interface CreateProjectInput { readonly name: string; readonly descriptio
 export interface ProjectService {
   templates(): Promise<readonly ProjectTemplate[]>;
   list(actor: ActorContext, query?: string, signal?: AbortSignal): Promise<readonly Project[]>;
+  listArchived(actor: ActorContext, query?: string, signal?: AbortSignal): Promise<readonly Project[]>;
   create(actor: ActorContext, input: CreateProjectInput, signal?: AbortSignal): Promise<ProjectSnapshot>;
   get(actor: ActorContext, projectId: string, signal?: AbortSignal): Promise<ProjectSnapshot>;
   archive(actor: ActorContext, projectId: string, signal?: AbortSignal): Promise<Project>;
+  restore(actor: ActorContext, projectId: string, signal?: AbortSignal): Promise<Project>;
   updateConfig(actor: ActorContext, projectId: string, config: ProjectConfig, expectedRevisionId: string, signal?: AbortSignal): Promise<ProjectConfigRevision>;
   addWorkItem(actor: ActorContext, projectId: string, title: string, signal?: AbortSignal): Promise<ProjectWorkItem>;
   updateWorkItem(actor: ActorContext, projectId: string, item: Pick<ProjectWorkItem, 'id'|'title'|'status'|'assignee'|'priority'|'tags'>, expectedRevision: string, signal?: AbortSignal): Promise<ProjectWorkItem>;
