@@ -27,9 +27,12 @@
 
 > ⚠️ **坑：typecheck 会先失败于 `workdsh-plugin-office`**（`Cannot find module 'workdsh-contracts/library'`）。根因是 `packages/contracts` 的子路径导出指向 `dist/`，而 `dist/` 是合并前的旧产物、没有 `library.*`。**必须先 `pnpm build`**，再跑 typecheck。
 
-**推送**（快进，无 force）：`f00e273..314cded  main -> main`；`fork/main` 现为 `314cded`，本地 `main` 与 `fork/main` **同步**（`## main...fork/main` 无 ahead/behind）。
+**推送**（两次，均为快进，无 force）：
 
-**PR**：`https://github.com/techflag/workdsh/pull/3` — `hkluoji-lab wants to merge 14 commits into techflag:main from hkluoji-lab:main`，状态 Open，**349 files changed**（其中 294 个是 `docs/deepseek-harness-docs/` 的官方 schema 快照，约 64.2 万行，属仓库规则要求的离线参考，运行时无依赖）。
+1. `314cded` — `f00e273..314cded  main -> main`，即上述合并结果（14 提交）。
+2. `2a201ad` — `314cded..2a201ad  main -> main`，即本文档这一节的记录（用户选定追加）。
+
+**PR**：`https://github.com/techflag/workdsh/pull/3` — `hkluoji-lab wants to merge … commits into techflag:main from hkluoji-lab:main`，状态 Open，**349 files changed**（其中 294 个是 `docs/deepseek-harness-docs/` 的官方 schema 快照，约 64.2 万行，属仓库规则要求的离线参考，运行时无依赖）。**提交数不写死**：每次为本文档补记都会追加一个提交，PR 正文改为按 hash 逐条列出、不声明总数。
 
 > ⚠️ **坑：`git add docs/...` 会被拒**（`The following paths are ignored by one of your .gitignore files: docs`），因为 `.gitignore` 第 15 行有 `/docs/`，而 `docs/` 下 717 个文件**已被跟踪**（`git check-ignore -v` 反而返回 exit 1，看似矛盾）。正确做法是 **`git add -u docs/STATUS.md`**。
 
