@@ -1,3 +1,55 @@
+## 2026-09-18：实施 SSE 空闲心跳保活中继（ADR-0028）
+
+用户指令：「先实施 SSE 心跳保活中继」。
+
+**背景**：上一条 SSE 定位给出「唯一有效修法」——让 `/plugins/events` 这条流不再空闲。本段把它落地到生产。决策记录见 [ADR-0028](adr/0028-sse-idle-keepalive-relay.md)（状态 Accepted，2026-09-18）。
+
+**形态**：在 dsh（`127.0.0.1:3080`）与 Caddy 之间加一个只服务 `/plugins/events` 的保活中继（`127.0.0.1:3081`），空闲 25 秒向下游写一行 SSE 注释 `: keepalive`。**未改镜像、未改上游包、未改 docker-compose、未改隧道配置、未改 git config**；沿用既有「派生副本 + 只读挂载」约定。
+
+服务器侧改动（`/opt/1panel/apps/deepseek-harness/deepseek-harness/data/dsh/tmp/`）：
+
+| 文件 | 变化 | 备份 |
+|---|---|---|
+| `Caddyfile` | 1058 → **1173** 字节，在唯一 catch-all `route {` 之前插入 `route /plugins/events` → `127.0.0.1:3081`（`flush_interval -1`） | `Caddyfile.bak.keepalive.20260918161249` |
+| `docker-entrypoint.sh` | 4073 → **4358** 字节，`gosu caddy env \` 之前以 `gosu node` 起中继，并把 `keepalive_pid` 并入 `wait -n` | `docker-entrypoint.sh.bak.keepalive.20260918161249` |
+| `sse-keepalive.mjs` | 新增（644），中继本体 | — |
+| `add-sse-keepalive.py` | 新增（755），幂等派生 Caddyfile | — |
+| `add-sse-keepalive-entrypoint.py` | 新增（755），幂等派生 entrypoint | — |
+
+两个派生脚本自带断言（锚点唯一、`reverse_proxy 127.0.0.1:3080` 出现次数不变、花括号配平、长度增量等于插入块长度、重跑幂等），改错会直接报错而不是写出坏文件。
+
+**关键实现约束**：插入明文注释前必须**移除 `Accept-Encoding`**，否则上游 gzip 帧会被切断；压缩仍由 Caddy 对客户端按能力处理。
+
+**反向验证链**（全部实测）：
+
+1. **语法**：`bash -n docker-entrypoint.sh` OK；`docker exec dsh node --check /data/dsh/tmp/sse-keepalive.mjs` OK。
+2. **烟测**（`SSE_KEEPALIVE_IDLE_MS=2000`，9 秒探针）：`keepalive_lines=4`、`bytes=30292` = 首帧 30240 + 4×13，**精确吻合**；`content-type: text/event-stream`；`curl_rc=28`（超时，不是被取消）。
+3. **容器态**：`running health=healthy`，日志含 `[sse-keepalive] listening on 127.0.0.1:3081 -> 127.0.0.1:3080, idle=25000ms`。
+4. **公网端到端**（真正的故障路径：服务器出口 → Cloudflare）：
+
+```
+start=2026-09-18T16:15:05+00:00
+curl: (28) Operation timed out after 200000 milliseconds with 30331 bytes received
+curl_rc=28
+end=2026-09-18T16:18:25+00:00
+bytes=30331   keepalive_lines=7
+```
+
+   字节数再次精确吻合（30240 + 7×13 = 30331）。**对比修前基线「经 CF 126.7s（无压缩）/ 125.0s（gzip）被静默清空」——~127 秒清空已消失，改为跑满 200 秒上限。**
+5. **非 SSE 路径未受影响**：`/` = 200（t=1.96s）、`/dsh-deployment.js` = 200（t=1.43s）；`/plugins/events` 直连容器仍是 200 且 30240 字节后静默（行为不变，说明只在中继这一跳注入）。
+6. **浏览器侧端到端**（线上真实客户端，16:21:48 重新加载 `https://dsh.10ge.cn/`）：
+   - 页面存活 ≈275 秒后控制台仍只有 5 条消息，**无 `/plugins/events` 报错、无 `ERR_HTTP2_PROTOCOL_ERROR`**（仅两条与 SSE 无关的 `ERR_ABORTED`：`/api/workdsh-connectors`、`/api/costMeter/getState`，首屏即出现，修前同样存在）。
+   - 容器内 `/proc/net/tcp` 显示 `127.0.0.1:3081` 上 16:25:31 → 16:29:16 **同一条 ESTABLISHED 连接**（Caddy 侧源端口 `38766` 三次采样未变），即单条 SSE 流连续持活 ≥7.5 分钟，**跨过 127 秒边界两次仍未被回收**。
+   - `journalctl -u cloudflared --since 16:22:00 | grep -c 'canceled by remote with error code 0'` = **0**。
+
+> ⚠️ **必须如实记录的一段**：中继 16:13:22 生效后，16:19:17 与 16:21:31（间隔 134 秒）**仍各有一次 `/plugins/events` 被取消**。这两次发生在重载前的旧页面连接上，**原因未定论**——不能证明是空闲回收复现，也不能排除；判定留给 ≥24h 统计（下节）。已确认的只有：16:22:00 之后 7 分钟窗口内为 0 次取消，且新连接为单条不间断长连接。
+
+**回滚**：用 `Caddyfile.bak.keepalive.20260918161249` / `docker-entrypoint.sh.bak.keepalive.20260918161249` 覆盖两个派生文件，再 `docker compose up -d`。
+
+**未验证**：① 出网路径仍只覆盖本机办公出口，未在移动网络/其他出口复测；② 未在多客户端并发下复测；③ 未测试中继自身崩溃或上游 502 时的降级行为（预期仅影响 `/plugins/events`，客户端继续重连，不劣于现状）；④ 未确定出口设备型号与策略（仍靠排除法定位）；⑤ 16:19:17 / 16:21:31 两次取消未定论。
+
+**未执行**：未改镜像与上游包；未改隧道 ingress；未撤除只读统计装置（`/usr/local/bin/dsh-sse-watch.sh`，同时作为保活效果的长期证据）；未向上游 dsh 提 heartbeat 建议——若上游自行发心跳，应按 ADR-0028 撤除本中继。
+
 ## 2026-09-18：走 fork + PR 绕过推送阻塞，PR #3 已开出
 
 用户指令：「已登录 `https://github.com/techflag/workdsh/fork`，接下来你操作」。
