@@ -1,3 +1,46 @@
+## 2026-09-18：走 fork + PR 绕过推送阻塞，PR #3 已开出
+
+用户指令：「已登录 `https://github.com/techflag/workdsh/fork`，接下来你操作」。
+
+**背景**：本机凭据为 GitHub `hkluoji-lab`（账号 ID `325064312`），对 `techflag/workdsh` **无写权限**（`Permission to techflag/workdsh.git denied to hkluoji-lab`，403）；Gitee 钥匙串**无条目**，`git push --dry-run origin` 直接挂在凭据输入上。上游仓库公开、允许 fork、未归档 → 采用 **fork + PR** 作为唯一可用的回传通道。
+
+**三个远端位置**（`git remote -v` 实测，三者互不相同）：
+
+| 远端 | 地址 | 写权限 |
+|---|---|---|
+| `origin` | `https://gitee.com/techflag/workdsh` | ❌ 403（无凭据） |
+| `github` | `https://github.com/techflag/workdsh` | ❌ 403 |
+| `fork` | `https://github.com/hkluoji-lab/workdsh` | ✅ 可推 |
+
+**关键发现**：fork **不是新建的，且已与上游完全同步**（同为 `f00e273`）；本地是从 `c250de1` 分叉的独立线，落后 38 提交、领先 13。上游 `f00e273`（PR #2 `codex/dsh-0.1.6-upgrade`）带来了完整 `packages/plugins/library`（33 文件），本地原为 12 个 `.gitkeep` 占位。
+
+**合并语义复核**（不能只看 `git merge-tree` 退出码——它报无冲突，但确有 4 个文件双方都改过）：
+
+| 文件 | 结论 |
+|---|---|
+| `package.json` | 两侧 scripts 零丢失（上游新增 `probe:library` / `release:library:pack` / `test:library` 全保留，本地 `catalog:build` 保留）；相对上游**有意删除** 3 条 `pnpm.overrides`（`dsh-code-runtime`、`dsh-code-runtime-worker-thread`、`dsh-workflow-worker-thread`），由 `019d5b2` 说明并经当前依赖树核对确认无包引用 |
+| `docs/modules.json` | 三方（base `c250de1` / 本地 `0074a8a` / 上游 `f00e273` / 合并 HEAD）字段级比对：**无字段被双方同时修改**，上游改动零丢失；模块总数 本地 30 / 上游 29 / 合并 30 |
+| `packages/plugins/workbench/src/harness/client.ts` | 两侧改动**互补共存**（上游加 `workdsh-library` 占位守卫；本地加 `boundary` 透传） |
+| `pnpm-lock.yaml` | 侧效应，随 `package.json` 重算 |
+
+**验证链**（合并树上真实执行，全部通过）：`pnpm install --frozen-lockfile`（Lockfile up to date）→ `check:plan` **PASS**（30 模块 / 50 文档）→ `pnpm build` 成功 → `pnpm typecheck` **通过** → `test:library` **5/5** → `test:planning` **2/2**。
+
+> ⚠️ **坑：typecheck 会先失败于 `workdsh-plugin-office`**（`Cannot find module 'workdsh-contracts/library'`）。根因是 `packages/contracts` 的子路径导出指向 `dist/`，而 `dist/` 是合并前的旧产物、没有 `library.*`。**必须先 `pnpm build`**，再跑 typecheck。
+
+**推送**（快进，无 force）：`f00e273..314cded  main -> main`；`fork/main` 现为 `314cded`，本地 `main` 与 `fork/main` **同步**（`## main...fork/main` 无 ahead/behind）。
+
+**PR**：`https://github.com/techflag/workdsh/pull/3` — `hkluoji-lab wants to merge 14 commits into techflag:main from hkluoji-lab:main`，状态 Open，**349 files changed**（其中 294 个是 `docs/deepseek-harness-docs/` 的官方 schema 快照，约 64.2 万行，属仓库规则要求的离线参考，运行时无依赖）。
+
+> ⚠️ **坑：`git add docs/...` 会被拒**（`The following paths are ignored by one of your .gitignore files: docs`），因为 `.gitignore` 第 15 行有 `/docs/`，而 `docs/` 下 717 个文件**已被跟踪**（`git check-ignore -v` 反而返回 exit 1，看似矛盾）。正确做法是 **`git add -u docs/STATUS.md`**。
+
+> ⚠️ **坑：`git pull` 在本仓库必须带参数**。既未设 `pull.rebase` 也未设 `pull.ff`，直接 pull 报 `fatal: Need to specify how to reconcile divergent branches.`；用 `--no-rebase --no-edit` 解决。**本轮未改动任何 git 配置。**
+
+**本条覆盖上文**「合并 origin/main 的 4 个远端提交」一节中的「**未执行**：未推送」——推送目标由 `origin`/`github` 改为 `fork` 后已完成。
+
+**未执行**：未在 `github` 远端做同源核对；未跑 `probe:library` / `release:library:pack`；未处理 `github` 远端落后的 24+ 提交；未设置提交者身份（本机无 `user.name`/`user.email`，git 按「用户名@主机名」自动推导，主机名从 `MacBook-Pro.local` 变为 `Mac.lan`，故 `0074a8a`/`5b806cc` 作者邮箱为 `apple@Mac.lan`，与上游 `techflag <562635045@qq.com>` 不一致）。
+
+**未验证**：PR 是否会被上游接受、是否会被要求拆分（349 文件体量）；fork 后续与上游同步的行为未复测。
+
 ## 2026-09-18：合并 origin/main 的 4 个远端提交（`git pull` 失败的配置原因）
 
 用户指令：「好的，执行吧」（承接 IDE 中 `> git pull --tags origin main` 的报错）。
