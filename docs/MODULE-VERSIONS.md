@@ -30,8 +30,9 @@
 | --- | --- | --- | --- |
 | 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.8` | implemented |
 | 共享展示组件 | 0.1 | `workdsh-ui@0.1.0-alpha.6` | implemented |
-| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.46` | in_progress |
-| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.10` | implemented |
+| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.47` | in_progress |
+| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.11` | implemented |
+| 资料库 | 0.1 | `workdsh-plugin-library@0.1.0-alpha.1` | implemented |
 | 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.4` | in_progress |
 | 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.29` | implemented |
 | 连接器管理 | 0.1 | `workdsh-plugin-connectors@0.1.0-alpha.1` | in_progress |

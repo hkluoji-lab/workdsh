@@ -1,3 +1,9 @@
+# 0.1.0-alpha.11
+
+- 助理、项目、定时任务、更多四个未实现入口改为「待开放」呈现：侧栏注册标签追加「（待开放）」，配对主面板给出职责、未实现原因与当前可用的替代路径。
+- 资料库入口的 `main` 席位交还 `workdsh-plugin-library`：工作台只为自己 `pending` 的入口注册主面板，资料库页面归资料库插件，避免同一 key 重复注册。
+- 官方 `sidebar.panellist` 的公开注册面只有 `id`/`order`/`label`，行按钮与 `selectPanel` 由官方 Sidebar owner 持有，没有 disabled 语义；因此待开放无法做成字面禁用项，只能以标签后缀与说明面板表达，该限制记入代码注释与本 CHANGELOG。
+
 # 0.1.0-alpha.10
 
 - 导出标准 name/inject/apply，由默认展示包通过 ctx.plugin 注册独立子插件生命周期。

@@ -3,14 +3,32 @@ import type { InjectFace, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { Icon, type IconName } from 'workdsh-ui';
 import { workbenchPanelCss } from '../styles.js';
 
+/**
+ * 未实现入口的待开放标记。
+ *
+ * 官方 `sidebar.panellist` 的公开注册面只有 `id` / `order` / `label`（见
+ * @deepseek-ai/dsh-client-ui-sidebar 的 SidebarPanelMetadata），行按钮与它的
+ * `ctx.layout.selectPanel(id)` 由官方 Sidebar owner 持有，公开契约没有 disabled
+ * 语义。因此待开放状态只能通过注册标签和说明面板表达：侧栏标签追加本后缀，
+ * 面板页面给出原因与当前可用的替代路径。
+ */
+export const pendingLabelSuffix = '（待开放）';
+
 export type BusinessPanelDefinition = {
   readonly id: string;
   readonly label: string;
   readonly icon: IconName;
   readonly order: number;
-  readonly description?: string;
-  /** 未实现说明与当前可用的下一步。规划状态以 development-order.json 的步骤 ID 为准。 */
-  readonly boundary: string;
+  /**
+   * 待开放项的功能说明、未实现原因与当前可用的下一步；非 null 时注册说明用的
+   * `main` 面板，并让侧栏标签追加待开放后缀。null 表示真实页面由其他插件提供
+   * （资料库归 workdsh-plugin-library），workbench 只保留侧栏入口。
+   * 规划状态以 docs/development-order.json 的步骤 ID 为准。
+   */
+  readonly pending: {
+    readonly description: string;
+    readonly boundary: string;
+  } | null;
 };
 
 export const businessPanels = [
@@ -19,42 +37,54 @@ export const businessPanels = [
     label: '助理',
     icon: 'assistant',
     order: 10,
-    description: '创建和管理面向具体工作的 AI 助理。',
-    boundary: '助理尚未实现（开发顺序 D16 / P1-12），本页没有可读取的助理对象，不会返回任何数据。下一步：先到「专家 · 技能 · 连接器」创建专家，再用原生新任务开始对话。',
+    pending: {
+      description: '创建和管理面向具体工作的 AI 助理。',
+      boundary: '本入口待开放：助理尚未实现（开发顺序 D16 / P1-12），页面没有可读取的助理对象，不会返回任何数据。当前可用的路径：先到「专家 · 技能 · 连接器」创建专家，再用原生新任务开始对话。',
+    },
   },
   {
     id: 'workdsh-projects',
     label: '项目',
     icon: 'project',
     order: 20,
-    description: '组织团队任务、资料、成员和共享能力。',
-    boundary: '项目尚未实现（开发顺序 D07 / P1-11，且为首期发布前置），本页没有可读取的项目、成员与资产数据。下一步：先在原生工作区中用目录和会话组织当前工作。',
+    pending: {
+      description: '组织团队任务、资料、成员和共享能力。',
+      boundary: '本入口待开放：项目尚未实现（开发顺序 D07 / P1-11，且是首期发布前置），页面没有可读取的项目、成员与资产数据。当前可用的路径：先在原生工作区中用目录和会话组织当前工作。',
+    },
   },
   {
     id: 'workdsh-automation',
     label: '定时任务',
     icon: 'automation',
     order: 40,
-    description: '查看和管理周期性工作。',
-    boundary: '定时任务尚未实现（开发顺序 D12 / P2-03），本页没有可读取的周期任务或其运行记录。下一步：周期性工作仍需每次手动在原生会话里发起。',
+    pending: {
+      description: '查看和管理周期性工作。',
+      boundary: '本入口待开放：定时任务尚未实现（开发顺序 D12 / P2-03），页面没有可读取的周期任务或其运行记录。当前可用的路径：周期性工作仍需每次在原生会话里手动发起。',
+    },
   },
   {
     id: 'workdsh-library',
     label: '资料库',
     icon: 'library',
     order: 50,
-    description: '集中管理工作资料与任务成果。',
-    boundary: '资料库尚未实现（开发顺序 D06 / P1-06），本页没有可读取的资料数据。下一步：当前会话的文件与成果可在右侧栏查看。',
+    pending: null,
   },
   {
     id: 'workdsh-more',
     label: '更多',
     icon: 'more',
     order: 60,
-    description: '进入 WorkDSH 的更多业务能力。',
-    boundary: '「更多」汇总的后续业务能力均未实现：行业应用 D08、企业后台 D09、团队部署 D14、在线表格与业务页面 D15。下一步：现在可用的是原生工作区与会话、「专家 · 技能 · 连接器」以及 Office 文档能力。',
+    pending: {
+      description: '进入 WorkDSH 的更多业务能力。',
+      boundary: '本入口待开放：「更多」汇总的后续业务能力都未实现——行业应用 D08、企业后台 D09、团队部署 D14、在线表格与业务页面 D15。当前可用的路径：原生工作区与会话、「专家 · 技能 · 连接器」、资料库，以及 Office 文档能力。',
+    },
   },
 ] as const satisfies readonly BusinessPanelDefinition[];
+
+/** 侧栏注册标签：待开放项在此追加后缀，其余保持设计稿标签。 */
+export function sidebarLabel(panel: BusinessPanelDefinition): string {
+  return panel.pending ? `${panel.label}${pendingLabelSuffix}` : panel.label;
+}
 
 export type BusinessPanelProps = PropsRuntime<'main'> & InjectFace<{
   readonly label: string;
@@ -68,6 +98,7 @@ export function BusinessPanel({ label, description, boundary }: BusinessPanelPro
       <style>{workbenchPanelCss}</style>
       <p className="wd-workbench-eyebrow">WORKDSH</p>
       <h1>{label}</h1>
+      <p className="wd-workbench-status">此入口待开放</p>
       <p className="wd-workbench-description">{description}</p>
       <p className="wd-workbench-boundary">{boundary}</p>
     </section>

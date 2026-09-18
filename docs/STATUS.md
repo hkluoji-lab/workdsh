@@ -1,3 +1,42 @@
+## 2026-09-19：左侧导航未实现项判断与修复（资料库上线 + 其余改待开放）
+
+用户指令：「登录dsh.10ge.cn,对比workbuddy桌面端功能，针对左侧菜单栏没实现的功能进行判断与分析，实现修复」。用户随后选定范围为「**资料库上线 + 其余改待开放**」。
+
+**判断（实测，先只读）**：线上 `https://dsh.10ge.cn` 左侧主导航共 6 项——助理 / 项目 / 专家 · 技能 · 连接器 / 定时任务 / 资料库 / 更多。对比 WorkBuddy 桌面端：只有「专家 · 技能 · 连接器」有真实页面；**资料库在代码里已实现（`workdsh-plugin-library@0.1.0-alpha.1`，D06 / P1-06）但从未装到线上 profile**；助理（D16 / P1-12）、项目（D07 / P1-11）、定时任务（D12 / P2-03）、更多（D08/D09/D14/D15）确未实现。
+
+**官方能力边界（决定了「待开放」只能怎么做）**：`sidebar.panellist` 是 `kind: 'list'`，公开注册面只有 `{id, order?, label?, priority?}`，owner props 只有 `SidebarPanelIconOwnerProps { size, active }`，**没有 disabled 语义**；行按钮由官方 Sidebar owner 渲染并调用 `ctx.layout.selectPanel(id)`，而 `LayoutController.selectPanel` 在 `!hasMainPanel(id)` 时**抛错**。因此 [UI-DESIGN](UI-DESIGN.md) §18 的字面「disabled 入口」在当前公开契约下无法实现，落地形式改为「侧栏标签追加（待开放）+ 配对说明面板」，并在代码注释与 CHANGELOG 中如实登记该限制（不假装已禁用）。
+
+**代码改动（本地，HEAD）**：
+
+| 文件 | 变化 |
+|---|---|
+| [BusinessPanel.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/workbench/src/client/components/BusinessPanel.tsx) | `businessPanels` 增加结构化 `pending {description, boundary}`；新增 `pendingLabelSuffix = '（待开放）'` 与 `sidebarLabel()`；四项未实现入口写清职责、未实现原因（含 D 编号）与当前可用替代路径 |
+| [client.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/workbench/src/harness/client.ts) | 工作台**只为 `pending` 的入口注册 `main` 面板**；资料库的 `main` key 交还 `workdsh-plugin-library`，消除同 key 重复注册（等价于线上 alpha.46 缺失的那道守卫，改为数据驱动） |
+| [styles.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/workbench/src/client/styles.ts) | 新增「此入口待开放」状态徽标样式 |
+| [probe-browser.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/scripts/probe-browser.mjs) | 侧栏断言更新为带后缀的六项标签 |
+| `packages/bundle` | `0.1.0-alpha.46` → `0.1.0-alpha.47`；`packages/plugins/workbench` `0.1.0-alpha.10` → `0.1.0-alpha.11`（工作台源码有实质变化，独立升版；该版本号未嵌入产物，故已部署的 alpha.47 制品就是据此源码编译） |
+
+**部署（线上 `web` profile，全部实测）**：
+
+- 制品：`workdsh-bundle-0.1.0-alpha.47.tgz`（19462 字节）、`workdsh-plugin-library-0.1.0-alpha.1.tgz`（60972 字节）→ `data/workspace/wd-upload/`（容器 `/workspace/wd-upload/`）。
+- profile `package.json`：deps 21 → **23**、`dsh.profile.bundles` 21 → **22**（追加 `workdsh-plugin-library`）。只 `pnpm add` 不写 bundles 不生效。
+- 容器内安装：**容器访问不到 `registry.npmjs.org`**（`SSL_ERROR_SYSCALL`/curl code 000），`registry.npmmirror.com` 可达（200）→ 以 `npx --yes --registry=https://registry.npmmirror.com pnpm@11.7.0 install --registry=… --ignore-scripts`，并把 `HOME` 指向 `/data/dsh/home` 以匹配 `storeDir`。安装完成后再跑一次返回 `Already up to date`（782ms）。
+- 锁文件核对：`pnpm-lock.yaml` 637751 → 641185 字节，**`npmmirror` 出现次数 = 0**（未把镜像源写进锁文件），新增 `workdsh-plugin-library` 解析项，bundle 指向 alpha.47。
+- **过程中的坑（新，已修）**：安装会把 `node_modules/workdsh-bundle/cordis.patch.yml` 恢复成 tarball 里的原件，**静默抹掉 2026-09-17 在该文件里手删 `computer-use` 两条 insert 的改动**；重启会因此让整棵插件树加载失败。已把该禁用改到 **profile 层** `profiles/web/cordis.patch.yml`（该文件注释本身就是为这类热禁用行设计的，跨重装保留）：`- id: computer-use` / `- id: computer-use-cua-driver-native` + `disabled: true`。禁用依据实测：`@trycua/cua-driver-linux-x64-gnu@0.28.0` 已安装且 `libcua_driver_sdk.so` 引用 `libX11.so.6`，而容器内该共享库不存在。
+- 重启与健康：`docker restart dsh` → `state=running health=healthy restarts=0`；日志中 `plugin tree failed` / `cannot open shared object` / `does not provide an export` / `duplicate loader entry` 计数 **0**；服务端 HTML 的 client 入口已含 `workdsh-plugin-library`（连同 bundle、activity、connectors、experts、office、skills）。
+
+**浏览器验证（线上真实客户端，1440×1000，只读）**：
+
+- 左侧导航实测逐字一致：助理（待开放）/ 项目（待开放）/ 专家 · 技能 · 连接器 / 定时任务（待开放）/ 资料库 / 更多（待开放）。
+- 「资料库」= **真实页面**：URL `?workdsh-view=library`，三栏（主导航 / 资料库侧栏「搜索·最近·本地产物」+「我的资料 ＋」/ 右侧预览区「从左侧选择资料，在这里查看原始内容。」+「新建或导入资料」），全文「此入口待开放」出现 0 次。
+- 四个待开放入口点击均无报错、无白屏，均渲染「此入口待开放」徽标 + 职责 + 未实现原因 + 替代路径。
+- 控制台：`pageerror` 0 条；用户点名的两类问题均未复现——`/plugins/events` 实测 200、无 `layout.selectPanel: main panel … is not registered`。唯一报错为 `https://dsh.10ge.cn/modlens/config` 403（与本轮改动无关，未定位）。
+- 截图：`/Users/apple/.trae-cn/trae-browser-screenshots/dsh-verify/`（`00-initial`/`01-home`/`02-library`/`03-assistant`/`04-project`/`05-cron`/`06-more`）。
+
+**备份与回滚**：`profiles/web/package.json.bak.library.20260919`、`pnpm-lock.yaml.bak.library.20260919`、`profiles/web/cordis.patch.yml.bak.computeruse.20260919`（均为改动前原文）；回滚 = 还原这三个文件 + 重装 + `docker restart dsh`。
+
+**未执行 / 未验证（如实登记）**：未做登录后的会话创建、模型调用、专家/技能/资料库业务端到端验收（本轮只验证导航、页面归属与控制台）；`/modlens/config` 403 只记录未定位；本地 3031 预览未按本轮改动重建与复验；线上 profile 的 `pnpm install` 曾出现「安装已完成但进程不退出」的挂起（CPU 空闲、无 socket），以 `--reporter=append-only` 重跑确认 `Already up to date`，**该挂起根因未定位**；`lingshu-bridge` 的 `spawn python ENOENT` 为既有现象，未修；D06/D07/D12/D16 的步骤状态未因本轮部署签收（部署不等于模块验收）。
+
 ## 2026-09-18：实施 SSE 空闲心跳保活中继（ADR-0028）
 
 用户指令：「先实施 SSE 心跳保活中继」。

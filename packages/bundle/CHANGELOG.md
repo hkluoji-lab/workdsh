@@ -1,3 +1,9 @@
+# 0.1.0-alpha.47 — 2026-09-19
+
+- 资料库面板 `workdsh-library` 的 `main` 席位交还 `workdsh-plugin-library`；组合包不再为它注册占位面板，避免同 key 重复注册。
+- 助理、项目、定时任务、更多仍是未实现入口，侧栏标签追加「待开放」并在面板内说明原因与当前可用路径。
+- 官方 `sidebar.panellist` 公开注册面没有 disabled 语义，待开放状态只能通过注册标签与说明面板表达。
+
 # 0.1.0-alpha.46 — 2026-09-16
 
 - 按用户要求把侧栏品牌名称由 `WorkDSH` 改为 `DSH JOB AI`，继续由公开 `sidebar.brand.name` 席位提供，未改动 mark 与 owner。

@@ -36,9 +36,9 @@
       "src"
     ],
     "release": {
-      "version": "0.1.0-alpha.46",
+      "version": "0.1.0-alpha.47",
       "channel": "github-prerelease",
-      "date": "2026-09-16",
+      "date": "2026-09-19",
       "evidence": "docs/releases/v0.1.0-alpha.2.md"
     },
     "acceptanceNote": "精确8包Profile生命周期通过，不等于D10首期全部业务模块组合验收。"
