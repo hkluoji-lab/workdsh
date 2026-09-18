@@ -1,3 +1,230 @@
+## 2026-09-18：合并 origin/main 的 4 个远端提交（`git pull` 失败的配置原因）
+
+用户指令：「好的，执行吧」（承接 IDE 中 `> git pull --tags origin main` 的报错）。
+
+**根因**：不是网络或凭据问题。`git fetch --tags origin` 本身成功（匿名可读，与 2026-09-17 记录的结论一致）；失败发生在合并阶段——本仓库既未设 `pull.rebase` 也未设 `pull.ff`，`git pull` 面对分叉分支直接拒绝：
+
+```
+fatal: Need to specify how to reconcile divergent branches.
+```
+
+**处理**：沿仓库既有约定（历史中已有 `27fa783 Merge remote-tracking branch 'origin/main' into main`）走 merge，用命令行参数 `--no-rebase --no-edit` 显式指定，**未改任何 git 配置**（遵守「不更新 git config」约束）。
+
+**结果**（真实执行）：`ort` 策略自动合并，无冲突。远端 4 个提交（`4e9b342` 双语 changelog → `c250de1` library 指南与截图）与本地 11 个提交**文件集不重叠**（远端只动 `README*` 与 `website/`，本地动 `docs/`、`src/`），合并产出 12 文件、+410/−36，生成 merge 提交 `5b806cc`。合并后 `main` 相对 `origin/main` **ahead 12 / behind 0**；工作区中未提交的 `docs/STATUS.md` 修改（SSE 两节）**未受影响**。
+
+**未执行**：未推送。推送阻塞状态与 2026-09-17 记录一致（Gitee 账号无写权限 403；GitHub 远端 `hkluoji-lab` 无 `techflag/workdsh` 权限），本轮未重试，也未改动任何凭据或 git 配置。
+
+**未验证**：未在 `github` 远端做同源核对；本次合并未跑 `check:plan` 或任何构建（纯文档/静态站点文件，且合并未触碰代码）。
+
+## 2026-09-18：定位控制台 SSE 告警（`/plugins/events` 每 ~127 秒被切断，非部署缺陷）
+
+用户指令：「先处理控制台 SSE 告警」。
+
+**现象**：浏览器控制台 `net::ERR_HTTP2_PROTOCOL_ERROR` / `net::ERR_ABORTED https://dsh.10ge.cn/plugins/events`、`[connection] connection lost, retry #N`、`[connection] generation is still not ready after 3000ms`、`/modlens/config` 403。
+
+**结论**：`/plugins/events` 是「握手后长期无数据」的 SSE 流；**办公出口路径在 ~120—127 秒把它静默清除**，Cloudflare 边缘随即以 `canceled by remote with error code 0` 取消隧道侧对应流，浏览器 EventSource 断开并自动重连。**不是 WorkDSH / dsh / Caddy 的缺陷，也不是取消鉴权引入的**。
+
+**证据链（全部实测，脚本与日志留在服务器 `/tmp/ev5..ev10.log`）**：
+
+1. 端点本身健康：公网与源站直连均为 `200` + `content-type: text/event-stream`，首帧 `: connected` + 插件图帧（`rev=debc65989d62`）。
+2. **2×2 对照矩阵**（同一端点，变量 = 是否经 Cloudflare × 是否压缩）：
+   - 直连 Caddy（`--resolve dsh.10ge.cn:3080:127.0.0.1`），**不带**压缩：存活满 **200s**（ev6）
+   - 直连 Caddy，**带** gzip：存活满 **220s**（ev8）
+   - 经 Cloudflare，**不带**压缩：`EXIT=0 @126.7s`（ev7）
+   - 经 Cloudflare，**带** gzip：`EXIT=0 @125.0s`（ev5）
+   → 源站（Caddy + dsh）无辜；**与 Caddy `encode zstd gzip` 无关**（此前怀疑 gzip 缓冲，已否证）。
+3. **换客户端不看人**：在服务器上 curl 自己的公网域名（server → Cloudflare → 隧道 → 本机 Caddy），同样 `EXIT=0 @127.2s`（ev9）→ 与「是某一台客户端」无关。
+4. **加 TCP 保活**（`--keepalive-time 15`）再测：仍 `EXIT=0 @127.2s`（ev10）→ 判定点在**应用层**，不是 TCP 空闲老化。
+5. **换出口路径对照**：TraeCN 内建浏览器（公网出口 `216.235.250.18` / GB AS48266 Catixs，经境外代理）持同一 SSE **>200 秒无切断**；该浏览器 8 次 `connection lost, retry #1..#8` **全部集中在页面加载后 20—25 秒**，且伴随主资源 `net::ERR_NETWORK_CHANGED` 与文档 `ERR_ABORTED` → 属**页面加载期网络切换**的另一现象，不是周期性断流。
+6. **服务端独立证据**：近 3 小时内 `/plugins/events` 出现 **70 次** `stream NNNN canceled by remote with error code 0`，间隔稳定在 **128—129 秒**，从 12:17 持续到 14:5x；同期**隧道连接级**故障只有 15 次且集中在 13:55 / 14:05（看门狗重启 cloudflared）与 14:45 一次 `sendmsg: network is unreachable` 抖动 → **不是隧道掉线导致**。Caddy 侧对应记录 `aborting with incomplete response … error="reading: context canceled"` 是「下游已消失」的表现，不是原因。
+7. 命中客户端分布（按 UA / 出口 IP 归类近 3 小时 Caddy 记录）：`TraeCN-Electron` 17 次（`240e:3bb:2ea0:12a1:…` 电信 IPv6）、`curl` 8 次（`14.154.124.166`）→ 两类都是**经办公出口**的客户端。
+8. 客户端行为（`@deepseek-ai/dsh-client-connection@0.1.6-alpha.1/lib/client.js`）：`loop()` 用指数退避（`backoffBaseMs` 500 ×2，上限 `backoffMaxMs` 10s），**就绪握手成功后 `this.attempt = 0`**，故稳定断流只会打印 `retry #1`；`generation is still not ready after 3000ms` 是就绪握手 3 秒未到达的告警（15 秒硬超时，`generationReadyTimeoutMs`）。
+
+**影响**：每 ~2 分钟事件通道中断 ≤1.5 秒，重连后服务端重发全量插件图帧（rev 帧），状态自行收敛；会话、生成、写入链路均不受影响（写入链路已另行实测通过）。`/modlens/config` 的 403 是**设计行为**（`{"error":"request refused: this route answers same-origin loopback only"}`，loopback-only），不需修。
+
+**未处理 / 待决策**：唯一有效修法是「让这条流不再空闲」——在 SSE 端每 20—30 秒发注释心跳（`: keepalive`）。可行位置只有两处：上游 dsh 的 `/plugins/events`，或我们侧在 Caddy 与 dsh 之间加一个保活中继；两者都超出「改配置」范围（后者是新增生产组件，按 AGENTS 需先补 ADR）。**本轮未改动任何生产配置**。
+
+**未验证（不得当作通过）**：① ≥24 小时持续统计**进行中**（2026-09-18 15:02 UTC 起装监控，未满 24h）；② 未实现/未验证心跳是否真能消除断流（需先落地心跳）；③ 未确定出口设备的型号与策略，仅由「直连—经 CF—换出口」三组对照**排除法**定位到出口路径；④ 未在多客户端并发下复测。
+
+**同步更新**：运维 skill `dsh-10ge-ops` 新增「SSE 长连接告警（2026-09-18 定位）」一节，写明判读口径（勿误判为隧道掉线或容器故障）、复现命令与已知无解项。
+
+### 2026-09-18：装只读统计装置，跑 ≥24h 持续统计（用户选定，不修生产）
+
+用户决策：**先只做 ≥24 小时持续统计**，确认这是稳态周期性现象而非特定时段恶化；**不动生产配置、不做心跳中继**。
+
+| 项 | 值 |
+|---|---|
+| 统计脚本 | `/usr/local/bin/dsh-sse-watch.sh`（权限 755，纯只读） |
+| 数据目录 | `/var/lib/dsh-sse-watch/`（`events.tsv` 去重明细 + `cron.log` 汇总） |
+| cron | `7 * * * * /usr/local/bin/dsh-sse-watch.sh`（每小时第 7 分钟；已与其他条目并存） |
+| 数据源 | `journalctl -u cloudflared`，回看窗口 3 小时（容忍漏跑/重启） |
+| 去重键 | `iso_ts + stream + dest + ip`，只取 `type=http` 行（否则每事件 2 行会翻倍） |
+
+**已实测**：cron 真实触发（syslog `CRON[4020401] (root) CMD (...)` 于 15:03:01、15:04:01 两次），日志正常落盘。
+
+**首跑基线（2026-09-18T15:02 UTC）**：近 2h45m 共 **77 次**，按小时 21 / 24 / 31 / 1；相邻间隔最常见 **129s×30、130s×14、128s×6、132s×4、131s×2**；CF 边缘节点分布 `2606:4700:a0::2` 45 次、`::6` 23 次、`::10` 9 次（该 IP 是 CF 边缘，**不是终端用户**）。
+
+**复看**：`sudo tail -40 /var/lib/dsh-sse-watch/cron.log`；明细 `sudo cat /var/lib/dsh-sse-watch/events.tsv`。
+**24h 后撤除**：`sudo crontab -l | grep -v "dsh-sse-watch" | grep -v "SSE 断流持续统计" | sudo crontab -`
+
+## 2026-09-18：取消 dsh.10ge.cn 的登录鉴权（用户要求）
+
+用户指令：「现在dsh.10gecn,登录提示要输入账号，密码，此登录功能暂不需要，请取消。」
+
+**定位**：登录框不是 dsh 应用自己的，而是容器内 Caddy 的 `basic_auth argon2id` 挑战——响应头 `www-authenticate: Basic realm="restricted"`。Caddyfile 是镜像内的静态文件（entrypoint 只注入 `CADDY_ACCESS_HOST` / `DSH_AUTH_USERNAME` / `DSH_AUTH_PASSWORD_HASH` 三个 `{$…}` 变量，运行时替换），容器 rootfs 为 `read_only`，故不能在容器内改。
+
+**做法（不改镜像、不改 entrypoint）**：从运行容器导出官方原文（`docker exec dsh cat /etc/caddy/Caddyfile` → `data/dsh/tmp/Caddyfile.orig`），用 `data/dsh/tmp/strip-basic-auth.py` **只删掉 3 行 basic_auth 块**（1134 → 1058 字节；`diff` 仅该块 + 1 空行），得到 `data/dsh/tmp/Caddyfile`；compose 增一行只读挂载 `./data/dsh/tmp/Caddyfile:/etc/caddy/Caddyfile:ro`（备份 `docker-compose.yml.bak.noauth.20260918141216`，改动经 `docker compose config` 校验）。`.env` 的 `DSH_AUTH_USERNAME` / `DSH_AUTH_PASSWORD` **保留不动**——entrypoint 启动时仍校验并计算 argon2id hash，只是 Caddyfile 不再引用；这样不触碰 entrypoint 的凭据校验路径，恢复鉴权也只需删掉挂载那一行。
+
+**验收（全部实测）**：① 重建后 `Up (healthy)` / `Restarts=0` / `FailingStreak=0`；② 公网无凭据 `https://dsh.10ge.cn/` = **200、36224 字节**（与原「带凭据 200」**字节数完全相同**），响应头**无** `www-authenticate`；③ 容器内 `curl https://127.0.0.1:8443/`（Host 正确）同为 200 / 36224；④ `/dsh-deployment.js` 仍返回 `globalThis.__DSH_AUTHENTICATED_SETTINGS__ = true;`，设置/凭据 API 的可用性未受影响；⑤ **真实浏览器验证**（只读，未点任何提交类按钮）：无 Basic Auth 弹窗，WorkDSH 工作台正常渲染（「探索未至之境」欢迎页、左侧全局面板、模型选择器），页内 `input[type=password]` = 0、`form` = 0、登录类文案命中 = 0。
+
+**写入链路验收（经用户确认后执行，全部实测）**：在 `https://dsh.10ge.cn` 用真实浏览器完成「新建会话 → 发消息 → 收回复」全链路。**UI 侧**：会话列表出现新条目「只输出数字 1+1」，发送后状态为「深度求索中...」，**21 秒**后收到回复，界面显示「本轮已结束 / 用时 21秒」，无报错弹窗；首发消息前需先点掉「内测声明」对话框。**服务端独立核对**（不只信前端）：新增会话 `session-ad4334ae-6477-4140-9180-d2f0a192f3a3`，事件日志 `sessions/--data-dsh-home-dsh--/<id>/session.v3.jsonl.zstd`（47300 字节、24 条事件）按序含——`user/message`（text = `只输出数字：1+1=?`，`source.kind = user` 且带 rpcId，证明确为客户端提交）→ `session/title`（provider `session-title-first-prompt-llm`，model `deepseek-official/deepseek-flash`）→ **`assistant/message`（text = `2`，provider `deepseek-official` / model `deepseek-flash`，usage input 40862 / output 2）** → `turn/end`（reason `completed`）；另 `storages/session_projcache/sessions/<id>.json`、`storages/workdsh_connector_selections/selections/<id>.json`、`storages/cost-meter/ledger.json` 同步落盘。即**用户消息持久化 → 模型真实调用（含一次标题生成，共两次模型调用）→ 回复持久化 → 轮次正常结束**，写入链路与模型凭据均确认可用（`.credentials.yaml` 内有 `refs/DEEPSEEK_API_KEY`，长度 35，**未打印其值**）。本次仅创建 1 个会话、只发 1 条消息。
+
+**未验证 / 遗留**：① 浏览器控制台有 `/plugins/events` 的 SSE `ERR_HTTP2_PROTOCOL_ERROR` / `ERR_ABORTED` 与 `connection lost, retry #1..#7`、`generation is still not ready after 3000ms`，`/modlens/config` 返回 403——**与本次鉴权改动无关**（本次只删 Caddyfile 的 basic_auth 块），且**未影响上述写入链路**（发送与回复均正常），未处理；② 挂载的是**派生副本**，镜像升级后若官方 Caddyfile 有变更会静默过期，需重新导出比对（`strip-basic-auth.py` 已留在同目录供复现）；③ 未做**多用户/并发**场景（如同时两个会话、长会话、中断重连）。
+
+**安全后果（已知并如实记录）**：该站点公网可达、且能在容器内执行 shell，取消鉴权后**任何拿到域名的人都能直接使用**，无任何身份门槛。用户明确要求取消，故按此配置；回滚 = 删掉 compose 那行挂载 → `docker compose up -d`（`Caddyfile.orig` 即官方原文）。
+
+**同步更新**：运维 skill `dsh-10ge-ops` 的「部署事实」「验证」两节原写「无凭据应 401 / 401 是正常的」，已改为 200 语义；并新增「鉴权状态」「层 4 启动期重试」两节（后者原为隐式知识，只存在于服务器改动里）。
+
+## 2026-09-17：定位 dsh 主进程偶发 SIGSEGV 根因（含线上停摆事故处置）
+
+用户指令：「请帮我定位 dsh 主进程偶发 SIGSEGV 的根因」。全部取证在隔离复现容器 `dsh-repro`（同镜像、`--pid=host`、独立 `DSH_HOME`、端口 3099/3097/3096）内完成，不触碰线上服务流量。
+
+**结论**：崩溃是**真实缺页异常，落在 dsh 启动期 V8 并发标记 GC（ConcurrentMarking）worker 线程解引用无效堆指针**；与 WorkDSH / 第三方插件、与 node 主版本、与 dsh 版本均无关。线上表现为「服务停摆而非崩溃重启」，直接原因是部署时自己加的 compose `NODE_OPTIONS`（`--report-on-signal=SIGSEGV`）把本可自愈的崩溃放大成信号处理链内的卡死。
+
+**证据（逐条实测）**：
+
+- 故障点固定：`MarkingVisitorBase<ConcurrentMarkingVisitor>::ProcessStrongHeapObject<FullHeapObjectSlot>`，故障指令 `0xe971d9: mov (%r14),%rax`；4 份 core 落点一致。live gdb 附加得 `si_code=1 (SEGV_MAPERR)` 且 `r14 == si_addr`（core 内的 `si_code=-6 SI_TKILL` 是 V8 崩溃处理器二次 raise 的伪造值，曾据此误判为信号问题）。
+- 与 WorkDSH / 第三方插件无关：`min` 配置（仅 `@deepseek-ai/dsh-base` + `@deepseek-ai/dsh-web-app`）同样崩溃（1/4）。
+- 与镜像内 node 二进制无关：容器内 `/usr/local/bin/node` 与上游 v24.21.0 linux-x64 官方包 **sha256 完全一致**（`7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c`），非 1Panel 自编译。
+- 与 node 主版本无关：换成上游 v22.20.0 官方二进制后 5/5 仍 SIGSEGV（node 22 与 24 均触发）。
+- 与 dsh 版本无关：镜像自带 0.1.5-rc.1（未装 WorkDSH、全新 `DSH_HOME` 自举）5 次里另崩 1 次 —— 该版本崩溃率低于 0.1.6-alpha.1，但同样会崩；崩溃率随启动期内存压力上升（`all21` 全 22 bundle 约 3/4）。
+- 不是「V8 通用并发标记缺陷」：同 node 24.21.0 跑 80 轮大对象分配/回收压力（`gcstress.js`）5/5 正常退出，未复现。
+- `--no-concurrent-marking` 不能规避（4 次仍崩 1 次），说明不是并发标记与 mutator 的同步竞态，而是无效指针本身。
+- **停摆机制（本轮新增的决定性发现）**：`--report-on-signal=SIGSEGV` 使 node 的 SignalInspector 在信号处理链里序列化堆报告，堆本已处于不一致状态 → 实测 4/4 次「进程既不退出也不再有任何输出」，90s 后仅被外部 `timeout -KILL` 杀死；线上因此写出 162 份 report（`data/dsh/reports`）且 healthcheck 连续超时（`FailingStreak=16`），进程 CPU 从 6:13 空转到 11:19。
+
+**处置（已执行，2026-09-17 22:34—22:38）**：compose 第 18 行的 report 选项整行删除（备份 `docker-compose.yml.bak.p0.20260917223427`），`docker compose up -d` 重建容器；容器内 `env` 与 `/proc/1/environ` 均已无 `NODE_OPTIONS`，内部 `curl 127.0.0.1:3080/` 返回 200。**验收**：连续 5 次 `docker restart dsh` 全部在 15—20s 内回到 `healthy`；其中第 5 次恰好命中一次启动期崩溃——容器以 139 退出后被 `restart: unless-stopped` 自动拉起（`RestartCount=1`），20s 内 `healthy`、内部 200，**自愈链路在生产上实测成立**。另装看门狗 `/usr/local/bin/dsh-watchdog.sh` + root cron `*/2 * * * *`（连续 3 次非 `healthy` 则重启，日志 `/var/log/dsh-watchdog.log`），用于兜住「进程卡死但容器不退出」这一类故障（16:18 停摆正是这种，`restart` 策略救不了）。
+
+补丁候选实测对照（隔离环境，22 bundle，每次 70s；`started=0` 表示未起到 Web 就死）：仅 `--report-on-fatalerror` → 3 崩退出 + **1 卡死**（故生产不留任何 report 选项）；无 report 选项 → 4/4 崩退出、0 卡死（故采用）；`--single-threaded` → 4/4 仍崩（不能规避，进一步说明是无效指针而非并发线程竞态）。all21 全量 bundle 下今日 16 次启动崩 14 次（≈88%），2 bundle 下 5 次启动崩 1 次（≈20%）——崩溃率随启动内存压力单调上升。
+
+**同日顺带查出（未擅自变更）**：线上 `profiles/web/package.json` 的 `dsh.profile.bundles` 当前只有 2 项（`@deepseek-ai/dsh-base` + `@deepseek-ai/dsh-web-app`），`cordis.patch.yml` 为 `[]`；9 个 workdsh 包虽已安装在 `profiles/web/node_modules`，但未注册为 bundle，按 dsh 自生成的 `cordis.yml` 注释（bundles → patch → overlays）判定**线上当前不加载 WorkDSH 插件**。旁证：`docker logs dsh | grep -ci workdsh` = 0；域名侧 `https://dsh.10ge.cn/` 由宿主 openresty 301 到 `/admin`，带凭据 200（3449 字节 SPA 外壳）。（当时另以 `/api/workdsh-skills` 等 `GET` 404 作旁证，事后复核**该旁证不成立**：这些是 POST-only RPC 端点，`GET` 一律 404。）与 15:14 的 `package.json.bak.bundles.20260917151400`（21 项）对照，可知是当日 21 → 2 的回落，**与上方「结果：呈现 WorkDSH 工作台」不再一致**。
+
+**修复（已执行并验收，服务器时间 2026-09-17 22:43—22:45）**：用户确认「恢复 21 项」后，将 `dsh.profile.bundles` 从 2 项恢复为 `package.json.bak.bundles.20260917151400` 的 21 项（两文件仅 `dsh.profile` 一节不同，其余 diff 为空；改前备份 `package.json.bak.p0bundles.20260917224311`，`os.replace` 原子写入）。验收证据：① 客户端渲染页从 3449 → **36224 字节**，`/plugins/??…` 模块引用 213 条，其中含 `workdsh-bundle` 与 `workdsh-plugin-activity/-connectors/-experts/-office/-skills` 六个模块；② 当前启动日志含 `[workdsh:probe] activated`（`packages/bundle/src/probe.ts`）与 `[dsh-cost-meter] 已加载`；③ 带 token `POST /api/workdsh-skills`、`POST /api/workdsh-experts` 返回 **200**，`POST /api/workdsh-connectors` 返回 400（路由存在、载荷不符）；④ `docker restart dsh` 后 **70s** 回 healthy（2 bundle 时约 15s，与 21 bundle 的启动量一致），`RestartCount=0`，本次未命中启动期崩溃。
+
+**P1 续查 A：无效指针的性质（core 级，已定论）**。故障指令前一条是 `and $0xfffffffffffc0000,%r14`——把传入的 HeapObject 掩码成 **256KB 页基址**（`MemoryChunk::FromAddress`），随后 `mov (%r14),%rax` 解引用；故失效的是**传进来的对象指针本身**，不是页表或线程同步问题。多轮 live gdb（`handle SIGSEGV stop`，6/6 轮都抓到 SIGSEGV）一致显示 `r12`（tagged HeapObject，同时充当 `rcx`）与推导出的 `r14` 页基址**都不在任何映射内**，落在巨大空洞（例 `0x3ffdc27a1000-0x7f98d383e000`，size≈109 TB），既不在 V8 cage，也不在任何保留区。**决定性实验**：崩溃前以 80ms 间隔采样 `/proc/PID/maps`（40 / 76 份快照），对故障页 `grep -c` = **0** → 该页**从未映射**，排除「页面被回收」这一解释；另一现场的对象页出现 25 次后 ABSENT 15 次，说明「曾是合法堆页、随后被撤」也存在。两处现场（`ProcessStrongHeapObject<FullHeapObjectSlot>` 持垃圾槽位、`HeapObject::SizeFromMap` 把 `rcx=0x19` 当 Map 指针）都指向**悬空/垃圾对象指针**。启动期实际映射的原生模块只有 `sharp-linux-x64-0.35.4.node`、`koffi.node`、`pty.node` 与 `libvips-cpp.so.8.18.6`；**无 jemalloc，也没有 `node-addon-*-loader` 被映射**（此前把 `node-addon-require-builtin` 列入嫌疑属误记：它只在磁盘上，未被加载）。
+
+**P1 续查 B：addon 二分方法学失效（本轮作废，仅留一条有效结论）**。原设计「移走 `.node` 文件后比较崩溃率」不可用：`no-sharp` 臂的 `rc=1` 实测为 `Error: Could not load the "sharp" module using the linux-x64 runtime`，`no-koffi` 臂同样以插件树加载失败告终——dsh 官方插件（如 `dsh-subprocess-local`）强制 require 这些原生模块，缺一个就**整棵插件树加载失败**（`exit 1`），与目标故障（SIGSEGV）混进同一计数。故 `no-sharp`（5 SIGSEGV / 10）、`no-koffi`（2 / 10）等臂**不可解释，据此作废**。过程中另有一次自污染：`pkill` 中断矩阵时把 `pty.node` 留在 `.node.disabled`，使随后的对照臂出现「缺 pty.node」的 `rc=1`；已恢复并重跑，只采用修复后的数据。仍成立的一条：`min` 配置（仅官方 base + web-app）**照样崩**，第三方插件与 WorkDSH 不是必要条件（与既有结论一致）。
+
+**P1 续查 C：V8 规避候选筛选（`all21` 高崩溃率配置，超时 60s；脚本 `/tmp/wd-p1e.sh` + `/tmp/bisect2.sh`，日志 `/tmp/p1e.out`）**。对照臂 `ctl21b` 跑满 12 次：**6 SIGSEGV / 6 存活（50%）**，与历史 `ctl21` 3/4、all21「16 次启动崩 14 次」同量级，确认该配置可作基线。`--no-concurrent-marking` 臂：**前 5 次即 5/5 SIGSEGV**（分别 48s/2s/33s/22s/18s 崩），**不降反高于基线 → 该 flag 不能规避**；据此把历史 `/tmp/matrix.out` 中 `cmv21` 的 1/4 判为样本不足（N=4），不能作为「降频」依据。这也印证既有结论——「不是并发标记与 mutator 的同步竞态，而是无效指针本身」：`ProcessStrongHeapObject` 在并发标记线程与主线程增量标记两条路径上共用，关掉并发线程并不消除失效指针。`--no-parallel-marking` 6 次：**4 崩 / 2 存活**（`npm21b`）；`--no-concurrent-sweeping` 6 次：**5 崩 / 1 存活**（`ncs21b`）；`--jitless` 6 次：**2 崩 / 4 存活**（`jit21b`），`/tmp/p1e.out` 记 `P1E DONE`。**结论：没有任何 V8/GC 旗标能规避**——三个「减少 GC 并行度」的开关崩溃率分别为 10/12、4/6、5/6，**均不低于**同配置对照的 6/12（`ctl21b`）；12:21 另跑一次新鲜对照 `ctl21c` 仍为 **6/12**，与 `ctl21b` 完全一致，证明基线稳定可复现。`--jitless` 的 2/6 在 N=6 下与 50% 不可区分，不构成结论。
+
+**P1 续查 D：原生 addon 桩替换——排除 addon（决定性，本轮核心）**。方法：新增 `/home/luoji/wd-repro/noaddon.cjs`，在进程最早阶段用 `NODE_OPTIONS=--require=...`（`--require` 在 Node 白名单内，可直接走 NODE_OPTIONS）**覆写 `process.dlopen`**：`.node` 的 require 仍然「成功」，但 `module.exports` 换成一个递归 Proxy（可调用、可 `new`、可当字符串用），于是**插件树完整加载、但进程内不执行任何原生代码**；再用 `WD_ALLOW_ADDONS=<子串>` 按需放行，供后续二分。烟测已验：无桩时 `pty.node` 返回 `keys=[fork,open,resize,process]`；有桩时 `keys=[]`、`String(p)=''`；放行 `pty.node` / `sharp-linux-x64` 后均真实加载成功（`keys=fork,open,resize,process` / `metadata,pipeline,cache,concurrency`）。**结果**：`all21` 同窗口对照 `ctl21c` = **6 崩 / 12（50%）**，全桩臂 `noadd21` = **10 崩 / 12（83%）** —— **桩替换没有降低崩溃率**（Fisher 双侧 p≈0.19，不显著，但明确无改善）。存活轮日志与对照臂**逐行同阶段**（`[workdsh:probe] activated` → `[dsh-cost-meter] 已加载` → `[lingshu-bridge]` 重试 → `disposed`），且桩行确认 `koffi.node`、`sharp-linux-x64-0.35.4.node` 均被拦截，说明**插件树没有因打桩破损**（未产生 rc=1 污染）。另注：本启动路径**根本没有加载 `pty.node`**（12 轮日志中无一条 `stub pty.node`），故此前把 `pty.node` 当作「已加载的嫌疑」属推断过度。**结论：使指针悬空的不是原生 addon 的内存破坏**——koffi 与 sharp 被完全中性化后仍 83% 崩，pty 未参与——故障落在 **dsh 的 JS 启动 + V8 13.6（Node 24.21.0）自身**。附带风险记录（必须遵守）：`/home/luoji/wd-repro/**/node_modules` 下的文件与**生产** `/opt/1panel/apps/deepseek-harness/deepseek-harness/data/dsh/profiles/web/node_modules` 是**同一个 inode**（硬链接，`pty.node` link count=12），该目录内任何文件都只能用「临时文件 + rename」替换，**禁止就地覆写**；本轮全部改动为新增文件或 rename，已复核生产 `package.json` 仍为 21 项、mtime 仍是授权时那次改动、三个 `.node` 均在。
+
+**P1 续查 E：V8 堆校验 + 确定性复现（层 2 第 3 条，本轮决定性）**。配置 `all21`、超时 60—90s，脚本 `/tmp/wd-p1g.sh`、`/tmp/wd-p1h.sh`，日志 `/tmp/p1g.out`、`/tmp/p1h.out`；容器 node **v24.21.0 / V8 13.6.233.17-node.53**（该构建**已启用** `--verify-heap`，`--track-heap-objects`、`--stress-compaction`、`--force-marking-deque-overflows` 均被接受）。四臂：
+
+| 臂 | 旗标 | 结果 |
+|---|---|---|
+| `ctl21d` | 无（同窗口对照） | 6 崩 / 10（**60%**） |
+| `tho21` | `--track-heap-objects --verify-heap --trace-gc` | 3 崩 / 10（**30%**），存活轮均跑满 90s |
+| `scv21` | `--stress-compaction --verify-heap --trace-gc` | **10 崩 / 10（100%）**，其中 9 次在 **1—4 秒**内 |
+| `fdo21` | `--force-marking-deque-overflows --trace-gc` | 6 崩 / 8（75%），5—41s |
+
+三点结论：① **`--verify-heap` 与 `--track-heap-objects` 全程没有产生任何 V8 断言**——`scv21` 十个日志 grep `Check failed|Fatal|Verify` **全空**，进程始终以裸 SIGSEGV 退出；说明失效对象**不在被 tracker 跟踪的堆对象上**，`--verify-heap` 的 GC 边界校验覆盖不到它（该结果本身不指向任何单一数据结构；下文 P1 续查 F 的 5 个跨子系统现场进一步推翻了「单一标记工作列表条目」这一收窄）。② `--stress-compaction` 把偶发故障变成**确定性复现**（10/10、多为 1—3 秒）：崩溃前 1.4 秒内发生 **134 次 `Mark-Compact`、零 Scavenge**，堆仅 ~56 MB，最后一行是 `finalize incremental marking via stack guard` → **与内存压力无关，是特定 GC 代码路径**。③ 据此**修正前一推测**：`--force-marking-deque-overflows` 单开只有 6/8（75%，5—41s，堆可涨到 750 MB），**不足以解释 100%/1—3 秒**，故触发条件是 `--stress-compaction` 的「强制压缩 + 强制老生代 GC + 队列溢出」**组合**，不能只归因于队列溢出路径。附带观察：无 stress 时进程可长跑到堆 750 MB，说明默认 50—60% 的崩溃只是同一条路径的概率命中，而非内存耗尽。
+
+**P1 续查 F：确定性夹具上的 gdb 现场抓取（层 2 第 2 条，已完成）**。方法：`/tmp/wd-gdb3.sh` + `/tmp/wd-gdb3.cmds.tmpl` + 离线分类器 `/tmp/wd-mapsclassify.py`；容器**未重建**（`HostConfig.PidMode=host` 已满足，宿主 gdb 12.1 直接 attach），启动改用新增 `/home/luoji/wd-repro/pause.cjs`（`NODE_OPTIONS=--require=…`，`Atomics.wait` 同步暂停 25s）以保证在「1—3 秒必崩」之前完成 attach 与符号加载；每次现场在崩溃瞬间 `cat /proc/PID/maps` 落盘（833 / 843 条映射）。**抓到 2/2**。说明：第一版分析块在 gdb 12.1 上 `mappings parsed: 0`（`info proc mappings` 的列格式与旧脚本假设不符），故本轮改为「gdb 内落盘 maps + 离线 python 分类」。
+
+两轮合计 **5 个现场，故障线程全部是 `node::PlatformWorkerThread`（V8 工作线程池）**：
+
+| # | 故障函数 | GC 子系统 |
+|---|---|---|
+| 1 | `Sweeper::RawSweep` → `HeapObject::SizeFromMap`（`rcx=0x19`） | 清扫（被 `PagedSpaceAllocatorPolicy::ContributeToSweeping` 从 `MainAllocator::AllocateRawSlow` 拉入，与页面疏散并发） |
+| 2 | `ConcurrentMarking::RunMajor` → `MarkingVisitorBase<ConcurrentMarkingVisitor>::HasBytecodeArrayForFlushing` | 并发标记 |
+| 3 | `ConcurrentMarking::RunMajor` → `MarkingVisitorBase<ConcurrentMarkingVisitor>::ProcessStrongHeapObject<FullHeapObjectSlot>` | 并发标记 |
+| 4 | `Evacuator::RawEvacuatePage` → `LiveObjectVisitor::VisitMarkedObjects<EvacuateOldSpaceVisitor>` → `EvacuateVisitorBase::RawMigrateObject` → `SharedFunctionInfo::BodyDescriptor::IterateBody<RecordMigratedSlotVisitor>` | 压缩 / 迁移 |
+| 5（旧，默认旗标） | `ProcessStrongHeapObject<FullHeapObjectSlot>` | 并发标记 |
+
+四点推论：① **生产默认旗标下的原现场（#5）在确定性夹具下被原样复现**（#3 同函数、同故障指令 `0xe971d9`），故 `--stress-compaction` 是**同一缺陷的高频模型，而不是另一个 bug**——这才使 E 段的确定性复现可用于根因分析。② 现场横跨「并发标记 / 清扫 / 压缩迁移」三个子系统，说明**不是某条遍历链的局部错误，而是被遍历的对象引用本身在 GC 期间失效**（悬空对象 / 页面被回收或未提交）。③ 失效值确认为纯垃圾：本轮 attempt 2 中 `r12 = rcx = 0x00007e442fe00071`，`r14` = 该值掩码 256KB 页基址 `0x00007e442fe00000`，**两者都不在任何映射内**，落在 `0x3ff5abc00000-0x7fe5e3ed0000` 的空洞（≈70 TB）中；该值 bit0=1（按 V8 标记规则是 Smi）但高位远超 31 位合法 Smi 范围 → 不是可用标记值。④ 全部故障线程均为工作线程，而历史 `--single-threaded` 4/4 仍崩的记录与此表面冲突，**该旧数据需在确定性夹具上重测，不作为结论**。
+
+新增证据文件（服务器隔离环境）：`/home/luoji/wd-repro/gdbdump2/caught-{1,2}.gdb`（含全线程栈）、`gdbdump3/caught-{1,2}.gdb` 与 `gdbdump3/maps-{1,2}.txt`、分类输出 `/tmp/gdb3.out`。
+
+**P1 续查 G：Node 22 / V8 12.4 版本对照——否证「换 Node 大版本即可规避」**。方法：把宿主 `/usr/bin/node`（v22.22.2，V8 **12.4.254.21-node.39**，ABI 127）拷入挂载目录 `/home/luoji/wd-repro/node22`（容器内 `/data/dsh/node22`，**未重建容器**）；新增 `/tmp/bisect3.sh`（= `bisect2.sh` + `NODEBIN` 参数，并把进程清理匹配放宽为 `*/node*` 以覆盖 `node22` 这个可执行名）；两臂**都打桩**（`--require=/data/dsh/noaddon.cjs`）以消除 ABI 127/137 差异，只比较 V8 行为；夹具 `all21` + `--stress-compaction`，N=8、T=60s，日志 `/tmp/p1i.out`。
+
+| 臂 | 运行时 | 结果 |
+|---|---|---|
+| `n24sc` | 容器 node24 / V8 13.6.233.17-node.53 | **8/8 SIGSEGV**（1—20s） |
+| `n22sc` | 宿主 node22 / V8 12.4.254.21-node.39 | **8/8 SIGSEGV**（1—9s） |
+
+**结论：换回 Node 22（V8 12.4）没有规避，崩溃率与形态和 Node 24 完全一致**（同为 8/8、同在 1—20 秒内、同样无任何 V8 断言）。故「缺陷是 V8 13.6 特有、把容器锁到 Node 22 即为修复」这一最简修复假设**被否证**；同时说明该缺陷**不是 13.6 引入的回归，而是在 V8 12.4 与 13.6 上同样成立的既有问题**。注意 Node 22 本是本项目 AGENTS.md 声明的目标运行时，故「按声明降级运行时」也不再构成缓解。**未验证**：`n22sc` 未做 gdb，故 node22 的失效点是否与 #1—#5 同一处未知（该臂日志只有 stub/probe 行，无栈）。**剩余候选**（V8 版本已排除）：「**该 JS 工作负载的堆形状**」与「**本机环境（CPU/内核）**」。该判别实验已于同日执行——**见 P1 续查 H**：用与 dsh 无关的最小 JS 负载，**照样崩**（`big24` 3/5、`biggc` 2/5），且崩溃点与线上现场逐帧一致，故「dsh 工作负载触发」已被**移除**，只剩「本机环境」未被排除。
+
+**P1 续查 H：判别实验「dsh 工作负载 vs 本机环境」——推翻「dsh 触发」**。方法：新增 `/tmp/wd-bare.sh`（臂编排）与 `/home/luoji/wd-repro/bare/{zero,alloc,big,biggc}.js`（四档纯 JS 负载，**不含 dsh、不含任何第三方包**）；臂内显式 `-e NODE_OPTIONS=` 清空环境变量，日志 `/tmp/bare-<arm>.out`、`/tmp/bare-<arm>-<n>.log`：
+
+| 臂 | 负载 | 旗标 | 存活堆 | Mark-Compact/轮 | 结果 |
+|---|---|---|---|---|---|
+| `zero24` | 空转 3s，零用户分配 | `--stress-compaction` | 极小 | **~750** | **0 崩 / 8**（8/8 rc=0） |
+| `alloc24` | 12 万次短命对象 | `--stress-compaction` | ~8 MB | 10 | **0 崩 / 5** |
+| `big24` | 40 万存活对象 + 空转 5s | `--stress-compaction` | **62.5 MB** | 82—206 | **3 崩 / 5** |
+| `biggc` | 同 `big24`，但 GC 由 `--expose-gc` + `global.gc({type:'major'})`×300 强制 | **无 stress** | 62 MB | 300 | **2 崩 / 5** |
+
+四点结论：① **崩溃不需要 dsh**——约 20 行纯 JS（`biggc.js`：建 40 万存活对象 → 调 300 次 major GC）在**无 dsh、无第三方、无 `--stress-compaction`** 条件下 2/5 SIGSEGV → **「dsh 特有堆形状」作为必要条件被推翻**，同时否证「必须靠 stress 夹具」；② 触发条件近似「**大存活堆（~60 MB 量级）+ 反复老生代 Mark-Compact**」：`zero24` 累计约 6000 次 Mark-Compact 仍 0 崩，而 `big24` 每轮仅 82—206 次即 3/5 崩 → **决定因素是存活堆规模 / 迁移量，不是 GC 次数**；③ `biggc` 与 `big24` 崩溃率相当（2/5 vs 3/5，N=5 下不可区分），说明 `--stress-compaction` 只是**加速器**而非必需条件；④ **gdb 现场与 dsh 生产原现场逐帧一致**（见下）。
+
+**层 2 v3：最小复现器上的 gdb 现场（`/tmp/wd-gdb4.sh`，4 轮）**。`caught-2` 完整捕获：`Thread 5 "V8Worker" received signal SIGSEGV` → `#0 0xe971d9 MarkingVisitorBase<ConcurrentMarkingVisitor>::ProcessStrongHeapObject<FullHeapObjectSlot>` → `#1 BodyDescriptorBase::IteratePointers<ConcurrentMarkingVisitor>` → `#2 ConcurrentMarking::RunMajor` → `#3 ConcurrentMarking::JobTaskMajor::Run` → `#4 v8::platform::DefaultJobWorker::Run` → `#5 node::PlatformWorkerThread`，**与 dsh 的 #5 现场同函数、同故障指令 `0xe971d9`、同线程类型**；寄存器亦同型（`r12 = rcx = 0x000071f5df19c8f1` 为垃圾值、`r14` = 其 256 KiB 页基址 `0x000071f5df180000`，**两者均不在任何映射内**，落在 `0x3fc677640000-0x7f45d4000000` 的空洞 ≈69 TB）。**方法学修正（必须记录）**：`wd-gdb4.sh` 输出的 `caught=4/4` 是**错误判定**——`wd-gdb3.cmds.tmpl` 在 `continue` 之后**无条件**打印 `===== SIGNAL CAUGHT =====`，进程正常退出时也会命中；复核 `caught-{1,3,4}.gdb` 均为 `[Inferior 1 (process …) exited normally]` + `No threads.` / `No stack.`（766 字节），**实际只有 attempt 2 真正捕获**，真实命中率 1/4（与 bare 臂 2/5—3/5 概率一致）。**后续判定须改用 `grep "received signal SIGSEGV"`。**
+
+**综合结论**：该缺陷**不是 dsh / WorkDSH / 第三方插件的产物，也不依赖 `--stress-compaction`**——它是 **V8 在「大存活堆 + 反复老生代 Mark-Compact」这一通用条件下的 GC 缺陷**，约 20 行原生 JS 即可复现，且崩溃点与线上生产现场完全相同（同函数、同指令）。至此「dsh 工作负载触发」这一候选被**移除**；剩余唯一未排除的候选是**本机环境（内核 / CPU / 内存子系统）**——因全部实验（含最小复现器）都只在本服务器上做过，尚未在其他机器复现。**新增确定性复现器**：`/home/luoji/wd-repro/bare/biggc.js`（20 行、零依赖，可直接 `node --expose-gc biggc.js` 运行），比 dsh 夹具快得多，可直接用于后续旗标筛选与上游上报。
+
+**P1 续查 I：跨机对照——macOS arm64 不崩，问题与平台强相关**。方法：把最小复现器 `biggc.js`（零依赖）原样拷到本机（macOS 15.7.5 **arm64**、node v24.15.0 / **V8 13.6.233.17-node.48**）执行同一命令 `node --expose-gc biggc.js`，另做加压版 `bigger.js`（~119 MB 存活堆、400 次 major GC）。结果：**`biggc` 10/10 正常退出、`bigger` 5/5 正常退出（合计 0/15 崩溃）**，日志分别输出 `heapMB=62` / `heapMB=119`，与服务器上的等价负载一致；对照服务器同脚本 N=20 为 **7/20 崩溃**（Fisher p≈0.0016）。**结论**：该缺陷**与平台强相关**。但**架构（x86_64）与操作系统（Linux）两个变量同时变化，未能分离**——分离需要 x86_64 macOS（Rosetta）或 arm64 Linux 的对照，本次尝试下载 x64 node 因 `nodejs.org` 在两台机器上均无法解析而失败（本机 `curl: (6) Could not resolve host`）。另注：两机 V8 补丁号不同（-node.48 vs -node.53），非严格意义的同版本跨平台对照。**未验证**：第三台机器上的复现情况。
+
+**P1 续查 J：V8 旗标矩阵——没有任何旗标或组合能把崩溃率降到 0**。方法：以 `biggc.js` 为夹具（零依赖、秒级），脚本 `/tmp/wd-flags.sh`（N=10）与 `/tmp/wd-flags2.sh`（N=20 复核），日志 `/tmp/flags.out`、`/tmp/flags2.out`。**N=10 结果**：基线 8/10；`--no-concurrent-marking` 5/10、`--no-concurrent-sweeping` 5/10、`--predictable` 4/10、`--no-parallel-marking` 2/10、`--jitless` 2/10、`--no-incremental-marking` **1/10**、`--single-threaded` **1/10**。**N=20 复核推翻了「显著降低」这一看法**：基线 **7/20**、`--no-incremental-marking` **6/20**、`--no-incremental-marking --no-parallel-marking` **4/20**、四个 no-* 全开 **8/20**——全部落在 20%—40%，与基线无统计显著差异（7/20 vs 4/20，Fisher p≈0.48）。**结论**：① N=10 的 1/10、2/10 是**小样本假象**，不能作为「降频」证据；② 但**关键结论稳固：没有任何旗标或组合给出 0 崩溃**（若真能规避，20 次运行应全部正常），与早期在 dsh 负载上的筛选（P1 续查 C）结论一致。**适用边界**：本矩阵用 `--expose-gc` 显式 major GC，与生产的自然 GC 路径不同，故只用于判定「有无旗标可规避」，不作为生产参数调优依据。
+
+**层 4 生产兜底（已执行并验收，服务器时间 2026-09-18 14:00—14:12）**。目标：消除「启动期崩溃 → 容器退出 → 服务停摆」这一**用户可见后果**（根因属 V8，应用层无法修）。三项改动，全部先备份：
+
+1. **entrypoint 增加启动期重试**（`data/dsh/tmp/docker-entrypoint.sh`，备份 `.bak.l4.20260918134216`）：dsh 启动抽成 `start_dsh()`，就绪等待包进 `while` 循环；**启动期进程死亡 → 容器内重试**，不再直接 `exit $?`；**就绪超时 240s 语义不变**（仍 `exit 1`）。
+2. **healthcheck 宽限期放宽**（`docker-compose.yml`，备份 `.bak.l4.20260918140425`）：`start_period: 30s → 300s`，使「层 4 重试期间」不被判为 unhealthy。
+3. **watchdog 只在明确 unhealthy 时计数**（`/usr/local/bin/dsh-watchdog.sh`，备份 `.bak.l4.20260918140425`）：原实现把 `starting` 也计入，与新 entrypoint 的重试窗口叠加会**反过来打断重试**；改为 `starting) exit 0`，只对 `unhealthy` 连续 3 次才重启。
+4. 重试上限 `DSH_STARTUP_ATTEMPTS` 初值 5，验收中观测到连续 4 次崩溃后**提高到 10**；该提值写在文件里、**于下次容器重启时生效**（未为它再次重建）。
+
+**验收（全部实测）**：① 首次重建后日志出现 `dsh exited during startup (attempt 1..4/5), retrying.` → 第 5 次成功，**容器 `Restarts=0`、未退出**；② 第二次重建（healthcheck 改动生效）再现 `attempt 1/5`、`attempt 2/5` → 第 3 次成功，`Restarts=0`；③ 当前 `Up (healthy)`、`FailingStreak=0`，容器内 `curl 127.0.0.1:3080/` = **200**；④ 域名侧无凭据 **401** / 带凭据 **200（36224 字节，21 bundle 完整页面）**。**未验证**：未主动制造「连续崩溃超过 10 次」以验证上限耗尽后的行为（依赖 docker `restart: unless-stopped` 兜底）。
+
+**本轮副作用（如实记录）**：13:53—13:58 跑旗标矩阵期间，**生产容器 `dsh` 因连续 3 次非 healthy 于 13:58:01 被 watchdog 重启 1 次**（见 `/var/log/dsh-watchdog.log`）——当时容器正处于启动/重试窗口，而旧 watchdog 会把 `starting` 计入。该重启与本次要消除的现象同类，已由上述第 2、3 项改动消除误判；期间域名侧短暂不可用。
+
+**上游上报材料**：已整理为 [v8-gc-sigsegv-repro.md](evidence/v8-gc-sigsegv-repro.md)，自包含（最小复现器、四档负载数据、旗标矩阵、现场栈与寄存器/映射归属、已排除与未排除项、证据文件索引）。
+
+**未定位（残余）**：使该指针悬空的具体分配方仍未指认——早先据单点现场把范围收窄为「被放进标记工作列表条目的那个 HeapObject」，但 P1 续查 F 在确定性夹具上抓到**跨「并发标记 / 清扫 / 压缩迁移」三子系统的 5 个现场**，**该收窄已不成立**；现状是「某个对象引用在 GC 期间失效（悬空 / 所在页被回收或未提交）」但**是谁让它失效的**未定。本轮已用桩替换**排除原生 addon**（见 P1 续查 D），并已用 Node 22 / V8 12.4 对照**排除「V8 13.6 特有」这一可能**（见 P1 续查 G：node22 同样 8/8 崩），故嫌疑落在 **V8 12.4 与 13.6 共有的 GC 并发实现**，更可能是 V8 的既有缺陷而非 dsh 业务代码问题（#1—#5 全部落在 V8 内部，无 dsh/WorkDSH 帧）——该判断已由 P1 续查 H 进一步证实：**约 20 行不含 dsh 的纯 JS 即可复现同一现场（同函数、同指令 `0xe971d9`）**，触发条件为「大存活堆（~60 MB）+ 反复老生代 Mark-Compact」这一通用条件。**续查后状态（原两项未验证已闭环，见 P1 续查 I / J）**：① 「其他宿主/机器是否同样复现」**已执行**——最小复现器 `biggc.js` 在 macOS arm64 上 **0/15 不崩**（`biggc` 10/10、`bigger` 5/5），服务器同脚本 7/20（Fisher p≈0.0016），故**「本机环境」不再是无证据的活候选，而是已被坐实为强相关因素**；但**架构（x86_64）与操作系统（Linux）两变量仍未分离**，且两机 V8 补丁号不同（-node.48 vs -node.53），故只能表述为「与平台强相关」，不能表述为「x86_64 Linux 特有」。② 「最小复现器上是否有 V8 旗标可稳定规避」**已执行且为否证**——N=20 复核下基线 7/20、`--no-incremental-marking` 6/20、`ni+np` 4/20、四 no-* 全开 8/20，全部落在 20%—40%，**没有任何旗标或组合给出 0 崩溃**；N=10 曾出现的 1/10、2/10 被判定为小样本假象。**仍未验证**：① 第三台机器（尤其 arm64 Linux 或 x86_64 macOS）上的复现情况——这是分离架构与 OS 的唯一路径，因 `nodejs.org` 在服务器与本机均无法解析而未执行；② `n22sc`（Node 22 臂）未做 gdb，其失效点是否与 #1—#5 同处未知。**遗留工具说明**：`--stress-compaction` 已把 dsh 夹具的复现变成确定性的（1—3 秒、10/10，见 P1 续查 E），但该旗标**并非最小复现器的必需条件**（`biggc.js` 无 stress 亦 2/5 崩），后续 gdb 现场抓取可直接用 `biggc.js`，不必再等概率命中。
+
+## 2026-09-17：WorkDSH 全量部署到 1Panel 服务器，https://dsh.10ge.cn 呈现工作台
+
+用户指令原文：「本地3031所搭建的网站，所有源代码，打包全上传到1paen面板上，服务器地址：192.168.11.205 / 端口：22 / 登录用户：luoji / 登录密码：88888888 / 对应的文件夹关联域名对应dsh.10ge.cn，端口3080.请全覆盖上传。」经三轮澄清收敛为：把 WorkDSH 部署到 dsh.10ge.cn（不是覆盖 1Panel 应用目录、不是传静态站），装进服务器 dsh 容器的 web profile。基线冲突出现后，用户选定鉴权方案为「最小补丁恢复免鉴权」。
+
+**结果（实测）**：`https://dsh.10ge.cn` 打开后呈现 WorkDSH 工作台，容器 `running` / `health=healthy` / `Restarts=0`，连续观察约 20 分钟无重启、无 SIGSEGV。本地 3031 预览 Host 未改动。
+
+**部署拓扑**（与本地 3031 的差异）：1Panel 应用目录 `/opt/1panel/apps/deepseek-harness/deepseek-harness`，容器名 `dsh`，镜像 `1panel/deepseek-harness:0.1.5-rc.1`，端口映射 `0.0.0.0:3080 -> 8443`，`read_only: true` + `tmpfs /tmp`；容器内 Caddy 终止 TLS 并做 Basic Auth，dsh 只监听 `127.0.0.1:3080`。
+
+**四组必要改动**（每项都已备份，备份清单见下）：
+
+1. **源码与制品上传**：`/tmp/workdsh-deploy.tar.gz`（95,669,710 字节，sha256 `0f81690a0d549efd01d879e95e3791a6b9592618525ac5c0d033f725940b7a07`）解包到 `$APP/workdsh`（210M），与 1Panel 原有文件同级隔离；9 个插件 tarball（`workdsh-bundle@0.1.0-alpha.46`、`workdsh-plugin-access@0.1.0-alpha.5`、`workdsh-plugin-activity@0.1.0-alpha.3`、`workdsh-plugin-audit@0.1.0-alpha.4`、`workdsh-plugin-connectors@0.1.0-alpha.1`、`workdsh-plugin-experts@0.1.0-alpha.4`、`workdsh-plugin-office@0.1.0-alpha.5`、`workdsh-plugin-skills@0.1.0-alpha.29`、`workdsh-provider-identity-local@0.1.0-alpha.5`）复制到 `data/workspace/wd-upload/`，容器内为 `/workspace/wd-upload/`。
+2. **Profile 安装**：`web` profile 装上述 9 个包 + `@deepseek-ai/dsh-base@0.1.6-alpha.1`、`@deepseek-ai/dsh-web-app@0.1.6-alpha.1`；`dsh.profile.bundles` 从 12 项补到 21 项（只 `pnpm add` 不写 bundles 不会生效）。
+3. **0.1.6-alpha.1 自包含运行时**：镜像自带内核是 0.1.5-rc.1，与 WorkDSH 基线不匹配（1Panel 仓库最高只有 0.1.5-rc.1，已实测 registry 与 apps-assets 均无 0.1.6）。在容器内用 `npx --yes pnpm@11.7.0 add @deepseek-ai/dsh@0.1.6-alpha.1 --node-linker=hoisted --ignore-scripts` 组装出 `data/dsh/global-dsh/standalone`（264M，245 个 scoped 包 + 119 个顶层包），再以 bind mount 覆盖 `/usr/local/lib/node_modules/@deepseek-ai/dsh`。导出探针 `dshCachePath` / `classifyRunnerFailure` / `longEdgeDimensions` 三项全部 OK。
+4. **鉴权桥接与启动参数**：
+   - `dsh-client-connection/lib/index.js` 的 `isAuthenticated` 首行恢复 `if (process.env.ONEPANEL_DSH_AUTH_PROXY === "1") return true;`。**必须同时打两份**——`standalone` 份与 `profiles/web` 份；只打前者时仍恒 401（Profile 内插件解析到的是 Profile 副本），这是本轮定位到的关键点。
+   - 替换 entrypoint（bind mount 覆盖 `/usr/local/bin/docker-entrypoint.sh`）：给 dsh 命令加 `--no-open`，就绪窗口 `{1..60}` 放宽到 `{1..240}`。
+   - compose 追加：entrypoint 绑定挂载、`NODE_OPTIONS: "--report-on-fatalerror --report-on-signal --report-signal=SIGSEGV --report-directory=/data/dsh/reports"`。
+
+**过程中的坑（逐条，均为实测）**：
+
+- 容器内以 uid 1000 运行镜像自带 pnpm 会 `Segmentation fault (core dumped)`（间歇出现在 linking 阶段，单次 core 最大 12GB）；改用 `npx --yes pnpm@11.7.0`（现下载干净副本）后 `Packages: +803 -24` 成功，1074 resolved。
+- 未替换内核时 `dsh: plugin tree failed to load`：`dsh-home-paths` 缺 `dshCachePath`、`dsh-sandbox` 缺 `classifyRunnerFailure`、`dsh-attachment` 缺 `longEdgeDimensions`——即 0.1.5-rc.1 与 0.1.6-alpha.1 的导出面差异。
+- `workdsh-bundle/cordis.patch.yml` 里 `computer-use` 与 `computer-use-cua-driver-native` 两条依赖 `@trycua/cua-driver-linux-x64-gnu` 的原生库，容器内缺 `libX11.so.6`，会让**整棵插件树**加载失败（不是只影响该插件）。删掉这两条即可；该 patch 文件在运行期生效，改完只需重启容器。
+- entrypoint 就绪探针是 `curl -fsS http://127.0.0.1:3080/`，只接受 2xx。0.1.6-alpha.1 移除了免鉴权分支后首页恒 401，探针判失败 → `exit 1` → 容器进入重启循环（表面现象是 502 与 RESTARTS 递增）。
+- dsh 主进程会间歇性 SIGSEGV（启动期与运行期都可能，最快一次运行 29s 后崩）。加 `--no-open` 后概率大幅下降但仍出现过；再补 NODE_OPTIONS 报告选项后连续 10 分钟无崩溃、无 report 文件落盘。**根因已于同日定位**（见上方 2026-09-17「定位 dsh 主进程偶发 SIGSEGV 根因」段）：属启动期 V8 并发标记 GC 解引用无效堆指针，与 WorkDSH 无关；且事后证明 `--report-on-signal` 正是把该崩溃放大为服务停摆的元凶，「10 分钟无 report」只是未命中窗口，不是被修好。
+
+**验证证据（全部实测）**：
+
+- `docker inspect dsh` → `STATE=running HEALTH=healthy RESTARTS=0`；重启耐久性另测一次：`docker restart` 后 80 秒内回到 healthy，重启策略 `unless-stopped`。
+- `curl` 无凭据 → 401；带凭据 → 200，36224 字节；页面含 `workdsh-bundle`、`workdsh-plugin-experts`、`workdsh-plugin-skills`、`workdsh-plugin-connectors`、`workdsh-plugin-activity`、`workdsh-plugin-office` 六个 client 入口。
+- 容器内 `require('/usr/local/lib/node_modules/@deepseek-ai/dsh/package.json').version` → `0.1.6-alpha.1`；日志中 `plugin tree failed` / `does not provide an export` / `cannot open shared object` 计数为 0。
+- 浏览器只读实测：标题 `DeepSeek Harness`；左侧主导航为「助理 / 项目 / 专家 · 技能 · 连接器 / 定时任务 / 资料库 / 更多」；`/api/workdsh-skills`、`/api/workdsh-connectors`、`/api/workdsh-office`、`/api/agentPresets/list` 均正常返回；控制台 0 条错误。截图在 `/Users/apple/.trae-cn/trae-browser-screenshots/6aa9cae7766f83583cad1538/`。注意：带凭据的 URL 写法（`https://user:pass@host/`）会让 SPA 白屏（`history.replaceState` SecurityError），必须用干净 URL + Authorization 头。
+
+**备份与回滚**：`appconfig.bak.deploy.20260917145550.tar.gz`、`data/dsh/profiles/web.bak.deploy.20260917145550`（1.5G）、`docker-compose.yml.bak.deploy.20260917151016` / `.bak.entrypoint.20260917153542` / `.bak.report.<时间戳>`、`profiles/web/package.json.bak.bundles.20260917151400`、`profiles/web/node_modules/workdsh-bundle/cordis.patch.yml.orig`、两份 `dsh-client-connection/lib/index.js.orig`、`data/dsh/tmp/docker-entrypoint.sh.orig`。回滚 = 还原 compose、把 `web.bak.deploy.*` 换回 `web`、去掉 standalone 与 entrypoint 两处挂载后 `docker compose up -d`（本轮回滚过一次并验证恢复为 401/200）。
+
+**未验证 / 未执行（如实登记）**：原有 12 个第三方插件在 0.1.6-alpha.1 下的兼容性未逐个验证，只确认插件树整体加载无报错；`lingshu-bridge` 仍反复 `spawn python ENOENT`（原有现象，与本次无关，未修）；`ERR_PNPM_IGNORED_BUILDS` 的 5 个包（`@deepseek-ai/dsh-subprocess-local`、`@google/genai`、`koffi`、`node-pty`、`protobufjs`）未执行 `approve-builds`；未做登录后的会话创建、模型调用、专家/技能等业务端到端验收；SIGSEGV 根因已定位（见上方同日段落），崩溃本身未修、`--report-on-signal` 放大项待确认后移除；本次未提交、未推送，本地 `main` 仍领先 `origin/main`。
+
 ## 2026-09-16：39 条文档相对链接断链清零（第 3 项）
 
 用户指令：先修第 3 项那 39 条断链。处置方针由用户选定为「去链接 + 如实标注」——不伪造文件、不改写历史事实；PRD 三张参考图的指向由用户选定改为 references/README.md 的「用户补充参考」小节。
