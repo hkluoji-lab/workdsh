@@ -59,6 +59,22 @@
 - **验证（实测）**：重启后日志不再新增 `spawn python ENOENT`；`md_cg.mcp_server` 子进程自 `00:34:18Z` 起持续存活（bridge 仅在握手成功时保留子进程，失败路径会 kill），`00:34` 之后无任何 `lingshu-bridge` 错误行；插件数据根 `…/data/mdcg/{anchor,contextual,knowledge,self,goals,…}` 已初始化，密钥环 `/data/dsh/home/.mdcg/{master.key,_tokens.json}` 存在（`/root` 在只读根上，故密钥环落在 dsh 的 HOME）。
 - **备份与回滚**：`profiles/web/cordis.patch.yml.bak.lingshupython.20260919`；回滚 = 还原该文件 + 重启（新装的 python 留在 `/data/dsh/tools`，对 DSH 无副作用）。
 
+**本地制品与线上全量核对（同日，实测）**
+
+逐包比对本地 `.artifacts/*.tgz` 与线上 `wd-upload/*.tgz` 的内容（解包后按文件 sha256，排除打包时间戳干扰）：
+
+| 包 | 结论 |
+| --- | --- |
+| bundle alpha.48、access alpha.5、activity alpha.3、audit alpha.4、connectors alpha.1、experts alpha.4、library alpha.2、identity-local alpha.5 | md5 与线上**完全一致** |
+| skills alpha.29 | 仅 `package.json` 的依赖键顺序不同（`dist/client.js` 等 sha256 一致），无语义差异 |
+| **office alpha.5** | **真实差异**：`dist/client.browser.js` 本地 65,204,471 B vs 线上 65,068,085 B（差 136 KB，其余 11 个文件一致） |
+
+- **处理**：上传本地这两个包的最新制品覆盖 `wd-upload` 同名文件；线上 `pnpm install` 与 `pnpm install --force` 均判定 `Already up to date`（file: tarball 内容变化不改 specifier，pnpm 不重算 integrity），改用 `pnpm add file:…/workdsh-plugin-office-0.1.0-alpha.5.tgz file:…/workdsh-plugin-skills-0.1.0-alpha.29.tgz` 触发重新解析与解包（`Packages: +17 -107`）。
+- **校验**：线上 `node_modules/workdsh-plugin-office/dist/client.browser.js` sha256 = `fdee5be7…`、`workdsh-plugin-skills/dist/client.js` = `3cd6f222…`，与本地制品一致；版本号保持 `alpha.5` / `alpha.29`（源码未变，属同版本制品重新分发，未 bump）。
+- **重启与复验**：`docker restart dsh` → `running healthy`；插件加载错误 0、`lingshu-bridge` ENOENT 0；线上浏览器复验技能页（标题「技能市场」、共 15 个已安装技能）、左侧导航六项（资料库@y=280）、资料库页面 `292px 868px`；`/plugins/` 与 `/api/workdsh-office` 共 22 个请求全部 200；唯一 console error 仍是已知的 `/modlens/config` 403。
+- **备份**：`profiles/web/package.json.bak.sync.20260919`、`pnpm-lock.yaml.bak.sync.20260919`。
+- **遗留**：① pnpm 对 specifier 未变的 file: 依赖不重算 integrity，下次同步同类包仍需 `pnpm add`（`--force` 无效，已实测）；② `wd-upload` 中 office / skills 的旧制品已被同名覆盖，无法回滚到旧构建（本地新版即回滚源）。
+
 ## 2026-09-19：左侧导航未实现项判断与修复（资料库上线 + 其余改待开放）
 
 用户指令：「登录dsh.10ge.cn,对比workbuddy桌面端功能，针对左侧菜单栏没实现的功能进行判断与分析，实现修复」。用户随后选定范围为「**资料库上线 + 其余改待开放**」。
