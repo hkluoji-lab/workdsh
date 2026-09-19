@@ -47,7 +47,17 @@
 - 重启与健康：安装落盘时间 `2026-09-19T00:22:45Z`，而容器原启动时间为 `23:16:39Z`（早于安装 ⇒ 新版本尚未生效，server 时区为 UTC）→ `docker restart dsh`，健康检查由 `starting` 转 **`healthy`**（末次探测 ExitCode 0，返回客户端 HTML）；重启后日志中 `plugin tree failed` / `cannot open shared object` / `does not provide an export` / `duplicate loader entry` / `ERR_MODULE_NOT_FOUND` 计数 **0**。
 - 线上浏览器复验（真实客户端 `https://dsh.10ge.cn`，1440×1000，只读）：左侧导航六项逐字一致且按 order 排列（助理@y=120 / 项目@160 / 专家 · 技能 · 连接器@200 / 定时任务@240 / **资料库@280** / 更多@320，「资料库」行计数 1）；点击「资料库」进入真实页面（`.wd-library` 网格 `292px 868px`，`.wd-library-sidebar` 可见）；`layout.selectPanel` 报错 **0**，`pageerror` **0**。唯一 console error 仍是 `https://dsh.10ge.cn/modlens/config` 403（上节已定位为第三方插件的 loopback-only 设计，与本轮改动无关）。
 - 备份：`profiles/web/package.json.bak.fixnav.20260919`、`pnpm-lock.yaml.bak.fixnav.20260919`；回滚 = 还原两文件 + 重装 + `docker restart dsh`。
-- 观察到但未处理：容器日志中 `[lingshu-bridge] 灵枢进程启动失败: spawn python ENOENT`（整份日志 95 次，最早可见于首次启动的第 6 行）——第三方 bridge 依赖容器内不存在的 `python`，与本轮改动无关，本轮未修。
+- 观察到的 `[lingshu-bridge] ... spawn python ENOENT`（整份日志 95 次）已于同日修复，见下方「lingshu-bridge 修复」。
+
+**lingshu-bridge 修复（同日，实测）**
+
+线上容器日志长期出现 `[lingshu-bridge] 灵枢进程启动失败: spawn python ENOENT`，来源是第三方插件 `@furongjun1999/dsh-memory@0.4.6`（灵枢）的 bridge：它 spawn `python -m md_cg.mcp_server`（`md_cg` 随包自带，官方声明零第三方依赖），而容器里没有任何 python；重试 8 次后进入 failed 终态，记忆功能整体不可用。
+
+- **为什么不能 apt**：`docker inspect dsh` 显示 `HostConfig.ReadonlyRootfs = true`，`apt-get install python3` 直接报 `E: List directory /var/lib/apt/lists/partial is missing. - Acquire (30: Read-only file system)`。可写且持久的挂载只有 `/data/dsh`、`/workspace`、`/data/caddy` 与 dsh 包目录（`/tmp` 可写但非持久）。
+- **修法（不碰第三方代码）**：把官方 python-build-standalone `cpython-3.11.16+20260901-x86_64-unknown-linux-gnu-install_only` 解压到持久挂载 `/data/dsh/tools/python3.11`（容器内同路径，容器重建后仍在）；把插件自带的 `md_cg` 链接进该运行时的 site-packages（`…/lib/python3.11/site-packages/md_cg -> <插件仓>/md_cg`，指向插件自有目录，插件升级后自动跟随）；再在线上 profile 的 `cordis.patch.yml` 中把 `furongjun1999-dsh-memory` 的 `config.python` 指向 `…/bin/python3`（其余 config 走插件 schema 默认值）。
+- **过程中的一次假失败**：只配 python 时进程能起来但报 `ModuleNotFoundError: No module named 'md_cg'`（bridge 的 cwd 不保证落在插件仓），补上 site-packages 链接后消失——这也是为什么修法没有依赖插件的 cwd。
+- **验证（实测）**：重启后日志不再新增 `spawn python ENOENT`；`md_cg.mcp_server` 子进程自 `00:34:18Z` 起持续存活（bridge 仅在握手成功时保留子进程，失败路径会 kill），`00:34` 之后无任何 `lingshu-bridge` 错误行；插件数据根 `…/data/mdcg/{anchor,contextual,knowledge,self,goals,…}` 已初始化，密钥环 `/data/dsh/home/.mdcg/{master.key,_tokens.json}` 存在（`/root` 在只读根上，故密钥环落在 dsh 的 HOME）。
+- **备份与回滚**：`profiles/web/cordis.patch.yml.bak.lingshupython.20260919`；回滚 = 还原该文件 + 重启（新装的 python 留在 `/data/dsh/tools`，对 DSH 无副作用）。
 
 ## 2026-09-19：左侧导航未实现项判断与修复（资料库上线 + 其余改待开放）
 
