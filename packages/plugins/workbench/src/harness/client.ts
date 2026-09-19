@@ -13,9 +13,10 @@ import {
  * Keep the official Sidebar and Conversation occupants in place. WorkDSH only
  * contributes business navigation and paired main panels through public Slots.
  *
- * A panel registers a `main` occupant only while it is `pending`; panels whose
- * real page belongs to another plugin (the library) contribute the sidebar row
- * and leave the `main` key to that plugin, so no key is registered twice.
+ * Only still-unimplemented entries are listed here: each one registers both its
+ * `sidebar.panellist` row and its explanatory `main` panel, so a row never
+ * outlives its page. Entries that own a real page (the library, the capability
+ * centre) register their row and `main` key in their own plugin instead.
  */
 export const name = 'workdsh-workbench-client';
 export const inject = ['slots'];
@@ -23,14 +24,11 @@ export const inject = ['slots'];
 export function apply(ctx: Context): void {
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({ name: 'conversation.input.dock', id: 'workdsh-task-execution-notice' }, TaskExecutionNotice));
   for (const panel of businessPanels) {
-    const pending = panel.pending;
-    if (pending) {
-      ctx.slots.inject('main', () => ctx.slots.register({
-        name: 'main',
-        key: panel.id,
-        inject: () => ({ label: panel.label, description: pending.description, boundary: pending.boundary }),
-      }, BusinessPanel));
-    }
+    ctx.slots.inject('main', () => ctx.slots.register({
+      name: 'main',
+      key: panel.id,
+      inject: () => ({ label: panel.label, description: panel.pending.description, boundary: panel.pending.boundary }),
+    }, BusinessPanel));
     ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
       name: 'sidebar.panellist',
       id: panel.id,

@@ -36,7 +36,7 @@
       "src"
     ],
     "release": {
-      "version": "0.1.0-alpha.47",
+      "version": "0.1.0-alpha.48",
       "channel": "github-prerelease",
       "date": "2026-09-19",
       "evidence": "docs/releases/v0.1.0-alpha.2.md"

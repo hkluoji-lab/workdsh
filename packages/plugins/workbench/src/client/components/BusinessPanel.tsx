@@ -20,15 +20,19 @@ export type BusinessPanelDefinition = {
   readonly icon: IconName;
   readonly order: number;
   /**
-   * 待开放项的功能说明、未实现原因与当前可用的下一步；非 null 时注册说明用的
-   * `main` 面板，并让侧栏标签追加待开放后缀。null 表示真实页面由其他插件提供
-   * （资料库归 workdsh-plugin-library），workbench 只保留侧栏入口。
+   * 待开放项的功能说明、未实现原因与当前可用的下一步。workbench 只为待开放项
+   * 注册说明用的 `main` 面板，并让侧栏标签追加待开放后缀。
+   *
+   * 已有真实页面的入口不由本表登记：页面所属插件自己注册 `main` 与同名
+   * `sidebar.panellist` 行（例如资料库归 workdsh-plugin-library，能力中心归
+   * workdsh-plugin-skills）。否则插件缺席时会出现「有入口、无页面」，点击即抛
+   * `layout.selectPanel: main panel "…" is not registered`。
    * 规划状态以 docs/development-order.json 的步骤 ID 为准。
    */
   readonly pending: {
     readonly description: string;
     readonly boundary: string;
-  } | null;
+  };
 };
 
 export const businessPanels = [
@@ -63,13 +67,6 @@ export const businessPanels = [
     },
   },
   {
-    id: 'workdsh-library',
-    label: '资料库',
-    icon: 'library',
-    order: 50,
-    pending: null,
-  },
-  {
     id: 'workdsh-more',
     label: '更多',
     icon: 'more',
@@ -81,9 +78,9 @@ export const businessPanels = [
   },
 ] as const satisfies readonly BusinessPanelDefinition[];
 
-/** 侧栏注册标签：待开放项在此追加后缀，其余保持设计稿标签。 */
+/** 侧栏注册标签：待开放项一律追加后缀，与面板内的状态徽标一致。 */
 export function sidebarLabel(panel: BusinessPanelDefinition): string {
-  return panel.pending ? `${panel.label}${pendingLabelSuffix}` : panel.label;
+  return `${panel.label}${pendingLabelSuffix}`;
 }
 
 export type BusinessPanelProps = PropsRuntime<'main'> & InjectFace<{

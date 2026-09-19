@@ -1,3 +1,9 @@
+# 0.1.0-alpha.2
+
+- 资料库自持侧栏入口：客户端注册 `sidebar.panellist` 行（`id: workdsh-library`、`label: 资料库`、`order: 50`），与它自己的 `main` 面板同属一个插件。
+- 修复「有入口、无页面」隐患：入口此前由组合包的工作台登记，只装组合包不装资料库时点击会抛 `layout.selectPanel: main panel "workdsh-library" is not registered`；现在插件缺席就没有入口。
+- 与 `workdsh-bundle@0.1.0-alpha.48` 需同批安装：组合包已不再登记该行。
+
 # 0.1.0-alpha.1
 
 - 建立个人本地资料空间和持久目录树。

@@ -1,3 +1,45 @@
+## 2026-09-19（续）：修复「资料库」侧栏入口的潜在报错
+
+用户指令：「先修复资料库侧栏入口的潜在报错」——即下一节登记的「新发现（已记录，未修改）」。
+
+**根因**：入口与页面分属两个插件。`workbench` 无条件为「资料库」注册 `sidebar.panellist` 行，而该行的 `main` 面板 key `workdsh-library` 归 `workdsh-plugin-library`；官方 `sidebar.panellist` 的公开注册面没有 disabled 语义，行按钮由官方 Sidebar owner 直接调用 `ctx.layout.selectPanel(id)`，`LayoutController.selectPanel` 在 `!hasMainPanel(id)` 时抛 `layout.selectPanel: main panel "workdsh-library" is not registered`。因此「只装组合包、不装 library」的 profile 会留下死入口。
+
+**修法（入口随页面）**：侧栏行由拥有该 `main` 面板的插件自己注册；工作台只登记仍未实现的入口。
+
+| 文件 | 变化 |
+|---|---|
+| [BusinessPanel.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/workbench/src/client/components/BusinessPanel.tsx#L17-L84) | 删除 `workdsh-library` 条目；`pending` 由可选改为必填；`sidebarLabel()` 简化为恒加后缀；类型注释写明「已有真实页面的入口不由本表登记」 |
+| [workbench/src/harness/client.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/workbench/src/harness/client.ts#L14-L38) | 注册循环改为 `main` + `sidebar.panellist` 成对无条件注册（只遍历四项未实现入口） |
+| [library/src/client.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/library/src/client.tsx#L138-L156) | 新增 `sidebar.panellist` 注册（`id: workdsh-library`／`label: 资料库`／`order: 50`）与 `LibraryNavigationIcon`，并补 `@deepseek-ai/dsh-client-ui-sidebar` 类型 import |
+| [library/package.json](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/library/package.json) | devDependencies 补 `@deepseek-ai/dsh-client-ui-sidebar@0.1.6-alpha.1`——缺它时 `sidebar.panellist` 不在槽位联合类型里，构建报 `TS2769` |
+| [probe-browser.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/scripts/probe-browser.mjs#L71-L78) | 该探针 profile 只装 bundle + skills（无 library），断言改为「五项可见 + 资料库行 0 个」 |
+
+版本：`workdsh-plugin-workbench@0.1.0-alpha.12`、`workdsh-plugin-library@0.1.0-alpha.2`、`workdsh-bundle@0.1.0-alpha.48`；三个 CHANGELOG、[MODULE-VERSIONS](MODULE-VERSIONS.md)、[modules.json](modules.json) 同步。**组合包与资料库必须同批安装**：只升其一会让「资料库」入口消失（bundle 不再登记该行，只有 library 登记）。
+
+**验证（实测）**：
+
+- `corepack pnpm build`（含 library、bundle）通过；`corepack pnpm check:plan` 通过（30 模块 / 50 文档）。
+- 编译产物核对：`packages/plugins/library/dist/client.browser.js` 含 `{ name: "sidebar.panellist", id: "workdsh-library", label: "资料库", order: 50 }`。
+- `corepack pnpm preview:install` 后重启 3031，Playwright 1440×1000 实测：导航六项逐字一致且按 order 排列（助理@120 / 项目@160 / 专家 · 技能 · 连接器@200 / 定时任务@240 / **资料库@280** / 更多@320）；点击「资料库」进入真实页面（`.wd-library` 网格 `292px 868px`，`.wd-library-sidebar` 可见，含「搜索 / 最近 / 本地产物 / 我的资料 ＋ / 本地资料库 · 仅当前设备」）；`pageerror` 与 console error 均 **0 条**，无 `layout.selectPanel` 报错。
+- 插件缺席的负例：`corepack pnpm probe:browser`（探针 profile = bundle + skills，无 library）在 [probe-browser.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/scripts/probe-browser.mjs#L64-L79) 第 65—78 行**全部通过**，即五项入口可见且「资料库」行计数为 **0**。
+
+**探针维护债：已重写，但仍被 Host 侧会话创建阻塞（实测）**
+
+`scripts/probe-browser.mjs` 的技能页断言此前按更早的技能页写死，已按当前页面重写：
+
+| 位置 | 旧断言（失效） | 新断言（当前页面） |
+|---|---|---|
+| 第 104／147／157 行 | 标题「技能库」 | 标题「技能市场」（[SkillsPanel.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/skills/src/client/SkillsPanel.tsx#L269)） |
+| 第 112 行 | `role=status` 名为「已安装 N 个技能」 | 页面文本 `/共 \d+ 个已安装技能/`（计数行文案已变） |
+| 第 113 行 | 「我安装的」按钮不应出现 | 该按钮是进入已安装视图的真实按钮（[L264](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/skills/src/client/SkillsPanel.tsx#L264)），断言其可用 |
+| 第 114 行 | 五个分类按钮应禁用 | 分类只来自本地技能目录（[L270](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/skills/src/client/SkillsPanel.tsx#L270)），断言「全部」存在且五个编造分类不出现 |
+| 第 179／183 行 | `/skill-creator`、`skill-creator` | `/workdsh-skill-creator`、`workdsh-skill-creator`（预填指令见 [drafts.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/skills/src/client/drafts.tsx#L8)） |
+| 第 258 行 | 侧栏「项目」 | 「项目（待开放）」（本轮改动后的注册标签） |
+
+复跑 `corepack pnpm probe:browser` 两次：**第 65—153 行全部通过**（含负例——该 profile 只装 bundle + skills，「资料库」行的计数为 0），随后两次都停在第 154 行「去试试」：Host 侧建会话失败，日志为 `session create failed: gateway/internal: failed to create session "…": Error: mcp-client(playwright-mcp): initial connection or tool synchronization failed`。已排除服务端进程本身的问题：用同一组参数（`--browser chromium --isolated --headless --executable-path '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'`，`env -i`）直接启动锁定版 `@playwright/mcp` cli，`initialize` 与 `tools/list` 均正常返回；本地预览 profile 新建会话也正常（`workdsh-view=conversation`，Host 日志无 `session create failed`）。该组合自 `b8e562d`（2026-09-15「enable official playwright browser use」，同一提交把 browser-use 四行断言写进 `probe-install.mjs`）起就存在，与本轮改动无因果关系。
+
+**阻塞项（如实登记）**：`pnpm probe:browser` 目前无法跑到底，且卡点在 Host 的 MCP 客户端而非本轮改动；在定位前它不能充当「资料库入口」的自动证据（负例部分已人工确认通过）。
+
 ## 2026-09-19：左侧导航未实现项判断与修复（资料库上线 + 其余改待开放）
 
 用户指令：「登录dsh.10ge.cn,对比workbuddy桌面端功能，针对左侧菜单栏没实现的功能进行判断与分析，实现修复」。用户随后选定范围为「**资料库上线 + 其余改待开放**」。
@@ -41,7 +83,7 @@
 - **本地 3031 已按本轮改动重建并复验**：预览 profile 此前为旧状态（**未装 `workdsh-plugin-library`**，11 项依赖），`corepack pnpm preview:install` 后为 **12 项依赖**（含 library `0.1.0-alpha.1`）、bundles 12 项、bundle `0.1.0-alpha.47`；`corepack pnpm build` 通过，且 `preview:install` 的产物一致性断言（安装后 dist 与当前构建逐字节比对）通过。
 - 本地浏览器实测（Playwright，1440×1000，只读）：全局导航逐字一致（助理（待开放）/ 项目（待开放）/ 专家 · 技能 · 连接器 / 定时任务（待开放）/ 资料库 / 更多（待开放））；资料库为真实页面，`.wd-library` 网格实测 `292px 868px`、`.wd-library-sidebar` 可见且含「搜索 / 最近 / 本地产物 / 我的资料 ＋ / 本地资料库 · 仅当前设备」，全文「此入口待开放」0 次；四个待开放入口均渲染徽标 + 职责 + 原因 + 替代路径且为选中态；`pageerror` 与 console error 均 **0 条**，无 `layout.selectPanel` 报错。截图：`/Users/apple/.trae-cn/trae-browser-screenshots/dsh-verify-local/`。
 - 取舍说明：资料库在 `max-width: 760px` 以下按自身响应式折叠为单栏（隐藏资料库侧栏），窄视口下看不到三栏，不是缺陷。
-- **新发现（已记录，未修改）**：`workbench` 无条件注册「资料库」侧栏入口，而该页面的 `main` 面板归 `workdsh-plugin-library`；若某 profile 只装 `workdsh-bundle` 而不装 library，点该入口会抛 `layout.selectPanel: main panel "workdsh-library" is not registered`。受支持的两处组合（本地预览、线上 web profile）都已含 library，故本轮未改；候选修法是让 library 自持侧栏入口（与 skills/experts 同模式，见 [skills/src/client.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/skills/src/client.tsx#L91-L93)），属独立改动，待确认后再做。
+- **新发现（当日已修复）**：`workbench` 无条件注册「资料库」侧栏入口，而该页面的 `main` 面板归 `workdsh-plugin-library`；若某 profile 只装 `workdsh-bundle` 而不装 library，点该入口会抛 `layout.selectPanel: main panel "workdsh-library" is not registered`。修法与验证见上一节「2026-09-19（续）」。
 
 **未执行 / 未验证（如实登记）**：未做登录后的会话创建、模型调用、专家/技能/资料库业务端到端验收（本轮只验证导航、页面归属与控制台）；资料库右侧「资料预览」标签需选中一条资料后才出现，本轮未造数据故未验证其渲染；线上 profile 的 `pnpm install` 曾出现「安装已完成但进程不退出」的挂起（CPU 空闲、无 socket），以 `--reporter=append-only` 重跑确认 `Already up to date`，**该挂起根因未定位**；`lingshu-bridge` 的 `spawn python ENOENT` 为既有现象，未修；D06/D07/D12/D16 的步骤状态未因本轮部署签收（部署不等于模块验收）。
 

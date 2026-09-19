@@ -1,3 +1,8 @@
+# 0.1.0-alpha.48 — 2026-09-19
+
+- 工作台不再为「资料库」登记侧栏行：入口和页面同属 `workdsh-plugin-library`（`0.1.0-alpha.2` 起自持），只装组合包不装资料库时不再出现点击即抛错的死入口。
+- 本版必需与 `workdsh-plugin-library@0.1.0-alpha.2` 同批安装；只升组合包会让「资料库」入口消失。
+
 # 0.1.0-alpha.47 — 2026-09-19
 
 - 资料库面板 `workdsh-library` 的 `main` 席位交还 `workdsh-plugin-library`；组合包不再为它注册占位面板，避免同 key 重复注册。
