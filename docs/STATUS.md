@@ -1,3 +1,106 @@
+## 2026-09-19（续）：线上 profile 的 minimumReleaseAge 策略来源定位与 exclude 去重修复
+
+用户指令：「先查一下 dshmarket 的 minimumReleaseAge 策略来源」→「好的，执行吧」。
+
+**结论（实测）**：该策略不是 dshmarket 的，也不是任何显式配置，而是 **pnpm 11 的内置默认值**。
+
+| 环节 | 来源 | 证据 |
+| --- | --- | --- |
+| `minimumReleaseAge: 1440`（24h） | pnpm 内置默认 | 容器 `pnpm 11.7.0` 的 `pnpm.mjs`：`"minimum-release-age": 24 * 60, // 1 day`。profile 无 `.npmrc`、无 `NPM_CONFIG_*` 环境变量、`pnpm-workspace.yaml` 内也无该键 ⇒ `pnpm config list` 不显示它 |
+| `minimumReleaseAgeStrict` | 仅当**显式设置** `minimumReleaseAge` 时才自动置 true | `if (pnpmConfig.explicitlySetKeys.has("minimumReleaseAge") && …Strict == null) …Strict = true`。本 profile 未设 ⇒ strict 关闭 ⇒ 对具名的新版本是**自动记账并放行**，而非报错或询问 |
+| `minimumReleaseAgeExclude` 的条目 | **pnpm 自己写入** `pnpm-workspace.yaml` | 隔离实测 `pnpm add dshmarket@1.48.0` 打印 `Added 1 entry to minimumReleaseAgeExclude in pnpm-workspace.yaml` 并落盘；写入代码 `manifest.minimumReleaseAgeExclude = [...existing, ...newEntries]` |
+| 触发者 | dshmarket 把安装目标 pin 成 `name@registry最新版` 精确版本（`dshmarket/lib/routes.js` 注释：bare name 会被 pnpm 静默退回较旧的成熟版本），正是这一步让 pnpm 记账 | `routes.js` 注释与 `.dsh-market/log.ndjson` 的 install 事件 |
+
+**为何 `dshmarket@1.48.0` 已在列表却仍被拒**：pnpm 的 exclude 匹配器对同名包**只认首个命中规则**（`evaluateVersionPolicy` 在第一个名字匹配处即 `return exactVersions`，同名后续条目永不参与）。线上列表里 `dshmarket@1.46.1` 排在 `@1.48.0` 之前 ⇒ 后者被遮蔽；`dsh-context@0.51.1` 同理遮蔽 `@0.52.0`。
+
+隔离实验（同一 lockfile、`minimumReleaseAge: 2000`、非 TTY）：
+
+| exclude 列表 | 结果 |
+| --- | --- |
+| `[dshmarket@1.46.1, dshmarket@1.48.0]`（线上原状） | `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`，指名 `dshmarket@1.48.0` |
+| `[dshmarket@1.48.0]` | ✓ 通过 |
+| `[dshmarket@1.46.1]` | 违反 |
+
+附带解释 dshmarket 自己那次 1.48.0 更新为何 `exit=0`：它内部有一次性放行重试（`pnpm-compat.js` 命中该错误后改 `--config.minimum-release-age=0` 重跑，#39），手工 `pnpm install` 不经过它，故直接吃原始错误。
+
+**修复（已执行）**：线上 `profiles/web/pnpm-workspace.yaml` 删除两条**已被遮蔽且已不在 lockfile 中**的旧条目（`dshmarket@1.46.1`、`dsh-context@0.51.1`），519 → 475 字节；保留 `@nanmicoder/dsh-agent-teams@0.1.18`、`dsh-cost-meter@1.7.22`、`dsh-context@0.52.0`、`dshmarket@1.48.0`。备份 `pnpm-workspace.yaml.bak.exclude-dedupe.20260919134224`。
+
+**验证（实测）**：`docker exec -e HOME=/data/dsh/home -w /data/dsh/profiles/web dsh sh -c "pnpm install --lockfile-only --ignore-scripts"` → `exit=0`、`✓ Lockfile passes supply-chain policies (1075 entries)`；容器 `Up (healthy)`；公网 `https://dsh.10ge.cn/` **200**；容器内 `curl 127.0.0.1:3080` 返回 400 `Client sent an HTTP request to an HTTPS server.`（该端口是 HTTPS，属正常）。未重启容器（`pnpm-workspace.yaml` 只在安装时读取）。
+
+**未执行**：只跑 `--lockfile-only`（即原先失败的那一步校验），未跑完整 `pnpm install`；`allowBuilds` 的六个值仍是占位字符串 `set this to true or false`，本次未改动。
+
+## 2026-09-19（续）：侧栏品牌位换成 10GE 字标并部署到线上（bundle alpha.49）
+
+用户指令：「此 logo 请设计放在左上角适合的位置。替换原 W 图标，做好宽带高度审美观」→「好的，执行吧」→「好的，部署到线上」。
+
+**实现**：品牌位由公开 `sidebar.brand.mark` 提供（[client.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/src/client/harness/client.ts#L49-L50)，priority -10），owner props 是官方 `SidebarBrandMarkOwnerProps { size: number }`（官方传 24）。原 mark 是 `workdsh-ui` 的 `LogoMark`（W 图标），现替换为自绘 SVG 字标：
+
+- [`GeWordmark.tsx`](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/src/client/components/GeWordmark.tsx)：`viewBox="0 15 235 70"` 单带，`1 / 眼球 / G / E` 共用同一光学高度（字高 = 眼球直径），按 `height=size` 等比（24px → 80.56×24）；由 24 齿生成的虹膜环（`Array.from({length:24})`）+ 白巩膜 `rx22 ry17.5` + 蓝虹膜 `r15.5` + 深瞳 `r6.5` + 高光 `r3` 构成替 0 的眼球；`1/G/E` 用 `#2670DA`，环与齿用 `currentColor`（`strokeOpacity 0.85`）。
+- [`Brand.tsx`](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/src/client/components/Brand.tsx)：`BrandMark({ size }) => <GeWordmark height={size} />`；`BrandName` 仍是 `DSH JOB AI`（用户明确要求保留），两个席位的 owner props 未改。
+- 主题适配：环取 `currentColor` 即官方 `--dsw-alias-label-primary`（深色下是近白、浅色下是 `--dsw-static-neutral-bluish-1000`），避免固定浅灰环在浅色主题 `#f9fafb` 侧栏上消失。**浅色主题未在真实切换下复验**（线上/本地默认均为深色，`colorScheme` 由应用设定而非 `prefers-color-scheme`）。
+- **未采用位图**：用户原选「用原图 PNG」，但 PNG 未落盘（项目内、`~/Downloads`、`~/Desktop`、`/var/folders` 均无），且官方模块加载器不提供静态资源路由（客户端产物以 `window.__ModuleLoader__.load(...)` 单文件 CJS 交付，外部图片只能内联）；原图的金属底板与生成水印在 24px 行内也不可用 ⇒ 改为纯 SVG 重绘，不新增资源目录、不改 `build-client-probe.mjs` 的 loader。若后续提供 PNG，切回 `<img>` 分支的改动量约 3 处。
+
+**版本**：`workdsh-bundle` `0.1.0-alpha.48` → **`0.1.0-alpha.49`**（本模块本次确实变化，按 MODULE-VERSIONS 增预发布序号）；[CHANGELOG](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/CHANGELOG.md#L1-L6)、[MODULE-VERSIONS](file:///Users/apple/Documents/AI-luoji/workdsh/docs/MODULE-VERSIONS.md#L33) 同步。`workdsh-ui` 未改（`LogoMark` 仍导出，未删除）。
+
+**验证（实测）**：
+
+- 本地：`corepack pnpm --filter workdsh-bundle build` 与 `… typecheck` 均 exit 0；`preview:install` 通过（含官方逐 face 比对）。
+- 无浏览器几何核对（`.artifacts/check-brand-mark.mjs`）：`size=24 -> width=80.6 height=24 ratio=3.357`、`artwork=3.357`、`ticks=24`、`sizeMatches=true`；`size=20` 同比例；`decorative=true`（`aria-hidden`）、`testid=workdsh-brand-mark`、`brandName: DSH JOB AI`。
+- 线上真实客户端（`https://dsh.10ge.cn/`，1440×1000，`.artifacts/verify-live-brand.mjs`）：`200`、落到 `?workdsh-view=conversation`、`title=DeepSeek Harness`；`markTag=svg`、`80.56×24`（比例 `3.36`）、`viewBox="0 15 235 70"`、`ticks=24`、`barrelStroke=currentColor`、`nameText="DSH JOB AI"`、与字标间距 `8px`、垂直居中偏差 `0`、`markLeft=16`（与官方 `.brand-row` 的 16px 内边距一致）、位图形态 mark 计数 `0`（新 mark 是内联 svg）；console error 仅已知的 `/modlens/config` 403。截图 `.artifacts/live-brand-row.png` 肉眼确认「1👁GE + DSH JOB AI」。
+- 三方同源：本地 `.artifacts/workdsh-bundle-0.1.0-alpha.49.tgz` 内 `dist/client.js`、本地预览 profile 安装件、线上 `node_modules/workdsh-bundle/dist/client.js` 的 sha256 **同为** `3ebdca59061c97d3a86d3843f3f51bd085736638b898b780a4f4ced2a03d86d0`。
+
+**线上部署步骤（实测）**：
+
+1. `corepack pnpm --filter workdsh-bundle pack --pack-destination .artifacts` → `workdsh-bundle-0.1.0-alpha.49.tgz`（21761 字节）；上传到 `data/workspace/wd-upload/`（容器 `/workspace/wd-upload/`）。
+2. 备份 `profiles/web/package.json.bak.brand.20260919`、`pnpm-lock.yaml.bak.brand.20260919`；把 dep 改指 `file:/workspace/wd-upload/workdsh-bundle-0.1.0-alpha.49.tgz`（`.artifacts/patch-bundle-dep.mjs`，deps=23 / bundles=23 不变）。
+3. 容器内安装**必须带 `-e HOME=/data/dsh/home`**：容器根文件系统只读，pnpm 默认 HOME=`/root` 会在 `mkdir /root/.local` 直接 ENOENT 失败（本次首次尝试即如此）。正确命令：`docker exec -e HOME=/data/dsh/home -w /data/dsh/profiles/web dsh sh -c "pnpm install --registry=https://registry.npmmirror.com --ignore-scripts"`（`Packages: +7 -107`）。
+4. `docker restart dsh` → `running healthy`；末次 `web: http` 之后的 `plugin tree failed` / `does not provide` / `exited during startup` / `ERR_MODULE_NOT_FOUND` 计数 **0**。
+
+**遗留 / 未执行**：
+
+- 安装尾部出现 `[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION]`：`dshmarket@1.48.0` 发布于 `2026-09-18T14:08Z`，落在 minimumReleaseAge 的 24h 截止线（`2026-09-18T13:32Z`）内而被策略拒绝。**新包已装成功**（版本与 sha256 均已核对），但该策略会让每次安装以非 0 退出。**已于同日定位并修复**（原因：`minimumReleaseAgeExclude` 同名条目首条遮蔽后条，见上一节），线上校验安装现为 `exit=0`。
+- `pnpm-lock.yaml` 在本次安装中被重写（641379 → 641185 字节，09-19 13:32）；未逐条审阅其与备份的差异。
+- 本地预览进程（PID 64257，3031）未重启：profile 内已换成 alpha.49，但运行中的实例仍持有重启前加载的模块（同一份 `dist/client.js`，sha256 相同）；重启会更换访问 token，需用户许可后再做。
+
+## 2026-09-19（续）：线上 502 故障定位与修复（awiki 插件不兼容）
+
+用户指令：「请修复 `https://dsh.10ge.cn/`，无法打开网站了」。
+
+**现象**：`https://dsh.10ge.cn/` 返回 **502**（Cloudflare 边缘正常、源站不响应）；宿主 `ss` 显示 3080 在 LISTEN，但 `curl http://127.0.0.1:3080/` 返回 **000**（该监听是 docker-proxy 的端口发布所致，容器内 web server 并未绑定）；容器 `dsh` 为 `running healthy`，实际内部在**崩溃重启循环**（`dsh exited during startup (attempt N/10)`）。
+
+**根因（实测）**：第三方插件 `@awiki/dsh-plugin@0.3.7` 的 `lib/index.js:9` 具名导入 `@deepseek-ai/dsh-settings` 的 `settingsNamespace`，而本 profile 实际装配的官方版本是 **0.1.6-alpha.1**，该导出不存在：
+
+| 证据 | 实测 |
+| --- | --- |
+| 失败日志 | `dsh: plugin tree failed to load: failed to apply loader entry include (cordis:include): failed to import loader entry awiki (@awiki/dsh-plugin): The requested module '@deepseek-ai/dsh-settings' does not provide an export named 'settingsNamespace'` → `dsh exited during startup (attempt N/10)`，**日志中没有一行 `dsh web: http://127.0.0.1:3080`**（web server 从未绑定） |
+| awiki 的契约 | `package.json` peerDependencies 全部锁官方 **0.1.1-rc.2**；npm 上最新 `0.3.12` 的 peer 也只到 **0.1.5-rc.2**，**没有**匹配 0.1.6-alpha.1 的版本 |
+| 被解析到的模块 | 从 awiki 目录 `createRequire(...).resolve('@deepseek-ai/dsh-settings')` → `/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-settings/lib/index.js`（= 0.1.6-alpha.1）；容器内该版本**不含** `settingsNamespace`，全盘 `grep -rl settingsNamespace` 只有 awiki 自己与 `dsh-api-settings-controller` 在引用 |
+| 触发点 | 线上 `profiles/web/package.json` 在 **09-19 07:21** 被改：与 `package.json.bak.sync.20260919`（00:40）逐项 diff，**唯一差异**是把 `@awiki/dsh-plugin` 加进了 `dsh.profile.bundles`（22 → 23 项）。此前它只作为依赖存在、**从不加载**，所以 00:22Z 那次重启的日志里 `does not provide an export` 计数为 0（见上一节）。该次改动在运行中的进程里不生效，容器于 13:18Z 重启后才整棵树从零装配并失败 |
+
+即：**这不是 WorkDSH 代码问题，也不是 AWS/网络问题**；是一条「已装但未启用」的第三方插件被登记进 bundles 后，与官方 0.1.6-alpha.1 基线不兼容，而 Harness 的 loader 把单个 entry 的具名导入失败当作**整棵插件树**失败，导致 3080 永不监听。
+
+**修法（沿用本项目既有先例，不碰第三方代码）**：在线上 profile 的 patch 层 `profiles/web/cordis.patch.yml` 追加三条禁用（与 09-19 处理 `computer-use` 的两条同一手法，因为 bundle 自带的 patch 每次 `pnpm install` 都会被 tarball 原件覆盖）：
+
+```yaml
+- id: awiki
+  disabled: true
+- id: awiki-provider
+  disabled: true
+- id: awiki-summary-provider
+  disabled: true
+```
+
+包仍留在 `node_modules`；上游发布兼容版本后删掉这三行即可恢复。**无功能回退**：awiki 在 07:21 之前从未进入插件树，本次修复等于把它的加载态还原到故障前。
+
+**验证（实测）**：
+
+- `docker restart dsh` 后：`dsh web: http://127.0.0.1:3080/?token=…` 出现（`/tmp/dsh.log` 第 1411 行，全文 1414 行），**该行之后** `does not provide` / `failed to import` / `exited during startup` 计数 **0**；`docker inspect` → `running healthy`。
+- `https://dsh.10ge.cn/` → **200**；Playwright（1440×1000，真实客户端）加载后标题 `DeepSeek Harness`、URL 落到 `?workdsh-view=conversation`、左侧品牌 `DSH JOB AI` 计数 1、六项导航与工作区/会话/余额均正常渲染；console error 只有已知的 `/modlens/config` 403。
+- 备份：`profiles/web/cordis.patch.yml.bak.awiki.20260919`；回滚 = 还原该文件 + `docker restart dsh`。
+- 同步更新部署源 `.artifacts/deploy-20260919/cordis.patch.yml`，避免下次部署把 awiki 重新放进树里。
+
+**未执行**：未验证 awiki 与 0.1.6-alpha.1 是否存在可用组合（容器内无 npm 源，且 npm 上没有 peer 命中该版本的制品）；未定位 07:21 那次 `dsh.profile.bundles` 改写究竟由谁写入（该分钟同时有本轮 `pnpm add`，但 `pnpm add` 本身不改 bundles）；未排查「容器状态 healthy 而源站不响应」的监控盲区（现有健康检查未能及时发现整棵树装配失败），留给后续单独处理。
+
 ## 2026-09-19（续）：修复「资料库」侧栏入口的潜在报错
 
 用户指令：「先修复资料库侧栏入口的潜在报错」——即下一节登记的「新发现（已记录，未修改）」。
