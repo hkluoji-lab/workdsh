@@ -54,7 +54,7 @@ await writeFile(join(destination, 'release-manifest.json'), JSON.stringify({
   tag,
   channel: 'github-release',
   sourceCommit,
-  harness: '0.1.6-alpha.1',
+  harness: '0.1.6-alpha.2',
   node: process.version,
   packageManager: project.packageManager,
   packages,

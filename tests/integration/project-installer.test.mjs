@@ -14,7 +14,7 @@ const packageNames = [
   'workdsh-plugin-activity', 'workdsh-plugin-office', 'workdsh-bundle',
 ];
 
-async function fixture(version = '0.1.6-alpha.1') {
+async function fixture(version = '0.1.6-alpha.2') {
   const home = await mkdtemp(join(tmpdir(), 'workdsh-installer-'));
   const release = join(home, 'release');
   await mkdir(release, { recursive: true });
@@ -25,7 +25,7 @@ async function fixture(version = '0.1.6-alpha.1') {
     await writeFile(join(release, filename), bytes);
     packages.push({ name, filename, sha256: createHash('sha256').update(bytes).digest('hex') });
   }
-  await writeFile(join(release, 'release-manifest.json'), JSON.stringify({ version: 'test', harness: '0.1.6-alpha.1', packages }));
+  await writeFile(join(release, 'release-manifest.json'), JSON.stringify({ version: 'test', harness: '0.1.6-alpha.2', packages }));
   const fakeDsh = join(home, 'fake-dsh.mjs');
   await writeFile(fakeDsh, `#!/usr/bin/env node
 import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
