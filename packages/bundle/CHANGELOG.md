@@ -1,3 +1,10 @@
+# 0.1.0-alpha.49 — 2026-09-19
+
+- 侧栏品牌位 `sidebar.brand.mark` 由原 W 图标（`workdsh-ui` 的 `LogoMark`）替换为 10GE 字标：按官方 owner props 的 `size`（官方传 24px）等比绘制的自绘 SVG，`viewBox` 235×70 单带，“1 / 眼球 / G / E”共用同一光学高度。
+- 眼球用“24 齿虹膜环 + 白巩膜 + 蓝虹膜 + 深瞳 + 高光”构成，替字标中的 0；`1/G/E` 为蓝色，环随 `currentColor`（0.85 不透明度）取自官方 `--dsw-alias-label-primary`，暗色主题保留原稿的钢灰观感，浅色主题不会没入 #f9fafb 侧栏。
+- 官方模块加载器不提供图片静态路由，故不引入位图资源：字标以纯 SVG 内联，不新增资源目录、不依赖打包器的资源 loader。
+- 名称 `DSH JOB AI`（`sidebar.brand.name`）与两个席位的 owner props 未改动；`workdsh-ui` 的 `LogoMark` 仍导出，未删除。
+
 # 0.1.0-alpha.48 — 2026-09-19
 
 - 工作台不再为「资料库」登记侧栏行：入口和页面同属 `workdsh-plugin-library`（`0.1.0-alpha.2` 起自持），只装组合包不装资料库时不再出现点击即抛错的死入口。
