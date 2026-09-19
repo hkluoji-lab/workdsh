@@ -1,3 +1,9 @@
+## 0.1.0-alpha.6 — 2026-09-19
+
+- 编辑器运行时拆成独立的按需产物 `dist/office-runtime.js`，由插件自己的 Web 路由托管：启动包只保留注册壳（65,204,471 B → 16,677 B），打开文档时才注入脚本并取得模块表导出。
+- 旧内联编辑器页面改为按需产物 `dist/editor.html`，同样经该路由取用；URL 不带修订号，故用 ETag 重校验而不是 immutable 缓存。
+- 声明 `modules` 客户端注入：懒加载经内核模块表取产物，缺该声明时页面只报 `cannot get property "modules" without inject`。
+
 ## 0.1.0-alpha.5 — 2026-09-15
 
 - 支持从客户 PPTX 模板建立独立工作副本，保留母版、版式、主题、媒体与原文件。

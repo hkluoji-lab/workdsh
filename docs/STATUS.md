@@ -1,3 +1,80 @@
+## 2026-09-19（续）：Office 懒加载拆分部署上线与三条路径复验（office 0.1.0-alpha.6）
+
+方案（用户选定，verbatim）：「新增 workdsh-plugin-office 的运行时产物 dist/office-runtime.js，由插件自己的 ctx.webServer 路由托管；client.tsx 只保留注册壳，打开文档时才注入 `<script>` 加载重型编辑器。预计 gzip 16.9MB→4.7MB、首屏 27s→约 7s。功能不减，改动较大：build-office.mjs、client.tsx、index.ts、package.json 都要改，需重新打包部署并复验 docx/pptx/xlsx 三条路径。」
+
+**结论：拆分生效，首屏不再拉取重型产物；线上 docx/pptx/xlsx 三条路径均已在生产环境真实跑通。**
+
+### 1. 本段唯一代码修复：客户端注入缺 `modules`
+
+懒加载经内核模块表取产物（`runtime-loader.ts` 的 `ctx.modules.import(...)`），而 [client.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/office/src/client.tsx#L32-L42) 的 `inject` 未声明 `modules`，页面右侧面板不渲染且只报 `cannot get property "modules" without inject`（由 `.artifacts/debug-office-live.mjs` 的 `--diagnose` 分支取到：`alerts` 命中该文案、`rightPane: absent`、`lazyRequests: []`、`loader: object`）。修法：`inject` 增加 `"modules"`。这是本段唯一产品代码改动。
+
+### 2. 版本与产物
+
+| 项 | 值 |
+| --- | --- |
+| 模块版本 | `workdsh-plugin-office@0.1.0-alpha.6`（[MODULE-VERSIONS.md](file:///Users/apple/Documents/AI-luoji/workdsh/docs/MODULE-VERSIONS.md) 已同步；CHANGELOG 新增 alpha.6 段） |
+| 部署件 | `.artifacts/workdsh-plugin-office-0.1.0-alpha.6.tgz`，21,803,860 B，sha256 `d4307d7487d6c68458e1f95dbc57c59f6a55bf9f91315f9cd320a783a81aa02f` |
+| dist 体积 | `client.browser.js` **16,677 B**（alpha.5 为 65,204,471 B，-99.97%）；`office-runtime.js` 42.59MB raw / 8.30MB gz；`editor.html` 19.06MB raw / 3.61MB gz |
+
+### 3. 部署步骤（实际执行）
+
+1. `scp` 至服务器 `/tmp`，`sudo mv` 到宿主 `$D/workspace/wd-upload/`（`D=/opt/1panel/apps/deepseek-harness/deepseek-harness/data`，= 容器 `/workspace`）。
+2. 备份并改 `$D/dsh/profiles/web/package.json`：`workdsh-plugin-office` 由 `…alpha.5.tgz` → `…alpha.6.tgz`。备份 `package.json.bak.office-alpha6.1789829781`、`pnpm-lock.yaml.bak.office-alpha6`。
+3. 容器内安装（必须带 `HOME`，根文件系统只读）：`docker exec -e HOME=/data/dsh/home -w /data/dsh/profiles/web dsh sh -c "pnpm install --registry=https://registry.npmmirror.com --ignore-scripts"` → `Done in 6.8s`。安装后 `node_modules/workdsh-plugin-office/package.json` 版本为 `0.1.0-alpha.6`，`dist/` 内 `client.browser.js` 16,771 B、`office-runtime.js` 44,657,172 B、`editor.html` 19,985,906 B。
+4. `docker restart dsh` → `Up (healthy)`；日志错误扫描（`plugin tree failed|does not provide|ERR_MODULE_NOT_FOUND|cannot get property|failed to apply|Cannot find module`）计数 **0**。
+5. 安装输出出现 `Packages: +10 -107`，故逐项核对 profile 的 23 个依赖：全部存在且版本与声明一致（含 `workdsh-plugin-office 0.1.0-alpha.6`），`-107` 是清理陈旧 store 链接，非功能缺失。
+
+### 4. 线上首屏（复验）
+
+- `GET /` → 200；`GET /workdsh-office/runtime.js` → 200 + `etag` + `cache-control: public, max-age=0, must-revalidate`；`GET /workdsh-office/editor.html` → 200（19,985,906 B）；未知路径 → 404。
+- 用 [verify-office-split.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/verify-office-split.mjs) 打到生产（`.artifacts/office-split/result.json`，本地 alpha.6 那份结果改存为 `result.local-alpha6.json`）：`startupRuntimeRequests: []`、`startupOfficeScripts: []`（首屏零 `/workdsh-office/` 请求）、`officeShellPulled: true`、`officeMenuCount: 6`、`pickedChip: "Word · 新建"`、`runtimeAfterPick: []`（选输出类型也不拉编辑器）、`legacyDocumentStatus: 200`、`legacyDocumentInjected: true`、`legacyXlsxPreview: "passed"`、`pageErrors: []`。
+- 该脚本本次做过一处适配：本地预览的 onboarding 按钮与线上 profile 的「Internal Testing Notice」弹窗出现时机不同，原脚本在 `domcontentloaded` 后只等 3 秒就去点，线上弹窗更晚挂载并遮住输入框，导致 `composer.click()` 超时。改为先等输入框存在、再以 8 秒窗口消解弹窗；缺弹窗仍视为正常。
+- `startupPluginTotalBytes` 生产为 **16,450,968**（三大 combo：14,021,484 + 2,408,584 + 20,876）。生产 profile 比本地预览多装第三方插件，故该数与本地 12,656,253 不可直接对比；可与拆分前合并 mega-bundle 的 gzip 20,671,153 B 量级对照。
+
+### 5. 打开文档时的按需加载与传输耗时（生产实测）
+
+| 产物 | raw | gzip | brotli |
+| --- | --- | --- | --- |
+| `runtime.js` | 44,657,172 | 10,767,901 B / 25.22s | **8,988,225 B / 12.14s** |
+| `editor.html` | 19,985,906 | 3,744,515 B / 7.43s | — |
+
+### 6. 线上三条路径复验（真实用户路径，[probe-office-prod.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/probe-office-prod.mjs)）
+
+三条路径都只发出一条 `/workdsh-office/` 请求，即 `GET https://dsh.10ge.cn/workdsh-office/runtime.js`（200 / `content-encoding: gzip` / 解码后 44,657,172 B），证实懒加载按设计工作：
+
+| 路径 | 产物目录 | 编辑器打开（提交后） | 可编辑 | 备注 |
+| --- | --- | --- | --- | --- |
+| docx | `.artifacts/office-prod/probe.json` | 25.0s | true | `工具栏可见`；截图 `.artifacts/office-prod/prod-office.png` 显示右侧原生 Word 编辑器与完整工具栏 |
+| pptx | `.artifacts/office-prod-ppt/probe.json` | 30.1s | true | 原生 PPT 编辑器，无 iframe |
+| xlsx | `.artifacts/office-prod-excel/probe.json` | 20.0s | true | 会话显示「本轮结束 · 已交付文件」 |
+
+docx 会话日志佐证工具链完整：`content_open` → 6× `content_edit` → `content_export`。
+
+**唯一控制台错误（三条路径一致，与本次改动无关）**：`403 https://dsh.10ge.cn/modlens/config`。请求路径属 profile 里的第三方插件 `@liustack/modlens@3.26.1`（不在 WorkDSH 模块内），三条路径各自的 `lazy` 请求列表里都没有它，Office 产物均为 200。未进一步追查该插件的 403 原因。
+
+### 7. 途中一次「编辑器打不开」的定位（非缺陷）
+
+早期三次尝试都未打开编辑器，根因是**提交内容只有 Office 意图 chip、没有正文主题**，模型正确调用 `ask_user_question` 追问（会话日志 `tool/call ask_user_question`，问题为「这份 Word 文档的主题是？」）。补齐正文后即正常打开。这也印证了验收要求里的「必要追问」行为成立。
+
+### 8. 未执行 / 遗留
+
+- **验证期间两次外部重启（已查实为外部 `docker restart`，非崩溃）**：`docker logs dsh --timestamps` 显示 15:08:27Z 与 15:50:19Z 两次均为 `SIGTERM` 触发 `shutting down apps, then terminating` → `shutdown complete exit_code=0`，约 2 秒后即重新引导（`dsh web: …/?token=…` 分别在 15:08:29／15:50:21），即优雅停启、停机窗口约 2 秒，`docker inspect` 中 Container Id 全天未变（`1ea26fb71e15…`，未被重建），`OOMKilled=false`。
+  排除项：①`/usr/local/bin/dsh-watchdog.sh`（`*/2`，日志 `/var/log/dsh-watchdog.log` 当日只有 08:36/10:14/10:26/11:06/13:18 五条，无 15:08／15:50 记录）；②1Panel 定时任务（`/opt/1panel/db/1Panel.db` 的 `cronjobs` 表 **0 行**，`operation_logs` 最新一条为 2026-09-13）；③`/usr/local/bin/tunnel-watchdog.sh`（只 `systemctl restart cloudflared`，不碰 dsh）与 `/usr/local/bin/dsh-sse-watch.sh`（脚本自述只读统计，不重启任何服务）；④sudo 日志中当日无 `sudo docker restart/stop` 记录。
+  结论：来源为**非 sudo 的运维侧 `docker restart dsh`**（该口径与本次部署自测的停启特征一致），**未归因于 alpha.6**；alpha.6 期间容器持续 healthy、内存约 982MiB/46.8GiB，日志中无该插件错误。
+- 本地 `probe-office-native.mjs` 仍失败于「召唤专家建会话」路径（页面停在专家列表并含「专家操作失败，请重试。」），属该探针依赖的环境/模型问题，与本次 Office 改动无关；xlsx 由 `probe-office.mjs` 与 `verify-office-split.mjs` 覆盖。
+- 容器内安装用了 `--ignore-scripts`，未走该插件的 `allowBuilds` 构建放行路径；懒加载产物为纯 JS，未发现需构建步骤。
+- 未跑不带 `--ignore-scripts` 的完整 `pnpm install`；线上 `allowBuilds` 六个值仍是占位 `set this to true or false`。
+- **复验产生的测试会话已按用户要求清理**：共 **8 个**（不是先前的 6 个，另含 4 个早期输出意图测试：`Office 输出意图处理`／`Office Word 文档创建会话`／`Office Word 新建文档流程`／`Office 输出意图与文档创建规则`／`Office 输出意图规则说明`／`创建门店调研报告`／`三页门店调研PPT汇报`／`Create store sales Excel table`）。官方 0.1.6-alpha.1 没有删除接口/CLI，只有 `POST /api/workspace/archiveSession`（可恢复），故先官方归档再物理清理：
+  1. 官方归档 8 个（`archivedSessionIds` 0 → 8）；
+  2. 物理删除 8 个 `sessions/--data-dsh-home-dsh--/session-*` 目录、23 个 session 级旁路文件（8 `session_projcache/sessions`、8 `workdsh_connector_selections/selections`、7 `workdsh_runtime_binding/sessions`）；
+  3. 修正簿记：`storages/workspace.json` 的 `sessionIds` 11 → 3、`archivedSessionIds` 8 → 0；`storages/cost-meter/ledger.json` 移除 8 行并按行扣减当日聚合（2026-09-19 行数 9 → 1，`input` 与行和均为 138436，`cost` 0.14104395 → 0.087977304）。
+  备份留在宿主 `/root/dsh-purge-backup-20260919222512/`（`workspace.json` + `ledger.json`）。因运行中进程仍持有 2 个已加载会话与 cost-meter 内存态，`docker restart dsh` 后复验：`session/list` 仅剩 6 个非测试会话、ledger 未回填、容器 healthy。
+  **保留未删（历史引用）**：`workdsh_audit/events` 中 298 个引用这些会话的审计事件（按项目“删除使用归档、历史引用保留”约定不清理）。
+- **演示成品也已清理**（用户追加要求）：`workdsh_office/documents` 下 3 条记录（`门店调研报告` document rev6／`门店调研汇报` presentation rev1／`门店销售表` spreadsheet rev1，均绑定已删除的测试会话）。该域为官方 `defineDomain({name:"workdsh_office", layout:"per-record"})`，每条记录一个 `documents/<key-hash>.json`（`{version, record}`），插件无删除工具/接口，故按介质语义删除 3 个记录文档 → `docker restart dsh` 清空内存表 → 复验：`documents/` 为空，官方 `POST /api/workdsh-office {"endpoint":"list"}` 由存活会话调用返回 `{"ok":true,"value":[]}`（删除前同一调用返回这 3 条）。备份在 `/root/dsh-purge-backup-20260919222512/workdsh_office-documents/`。
+  另说明：删除的会话不可再调用该接口（返回 `FORBIDDEN: 会话没有匹配的可信所有权绑定`），这是会话级所有权校验的正常行为。
+- **导出残留文件已清理**（用户追加要求）：会话工作区输出目录 `data/dsh/home/dsh/output/` 中复验导出的 `门店调研报告-r6-…docx`（5,111 B）与 `门店销售表-r1-…xlsx`（6,830 B）已删除，目录保留（删除后为空）。备份在 `/root/dsh-purge-backup-20260919222512/output/`。此处无需重启：文件浏览器按目录实时读取。至此本轮清理仅保留 `workdsh_audit/events` 的 298 个历史审计事件。
+- 文档打开时仍需下载 8.6MB(brotli)/10.3MB(gzip) 运行时 + 3.7MB(gzip) 旧编辑器页面；本次只解决了首屏，未进一步压缩单个编辑器产物。
+
 ## 2026-09-19（续）：浅色主题复验（品牌位 10GE 环在浅色调色板下的可见性）
 
 用户指令：「重启预览进程并复验浅色主题」。
