@@ -1,3 +1,17 @@
+## 2026-09-19：WorkDSH v0.1.0-alpha.6 公开发布回执
+
+按既定项目级发布流程完成 alpha.6 公开发布：源码提交 `debc429`（release: prepare）+ `ab096f0`（installer 测试断言修复）已推送 main（`8ba8626..debc429`），annotated tag `v0.1.0-alpha.6` 指向发布提交；GitHub prerelease [v0.1.0-alpha.6](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.6) 携带 13 个资产（九包 .tgz + SHA256SUMS + release-manifest.json + RELEASE-NOTES.md + install-workdsh.mjs），未发布 npm。
+
+- 九包版本：identity-local α.5、audit α.4、access α.5、skills α.30、experts α.5、connectors α.1、activity α.4、office α.7、bundle α.46（后五个随 alpha.2 升级与开发推进 bump，其余沿用已验收版本）。
+- 发布门槛（rel01/rel02）：全仓 build + typecheck PASS；集成 110/110、活动 14/14、规划 2/2；`check:plan` PASS（29 模块/50 文档）、`check:versions` PASS（513 条 α2 锁定）；修复升级批次遗留的 `project-installer.test.mjs` 断言（硬编码 `0.1.6-alpha.1` → 常量引用）。
+- 打包（rel04）：先提交 debc429 再重新打包，`release-manifest.json` 的 `sourceCommit` 与 tag 指向同一提交；`shasum -c SHA256SUMS` 九包全 OK。
+- 隔离安装（rel05）：`.test-runtime/release-alpha6-ZKPjiC` 全新 Profile 经官方 CLI 安装九包 → 匿名 401 / 认证 200 → 全模块移除后冷启动 PASS；回执 `.artifacts/release-alpha6-smoke.json`。
+- 公开回读（rel08）：13 个资产无认证下载逐字节一致（`PUBLIC_VERIFY_PASS`，日志 `.artifacts/release-alpha6-public-verify.log`）；GitHub API 回读确认 draft=false、prerelease=true、target_commitish=debc429。
+
+证据：`.artifacts/project-v0.1.0-alpha.6/`（发行制品）、`.artifacts/release-alpha6-{build,typecheck,tests,activity,planning,pack,smoke,public-verify}.log`、`.artifacts/project-alpha6-release.json`。
+
+未执行/边界：Windows 与 Linux 验收、卸载/事务式回滚、签名 SBOM、交互式 OAuth、小时级专家团稳定性仍未签收；projects 与 library α.2 不进入本次安装组合（library 保持独立发行）；npm 未发布（项目策略）。
+
 ## 2026-09-19：代码评审修复批次收口（findings 15/16/18/19 + word-only 制品探针）
 
 代码评审对升级分支未提交变更产出的 21 项 findings 已完成逐项核对与修复；finding #3（UI 召唤点击失效）已在上一 T10 条目单独收口，本条目汇总其余修复与批次验证证据。修复细节见各模块 CHANGELOG（projects alpha.2、office alpha.7、bundle alpha.46、contracts alpha.9）。
