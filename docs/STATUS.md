@@ -75,6 +75,27 @@
 - **备份**：`profiles/web/package.json.bak.sync.20260919`、`pnpm-lock.yaml.bak.sync.20260919`。
 - **遗留**：① pnpm 对 specifier 未变的 file: 依赖不重算 integrity，下次同步同类包仍需 `pnpm add`（`--force` 无效，已实测）；② `wd-upload` 中 office / skills 的旧制品已被同名覆盖，无法回滚到旧构建（本地新版即回滚源）。
 
+**线上技能数量差异定位与补齐（同日，实测）**
+
+用户指令：「本地 3031 端口网站的技能有 29 个，网站 dsh.10ge.cn 只有 15 个，是哪的原因导致。请添加」。
+
+**根因**：本地预览直接读开发机的用户技能目录，线上容器的用户技能目录为空；两边差的不是版本，而是"有没有用户技能"。
+
+| 侧 | 用户技能来源（实测） | 只读内置技能 | 合计 |
+| --- | --- | --- | --- |
+| 本地 3031 | `scripts/start-preview.mjs` 默认 `DSH_AGENTS_HOME=~/.agents`（[L9](file:///Users/apple/Documents/AI-luoji/workdsh/scripts/start-preview.mjs#L9)、[L19](file:///Users/apple/Documents/AI-luoji/workdsh/scripts/start-preview.mjs#L19)），`~/.agents/skills` 实测 **23** 个 | **6**（WorkDSH：excel-design / ppt-design / web-design / word-design / skill-creator / expert-manager） | 29 |
+| 线上 dsh.10ge.cn | **0**（用户技能目录为空） | **15** = 上述 6 个 + 9 个（profile 另装 `dsh-univer-office` 的 8 个 `univer*` 与 `@anionex/dsh-vision-toolkit` 的 `vision-skills`） | 15 |
+
+- 本地 23 个的可用性已逐个核对：23 份 `SKILL.md` 的 frontmatter `name` 均与目录名一致、无符号链接（否则不会被发现）。
+- 线上只读 6 个的判定依据：线上 `list` 的 15 条中 `readonly` 全为内置；本地预览 profile 的 `@deepseek-ai` 依赖里没有 univer / vision 包（[profile package.json](file:///Users/apple/Documents/AI-luoji/workdsh/.test-runtime/preview/profiles/preview/package.json) 仅 `dsh-base` + `dsh-web-app` + workdsh-*），故本地只读为 6，与用户观察到的 29 自洽。
+- 线上 agents 根的判定：`docker inspect dsh` 的 `Config.Env` 只有 `DSH_HOME=/data/dsh`（**无 `DSH_AGENTS_HOME`**），dsh 进程 HOME 为 `/data/dsh/home`，故 agents 根 = `/data/dsh/home/.agents/skills`（持久挂载，宿主 `…/data/dsh/home/.agents/skills`），重启前实测为空；`/data/dsh/skills`、`/root/.agents` 均不存在或为空。
+
+**处理**：整包同步 23 个用户技能（`tar czf` 本机 `~/.agents/skills` → 502037 B / 180 文件 / 1.9 MB，无符号链接）→ 解包到宿主 `…/data/dsh/home/.agents/skills`（容器内同路径，持久）→ `docker restart dsh`。
+
+**验证（实测）**：宿主目录 23 条；线上 `POST /api/workdsh-skills {"endpoint":"list"}` → **38** 条（23 条 `state: enabled` + `manageable: true`，15 条 `readonly`）；线上浏览器（1440×1000，只读）技能页 `共 38 个已安装技能 · 当前显示 38 个`、「我安装的 38」，唯一 console error 仍是已知的 `/modlens/config` 403。线上总数 38 而非 29，是因为线上 profile 另装了 9 个本地预览没有的内置技能；本次补齐的是 23 个用户技能。
+
+**未执行**：本地 3031 页面的二次实测——该实例的 URL token 只在启动时打印，本轮未取得（`?token=` 猜解与 `.credentials.yaml` 的 browser-session secret 均返回 401），本地 29 的结论由「23 个磁盘技能 + 6 个内置」推导得出，未做页面级复测。
+
 ## 2026-09-19：左侧导航未实现项判断与修复（资料库上线 + 其余改待开放）
 
 用户指令：「登录dsh.10ge.cn,对比workbuddy桌面端功能，针对左侧菜单栏没实现的功能进行判断与分析，实现修复」。用户随后选定范围为「**资料库上线 + 其余改待开放**」。
