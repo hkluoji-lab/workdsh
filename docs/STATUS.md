@@ -40,6 +40,15 @@
 
 **阻塞项（如实登记）**：`pnpm probe:browser` 目前无法跑到底，且卡点在 Host 的 MCP 客户端而非本轮改动；在定位前它不能充当「资料库入口」的自动证据（负例部分已人工确认通过）。
 
+**线上部署（同批升级，实测）**：
+
+- 制品：`.artifacts/workdsh-bundle-0.1.0-alpha.48.tgz`（19564 字节）、`.artifacts/workdsh-plugin-library-0.1.0-alpha.2.tgz`（62178 字节）→ `data/workspace/wd-upload/`（容器 `/workspace/wd-upload/`）。
+- profile 层：`profiles/web/package.json` 的 bundle → `0.1.0-alpha.48`、library → `0.1.0-alpha.2`；容器内沿用「npmmirror + `--ignore-scripts`」安装（`Done in 6.3s using pnpm v11.7.0`，`Packages: +2 -107`）。核对：`node_modules/workdsh-bundle` = `0.1.0-alpha.48`、`node_modules/workdsh-plugin-library` = `0.1.0-alpha.2`；`pnpm-lock.yaml` 641185 字节，`npmmirror` 出现次数 **0**，specifier 指向两个新 tarball。**组合包与资料库必须同批升级**——只升其一会让「资料库」入口消失（bundle 不再登记该行，只有 library 登记）。
+- 重启与健康：安装落盘时间 `2026-09-19T00:22:45Z`，而容器原启动时间为 `23:16:39Z`（早于安装 ⇒ 新版本尚未生效，server 时区为 UTC）→ `docker restart dsh`，健康检查由 `starting` 转 **`healthy`**（末次探测 ExitCode 0，返回客户端 HTML）；重启后日志中 `plugin tree failed` / `cannot open shared object` / `does not provide an export` / `duplicate loader entry` / `ERR_MODULE_NOT_FOUND` 计数 **0**。
+- 线上浏览器复验（真实客户端 `https://dsh.10ge.cn`，1440×1000，只读）：左侧导航六项逐字一致且按 order 排列（助理@y=120 / 项目@160 / 专家 · 技能 · 连接器@200 / 定时任务@240 / **资料库@280** / 更多@320，「资料库」行计数 1）；点击「资料库」进入真实页面（`.wd-library` 网格 `292px 868px`，`.wd-library-sidebar` 可见）；`layout.selectPanel` 报错 **0**，`pageerror` **0**。唯一 console error 仍是 `https://dsh.10ge.cn/modlens/config` 403（上节已定位为第三方插件的 loopback-only 设计，与本轮改动无关）。
+- 备份：`profiles/web/package.json.bak.fixnav.20260919`、`pnpm-lock.yaml.bak.fixnav.20260919`；回滚 = 还原两文件 + 重装 + `docker restart dsh`。
+- 观察到但未处理：容器日志中 `[lingshu-bridge] 灵枢进程启动失败: spawn python ENOENT`（整份日志 95 次，最早可见于首次启动的第 6 行）——第三方 bridge 依赖容器内不存在的 `python`，与本轮改动无关，本轮未修。
+
 ## 2026-09-19：左侧导航未实现项判断与修复（资料库上线 + 其余改待开放）
 
 用户指令：「登录dsh.10ge.cn,对比workbuddy桌面端功能，针对左侧菜单栏没实现的功能进行判断与分析，实现修复」。用户随后选定范围为「**资料库上线 + 其余改待开放**」。
