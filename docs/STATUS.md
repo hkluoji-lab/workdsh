@@ -1,3 +1,32 @@
+## 2026-09-19（续）：浅色主题复验（品牌位 10GE 环在浅色调色板下的可见性）
+
+用户指令：「重启预览进程并复验浅色主题」。
+
+**结论 1（根因）：应用自身锁定深色，UI 切不到浅色。** 根因在 [`bundle/src/client/harness/client.ts`](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/src/client/harness/client.ts#L31-L46)：`ctx.theme.register({ id: 'workdsh', colorScheme: 'dark', … })` + `ctx.on('theme/change', s => { if (s.active.colorScheme !== 'dark') ctx.theme.setTheme('workdsh') })` + 挂载时 `ctx.theme.setTheme('workdsh')`。这与 [UI-DESIGN.md](file:///Users/apple/Documents/AI-luoji/workdsh/docs/UI-DESIGN.md#L257-L259) 的既定设计一致（「生命周期内维持深色呈现、不写用户全局主题偏好、卸载恢复原偏好」），不是缺陷；但官方「外观」控件仍在界面上可点。
+
+**结论 2：环在浅色调色板下可见，`currentColor` 取法成立。** 实测（`.artifacts/preview-light-tokens.mjs`，1440×1000，真实 3031 预览页，`colorScheme: dark` 上下文排除系统偏好干扰）：
+
+| | 侧栏表面 | `--dsw-alias-label-primary` | 环（`currentColor` × 0.85 合成后） | 环对比度 | 蓝 `#2670DA` 对比度 | 尺寸 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 深色（应用实际呈现） | `rgb(32,32,32)` | `#e7e7e7` | `rgb(201,201,201)` | **9.85:1** | 3.42:1 | 80.56×24 |
+| 浅色（DOM 级浅色调色板） | `rgb(249,250,251)` | `#0f1115` | `rgb(50,52,56)` | **11.94:1** | 4.55:1 | 80.56×24 |
+
+两次探针 `ringStrokeIsCurrentColor` 均为 `true`，环色确由 label 令牌继承而非固定色；浅色下表面 `#f9fafb` 与代码注释一致。截图：`.artifacts/preview-dark-row.png`（深色行）、`.artifacts/preview-light-row.png`（浅色行）、`.artifacts/preview-light-zoom.png`（浅色 240px 放大，环清晰可辨）、`.artifacts/preview-light-full.png`（浅色整页：侧栏 `#f9fafb` + 深墨文字 + 蓝字标，整体一致，非半残状态）。
+
+**取证过程（含最初误判的排除）**：
+
+1. 先在应用内点击「外观 → 浅色」：`POST /api/settings/describe`…`mutate` 返回 200，`.test-runtime/preview/settings.yaml` 落盘 `ui-theme.preference: light`，但页面仍为深色、三个外观立方体 `aria-pressed` 全 `false`。
+2. 直接取宿主响应：`curl -L` 索引页尾部的官方同步 bootstrap 已是 `const preference = "light"`，`settings/describe` 的 `ui-theme` 命名空间也返回 `value.preference="light"`（`user.preference="light"`, `revision=3`）⇒ 宿主与持久化都正确，问题在客户端。
+3. 逐帧时间线（`.artifacts/theme-trace.mjs`，commit 后每 100ms 采样）显示：首屏 6 帧为 `color-scheme: light` + 无 `data-ds-dark-theme`，第 7 帧（约 600ms，客户端启动后）被改回 `color-scheme: dark` + `data-ds-dark-theme`，并写入上述深色内联 `--dsw-*` 令牌 ⇒ 至此定位到 `client.ts` 的强制深色，而非宿主未重读 `settings.yaml`、也非浏览器缓存或 `prefers-color-scheme` 解析。
+4. 浅色数据取自 DOM 级替换：移除 `body[data-ds-dark-theme]`、`documentElement.style.colorScheme` 置 `light`、删掉插件注入的 7 个内联 `--dsw-*` 令牌（**不触发 `theme/change`**，故不会被回切），让官方浅色调色板生效后在真实侧栏上取色。这是令牌级验证，**不是应用内真实主题切换**。
+
+**未执行 / 遗留**：
+
+- 未改任何产品代码（本次只做复验，环无需调整）。
+- 官方「外观」控件在 UI 上是死控件：可点、可写 `settings.yaml`，但页面立即被回切成深色，且三个立方体都不显示选中态。是否禁用/隐藏该行（或在其中说明「WorkDSH 现为深色专用」）未决策、未实施。
+- 预览进程已按指令重启（21:45:57 起，3031 监听）；复验后把 `.test-runtime/preview/settings.yaml` 的 `ui-theme.preference` 还原为 `system`。
+- 未在 1440×1000 之外的分辨率、也未在 200% 缩放下复验浅色。
+
 ## 2026-09-19（续）：线上 profile 的 minimumReleaseAge 策略来源定位与 exclude 去重修复
 
 用户指令：「先查一下 dshmarket 的 minimumReleaseAge 策略来源」→「好的，执行吧」。
@@ -37,7 +66,7 @@
 
 - [`GeWordmark.tsx`](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/src/client/components/GeWordmark.tsx)：`viewBox="0 15 235 70"` 单带，`1 / 眼球 / G / E` 共用同一光学高度（字高 = 眼球直径），按 `height=size` 等比（24px → 80.56×24）；由 24 齿生成的虹膜环（`Array.from({length:24})`）+ 白巩膜 `rx22 ry17.5` + 蓝虹膜 `r15.5` + 深瞳 `r6.5` + 高光 `r3` 构成替 0 的眼球；`1/G/E` 用 `#2670DA`，环与齿用 `currentColor`（`strokeOpacity 0.85`）。
 - [`Brand.tsx`](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/src/client/components/Brand.tsx)：`BrandMark({ size }) => <GeWordmark height={size} />`；`BrandName` 仍是 `DSH JOB AI`（用户明确要求保留），两个席位的 owner props 未改。
-- 主题适配：环取 `currentColor` 即官方 `--dsw-alias-label-primary`（深色下是近白、浅色下是 `--dsw-static-neutral-bluish-1000`），避免固定浅灰环在浅色主题 `#f9fafb` 侧栏上消失。**浅色主题未在真实切换下复验**（线上/本地默认均为深色，`colorScheme` 由应用设定而非 `prefers-color-scheme`）。
+- 主题适配：环取 `currentColor` 即官方 `--dsw-alias-label-primary`（深色 `#e7e7e7`，浅色 `#0f1115`），避免固定浅灰环在浅色主题 `#f9fafb` 侧栏上消失。**浅色下的可见性已于同日实测通过**（见下节「浅色主题复验」）；但应用自身锁定深色（`workdsh-client` 注册 `workdsh` 深色主题并在每次 `theme/change` 回切），UI 里切不到浅色，故该数据取自 DOM 级浅色调色板，非应用内真实切换。
 - **未采用位图**：用户原选「用原图 PNG」，但 PNG 未落盘（项目内、`~/Downloads`、`~/Desktop`、`/var/folders` 均无），且官方模块加载器不提供静态资源路由（客户端产物以 `window.__ModuleLoader__.load(...)` 单文件 CJS 交付，外部图片只能内联）；原图的金属底板与生成水印在 24px 行内也不可用 ⇒ 改为纯 SVG 重绘，不新增资源目录、不改 `build-client-probe.mjs` 的 loader。若后续提供 PNG，切回 `<img>` 分支的改动量约 3 处。
 
 **版本**：`workdsh-bundle` `0.1.0-alpha.48` → **`0.1.0-alpha.49`**（本模块本次确实变化，按 MODULE-VERSIONS 增预发布序号）；[CHANGELOG](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/CHANGELOG.md#L1-L6)、[MODULE-VERSIONS](file:///Users/apple/Documents/AI-luoji/workdsh/docs/MODULE-VERSIONS.md#L33) 同步。`workdsh-ui` 未改（`LogoMark` 仍导出，未删除）。
