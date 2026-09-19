@@ -188,6 +188,8 @@
       "src/client/components/capability-picker",
       "src/client/components/config-panel",
       "src/client/components/project-composer",
+      "src/client/components/project-lineage",
+      "src/runtime",
       "src/domain/discussions"
     ],
     "moduleVersion": "0.1"
