@@ -30,12 +30,20 @@
 - 左侧导航实测逐字一致：助理（待开放）/ 项目（待开放）/ 专家 · 技能 · 连接器 / 定时任务（待开放）/ 资料库 / 更多（待开放）。
 - 「资料库」= **真实页面**：URL `?workdsh-view=library`，三栏（主导航 / 资料库侧栏「搜索·最近·本地产物」+「我的资料 ＋」/ 右侧预览区「从左侧选择资料，在这里查看原始内容。」+「新建或导入资料」），全文「此入口待开放」出现 0 次。
 - 四个待开放入口点击均无报错、无白屏，均渲染「此入口待开放」徽标 + 职责 + 未实现原因 + 替代路径。
-- 控制台：`pageerror` 0 条；用户点名的两类问题均未复现——`/plugins/events` 实测 200、无 `layout.selectPanel: main panel … is not registered`。唯一报错为 `https://dsh.10ge.cn/modlens/config` 403（与本轮改动无关，未定位）。
+- 控制台：`pageerror` 0 条；用户点名的两类问题均未复现——`/plugins/events` 实测 200、无 `layout.selectPanel: main panel … is not registered`。唯一报错为 `https://dsh.10ge.cn/modlens/config` 403（与本轮改动无关；当日晚些已定位为第三方插件的 loopback-only 设计，见下方「遗留项收口」）。
 - 截图：`/Users/apple/.trae-cn/trae-browser-screenshots/dsh-verify/`（`00-initial`/`01-home`/`02-library`/`03-assistant`/`04-project`/`05-cron`/`06-more`）。
 
 **备份与回滚**：`profiles/web/package.json.bak.library.20260919`、`pnpm-lock.yaml.bak.library.20260919`、`profiles/web/cordis.patch.yml.bak.computeruse.20260919`（均为改动前原文）；回滚 = 还原这三个文件 + 重装 + `docker restart dsh`。
 
-**未执行 / 未验证（如实登记）**：未做登录后的会话创建、模型调用、专家/技能/资料库业务端到端验收（本轮只验证导航、页面归属与控制台）；`/modlens/config` 403 只记录未定位；本地 3031 预览未按本轮改动重建与复验；线上 profile 的 `pnpm install` 曾出现「安装已完成但进程不退出」的挂起（CPU 空闲、无 socket），以 `--reporter=append-only` 重跑确认 `Already up to date`，**该挂起根因未定位**；`lingshu-bridge` 的 `spawn python ENOENT` 为既有现象，未修；D06/D07/D12/D16 的步骤状态未因本轮部署签收（部署不等于模块验收）。
+**遗留项收口（同日，实测）**：
+
+- `/modlens/config` 403 **已定位，非 WorkDSH 缺陷**：该路由由第三方插件 `@liustack/modlens@3.26.1` 注册（`ctx.webServer.register({ path: '/modlens/config' })`），其 `isTrustedRequest()` 要求 `Host` 必须指向 loopback（`localhost` / `127.x.x.x` / `[::1]`），且非 `cross-site`、`Origin` 与 `Host` 同源；源码注释明示该路由「stays loopback-only」，**不**复用 `/api` 的 `trustedHosts`。容器内实测：`Host: 127.0.0.1:3080` → 200、`Host: localhost:3080` → 200、`Host: dsh.10ge.cn` → 403（`request refused: this route answers same-origin loopback only`）。结论：公网域名访问下该卡片取不到配置，是插件有意的同源防线，不改第三方代码也不放宽其判定；确需该卡片时走 loopback 访问（如 `ssh -N -L 3031:127.0.0.1:3080` 后打开 `http://127.0.0.1:3031/`）。
+- **本地 3031 已按本轮改动重建并复验**：预览 profile 此前为旧状态（**未装 `workdsh-plugin-library`**，11 项依赖），`corepack pnpm preview:install` 后为 **12 项依赖**（含 library `0.1.0-alpha.1`）、bundles 12 项、bundle `0.1.0-alpha.47`；`corepack pnpm build` 通过，且 `preview:install` 的产物一致性断言（安装后 dist 与当前构建逐字节比对）通过。
+- 本地浏览器实测（Playwright，1440×1000，只读）：全局导航逐字一致（助理（待开放）/ 项目（待开放）/ 专家 · 技能 · 连接器 / 定时任务（待开放）/ 资料库 / 更多（待开放））；资料库为真实页面，`.wd-library` 网格实测 `292px 868px`、`.wd-library-sidebar` 可见且含「搜索 / 最近 / 本地产物 / 我的资料 ＋ / 本地资料库 · 仅当前设备」，全文「此入口待开放」0 次；四个待开放入口均渲染徽标 + 职责 + 原因 + 替代路径且为选中态；`pageerror` 与 console error 均 **0 条**，无 `layout.selectPanel` 报错。截图：`/Users/apple/.trae-cn/trae-browser-screenshots/dsh-verify-local/`。
+- 取舍说明：资料库在 `max-width: 760px` 以下按自身响应式折叠为单栏（隐藏资料库侧栏），窄视口下看不到三栏，不是缺陷。
+- **新发现（已记录，未修改）**：`workbench` 无条件注册「资料库」侧栏入口，而该页面的 `main` 面板归 `workdsh-plugin-library`；若某 profile 只装 `workdsh-bundle` 而不装 library，点该入口会抛 `layout.selectPanel: main panel "workdsh-library" is not registered`。受支持的两处组合（本地预览、线上 web profile）都已含 library，故本轮未改；候选修法是让 library 自持侧栏入口（与 skills/experts 同模式，见 [skills/src/client.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/skills/src/client.tsx#L91-L93)），属独立改动，待确认后再做。
+
+**未执行 / 未验证（如实登记）**：未做登录后的会话创建、模型调用、专家/技能/资料库业务端到端验收（本轮只验证导航、页面归属与控制台）；资料库右侧「资料预览」标签需选中一条资料后才出现，本轮未造数据故未验证其渲染；线上 profile 的 `pnpm install` 曾出现「安装已完成但进程不退出」的挂起（CPU 空闲、无 socket），以 `--reporter=append-only` 重跑确认 `Already up to date`，**该挂起根因未定位**；`lingshu-bridge` 的 `spawn python ENOENT` 为既有现象，未修；D06/D07/D12/D16 的步骤状态未因本轮部署签收（部署不等于模块验收）。
 
 ## 2026-09-18：实施 SSE 空闲心跳保活中继（ADR-0028）
 
