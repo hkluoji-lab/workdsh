@@ -1,3 +1,103 @@
+## 2026-09-20（续）：线上 `allowBuilds` 占位值清理与安装脚本根因修复
+
+用户报告线上 profile 的 `pnpm-workspace.yaml` 中 `allowBuilds` 六项取值为字面量 `set this to true or false`。
+
+**定性（源码与实测证据，非推测）**：该字面量由 pnpm 11.7.0 的 `writeIgnoredBuildsToAllowBuilds` 写入（容器内 `dist/pnpm.mjs` 原文：`if (opts3.allowBuilds?.[name] == null) newEntries[name] = "set this to true or false"`），其后紧接 `if (opts3.strictDepBuilds) throw new IgnoredBuildsError(...)`。dshmarket 1.48.0 `lib/profile.js` 的注释给出同一现象的社区定性：pnpm #11535 失败安装会写入该字面量，"breaks every later approval until the entry is dropped"。即它**不是安全策略，而是未决标记**：非 `true` 一律按不允许处理，且条目不被替换就会一直留在文件里。
+
+**逐包决定**（依据线上各包 `package.json` 的 lifecycle 脚本与容器内实测）：
+
+| 包 | lifecycle 脚本 | 决定 | 依据 |
+| --- | --- | --- | --- |
+| `@deepseek-ai/dsh-subprocess-local` | `postinstall: node scripts/ensure-spawn-helper.mjs` | `true` | 脚本首行注释即「Restore the executable bit stripped from node-pty's prebuilt helper」；Linux 容器内两个候选路径都不存在，属幂等空操作 |
+| `@google/genai` | `preinstall: echo 'preinstall: no-op'` | `false` | 唯一 lifecycle 脚本是 no-op echo，`dist/` 随包提供 |
+| `koffi` | `install: node ./cnoke.cjs -P . -D src/koffi --prebuild --release` | `false` | 原生库由 `@koromix/koffi-<platform>` 可选依赖提供；容器内 `koffi.load('libc.so.6').func('int getpid()')()` 返回真实 pid，脚本被阻止不影响运行 |
+| `node-pty` | `install: node scripts/prebuild.js \|\| node-gyp rebuild`；`postinstall: node scripts/post-install.js` | `true` | `prebuild.js` 只校验 `prebuilds/<platform>-<arch>` 是否存在（存在即 `exit 0`，不下载不编译），`post-install.js` 清理遗留 `build/Release`；桌面 Profile 早已有同一决定 `node-pty: true` |
+| `protobufjs` | `postinstall: node scripts/postinstall` | `false` | 只打印 protobufjs-cli 版本范围警告，运行时库保持安装 |
+| `cloudflared` | — | **删除条目** | `web/package.json` 与 `pnpm-lock.yaml` 均 0 命中，已非依赖；按同一处置删除陈旧条目 |
+
+**线上执行与验证**：
+
+| 项 | 值 |
+| --- | --- |
+| 备份 | `pnpm-workspace.yaml.bak.allowbuilds.20260920145040` |
+| 应用后占位计数 | `0` |
+| 安装 | 容器内 `pnpm install --registry=https://registry.npmmirror.com` → `Done in 2.1s using pnpm v11.7.0` |
+| 冗余清理 | `Packages: +5 -104`：同时清掉 lockfile 之外的 104 个包。随后逐一核对 `dsh.profile.bundles` 全部 23 个条目目录均存在，`package.json` 依赖可解析 |
+| 重启 | `docker restart dsh`；entrypoint 内部重试一次后起稳（`RestartCount=1`、`ExitCode=0`），该「exited during startup (attempt 1/10), retrying」重试在改动前的部署日志中同样出现 |
+| 健康 | `Up (healthy)`；插件错误扫描 0；`https://dsh.10ge.cn/` 200、`/api/workdsh-skills` 200、`/api/workdsh-office` 200、容器内 3080 直连 200 |
+| 原生模块 | 容器内 `require('node-pty').spawn` 为 function；`koffi` 原生调用返回 pid |
+| 技能与目录 | 38 张卡 / `readonly` 0 / `origin:'plugin'` 15；目录 `status: ready` / 265 条 / 12 分类 |
+| 浏览器复验 | 复用 `verify-catalog-prod.mjs --readonly`：13 个分类标签、264 个安装按钮、111 条带图标；唯一失败响应是无关的 `403 /modlens/config` |
+| 回写检查 | 安装后 `pnpm-workspace.yaml` 占位计数仍为 0，pnpm 未再写占位 |
+
+**根因修复**：`scripts/install-project-release.mjs` 原来只声明 `protobufjs: false`，其余包留给 pnpm 追问。现改为声明完整决定表，并在写入时合并重复 `allowBuilds` 块、保留其他来源（如市场插件）的显式审批、丢弃无布尔值的陈旧条目。
+
+验证：临时 release harness（9 个 stub 制品 + stub `dsh` + 两个临时 DSH_HOME）实跑，两种形态（线上：含占位与陈旧条目／本地：含外部审批与 `patchedDependencies`）均 `exit 0`、占位归零、`patchedDependencies` 与外部审批 `some-other-plugin: true` 保留、重复执行产物一致（幂等）。
+
+**本地预览 Profile 同批修复（用户选定「一并修复」）**：`~/.dsh/profiles/web/pnpm-workspace.yaml` 的 3 个占位（`@deepseek-ai/dsh-subprocess-local`、`koffi`、`node-pty`）已按同一决定表替换，备份 `pnpm-workspace.yaml.bak.allowbuilds.20260920225744`，`patchedDependencies`（`dsh-permission-rules@0.7.0`）保留。与线上不同：这 5 个包在该 Profile 的 `node_modules` 中**均不存在**（文件为 9/12），属陈旧遗留条目而非待决依赖。验证：占位计数 `0`；`corepack pnpm list --depth -1` 能正常加载该工作区文件并输出 `dsh-profile-web /Users/apple/.dsh/profiles/web`（exit 0），未新增文件。
+
+**未执行 / 待定**：
+- `scripts/install-preview.mjs` 仍不写 `allowBuilds`；本次按用户选定只修复现有文件，未改脚本。若本地预览后续安装再次产生占位，需按本轮方法处理或另立任务补脚本。
+- 104 个被清理包的具体名单无法事后枚举（依据是清理后 bundle/依赖全量核对与服务运行复验，非逐包 diff）；如需回滚参照，旧完整 Profile 备份 `web.bak.deploy.20260917145550` 保留未清理。
+
+## 2026-09-20：技能页 15 张「只读」技能的开关禁用归因与官网版本比对
+
+用户报告线上技能页“通用基础技能、通用表等不能用、开关无效”。只读实测（未改任何数据）：技能页共 38 张卡，`POST /api/workdsh-skills {"endpoint":"list"}` 返回 23 张 `enabled/manageable:true` 与 15 张 `readonly/manageable:false`；页面正文 9222 字符中「通用」「基础」均 0 命中，用户所指两组即那 15 张不可管理卡片。
+
+证据链：23 张可管理技能全部位于 `/data/dsh/home/.agents/skills/`（用户自有技能；实测点击开关产生 `set-enabled` 200，刷新后状态保持）。15 张只读技能的文件位于 profile 依赖包内，不在可管理根：`univer` 系列 8 张来自 `profiles/web/node_modules/dsh-univer-office@0.2.14/skills/`，`workdsh-excel-design`、`workdsh-word-design`、`workdsh-ppt-design`、`workdsh-web-design`、`workdsh-skill-creator` 来自 `workdsh-plugin-skills/resources/skills/`，`workdsh-expert-manager` 来自 `workdsh-plugin-experts/resources/skills/`，`vision-skills` 由 `@anionex/dsh-vision-toolkit` 以代码方式注册（`lib/skill.js`）；均不在 `~/.agents/skills` 或 `$DSH_HOME/skills` 下。`manager.ts` 的 `isManagedSummary`/`rootFor` 因此判定 `manageable:false`，`state` 落为 `readonly`；`SkillsPanel.tsx` 第 231 行开关被 `disabled` 且 `aria-checked` 为 false（渲染成“关”），详情弹框「去试试」也因 `state !== 'enabled'` 禁用。这些技能仍由 Harness 注册、模型可调用，仅面板不可管理。
+
+「技能市场」为空是独立问题：`/data/dsh/home/.agents/.workdsh-catalog` 不存在，接口返回 `status:"missing"`，故分类栏只有「全部」且可安装项为 0；`.workdsh-disabled/skills` 为空，`.workdsh-state` 存在。
+
+版本比对：用户指定的聊天日志以 `0.1.6-alpha.1` 为基准（日志原文为对本机已安装 0.1.6-alpha.1 官方制品的逐个文件核对），线上 profile 的 `@deepseek-ai/dsh-base` 与 `@deepseek-ai/dsh-web-app` 同为 `0.1.6-alpha.1`，两者一致。npm 官网 dist-tags 为 `alpha=0.1.6-alpha.2`、`latest=0.1.5-rc.2`、`next=0.1.5-rc.2`：线上比官网 alpha 通道落后一个补丁版（alpha.2），而官网 `latest` 仍停在 `0.1.5-rc.2`，比线上更旧。按基线锁定规则本轮未升级，升级需另立兼容证据。
+
+上述「未执行」仅指该段时点：未改动任何技能开关、未补建技能目录、未升级依赖、未重新构建产物；15 张只读技能的处置方向待用户确认。
+
+### 处置结论（用户选定三项，2026-09-20 续做）
+
+用户选择：①改 UI 语义（不再画成「关」）②让它们真正可管理（可开关/停用）③补建技能市场目录 `.workdsh-catalog`。①已随 `workdsh-plugin-skills@0.1.0-alpha.30` 完成并线上复验；②随 **alpha.31** 落地，见下；③已随同批完成，见「③ 技能市场目录（已完成）」。三项均已在生产环境复验。
+
+**② 插件随包技能的注册表级停用（alpha.31，[ADR-0029](adr/0029-plugin-skill-registry-suppression.md)）**
+
+- `service/suppression.ts`：新增 `workdsh-skill-suppression` provider（rank 240）与 `SkillSuppressionStore`。对被停用名称贡献一条 `invocation:{modelInvocable:false,userInvocable:false}` 的候选，`resourceBase`/`path` 仍指向原目录、`get()` 直读原 `SKILL.md`。rank 240 遮蔽 runtime（250）与随包根（600），低于项目根（100/200），故项目层技能不受影响。
+- `manager.ts`：`list()`/`detail()`/`setEnabled()` 共用 `pluginDirectory()` 判据；`origin:'plugin'` 的技能 `manageable:true`，开关走 suppression add/remove；`update()`/`uninstall()` 抛 `skill/plugin-owned`，不改写包内文件。停用状态存 `<agentsHome>/.workdsh-state/skills/suppressed.json`，变更后 `invalidate()`。
+- 客户端与文案：插件随包技能保留真开关与「去试试」，移除编辑/打开文件夹/卸载/资源区块；详情标注「插件随包提供 · 可在此停用或启用，文件由插件维护」；新增 `skill/plugin-owned` 文案。
+- 本地证据：`skill-manager.test.mjs` **9/9**、五个相关集成文件 **32/32**、`probe-skills-package.mjs` **9 PASS**（含 `Packaged skill switch suppresses the registry entry without touching the installed plugin files`、`Packaged skill suppression survives reinstall and restart, then restores on enable`）；`pnpm typecheck` 全仓与 `check:plan` 通过。
+- 线上部署与复验：见下节。
+
+**线上部署（`workdsh-plugin-skills@0.1.0-alpha.31`）**
+
+| 项 | 值 |
+| --- | --- |
+| 部署件 | `.artifacts/skills-standalone/workdsh-plugin-skills-0.1.0-alpha.31.tgz`，149,456 B，sha256 `c3d73e5e5df699f714d534538bc0fdf3bede6970de551bfdc2b920f6a02b3114`（与本机一致，服务器端重算相同） |
+| 步骤 | `scp`→`/tmp`→`sudo mv $D/workspace/wd-upload/`；改 `$D/dsh/profiles/web/package.json` 指向 alpha.31（备份 `package.json.bak.skills-alpha31.*`、`pnpm-lock.yaml.bak.skills-alpha31`）；容器内 `docker exec -e HOME=/data/dsh/home -w /data/dsh/profiles/web dsh sh -c "pnpm install --registry=https://registry.npmmirror.com --ignore-scripts"` → `Done in 7.5s`；`docker restart dsh` |
+| 健康 | `Up (healthy)`；日志错误扫描（`plugin tree failed\|does not provide\|ERR_MODULE_NOT_FOUND\|cannot get property\|failed to apply\|Cannot find module`）计数 **0**；`node_modules/workdsh-plugin-skills/package.json` 版本为 `0.1.0-alpha.31` |
+
+**线上复验（[verify-skills-suppression-prod.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/verify-skills-suppression-prod.mjs)，结果 `.artifacts/skills-suppression-prod/`）**
+
+- `POST /api/workdsh-skills {"endpoint":"list"}` 返回 38 张卡，`readonly` 列表**为空**；原 15 张只读技能全部变为 `origin:'plugin'`、`manageable:true`、`state:'enabled'`、`modelInvocable:true`（univer 系列 8 张、`workdsh-*` 6 张、`workdsh-expert-manager`、`vision-skills`）。
+- 在真实页面点击 `workdsh-excel-design` 与 `univer-sheet` 的开关：`aria-label` 由「停用技能 X」变为「启用技能 X」、`aria-checked` true→false；接口复读为 `state:'disabled'`、`modelInvocable:false`（注册表级抑制已生效，模型不可见）；详情 `directoryPath` 为空（不提供写目标）；`update` 返回 `skill/plugin-owned`；再次点击后回到 `enabled`/`modelInvocable:true`。
+- 包内文件未被改动：启停前后对 13 个 `SKILL.md` 逐一 `sha256sum`，摘要全部一致；停用状态落在 `<agentsHome>/.workdsh-state/skills/suppressed.json`（启用后为 `{"version":1,"skills":[]}`）。
+
+**③ 技能市场目录（已完成）**
+
+镜像获取：本机与服务器都没有 `~/.workbuddy/skills-marketplace`，实测在工作站 WorkBuddy 5.5.6 里打开技能市场也不会落盘——该版本的内置仓库自动下载已关闭（`BuiltinSkillMarketplaceUpdater` 只在显式 `triggerUpdate()` 时拉取）。镜像真实来源是产品配置里的 zip：`https://download.codebuddy.cn/skill-marketplace/skill-marketplace-66396a74-7070-456a-8be0-f05ae0cbb466.zip`（HTTP 200、19.2 MB、5,677 个文件，根目录含 `.codebuddy-skill/marketplace.json`）。已下载到 `.artifacts/skill-marketplace`（git 忽略），未修改 WorkBuddy 自身目录。
+
+生成与部署：
+
+| 项 | 值 |
+| --- | --- |
+| 生成命令 | `node scripts/build-skill-catalog.mjs --source .artifacts/skill-marketplace --target .artifacts/.workdsh-catalog` |
+| 结果 | 265 条 / 12 个分类 / 111 条带品牌图标 / 负载 37.6 MiB；catalog.json sha256 前 12 位 `a9e5eb534ce1` |
+| 如实排除 | 跳过 `workrally`、`fadada-document-sign`（镜像 frontmatter YAML 解析失败）、`shopify-admin-api`（缺 `name`）；`fbs-bookwriter` 481 文件超过 400 上限，标为不可安装 |
+| 部署 | 打包 tar（15.9 MB，sha256 `b4e1a08e4ba0353c2a6b191bb477f1dcc4fe3adecdf5430a2c446c7b71dcbd18`）→ 服务器 `$D/dsh/home/.agents/.workdsh-catalog`，属主 `luoji:luoji`；清掉 macOS `._*` 附加文件；无需重启（目录按 mtime+size 签名自动重读） |
+
+线上复验（[verify-catalog-prod.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/verify-catalog-prod.mjs)，结果 `.artifacts/catalog-prod/`）：
+
+- `catalog` 返回 `status: ready`，分类栏 13 个标签（「全部」+ 11 个市场分类 + 末项），可安装 264 条、111 条有图标，264 个「＋ 安装」按钮渲染正常。
+- 图标路由 `GET /api/workdsh-skills/icon?name=...&rev=...` 返回 200 `image/svg+xml`（1,414 B）。
+- 端到端安装一条真实目录技能 `12306`：`install-catalog` → `state: enabled`、落到 `/data/dsh/home/.agents/skills/12306`、目录条目 `installed: true`；随后按依赖影响 revision 执行卸载 → 归档到 `/data/dsh/home/.agents/.workdsh-trash/skills/12306-2026-09-20T14-42-18-753Z`，条目回到 `installed: false`。该归档条目可随时在「最近卸载」恢复。
+- 页面控制台唯一的 403 是 `https://dsh.10ge.cn/modlens/config`，与技能目录、图标路由无关。
+
 ## 2026-09-19（续）：Office 懒加载拆分部署上线与三条路径复验（office 0.1.0-alpha.6）
 
 方案（用户选定，verbatim）：「新增 workdsh-plugin-office 的运行时产物 dist/office-runtime.js，由插件自己的 ctx.webServer 路由托管；client.tsx 只保留注册壳，打开文档时才注入 `<script>` 加载重型编辑器。预计 gzip 16.9MB→4.7MB、首屏 27s→约 7s。功能不减，改动较大：build-office.mjs、client.tsx、index.ts、package.json 都要改，需重新打包部署并复验 docx/pptx/xlsx 三条路径。」
