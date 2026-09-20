@@ -29,6 +29,14 @@
 
 **投递方式（两站通用，实测）**：内容框均为「必须有真实输入才启用提交按钮」——用 `Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set` 直接赋值并派发 `input`/`change` 事件后，文本已进入控件（`value.length` 正确）但提交按钮仍保持 `disabled`（GitHub `button[type=submit]`、Gitee `.js-comment-button`）。改用 CDP 键盘输入（`browser_type`，`ref` 取自 `browser_snapshot`）后按钮立即转为可用，再 `browser_click` 提交即成功，两站文本框随后清空 / 计数加一。
 
+**停手前的复查（本轮末次实测，确认阻塞未变）**
+
+- Gitee：令牌仍有效（32 位），`GET /api/v5/repos/techflag/workdsh` → `permission = {pull:true, push:false, admin:false}`。
+- `git push --dry-run github main` → `Permission to techflag/workdsh.git denied to hkluoji-lab` / 403；`git push --dry-run origin main` → `remote: [session-9644a694] Access denied` / 403。
+- 两端 PR 页面复核：Gitee !1 仍 `开启的` 且 `此 Pull Request 暂不能合并`，日志显示 `罗纪 推送了代码`，无回复；GitHub #4 仍 `Open`（未 merged），`Changes can be cleanly merged` 保持，无回复。
+
+**当前阻塞项（均属 `techflag` 账号动作，本机不可代为执行）**：Gitee PR !1 的审查/测试通过标记、两个 PR 的合并、将 `szluoji` 加为 Gitee 开发者 / 将 `hkluoji-lab` 加为 GitHub Collaborator、合并后于主线执行 `git push origin --tags`。用户决定就此停手等待对方；授权到位后本机可立即续做直推。
+
 **未执行**：PR 合并（维护者动作）、`origin`/`github` 直推（仍无写权限）、tag 落地主线（PR 不传递 tag，需合并后在主线执行 `git push origin --tags`）。
 
 ## 2026-09-20（续）：改走 fork + Pull Request 路径完成推进（Gitee PR !1、GitHub PR #4）
