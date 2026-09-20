@@ -18,6 +18,17 @@
 | Gitee !1 https://gitee.com/techflag/workdsh/pulls/1 | 开启，**暂不可合并** | `此 Pull Request 暂不能合并，一些审核尚未通过`；`审查 进行中 (0/1人)`、`测试 进行中 (0/1人)` |
 | GitHub #4 https://github.com/techflag/workdsh/pull/4 | 开启，**可干净合并** | `No conflicts with base branch` / `Changes can be cleanly merged.`；36 提交 / 83 文件，无审查门槛、无指派 |
 
+**持有者通知已投递（本机执行，用户指令：整理成消息转发给持有者）**
+
+通知内容为「需要持有者操作」，含两条并列路径（A 直接在两端 PR 点通过并合并、合并后主线补 `git push origin --tags`；B 将 `szluoji` 加为 Gitee 开发者 / 将 `hkluoji-lab` 加为 GitHub Collaborator 后由本机直推），并注明未写任何凭据。
+
+| 渠道 | 结果 | 页面复核判据 |
+| --- | --- | --- |
+| GitHub PR #4 评论 | 已发布（`hkluoji-lab`） | `.comment-body` 出现通知正文 |
+| Gitee PR !1 评论 | 已发布（`罗纪`） | 评论计数 `评论 1`、`.comment-item` 出现通知正文 |
+
+**投递方式（两站通用，实测）**：内容框均为「必须有真实输入才启用提交按钮」——用 `Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set` 直接赋值并派发 `input`/`change` 事件后，文本已进入控件（`value.length` 正确）但提交按钮仍保持 `disabled`（GitHub `button[type=submit]`、Gitee `.js-comment-button`）。改用 CDP 键盘输入（`browser_type`，`ref` 取自 `browser_snapshot`）后按钮立即转为可用，再 `browser_click` 提交即成功，两站文本框随后清空 / 计数加一。
+
 **未执行**：PR 合并（维护者动作）、`origin`/`github` 直推（仍无写权限）、tag 落地主线（PR 不传递 tag，需合并后在主线执行 `git push origin --tags`）。
 
 ## 2026-09-20（续）：改走 fork + Pull Request 路径完成推进（Gitee PR !1、GitHub PR #4）
