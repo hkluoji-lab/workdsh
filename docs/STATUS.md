@@ -20,6 +20,16 @@
 
 **未执行**：真实模型任务、桌面与其他操作系统、`probe:experts`（既有未通过，处置未定）、`probe:browser` 第 162 行之后、线上部署与 npm 发布。
 
+**推送（未完成，外部阻塞；本轮实测）**：合并提交 `bad8c23`（父 `f201f7c` + `de5077b`）已在本地落地，工作区干净，`main` 领先 `fork/main` 27 个提交，24 个 tag 待推。本轮逐远端实测：
+
+| 远端 | 地址 | 结果 |
+| --- | --- | --- |
+| `fork` | https://github.com/hkluoji-lab/workdsh | 不可达：`fatal: unable to access …: Could not resolve host: github.com` |
+| `github` | https://github.com/techflag/workdsh | 不可达（同上）；此前实测为 `Permission to techflag/workdsh.git denied to hkluoji-lab`（HTTP 403） |
+| `origin` | https://gitee.com/techflag/workdsh | 可达但凭据被拒：`remote: [session-0d45a483] Unauthorized / Authentication failed` |
+
+网络诊断：`curl https://github.com` 解析超时（10s，HTTP 000），`dig +short github.com` 与 `nslookup github.com` 均「connection timed out; no servers could be reached」，而 `gitee.com` 解析 200；`scutil --proxy` 无 HTTP/HTTPS 代理项，常见代理端口（7890/1080/1087/8118 等）无监听。结论：GitHub 侧需代理/VPN 才能推送，Gitee 侧需 `techflag` 账号的有效写权限。首次 `git push origin main` 因凭据提示挂起（管道缓冲无输出），已终止并改用 `GIT_TERMINAL_PROMPT=0` 非交互复测得上述 Unauthorized。**未做任何远端写操作，24 个 tag 与合并提交均未推送。**
+
 ## 2026-09-20（续）：线上 `allowBuilds` 占位值清理与安装脚本根因修复
 
 用户报告线上 profile 的 `pnpm-workspace.yaml` 中 `allowBuilds` 六项取值为字面量 `set this to true or false`。
