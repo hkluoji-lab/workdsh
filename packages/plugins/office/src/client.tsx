@@ -6,6 +6,7 @@ import type {} from "@deepseek-ai/dsh-client-ui-renderer/client";
 import type {} from "@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client";
 import type {} from "@deepseek-ai/dsh-client-ui-sidebar-right/client";
 import type { ISessions } from "@deepseek-ai/dsh-api-session-controller/client";
+import type {} from "@deepseek-ai/dsh-client-ui-session/client";
 import type { OfficeContentSnapshot } from "workdsh-contracts/office";
 import type { LibraryOriginalPreviewRegistry } from "workdsh-contracts/library";
 import { loadOfficeRuntime, type OfficeRuntime } from "./runtime-loader.js";
@@ -29,6 +30,9 @@ type OfficeSlotComponent = (props: any) => ReactElement | null;
  */
 export const name = "workdsh-office-client";
 declare const __WORKDSH_WORD_ONLY__: boolean;
+// Word-only releases claim DOCX only (dist/release-scope.json); every Client
+// registration below must stay inside that scope.
+const wordOnlyRelease = typeof __WORKDSH_WORD_ONLY__ !== "undefined" && __WORKDSH_WORD_ONLY__;
 export const inject = [
   "slots",
   "documentPreviews",
@@ -77,7 +81,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() =>
     ctx.documentPreviews.register({
       id: "workdsh-office",
-      extensions: typeof __WORKDSH_WORD_ONLY__ !== "undefined" && __WORKDSH_WORD_ONLY__ ? ["docx"] : ["xlsx", "docx", "pptx"],
+      extensions: wordOnlyRelease ? ["docx"] : ["xlsx", "docx", "pptx"],
       title: () => "Office 浏览器编辑",
       loading: "bytes-complete",
     }),
@@ -88,6 +92,23 @@ export function apply(ctx: Context): void {
       deferred(value => value.OfficeDocument),
     ),
   );
+  if (!wordOnlyRelease) {
+    ctx.effect(() =>
+      ctx.documentPreviews.register({
+        id: "workdsh-office-csv",
+        extensions: ["csv"],
+        title: () => "CSV 表格",
+        loading: "bytes-complete",
+        wrap: true,
+      }),
+    );
+    ctx.slots.inject("sidebar.right.tab.document", () =>
+      ctx.slots.register(
+        { name: "sidebar.right.tab.document", key: "workdsh-office-csv" },
+        deferred(value => value.CsvDocument),
+      ),
+    );
+  }
   const lifetime = new AbortController();
   const rpc: Rpc = async <T,>(
     sessionId: string,
@@ -109,6 +130,12 @@ export function apply(ctx: Context): void {
     return result.value as T;
   };
   const activeDocuments = new Map<string, ReturnType<OfficeRuntime["createDocumentModel"]>>();
+  // alpha.2: the list snapshot has no `current`; the view owner's mainView retention
+  // marks the selected Session (same derivation as the official ui-session publishMain).
+  const currentSessionId = () => {
+    const state = (ctx.sessions as unknown as ISessions).list.getSnapshot();
+    return Object.values(state.byId).find(row => (row.retainedBy.mainView ?? 0) > 0)?.id;
+  };
   const office: OfficeClient = {
     request:rpc,
     createPresentation:options=>(loaded().createPresentationModel(options,rpc)),
@@ -133,10 +160,9 @@ export function apply(ctx: Context): void {
     },
   };
   for (const source of officeInputSources(office, () => {
-    const sessions = ctx.sessions as unknown as ISessions;
-    const id = sessions.list.getSnapshot().current;
+    const id = currentSessionId();
     return id ? String(id) : undefined;
-  },!__WORKDSH_WORD_ONLY__,!__WORKDSH_WORD_ONLY__)) ctx.effect(() => ctx.inputTriggers.registerSource(source));
+  },!wordOnlyRelease,!wordOnlyRelease)) ctx.effect(() => ctx.inputTriggers.registerSource(source));
   ctx.effect(() =>
     ctx.sidebarRightTabs.register({
       id: "workdsh-office-live",
@@ -165,9 +191,8 @@ export function apply(ctx: Context): void {
   ctx.effect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const seen = new Set<string>();
-    const sessions = ctx.sessions as unknown as ISessions;
     async function poll() {
-      const sessionId = sessions.list.getSnapshot().current;
+      const sessionId = currentSessionId();
       try {
         if (sessionId && document.visibilityState !== "hidden") {
           const requests = await rpc<
@@ -175,7 +200,7 @@ export function apply(ctx: Context): void {
           >(String(sessionId), { endpoint: "pending" });
           if (
             lifetime.signal.aborted ||
-            sessions.list.getSnapshot().current !== sessionId
+            currentSessionId() !== sessionId
           )
             return;
           for (const request of requests)

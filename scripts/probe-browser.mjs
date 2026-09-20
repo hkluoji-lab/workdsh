@@ -69,13 +69,15 @@ export async function probeBrowser(address, sessionCookie, screenshotPath, { ins
     const newSession = page.getByText(/新会话|New Session/, { exact: true }).first();
     await expect(newSession).toBeVisible();
     // A row is only ever contributed by the plugin that owns its `main` panel, so
-    // this profile (bundle + Skill layer, no library) must show the four
-    // not-yet-implemented entries and the capability centre, and must NOT show a
-    // 资料库 row:官方 Sidebar 的行按钮直接调用 selectPanel，无页面时点击会抛错。
-    for (const label of ['助理（待开放）', '项目（待开放）', '专家 · 技能 · 连接器', '定时任务（待开放）', '更多（待开放）']) {
+    // this profile (bundle + Skill layer, no library, no projects) must show the
+    // three not-yet-implemented entries and the capability centre, and must NOT
+    // show 资料库/项目 rows:官方 Sidebar 的行按钮直接调用 selectPanel，无页面时点击会抛错。
+    for (const label of ['助理（待开放）', '专家 · 技能 · 连接器', '定时任务（待开放）', '更多（待开放）']) {
       await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
     }
-    await expect(page.getByRole('button', { name: '资料库', exact: true })).toHaveCount(0);
+    for (const label of ['资料库', '项目']) {
+      await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0);
+    }
     await expect(nav).toBeVisible();
 
     // The probe profile may be empty, so check native menus when rows exist.
@@ -116,7 +118,14 @@ export async function probeBrowser(address, sessionCookie, screenshotPath, { ins
     for (const label of ['办公协同', '开发工具', '数据分析', '内容创作', '知识学习']) await expect(categoryTabs.getByRole('button', { name: label, exact: true })).toHaveCount(0);
     // 「我安装的」是进入已安装视图的真实按钮，不再是静态计数文本。
     await expect(page.getByRole('button', { name: /^查看我安装的 \d+ 个技能$/ })).toBeEnabled();
+    // 外观由官方 ThemeRuntime 与用户偏好驱动：bundle 不注册也不强制第二套主题。
+    // 探针 profile 未写偏好，preference 保持官方默认 system，明暗只跟随浏览器。
+    await expect(page.locator('html')).toHaveAttribute('data-ds-theme-source', 'system');
+    await expect(page.locator('body')).not.toHaveAttribute('data-ds-dark-theme');
+    await page.emulateMedia({ colorScheme: 'dark' });
     await expect(page.locator('body')).toHaveAttribute('data-ds-dark-theme');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect(page.locator('body')).not.toHaveAttribute('data-ds-dark-theme');
     for (const width of [1440, 1920, 390]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.screenshot({ path: screenshotPath.replace('.png', `-skills-${width}.png`), fullPage: true });
@@ -255,8 +264,8 @@ export async function probeProductWithoutSkills(address, sessionCookie) {
     const graph = await page.evaluate(() => window.__DSH_BOOT__.entries.map(row => row.id));
     expect(graph).toContain('workdsh-bundle');
     expect(graph).not.toContain('workdsh-plugin-skills');
-    await page.getByRole('button', { name: '项目（待开放）', exact: true }).click();
-    await expect(page.getByRole('heading', { name: '项目', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '助理（待开放）', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '助理', exact: true })).toBeVisible();
     await page.getByText(/新会话|New Session/, { exact: true }).first().click();
     await expect(page.getByText(/探索未至之境|Into the Unknown/, { exact: true }).first()).toBeVisible();
     expect(errors).toEqual([]);

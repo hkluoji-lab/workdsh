@@ -1,3 +1,10 @@
+# 0.1.0-alpha.50 — 2026-09-20
+
+- 合并上游 `0.1.6-alpha.2` 线：官方依赖与 `pnpm.overrides` 精确锁定统一到 `0.1.6-alpha.2`，组合包保留本线的 10GE 侧栏字标与 `DSH JOB AI` 品牌名（上游同版为官方默认品牌）。
+- 外部 URL 契约按「待开放」策略取本线：`?workdsh-view=assistant|projects|automation|more|library` 仍映射到对应的 `main` 面板，面板未注册时静默回落对话视图且不报错；上游「隐藏未实现入口」带来的 `assistant|automation|more` 链接失效行为不再适用。
+- 版本号撞号修复：本线已发布到 `0.1.0-alpha.49`，上游线发布过 `0.1.0-alpha.46`/`0.1.0-alpha.47`，合并后重新定版为 `0.1.0-alpha.50`。
+- 需与 `workdsh-plugin-workbench@0.1.0-alpha.13`、`workdsh-plugin-projects@0.1.0-alpha.2`、`workdsh-plugin-library@0.1.0-alpha.3`、`workdsh-plugin-skills@0.1.0-alpha.32`、`workdsh-plugin-office@0.1.0-alpha.8` 同批安装。
+
 # 0.1.0-alpha.49 — 2026-09-19
 
 - 侧栏品牌位 `sidebar.brand.mark` 由原 W 图标（`workdsh-ui` 的 `LogoMark`）替换为 10GE 字标：按官方 owner props 的 `size`（官方传 24px）等比绘制的自绘 SVG，`viewBox` 235×70 单带，“1 / 眼球 / G / E”共用同一光学高度。
@@ -10,14 +17,17 @@
 - 工作台不再为「资料库」登记侧栏行：入口和页面同属 `workdsh-plugin-library`（`0.1.0-alpha.2` 起自持），只装组合包不装资料库时不再出现点击即抛错的死入口。
 - 本版必需与 `workdsh-plugin-library@0.1.0-alpha.2` 同批安装；只升组合包会让「资料库」入口消失。
 
-# 0.1.0-alpha.47 — 2026-09-19
+# 0.1.0-alpha.47 — 2026-09-19 / 2026-09-20（本线与上游线撞号，此处合并记录）
 
 - 资料库面板 `workdsh-library` 的 `main` 席位交还 `workdsh-plugin-library`；组合包不再为它注册占位面板，避免同 key 重复注册。
 - 助理、项目、定时任务、更多仍是未实现入口，侧栏标签追加「待开放」并在面板内说明原因与当前可用路径。
 - 官方 `sidebar.panellist` 公开注册面没有 disabled 语义，待开放状态只能通过注册标签与说明面板表达。
+- 修复设置页「外观」切换不生效：工作台客户端不再注册并强制 `workdsh` 深色主题、不再拦截 `theme/change`；外观改由官方 ThemeRuntime 与用户偏好驱动，浅色/深色/跟随系统切换即时生效，三个选项的选中态恢复显示。
 
-# 0.1.0-alpha.46 — 2026-09-16
+# 0.1.0-alpha.46 — 2026-09-18 / 2026-09-16（本线与上游线撞号，此处合并记录）
 
+- 跟随 DSH 0.1.6-alpha.2 升级：组合包与功能插件的官方依赖精确锁定同步至 `0.1.6-alpha.2`；projects、experts、skills、library、office、activity 六个客户端插件完成 Client Session 迁移。
+- 外部 URL 契约一次性变化（上游按「隐藏未实现入口」处理）：`?workdsh-view=assistant|automation|more` 外部链接不再切换视图，静默回落到对话视图且不报错；项目任务改由原生会话导航打开，旧链接遗留的 `?task=` 参数在项目面板打开时被清理。
 - 按用户要求把侧栏品牌名称由 `WorkDSH` 改为 `DSH JOB AI`，继续由公开 `sidebar.brand.name` 席位提供，未改动 mark 与 owner。
 - 同步 `scripts/probe-browser.mjs` 中的品牌断言文本。
 

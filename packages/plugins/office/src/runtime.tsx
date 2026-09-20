@@ -15,6 +15,7 @@ import { downloadSpreadsheet } from "./spreadsheet/xlsx.js";
 import { createDocumentModel } from "./live/model.js";
 import { createPresentationModel } from "./presentation/client-model.js";
 import { OfficeDocument } from "./OfficeDocument.js";
+import { CsvDocument } from "./csv/CsvDocument.js";
 import { DocumentPage } from "./live/DocumentPage.js";
 import { renderAsync } from "docx-preview";
 import { mountPptx } from "./presentation/native-react/editor.js";
@@ -24,7 +25,7 @@ import type { OfficeClient } from "./live/model.js";
 import type { OfficeContentSnapshot } from "workdsh-contracts/office";
 import type { LibraryOriginalPreviewInput } from "workdsh-contracts/library";
 
-export { OfficeDocument, DocumentPage, createDocumentModel, createPresentationModel };
+export { OfficeDocument, CsvDocument, DocumentPage, createDocumentModel, createPresentationModel };
 
 /** Export a committed working copy through the format-specific exporter. */
 export async function downloadOriginal(

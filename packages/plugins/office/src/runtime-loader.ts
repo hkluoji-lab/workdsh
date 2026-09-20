@@ -17,6 +17,7 @@ interface ClientModuleLoader {
  */
 export interface OfficeRuntime {
   readonly OfficeDocument: ComponentType<any>;
+  readonly CsvDocument: ComponentType<any>;
   readonly DocumentPage: ComponentType<any>;
   createDocumentModel(
     options: DocumentOptions,

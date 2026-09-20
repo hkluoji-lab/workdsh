@@ -22,25 +22,36 @@
 
 开始模块开发时，必须在 `docs/modules.json` 写入 `moduleVersion`；模块 README、package.json、CHANGELOG、证据和 STATUS 使用同一版本线。`check:plan` 会验证模块版本格式、当前活动切片的版本声明，以及 package.json 的 major/minor 是否匹配。
 
-## 当前版本线（2026-09-16）
+## 当前版本线（2026-09-20）
 
 当前安装包版本与模块实现状态分别列出；公开发行范围以[发行回执](releases/2026-09-14-development-candidate.md)为准，当前待验收项见[STATUS](STATUS.md)。每周排期见周计划（`WEEKLY-RELEASE-PLAN.md`，该文档未创建；排期口径见 [PLAN](PLAN.md) 的「每周发行排期」），不要求模块锁步升级。
 
 | 模块 | 版本线 | 当前包版本 | 实现状态 |
 | --- | --- | --- | --- |
-| 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.8` | implemented |
+| 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.9` | implemented |
 | 共享展示组件 | 0.1 | `workdsh-ui@0.1.0-alpha.6` | implemented |
-| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.49` | in_progress |
-| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.12` | implemented |
-| 资料库 | 0.1 | `workdsh-plugin-library@0.1.0-alpha.2` | implemented |
-| 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.4` | in_progress |
-| 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.31` | implemented |
-| 连接器管理 | 0.1 | `workdsh-plugin-connectors@0.1.0-alpha.1` | in_progress |
+| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.50` | in_progress |
+| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.13` | implemented |
+| 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.7` | in_progress |
+| 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.32` | implemented |
+| 连接器管理 | 0.1 | `workdsh-plugin-connectors@0.1.0-alpha.2` | in_progress |
 | 资源授权 | 0.1 | `workdsh-plugin-access@0.1.0-alpha.5` | implemented |
 | 审计 | 0.1 | `workdsh-plugin-audit@0.1.0-alpha.4` | implemented |
 | 本地身份提供方 | 0.1 | `workdsh-provider-identity-local@0.1.0-alpha.5` | implemented |
-| Office 浏览器编辑插件 | 0.1 | `workdsh-plugin-office@0.1.0-alpha.6` | in_progress |
-| 协作与活动展示 | 0.1 | `workdsh-plugin-activity@0.1.0-alpha.3` | in_progress |
+| Office 浏览器编辑插件 | 0.1 | `workdsh-plugin-office@0.1.0-alpha.8` | in_progress |
+| 协作与活动展示 | 0.1 | `workdsh-plugin-activity@0.1.0-alpha.4` | in_progress |
+| 项目管理 | 0.1 | `workdsh-plugin-projects@0.1.0-alpha.2` | in_progress |
+| 资料库 | 0.1 | `workdsh-plugin-library@0.1.0-alpha.3` | implemented |
+
+2026-09-18 更新：bundle、experts、skills、office、activity、projects、library 跟随 DSH 0.1.6-alpha.2 升级 bump；contracts 补 bump α.9（补记 2026-09-17 项目任务上下文只读契约 `ProjectTaskContext`/`taskContext`，属兼容补全）；experts/office/activity 同时携带其未发布批次；公开发行仍以上次 prerelease 为准。
+
+2026-09-20 更新：experts bump α.5→α.6（Unreleased）——修复设置面板重复「Agent 预设」页：移除对官方增量 list 槽 `settings.section` 的包装注册，保留 `conversation.hero.agentPreset` 单座槽接管；公开 prerelease 仍为 α.5，待下次发行携带。
+
+2026-09-20 更新（二）：skills α.30→α.31、experts α.6→α.7、connectors α.1→α.2（均 Unreleased）——按用户决定删除能力中心「行业应用」标签入口（行业应用暂时用不到，暂无领域实现，能力页保留专家/技能/连接器三标签）；公开 prerelease 仍为 skills α.30、experts α.5、connectors α.1，待下次发行携带。
+
+2026-09-20 更新（三）：bundle α.46→α.47（Unreleased）——修复设置页「外观」切换不生效：工作台客户端不再注册并强制 `workdsh` 深色主题、不再拦截 `theme/change`，外观改由官方 ThemeRuntime 与用户偏好驱动（浅色/深色/跟随系统即时生效，选中态恢复）；bundle 的 `dsh.client.inject` 与开发依赖同步移除 `@deepseek-ai/dsh-client-ui-theme`。公开 prerelease 仍为 bundle α.46，待下次发行携带。
+
+2026-09-20 更新（四）：合并上游 `github/main` 线并重新定版（本线此前发布到 root α.7、bundle α.49、workbench α.12、office α.6、library α.2；上游线发布过 bundle α.46/α.47、workbench α.11、office α.7；skills 两条线都到过 α.31）。撞号模块重新定版：root α.7→**α.8**、bundle α.49→**α.50**、workbench α.12→**α.13**、office α.6→**α.8**、library α.2→**α.3**、skills α.31→**α.32**。官方依赖与 `pnpm.overrides` 统一精确锁定 `0.1.6-alpha.2`；未实现入口按本线决定保留侧栏行并标「待开放」，不采用上游「隐藏未实现入口」行为。
 
 以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
 

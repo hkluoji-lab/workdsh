@@ -47,16 +47,6 @@ export const businessPanels = [
     },
   },
   {
-    id: 'workdsh-projects',
-    label: '项目',
-    icon: 'project',
-    order: 20,
-    pending: {
-      description: '组织团队任务、资料、成员和共享能力。',
-      boundary: '本入口待开放：项目尚未实现（开发顺序 D07 / P1-11，且是首期发布前置），页面没有可读取的项目、成员与资产数据。当前可用的路径：先在原生工作区中用目录和会话组织当前工作。',
-    },
-  },
-  {
     id: 'workdsh-automation',
     label: '定时任务',
     icon: 'automation',

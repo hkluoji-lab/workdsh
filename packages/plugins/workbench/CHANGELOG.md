@@ -1,3 +1,10 @@
+# 0.1.0-alpha.13
+
+- 合并上游 `0.1.6-alpha.2` 线后，工作台只列仍未实现、仍待开放的入口：`businessPanels` 现为「助理」「定时任务」「更多」三项，`pending` 说明恢复为必填字段。
+- 「项目」入口交还 `workdsh-plugin-projects`：项目页面已实现，由 `workdsh-plugin-projects@0.1.0-alpha.2` 自持 `main` 与 `sidebar.panellist` 行（`order: 20`），工作台不再为它登记待开放占位。
+- 版本号撞号修复：本线与上游线都发布过 `0.1.0-alpha.11`（内容不同），合并后重新定版为 `0.1.0-alpha.13`。上游 `alpha.11` 的「隐藏未实现入口」决定已被本条取代——未实现入口保留侧栏行并标「（待开放）」，而不是消失。下游 `0.1.0-alpha.12` 为本线资料库入口交还记录，保留在下方。
+- 组合包、`workdsh-plugin-projects` 与 `workdsh-plugin-library` 需同批升级：只升工作台会让「项目」「资料库」入口消失。
+
 # 0.1.0-alpha.12
 
 - 资料库不再由工作台登记：这一版起 `businessPanels` 只列仍未实现的入口，`pending` 不再是可空字段。
