@@ -1,3 +1,17 @@
+## 0.1.0-alpha.31 — 2026-09-20
+
+- 插件随包技能真正可启停：按 [ADR-0029](../../../docs/adr/0029-plugin-skill-registry-suppression.md)，技能插件新增 `workdsh-skill-suppression` provider（rank 240），对被停用名称贡献一条 `invocation:{modelInvocable:false,userInvocable:false}` 的候选，从而在注册表层遮蔽该名称的运行时候选，无需移动或改写插件包内文件。该 rank 高于项目根（100/200），项目层技能不受影响。
+- `ManagedSkillSummary`/`ManagedSkillDetail` 增加 `origin`（`directory`/`plugin`）：插件随包技能显示为 `origin:'plugin'`、`manageable:true`，开关有真实效果。`update`/`uninstall` 对这类技能抛 `skill/plugin-owned`，技能库不改写包内文件。
+- 停用状态持久化在 `<agentsHome>/.workdsh-state/skills/suppressed.json`，变更后 `invalidate()` 刷新官方技能目录，重装与重启后仍生效。
+- 客户端：插件随包技能保留真开关与「去试试」，移除编辑/打开文件夹/卸载与资源文件区块，详情标明「插件随包提供 · 可在此停用或启用，文件由插件维护」。
+- 成因见 `docs/STATUS.md` 2026-09-20 段：这些技能的 `resourceBase` 位于插件包内目录，原实现只能把它们映射成 `readonly/manageable:false` 的灰开关。
+
+## 0.1.0-alpha.30 — 2026-09-20
+
+- 修正非受管技能的启停呈现：包内提供的技能不再渲染成「关闭」的灰色开关，改为「插件提供」文字标签并说明不可在技能库启停，符合「灰色不能假装禁用」的界面规范。
+- 技能详情对这类技能放开「去试试」（仍走官方 Session 预填 `/name`），状态改为「由插件提供，不在技能库启停范围内」；受管技能的开关、编辑、打开文件夹与卸载行为不变。
+- 成因：这些技能的 `resourceBase` 指向插件包内目录，不在 `.agents/skills` 与 `dsh/skills` 两个受管根内，Host 依契约返回 `state: 'readonly'`、`manageable: false`；原实现把只读映射为 `aria-checked=false` 的禁用开关，看起来像「已停用且点不动」。
+
 ## 0.1.0-alpha.29 — 2026-09-15
 
 - 六个内置技能统一由 `resources/skills/<name>` 维护并生成注册内容，PPT 只保留一个内置入口。

@@ -34,7 +34,7 @@
 | 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.12` | implemented |
 | 资料库 | 0.1 | `workdsh-plugin-library@0.1.0-alpha.2` | implemented |
 | 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.4` | in_progress |
-| 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.29` | implemented |
+| 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.31` | implemented |
 | 连接器管理 | 0.1 | `workdsh-plugin-connectors@0.1.0-alpha.1` | in_progress |
 | 资源授权 | 0.1 | `workdsh-plugin-access@0.1.0-alpha.5` | implemented |
 | 审计 | 0.1 | `workdsh-plugin-audit@0.1.0-alpha.4` | implemented |
