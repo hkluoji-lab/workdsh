@@ -1,3 +1,18 @@
+## 2026-09-20：WorkDSH v0.1.0-alpha.7 公开发布回执
+
+按既定项目级发布流程完成 alpha.7 公开发布：源码提交 `8e29c4c`（release: prepare）已推送 main（`31f68bb..8e29c4c`），annotated tag `v0.1.0-alpha.7` 指向发布提交；GitHub prerelease [v0.1.0-alpha.7](https://github.com/techflag/workdsh/releases/tag/v0.1.0-alpha.7) 携带 13 个资产（九包 .tgz + SHA256SUMS + release-manifest.json + RELEASE-NOTES.md + install-workdsh.mjs），未发布 npm。
+
+- 九包版本：identity-local α.5、audit α.4、access α.5、skills α.31、experts α.7、connectors α.2、activity α.4、office α.7、bundle α.47（本批 bump skills/experts/connectors/bundle 四个模块：外观主题修复与行业应用标签删除）。
+- 发布门槛：全仓 build + typecheck PASS；集成 110/110、活动 14/14、规划 2/2；`check:plan` PASS（29 模块/50 文档）、`check:versions` PASS（513 条 α2 锁定）。
+- 打包（rel04）：提交 8e29c4c 后重新打包，`release-manifest.json` 的 `sourceCommit` 与 tag 指向同一提交；`shasum -c SHA256SUMS` 九包全 OK。
+- 隔离安装（rel05）：`.test-runtime/release-alpha7-jLMzE0` 全新 Profile 经官方 CLI 安装九包 → 匿名 401 / 认证 200 → 全模块移除后冷启动 PASS；回执 `.artifacts/release-alpha7-smoke.json`。
+- 公开发布：13 资产逐一通过 GitHub SHA-256 digest 校验后发布；发布过程中一个未关联 tag 的孤立重复 draft 已删除，正式 release 保留唯一。
+- 公开回读（rel08）：13 个资产无认证下载逐字节一致（`PUBLIC_VERIFY_PASS`，日志 `.artifacts/release-alpha7-public-verify.log`）；GitHub API 回读确认 draft=false、prerelease=true。
+
+证据：`.artifacts/project-v0.1.0-alpha.7/`（发行制品）、`.artifacts/release-alpha7-{build,typecheck,tests,activity,planning,checkplan,versions,pack,smoke,publish,public-verify}.log`、`.artifacts/project-alpha7-release.json`。
+
+未执行/边界：相对 alpha.6，专家团长任务探针、真实模型两阶段交接、连接器隔离探针与腾讯文档实连未在本批制品上复跑（release-manifest limitations 与 RELEASE-NOTES 已声明）；Windows 与 Linux 验收、卸载/事务式回滚、签名 SBOM、交互式 OAuth、小时级专家团稳定性仍未签收；projects 与 library α.2 不进入本次安装组合（library 保持独立发行）；npm 未发布（项目策略）。
+
 ## 2026-09-20：外观（主题）切换修复（bundle α.47，用户报告）
 
 用户报告设置→通用设置→外观切换不起作用（附截图）。根因：`packages/bundle/src/client/harness/client.ts` 客户端注册并强制 `workdsh` 深色主题、监听 `theme/change` 把非深色快照拉回。设置页点击实际已写入 settings（settings.yaml 实证 light 已持久化），但 DOM 被立即拉回深色，且激活偏好变成非内置值，三个选项均无选中态。官方 `ui-theme` 偏好与 ThemePresenter 应用链本身完好，问题全部来自该强制层（alpha.1 起引入，对应 UI-DESIGN 旧表述“维持深色呈现”）。
