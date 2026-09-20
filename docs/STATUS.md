@@ -1,3 +1,22 @@
+## 2026-09-20（续）：改走 fork + Pull Request 路径完成推进（Gitee PR !1、GitHub PR #4）
+
+**用户指令**：继续推进，你来操作。
+
+**背景**：`origin`/`github` 直推均因**他人账号授权缺失**被阻断（见上节 `push=False` 与 `Permission denied`）。改走不依赖对方前置授权的标准协作路径：Fork → 推送自有 fork → 向上游提交 Pull Request。
+
+**Gitee（origin）**
+- 浏览器（登录 `szluoji`）Fork 得到 https://gitee.com/szluoji/workdsh （页面显示 `罗纪 / workdsh forked from techflag / workdsh`）。
+- 新增本机 remote `mygitee` 后推送：`31f68bb..3658a07  main -> main`；`--tags` 补上主线缺失的 `v0.1.0-alpha.7`，远端 24 个 tag 与本地一致；复核 `mygitee/main` = `3658a0770417b24e733eaee80661702498ed5ddc`（= 本地 `main`）。
+- Pull Request 已创建并处于开启状态：https://gitee.com/techflag/workdsh/pulls/1 ，源 `szluoji:main` → 目标 `techflag:main`，37 提交 / 96 文件改动；标题与说明已填（内容、验证清单、已知未通过项、tag 说明）。
+
+**GitHub（github）**
+- 浏览器已登录 `hkluoji-lab`；fork `hkluoji-lab/workdsh` 此前已同步 `main` = `3658a07`。
+- Pull Request 已创建：https://github.com/techflag/workdsh/pull/4 ，源 `hkluoji-lab:main` → 目标 `techflag:main`；GitHub 页面显示 35 提交 / 83 文件，`Able to merge`。
+
+**限制说明**：Git 的 tag 对象不能通过 PR 传递。24 个 tag 现已在两个 fork 上；主线要持有 tag，需维护者合并后于主线执行 `git push origin --tags`，或把 `szluoji` / `hkluoji-lab` 加为协作者，由本机直接推送（`.git/config` 已具备三个远端与 `mygitee`）。
+
+**未执行**：主线直推（仍无写权限）、PR 合并（属维护者动作）。
+
 ## 2026-09-20（续）：Gitee 推送权限实测（`push=False`，授权缺失而非凭据缺失）
 
 **用户指令**：全权操作浏览器与终端，完成 `origin`（Gitee）推送。
