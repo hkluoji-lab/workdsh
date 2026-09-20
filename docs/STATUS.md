@@ -20,15 +20,20 @@
 
 **未执行**：真实模型任务、桌面与其他操作系统、`probe:experts`（既有未通过，处置未定）、`probe:browser` 第 162 行之后、线上部署与 npm 发布。
 
-**推送（未完成，外部阻塞；本轮实测）**：合并提交 `bad8c23`（父 `f201f7c` + `de5077b`）已在本地落地，工作区干净，`main` 领先 `fork/main` 27 个提交，24 个 tag 待推。本轮逐远端实测：
+**推送（本轮实测）**：合并提交 `bad8c23` 与其后的 `06e3c8d` 已在本地落地，工作区干净，`main` 领先 `origin/main` 35 个提交、`fork/main` 27 个提交，本地 24 个 tag 待推。逐远端实测：
 
 | 远端 | 地址 | 结果 |
 | --- | --- | --- |
-| `fork` | https://github.com/hkluoji-lab/workdsh | 不可达：`fatal: unable to access …: Could not resolve host: github.com` |
-| `github` | https://github.com/techflag/workdsh | 不可达（同上）；此前实测为 `Permission to techflag/workdsh.git denied to hkluoji-lab`（HTTP 403） |
-| `origin` | https://gitee.com/techflag/workdsh | 可达但凭据被拒：`remote: [session-0d45a483] Unauthorized / Authentication failed` |
+| `fork` | https://github.com/hkluoji-lab/workdsh | **成功**：`f201f7c..06e3c8d  main -> main`；`--tags` 报 `Everything up-to-date`。复核 `ls-remote`：`refs/heads/main` = `06e3c8df23fde631ca0657a2a91307313746da1f`，远端 24 个 tag 与本地一致 |
+| `github` | https://github.com/techflag/workdsh | **失败**：`remote: Permission to techflag/workdsh.git denied to hkluoji-lab.` / `The requested URL returned error: 403` |
+| `origin` | https://gitee.com/techflag/workdsh | **失败**：`remote: [session-0d45a483] Unauthorized` / `Authentication failed` |
 
-网络诊断：`curl https://github.com` 解析超时（10s，HTTP 000），`dig +short github.com` 与 `nslookup github.com` 均「connection timed out; no servers could be reached」，而 `gitee.com` 解析 200；`scutil --proxy` 无 HTTP/HTTPS 代理项，常见代理端口（7890/1080/1087/8118 等）无监听。结论：GitHub 侧需代理/VPN 才能推送，Gitee 侧需 `techflag` 账号的有效写权限。首次 `git push origin main` 因凭据提示挂起（管道缓冲无输出），已终止并改用 `GIT_TERMINAL_PROMPT=0` 非交互复测得上述 Unauthorized。**未做任何远端写操作，24 个 tag 与合并提交均未推送。**
+网络诊断：首次尝试时 `github.com` DNS 解析超时（`curl` 10s 返回 HTTP 000，`dig +short` 与 `nslookup` 均 `connection timed out; no servers could be reached`），系统无 HTTP/HTTPS 代理（`scutil --proxy` 无对应项）、常见代理端口（7890/1080/1087/8118 等）无监听；稍后复测恢复（`github.com` 与 `api.github.com` 均 200，`@114.114.114.114` 解析正常），判定为解析服务的瞬时故障。两个 GitHub 远端在无凭据下 `ls-remote` 匿名可读，故上述失败与网络可达性无关，均为**凭据与仓库写权限**问题：
+
+- `github`：macOS 钥匙串 `github.com` 条目的账号为 `hkluoji-lab`，该账号对 `techflag/workdsh` 无写权限。
+- `origin`（Gitee）：本机**完全没有** Gitee 凭据——钥匙串无 `gitee.com` 条目、无 `~/.git-credentials`、无 `~/.netrc`；`id_ed25519` 与 `id_rsa_zqcrm` 两把私钥对 `git@gitee.com` 均 `Permission denied (publickey)`；仓库内 `gitee.com` 仅出现在 README/website 的镜像链接。此前 `git push origin main` 挂起即 osxkeychain 无条目、git 转而索要用户名密码所致。
+
+结论：**`fork` 已推送完成**（`main` + 24 tag）；**`github`（GitHub techflag）与 `origin`（Gitee techflag）均未推送**。用户选定由本人终端输入 Gitee 用户名 + 私人令牌完成 `origin` 推送；`github` 需要 `techflag` 账号或该仓库协作者权限。
 
 ## 2026-09-20（续）：线上 `allowBuilds` 占位值清理与安装脚本根因修复
 
