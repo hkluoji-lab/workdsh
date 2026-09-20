@@ -1,3 +1,24 @@
+## 2026-09-20（续）：Gitee 推送权限实测（`push=False`，授权缺失而非凭据缺失）
+
+**用户指令**：全权操作浏览器与终端，完成 `origin`（Gitee）推送。
+
+**已做**：在当前登录 `szluoji` 的浏览器中，经用户本人在 Gitee「帐号安全验证」窗口输入登录密码确认，生成私人令牌 `workdsh-push-temp`（权限范围收敛为 `user_info` + `projects`，未勾选其余 9 项），写入 macOS 钥匙串（`gitee.com` / `szluoji`），并以该令牌调用 Gitee OpenAPI 实测仓库权限。
+
+**实测结果（决定阻塞性质）**：
+
+```
+GET /api/v5/repos/techflag/workdsh
+→ techflag/workdsh | pull=True push=False admin=False
+```
+
+即 `szluoji` 对该仓库**只有读权限**，`techflag` 尚未将其加为开发者。推送被本次权限检查提前拦下，未产生任何远端写入：`git ls-remote origin refs/heads/main` 仍为 `31f68bb6417ff4e227870a9d20059635237d6fa8`，远端 23 个 tag（本地 24 个）。由此确认此前两种报错的区别：`[session-…] Unauthorized` 是**无有效凭据**，`[session-…] Access denied` 是**凭据有效但账号对该仓库无权限**；本轮失败属后者。
+
+**令牌处置与风险登记**：该令牌为本次操作临时生成，其值在本会话记录中可见，属已暴露密钥；权限范围已收敛，且 `projects` 只在账号自身具备写权限的仓库上生效，对 `techflag/workdsh` 不起作用。推送完成后建议删除（https://gitee.com/profile/personal_access_tokens ），删除前亦可由本机直接复用。
+
+**仍待外部动作**：`techflag` 需将 `szluoji` 加为 `techflag/workdsh` 的**开发者**（仓库 → 管理 → 仓库成员管理 → 添加成员）；`github.com/techflag/workdsh` 同理需将 `hkluoji-lab` 加为 Collaborator（Write）。两者均属他人账号授权，本机无法自行取得。
+
+**未执行**：`origin` 推送（无写权限）、`github` 推送（同类授权缺失）。
+
 ## 2026-09-20（续）：合并 GitHub 上游并重新定版；深链视图与官方首次导航恢复的竞态修复
 
 **用户指令**：先合并上游再推送（推全部 24 个 tag）；完整合并并重新定版；未实现的侧栏入口保留并标「待开放」。
