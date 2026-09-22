@@ -30,8 +30,8 @@
 | --- | --- | --- | --- |
 | 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.9` | implemented |
 | 共享展示组件 | 0.1 | `workdsh-ui@0.1.0-alpha.6` | implemented |
-| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.50` | in_progress |
-| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.13` | implemented |
+| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.52` | in_progress |
+| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.15` | implemented |
 | 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.7` | in_progress |
 | 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.32` | implemented |
 | 连接器管理 | 0.1 | `workdsh-plugin-connectors@0.1.0-alpha.2` | in_progress |
@@ -52,6 +52,8 @@
 2026-09-20 更新（三）：bundle α.46→α.47（Unreleased）——修复设置页「外观」切换不生效：工作台客户端不再注册并强制 `workdsh` 深色主题、不再拦截 `theme/change`，外观改由官方 ThemeRuntime 与用户偏好驱动（浅色/深色/跟随系统即时生效，选中态恢复）；bundle 的 `dsh.client.inject` 与开发依赖同步移除 `@deepseek-ai/dsh-client-ui-theme`。公开 prerelease 仍为 bundle α.46，待下次发行携带。
 
 2026-09-20 更新（四）：合并上游 `github/main` 线并重新定版（本线此前发布到 root α.7、bundle α.49、workbench α.12、office α.6、library α.2；上游线发布过 bundle α.46/α.47、workbench α.11、office α.7；skills 两条线都到过 α.31）。撞号模块重新定版：root α.7→**α.8**、bundle α.49→**α.50**、workbench α.12→**α.13**、office α.6→**α.8**、library α.2→**α.3**、skills α.31→**α.32**。官方依赖与 `pnpm.overrides` 统一精确锁定 `0.1.6-alpha.2`；未实现入口按本线决定保留侧栏行并标「待开放」，不采用上游「隐藏未实现入口」行为。
+
+2026-09-22 更新：bundle α.50→α.52、workbench α.13→α.15（两次连贯 bump）。α.51 为侧栏导航重排与新增「新建任务」行（行与不渲染内容的 `main` 面板配对，点击即起原生空会话）；α.52 为「新建任务」改为任务创建器（UI-DESIGN 第 5 节，2026-09-22 用户决定），组合包自身代码未变、只为携带 workbench 客户端制品。两次都需 bundle 与 workbench 同批安装。上一轮 bump 未同步本表，本次一并回填。
 
 以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
 

@@ -1,3 +1,16 @@
+# 0.1.0-alpha.52 — 2026-09-22
+
+- 搭载 `workdsh-plugin-workbench@0.1.0-alpha.15`：「新建任务」由「点击即起空会话」改为任务创建器（UI-DESIGN 第 5 节）。组合包自身代码未变，本版只为携带客户端制品。
+- 需与 `workdsh-plugin-workbench@0.1.0-alpha.15` 同批安装。
+
+# 0.1.0-alpha.51 — 2026-09-22
+
+- 侧栏导航按 2026-09-22 用户决定改为「新会话 → 新建任务 → 项目 → 助理 → 专家 · 技能 · 连接器 → 定时任务 → 资料库 → 更多」+ 底部设置。
+- 新增「新建任务」导航行（`workdsh-workbench-client` 注册，`order: 0`）：官方 `sidebar.panellist` 的行按钮由官方 shell 固定调用 `ctx.layout.selectPanel(id)`，公开面没有自定义 onClick，因此该行与一个不渲染内容的 `workdsh-new-task` `main` 面板配对，面板挂载即调用官方 `ctx.uiWorkspace.startSession()`，随后由官方 `replaceMain`/`clearMain` 回到原生空会话；不复制输入器、会话与执行状态。
+- 「项目」行 `order` 由 20 调整为 5，排在「新建任务」之后、「助理（10）」之前。
+- 官方 `ui-plugin-manager` 已在 profile 层 `cordis.patch.yml` 禁用：导航行「插件」消失，插件管理继续由「设置 → 内置插件」提供；探针记录见 `docs/STATUS.md` 2026-09-22。
+- 需与 `workdsh-plugin-workbench@0.1.0-alpha.14`、`workdsh-plugin-projects@0.1.0-alpha.3` 同批安装。
+
 # 0.1.0-alpha.50 — 2026-09-20
 
 - 合并上游 `0.1.6-alpha.2` 线：官方依赖与 `pnpm.overrides` 精确锁定统一到 `0.1.6-alpha.2`，组合包保留本线的 10GE 侧栏字标与 `DSH JOB AI` 品牌名（上游同版为官方默认品牌）。

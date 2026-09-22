@@ -1,3 +1,282 @@
+## 2026-09-22（续二）：「新建任务」任务创建器实现与本地端到端验证（workbench α.15 / bundle α.52）
+
+**执行口径（承接上一节用户裁决）**：做成任务创建器（豆包式）；官方「新会话」文案保持不动；面板归 workbench；v1 含专家。
+
+### 实现
+
+- [NewTaskPanel.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/workbench/src/client/components/NewTaskPanel.tsx) 新建（`workdsh-new-task` 的 `main` 面板由「点击即起空会话」的占位改为创建器），六段：运行位置（工作空间）/ 项目（可选）/ 专家（可选）/ 连接器（可选）/ 任务描述（可选）/ 本版待开放。
+- 边界纪律：不注册自建输入器、不复制编辑器、不持有会话或执行状态；`/` 指令、`@` 引用、附件、权限、模型、Agent preset、发送与取消继续由原生 Conversation 提供。任务描述只作为一次性草稿交给原生输入器（`sessionStorage` + `conversation.input.overlay`），**绝不自动发送**。
+- 单一来源失败（项目/专家/连接器任一路 RPC 失败）降级为显式原因文案，不返回空列表冒充「没有可选项」。
+- 专家任务走 `prepare-execution` → `create-execution` → `consume-handoff`，与专家插件召唤链路同构；不可召唤在创建前作为可见拒绝返回。项目任务走 `link-task`，连接器走 `set-selection`；选中项目时按其配置预勾选连接器。
+- `inject` 增加 `layout` / `sessions` / `workspaces`（官方 Web 客户端已由 `dsh-client-ui-workspace` 载入 workspace controller，与 projects/skills/experts/library 既有注入一致，bundle 无需改 inject 列表）。
+
+### 令牌纠正（编码期发现）
+
+[styles.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/workbench/src/client/styles.ts) 初稿用了两个官方主题词汇表中**不存在**的令牌名，已换成仓库既有官方映射：
+
+- `--dsw-alias-bg-elevated` → `--dsw-alias-bg-layer-1`
+- `--dsw-alias-brand-primary` + `--dsw-alias-label-on-brand` → `--dsw-alias-button-primary-fill` + `--dsw-alias-label-primary-inverted`
+
+重建后确认 `bg-elevated` / `label-on-brand` 计数均为 0。
+
+### 版本与门禁
+
+| 项 | 结果 |
+| --- | --- |
+| workbench | α.14 → **α.15**（CHANGELOG 已记） |
+| bundle | α.51 → **α.52**（组合包自身代码未变，只为携带 workbench 客户端制品；CHANGELOG 已记） |
+| 台账 | [MODULE-VERSIONS](MODULE-VERSIONS.md) 表与说明已回填（含 α.51 上一轮漏记） |
+| `corepack pnpm typecheck` | 退出码 0（contracts → providers → audit → access → skills → experts → connectors → office → library → projects → bundle → activity） |
+| `corepack pnpm build` | 退出码 0 |
+| `check:plan` | PASS（30 modules; 50 documents） |
+| `check:versions` | PASS（513 DSH lock entries pinned to 0.1.6-alpha.2; Cordis 4.0.2 only） |
+| 制品指纹 | `packages/bundle/dist/client.js` sha256 `5757d86eb3778b0c8ec7233acfd72431959900c4ec97d5fcdc9f265a204edb05`；`.artifacts/workdsh-bundle-0.1.0-alpha.52.tgz` sha256 `443dc64ec595476f7e13fe7cf5f3b9c945fc45f781de07e658e0451f513464ac` |
+| 产物核对 | `packages/bundle/dist/client.js` 中 `wd-new-task` 89、`workdsh-new-task` 2、`workdsh-new-task-draft` 1、`api/workdsh-experts` 1、`api/workdsh-projects` 1、`api/workdsh-connectors` 1、`prepare-execution` 1、`create-execution` 2、`consume-handoff` 1 |
+
+### 本地预览端到端验证（浏览器实测，三轮）
+
+**验证 1（主流程）**：创建器六段结构齐全；点「开始任务」约 3 秒跳回原生会话；输入框预填 `整理本季度客户反馈摘要` 且**未自动发送**（消息节点数 0）；会话头部显示工作区 `Office split verify` 与专家标签 `工作复盘顾问`（专家绑定生效）；左侧会话列表新增选中会话。
+
+**验证 2（项目联动分支）**：新建测试项目 `创建器联动验证`（ID `cfdc0210-dcad-476a-93cc-1e4eff3a2e5f`，配置 1 个连接器）→ 创建器选中该项目后连接器 checkbox `checked` 由 `[false]` 变 `[true]`（**自动预勾选成立**）→ 跳转后输入框预填 `项目联动验证任务` 未自动发送；URL 带 `project=cfdc0210-...`。
+
+**验证 3（绑定落库确证）**：项目详情「任务」页签 1 行，DOM 原文 `<div class="wd-p-task-row" role="button" tabindex="0"><b>⊕ 项目联动验证任务</b><small>来自项目输入区 · 配置 d0dffeef</small>...`；活动记录 `任务 · 2026/9/22 13:39:23　创建任务「项目联动验证任务」`；项目配置 `连接器 1` → **`link-task` 确实落库**。
+
+### 部署与环境教训
+
+`.test-runtime/preview` 陈旧 profile 会直接启动失败：`typert-loader: @deepseek-ai/dsh-office-to-pdf invocation ... result codec is not backed by a zod v4 schema` → `dsh: plugin tree failed to load`。原因是该 profile 在旧官方版本上创建（base/webApp 仍为 `0.1.6-alpha.1`，bundle 指向旧 tgz）。修法：`corepack pnpm preview:install` 重装 pinned `0.1.6-alpha.2` base/webApp + 全部 workdsh 层；随后 `corepack pnpm preview` 正常。
+
+### 线上部署与复验（`dsh.10ge.cn`，bundle α.51 → α.52）
+
+部署窗口脚本与日志：`.artifacts/deploy-20260922b/deploy-newtask.sh`（线上 `/tmp/wd-newtask/deploy.log`，`REMOTE_EXIT=0`）。**无新增插件包**——workbench 由 `workdsh-bundle/dist/client.js` 内联，线上 profile 无独立 `workdsh-plugin-workbench`，故本窗口只替换 bundle tgz。
+
+| 项 | 实测 |
+| --- | --- |
+| 制品 | `workdsh-bundle-0.1.0-alpha.52.tgz` sha256 `443dc64e…3464ac`（上传后服务端复算一致） |
+| 安装 | `dsh plugin --profile web add … --offline` 一次通过，`Done in 5.6s`（`--offline` 教训已见效，未再用 `--prefer-offline`） |
+| 清单 | `dsh.profile.bundles` 13 条且去重后仍 13；`workdsh-bundle` 依赖指向 α.52 |
+| 已装版本 | `workdsh-bundle 0.1.0-alpha.52` |
+| 制品字节 | 线上 `node_modules/workdsh-bundle/dist/client.js` sha256 `5757d86e…db05`，**与本机构建逐字节一致**；含 `wd-new-task-checks` 2、`wd-new-task-pending` 3、`workdsh-new-task-draft` 1、`prepare-execution` 1；非法令牌 `bg-elevated` / `label-on-brand` 均 0 |
+| auth-bypass | profile 侧标记数 1（未被 pnpm 覆盖，无需重打补丁） |
+| 启动 | `healthy [2]`；`plugin tree failed` / `Cannot find module` / `duplicate loader entry` / `chokidar EACCES` 计数均为 0 |
+| 公网 | `HTTP 200`；首页预加载清单含 `workdsh-bundle/client.js` |
+
+**浏览器复验（线上实测）**：侧栏「新建任务」可点击（未触碰官方「新建会话」）→ `section.wd-new-task` 渲染；六组 `legend` 依次为 `运行位置` / `项目（可选）` / `专家（可选）` / `连接器（可选）` / `任务描述（可选）` / `本版待开放`；工作空间 2 个 option（占位 + `dsh`）；专家 4 个 option（3 位顾问均带「（可用）」）；连接器 1 个 checkbox（`WorkDSH MCP 示例 已连接`）；`#wd-new-task-prompt` 为 TEXTAREA；`开始任务` 按钮 `disabled=false`；「本版待开放」5 条逐条含未实现原因。填入 `线上创建器验证任务` → 点「开始任务」3 秒内面板消失并回原生会话 → 原生 `contenteditable` 输入框草稿 `innerText` = `线上创建器验证任务`，`[role=article]` 计数 **0**、`[class*=message]` 集合为空 → **预填生效且未自动发送**。
+
+- **项目下拉为唯一占位项已定性为「确实无数据」**：服务端 `POST /api/workdsh-projects list` 返回 `{"ok":true,"value":[]}`（线上 0 个项目）；同批 `workdsh-experts` / `workdsh-connectors` 均 `ok:true` 且有数据。故非「静默空列表」。
+- **控制台 4 条 error 与创建器无关**：`net::ERR_ABORTED /api/workdsh-skills`（`revalidate`）、`net::ERR_ABORTED /api/workdsh-office`（`poll`）及其派生的 `[workdsh:skills:catalog|list] TypeError: Failed to fetch`，均在页面加载期发生；`ERR_HTTP2_PROTOCOL_ERROR` 0 次。与本地预览观察到的 `ERR_ABORTED /api/workdsh-connectors` 同族（重复挂载/清理期取消请求），待裁决。
+- **会话头部未显示专家名属预期**：本次未指定专家（默认「不指定专家」），头部仅显示工作区 `dsh` 与 `标准模式`，无会话标题。
+
+### 已知偏差（如实记录）
+
+1. **会话头部不显示项目标签**：项目关联只在 URL query（`?project=cfdc0210-...`）。原因是 [ProjectLineageChip.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/projects/src/client/components/project-lineage/ProjectLineageChip.tsx) 注册在 `conversation.session.header.actions`，只在有会话头的态渲染，空会话 hero 态（「探索未至之境」）无此槽位。**属既有实现范围，非本轮创建器缺陷。**
+2. **工作空间下拉默认预选唯一项**（本地预览为 `Office split verify`，线上为 `dsh`）而非空占位，因 `defaultWorkspaceId` 由 `currentWorkspaceId()` 注入。待裁决是否保持。
+3. **全环境仅 1 个连接器**（本地预览与线上各 1 个），多连接器部分勾选/去重行为未验证。
+4. **`net::ERR_ABORTED` 一族**：本地预览 1 条（`/api/workdsh-connectors`，14 次中 12 次正常）；线上 4 条（`/api/workdsh-skills`、`/api/workdsh-office` 及派生的 `[workdsh:skills:catalog|list] Failed to fetch`），均在页面加载期。疑似重复挂载导致 `loadOptions` 的 AbortController 在 effect cleanup 中 abort，**非服务端 5xx**。待裁决是否需修。
+5. **未复验的浏览器能力**：线上复验期间浏览器截图工具全程不可用（`Screenshot is currently unavailable … renderer is throttled`，5 次均失败），改以无障碍树快照 + DOM 实测取证；**无截图存档**。
+6. **未执行**：未在浅色外观下实机目检主题（UI-DESIGN §17 要求「验收深色外观时必须在真实 Host 页面检查 sidebar 与内容同时为深色」）；项目详情页「项目配置」浮层遮住页签（既有问题，非本轮引入）未处理。
+7. **线上未复验的分支**：项目联动分支（选中项目 → 自动预勾选连接器 → `link-task` 落库）线上无项目数据（`list` 返回 `[]`），该分支仅在本地预览验证；专家分支的 `prepare-execution → create-execution → consume-handoff` 落库效果线上未走通（本次复验未指定专家）。
+
+## 2026-09-22（续）：「新建任务」产品裁决 + 侧栏导航 n4 部署登记
+
+**用户问题**：「新建任务」与「新会话」是不是同一个功能？要求对标 WorkBuddy、豆包等同类产品，给出 WorkDSH「新建任务」应赋予的定义。
+
+### 分析与同类产品结论
+
+- **WorkDSH 现状（问题成立）**：官方侧栏品牌位按钮与官方「新会话」按钮都调 `startSession()`；上一轮新增的「新建任务」行同样调 `ctx.uiWorkspace.startSession()`，即侧栏存在 **3 处同一动作**，「新建任务」当时只是「新会话」的别名。
+- **WorkBuddy**：产品词汇里没有「会话」——官方表述为「任务是项目成员在项目中创建的对话会话，一个任务对应一个对话和一个工作空间」，唯一主入口是「新建任务」，不并列「新会话」。
+- **豆包工作**：「工作任务模式是面向复杂多步骤工作的智能体执行模式，区别于豆包对话模式」，创建前配置较重（运行环境、项目或本地文件夹、权限策略、企业知识、技能、连接器、模型与推理强度）。
+
+### 用户裁决（2026-09-22）
+
+1. 「新建任务」做成**任务创建器**（豆包式），与「新会话」区分。
+2. 官方「新会话」入口**文案保持不动**（locale 覆盖未验证，本版不承诺）。
+3. 创建器面板**归属 workbench**（工作台拥有整体布局）。
+4. v1 **含专家**。
+
+**更正**：第二轮提问时陈述「接入专家需先给 experts 补公开发起端点」。实测 `prepare-execution` / `create-execution` / `consume-handoff` / `verify-binding` 已在 [connection-api.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/experts/src/services/connection-api.ts) 的 endpoint 白名单与分发中，**v1 无需修改 experts 插件**，实际工作量小于当时预估。
+
+### 已登记文档
+
+- 设计：[UI-DESIGN](UI-DESIGN.md) 第 5 节「首页」已改写为「新建任务 = 任务创建器」，保留「最终落到原生 `main.conversation`、不注册自建输入器、不绕过官方提交链」硬约束。
+- 复用记录：[workbench-sidebar](evidence/workbench-sidebar.md) 新增「2026-09-22：P1-01 增量 —— 任务创建器复用记录」六字段表。
+- 台账：[development-order.json](development-order.json) 未改动。本项属 P1-01（D02 已完成步骤）的功能补充，不改变 D04—D07 步骤状态；依赖的项目/专家/连接器/资料库模块虽步骤未执行，但其 0.1 实现与公开发行已存在，本项只消费其公开 HTTP 契约。
+- 范围限定：本项**不**宣称 D05/D06/D07 完成，也**不**因创建器面板存在而认为项目/连接器插件已验收。
+
+### n4 部署登记（上一轮已执行完成，此前未登记）
+
+线上 `dsh.10ge.cn` 已安装含「新建任务」行的 `workdsh-plugin-projects@0.1.0-alpha.3` 并调 `order` 至 5。
+
+- **终态实测**：`dsh.profile.bundles` 13 条且去重后仍 13；auth-bypass 标记 1；容器 `Up (healthy)`；公网 `HTTP 200`；bundle 产物 `workdsh-new-task` / `新建任务` 计数各 1；projects 产物 `order:5` 计数 1、`workdsh-projects` 计数 5；日志无 `plugin tree failed` / `duplicate loader entry` / `Cannot find module`。
+- **部署教训（写入 `dsh-10ge-ops` 待办）**：一次性容器内官方 `dsh plugin add … --prefer-offline` 仍会访问 registry，可空转 30 分钟（CPU 时间仅 0:22）；改 `--offline` 后 5.5s 完成。另 `dsh plugin` 在依赖已写入 `package.json` 时不会自动追加 `dsh.profile.bundles` 条目，需等价补写。
+- **未执行**：未在浅色外观下实机目检主题迁移（沿用上条记录）；未做创建器链路验证（创建器代码尚未实现）。
+
+## 2026-09-22：`session-controller` TypeError 与主题不一致两项排查（根因闭环）+ 硬编码色板迁移
+
+**用户指令**：优先排查 `session-controller` 的 TypeError 和主题不一致问题。
+
+### 排查项 1：控制台 `[session-controller] control stream failed: TypeError: Cannot convert undefined or null to object`
+
+**结论：α1 客户端模块 × α2 host 下发数据的 `baseline` 结构错配。属升级窗口残留（升级前已打开的标签页在内存中保留 α1 模块），非本仓缺陷。**
+
+- **抛出点与真实语义**：错误由官方包 `@deepseek-ai/dsh-api-session-controller`（非本仓代码）在**应用一帧控制数据**时抛出。`RemoteSnapshotStream.consume()` 在同一个 `try` 内既执行接收（`handleControlFrame` / `replaceControlBaseline`），也执行 accept；抛错被 `catch` 交给 `options.failed(error)` 打印，因此文案是「控制流失败」，实际语义是「一帧控制数据应用失败」。单纯断连走 `handleCarrierFailure`，不打印此 error。
+- **字段错配链**：α1 的 baseline 帧为 `{ queues, jobs, projections }`；α2 起 `queues` 已移除，host 只下发 `{ jobs, projections }`。α1 客户端对 `baseline.queues` 取 `Object.entries(...)` → `undefined` → 抛 `TypeError: Cannot convert undefined or null to object`。
+
+**五条独立证据（均为线上/远端实测）**
+
+| # | 证据 | 实测结果 |
+| --- | --- | --- |
+| 1 | 线上实际下发的模块内容 | `/plugins/??@deepseek-ai/dsh-api-session-controller/client.js&rev=b3960c79d8950255-61` → HTTP 200，135486 字节，`queues` 计数 **0** |
+| 2 | 全树 6 份副本对照 | 线上实际加载的 `profiles/web/node_modules/` = α2 / `clientQueues=0`；`global-dsh/standalone`、`_a2`、`_a2-standalone` 均 α2 / 0；`queues=8` 的 α1 副本只存在于回滚备份 `standalone.alpha1.bak.20260921151335` 与一条无包解析到它的失效 store 条目 |
+| 3 | α2 代码可达性 | α2 包内 `grep -c queues` = 0，`replaceControlBaseline` 只遍历 `jobs`/`projections`，不可能抛此错 |
+| 4 | 服务端记录 | `docker logs dsh \| grep -c 'control stream failed'` = **0**（服务端零记录，指向浏览器侧客户端模块行为） |
+| 5 | 静态资源不可变性 | 官方 `dsh-client-modules` 注释「Versioned code is immutable; mismatched revisions are rejected instead of serving newer bytes」+ 响应头 `cache-control: public, max-age=31536000, immutable`，排除「缓存到旧字节」路径 |
+
+**处置（用户选定「登记结论即可」，不改代码）**：升级/重装 DSH 后，升级前已打开的页面持有内存中的旧（α1）客户端模块，需**关闭或硬刷新**旧标签页；干净加载不复现。同批观察到的 `[connection] connection lost, retry #N`（峰值约 243）为长断连期重连计数，与本项无关。
+
+### 排查项 2：主题不一致（业务页主内容区深色 vs 首页/插件管理/设置浅色）
+
+**结论：第二套主题确已移除，但业务组件仍在使用原型阶段的硬编码深色板、未走官方 `--dsw-*` 语义 token，故在浅色外观下仍呈现深色。**
+
+- 第二套主题已退役：全仓无 `registerTheme` / `defineTheme`，未拦截 `theme/change`（见 `packages/bundle/CHANGELOG.md` L25、`packages/bundle/src/client/harness/client.ts` L30-31）。
+- **违规面实测合计 766 处**：`ui/src/styles/tokens.ts` 7、`navigation.ts` 33、`modal.ts` 9、`experts` 201、`skills` 152、`projects` 149、`library` 85、`connectors` 71、`activity` 51、`workbench` 8。
+- 判据来源：官方 [web-styling.zh.md](file:///Users/apple/Documents/AI-luoji/workdsh/docs/dsh-v0.1.6-alpha.2/web-styling.zh.md) §17（不得复制静态色板/写颜色字面量）、§18（功能组件 CSS 不得含主题选择器）、§20（共享滚动条）、§23（正圆须配对 `corner-shape:round`）、§24（高层级表面 `border:0` + elevation，禁止 border 与 elevation 配对）、§25（中性边框与分割线一律 0.5px）。
+- 范围外：`office/src/presentation/style-preview.ts` 的 `prefers-color-scheme` 属生成的独立交付物自身样式，不属本仓主题体系。
+
+**迁移已落地（用户选定「基础层 + 6 个插件一次迁移」）**
+
+基础层（主会话直接编辑）：
+
+| 文件 | 改动 |
+| --- | --- |
+| [tokens.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/ui/src/styles/tokens.ts) | 7 个 token 值改为 `var(--dsw-*,原型深色回退)` |
+| [modal.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/ui/src/styles/modal.ts) | 整文件重写：改 `border:0` + `--dsw-elevation-prominent`（原为 §24 禁止的 border+elevation 配对） |
+| [navigation.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/ui/src/styles/navigation.ts) | 全部硬编码 hex → `var(--dsw-*,原值)`；边框 1px→.5px；补 `corner-shape:round`；删除 `scrollbar-width:thin` |
+
+插件侧（4 个并行子任务完成，均通过自检）：
+
+| 文件 | 改动要点 |
+| --- | --- |
+| `plugins/experts/src/client/styles.ts` | 背景/输入框/菜单改 `--dsw-*`；7 处正圆补 `corner-shape:round`；保留 4 处专家头像内容色 |
+| `plugins/skills/src/client/styles.ts` | 6 处正圆/胶囊补 `corner-shape:round`；删除组件专用滚动条；保留技能字章彩色 |
+| `plugins/projects/src/client/styles.ts` | 删除 `color-scheme:dark`；`--p-*` 9 项全部 token 化；31 处 0.5px；浮层改 `border:0` + elevation；保留项目强调蓝 |
+| `plugins/library/src/client/styles.ts` | 85 处迁移；保留文件类型徽标色 |
+| `plugins/connectors/src/client/styles.ts` + `client/ConnectorPicker.tsx` | 浮层 `border:0` + `elevation-prominent`；4 处正圆/胶囊补 `corner-shape:round`；ConnectorPicker 仅改 css 模板、React 逻辑零改动；保留品牌青绿渐变 |
+| `plugins/activity/src/styles.ts` | **修正无效 token** `--dsw-alias-text-primary` → `--dsw-alias-label-primary`；状态色改 `state-*`；保留装饰素材色 |
+| `plugins/workbench/src/client/styles.ts` | 8 处字面量 token 化；边框 1px→.5px |
+
+同批修正：`plugins/workbench/src/client/components/TaskExecutionNotice.tsx` L29 的无效 token `--dsw-fg-muted` → `--dsw-alias-label-secondary`（该名字不在官方 ui-theme 中，一直静默回退）。
+
+**验证（本轮已执行）**：`pnpm typecheck` 通过（`workdsh-ui`、`skills`、`experts`、`connectors`、`library`、`projects`、`activity`、`workbench`）；`pnpm build` 通过（同 8 个包 + `workdsh-bundle`）。产物核对：各包 `dist` 均已 emit `--dsw-*` token（ui 20 / experts 38 / skills 30 / projects 40 / library 38 / connectors 28 / activity 13 / workbench 6 种）；`--dsw-fg-muted` 与 `--dsw-alias-text-primary` 在本轮范围内产物中已归零。
+
+**未执行（如实登记）**：**未在浅色外观下实机目检**。按 UI-DESIGN §17 验收要求，须在真实 Host 页面确认 sidebar 与内容区随外观同步切换；该项未完成前不得视为迁移通过。本轮改动亦未部署到 `dsh.10ge.cn`（未发布 npm、未重启线上容器）。
+
+**待决项（需业务确认）**：`plugins/activity/src/styles.ts` L7 中 `failed` 与 `interrupted`/`waiting` 共用琥珀色 `state-warn-primary`，是否将 `failed` 拆分到 `state-error-primary`。另 `plugins/office/src/live/style.ts` 使用了另一族无效 token（`--dsw-fg-default` / `--dsw-bg-default` / `--dsw-fg-muted`），office 不在本轮授权范围，未处理。
+
+## 2026-09-21：批次 A 落地（线上升 `0.1.6-alpha.2` + 摘除 11 个第三方 bundle），两次事故均已定位并修复
+
+**用户指令**：先执行批次 A（线上 `dsh.10ge.cn` 升 `0.1.6-alpha.2`）。
+
+**最终结果（2026-09-22 复核）**：**批次 A 已落地，公网 HTTP 200、容器 `Up (healthy)`。** 过程中发生两次事故，均定位到根因并修复，非"重启后自愈"。
+
+### 【事故 1】`purge_cores` 误删 `core*` 正常文件致整站不可用
+
+维护窗口首次执行后线上进入崩溃循环（容器 `Restarting`、公网 502）；已定位根因并恢复到批次 A 之前的可用状态。
+
+**根因链（逐层实测）**
+
+1. 维护脚本 [window-a3.sh](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260921/window-a3.sh#L36) 的 `purge_cores()` 用 `find … -name 'core*' -type f -delete` 清理 V8 段错误写出的 core dump。该模式同时命中**所有以 `core` 开头的正常文件**（`zod/v4/core/core.js`、`ajv/dist/core.js`、`js-yaml/lib/schema/core.js` 等）。
+2. 一次执行同时污染四处：profile 树（`profiles/web`）、宿主 CLI 树（`global-dsh/standalone`）、α2 暂存树（`global-dsh/_a2`、`_a2-standalone`）、旧回滚备份（`standalone.alpha1.bak.*`）。
+3. CLI 树 `node_modules/zod/v4/core/core.js` 缺失 → 每个依赖 zod 的 loader entry 导入失败（`failed to import loader entry workdsh-tool-access … Cannot find module '…/zod/v4/core/core.js'`）→ 插件树整体加载失败 → dsh 退出。
+4. entrypoint 的 `start_dsh()` 重试循环把子进程死亡记为 `Segmentation fault`，是**误导性表象**（实际为 Node 加载失败后正常退出）。
+
+**关键陷阱**：`docker logs` 被 Caddy 的 `"logger":"http.log.error"` 巨型 JSON 淹没（`Cannot find module` 计数 13537 次）；必须先 `grep -v '"logger":"http.log.error"'` 才能看到真实错误。
+
+**修复（三步，均已执行）**
+
+| 步骤 | 对象 | 来源 | 结果 |
+| --- | --- | --- | --- |
+| 1 | profile 树 81 个 `core*` | 升级前全量快照 `profile-web-20260921151335.tgz` 精确提取 | 仍缺 0 |
+| 2 | CLI 树 zod 5 文件 | 上游 `npm pack zod@4.6.5` 原件 | zod 840 文件，与上游一致 |
+| 3 | CLI 树 `js-yaml/lib/schema/core.js` | α2 纯净树同版本（4.3.2）原件 | CLI 树 `core*` = 6（zod 5 + js-yaml 1），与纯净树枚举一致 |
+
+**验证**：公网 HTTP 200 反复稳定、容器 `Up (healthy)`、CLI `0.1.6-alpha.1`、profile 23 bundles 完整；`Cannot find module` / `plugin tree failed` / `failed to apply` 均为 0；抽查 `/api/workdsh-office`、`/api/costMeter/getState` 均 200。
+
+**防复发**
+
+- `purge_cores()` 改为只匹配真正的 core dump 并排除 `node_modules`：
+  `find "$D/data/dsh/profiles" "$D/data/dsh/global-dsh" ! -path '*/node_modules/*' \( -name 'core' -o -name 'core.[0-9]*' \) -type f -delete`
+- 新增通用检出手段 [scan-missing-core.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260921/scan-missing-core.mjs)：全树扫描「引用相对 `core` 模块但目标缺失」的条目。本次对 α1 树扫描 14548 个文件，剩余命中均为 `zod/src/**/*.ts` 中 `import './core.js'` 指向同目录 `core.ts` 的 TS 约定写法，非运行期缺口。
+
+**排除的备选假设（均已实测否定）**：第三方插件为元凶（只改 bundles 为 12 项仍崩）、`/tmp` noexec 物化缓存、宿主资源不足/无 OOM。
+
+**重建并核对的前置资产**
+
+- α2 CLI 暂存树 `_a2` + `_a2-standalone`：从 `registry.npmmirror.com` 重新物化，`0.1.6-alpha.2` 解析门禁 `RESOLUTION_ALL_OK`、`bin.js --version` 正常、auth-bypass 补丁已重放、原生件与 α1 树对等（均 14 个 `.node`，含 `node-pty/prebuilds/linux-x64/pty.node`）。
+- 回滚基线 `standalone.alpha1.bak.20260921151335`：用当前正常服务的 α1 树副本刷新（22137 文件 / 6 个 `core*`），替换被污染的旧备份。
+
+### 【事故 2】profile 侧 `dsh-client-connection` 补丁被 pnpm 覆盖 → 3080 恒 401 → Caddy 永不启动 → 公网 502
+
+重新落地批次 A 后，版本树全部正确（`VERSION_CHECK_OK`）、日志 0 模块错误，但容器长期 `health: starting`、公网 502。
+
+**根因链（逐层实测，非猜测）**
+
+1. 公网 502 的真实来源不是 dsh，而是 **Caddy 根本没启动**：dsh 日志只有 `dsh web: http://127.0.0.1:3080/?token=…`，没有 `serving initial configuration`。
+2. entrypoint [docker-entrypoint.sh](file:///opt/1panel/apps/deepseek-harness/deepseek-harness/data/dsh/tmp/docker-entrypoint.sh) 第 91 行就绪判定为 `curl -fsS --max-time 2 http://127.0.0.1:3080/ >/dev/null`（`-f` 把 ≥400 视为失败），且**就绪超时是致命的**（第 107–109 行 `did not become ready within 240 seconds` → `exit 1`）；Caddy 启动在就绪判定之后，所以永远走不到。
+3. 容器内 3080 实际返回 **401**，不是不可达。401 由 `@deepseek-ai/dsh-client-connection` 的 `BrowserAuth.isAuthenticated()` 经 `Connection.requestRejection()` 产生（`lib/index.js` 第 556 行）。
+4. 该模块在磁盘上有**两份副本**：宿主 CLI 树（`standalone/node_modules/...`）与 **profile 树**（`profiles/web/node_modules/...`）。补丁只打了宿主侧（marker=1），而 **`dsh web` 实际加载的是 profile 侧那份**，其 `marker=0`（无 `process.env.ONEPANEL_DSH_AUTH_PROXY === "1"` 短路）→ 恒 401。
+5. profile 侧为何丢补丁：批次 A 第 4–5 步用 `pnpm install` 从 npm 重装 profile 依赖，把 α1 时期已打补丁的文件覆盖回官方原始版。证据：α1 备份 `$BAK/node_modules/.../index.js` 为 `marker=1`（32964 字节），装出的现行副本为 `marker=0`（32956 字节）。
+
+**修复（[fix-profile-auth-bypass.sh](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260921/fix-profile-auth-bypass.sh)，已执行）**
+
+| 步骤 | 动作 | 结果 |
+| --- | --- | --- |
+| 1 | 核对 α1 备份该文件 | `marker=1`，证实 α1 原本是双份已打补丁 |
+| 2 | 断开硬链接（`nlink=2`，pnpm 与 store 共享 inode） | `nlink=1`，避免写穿内容寻址副本 |
+| 3 | `patch-auth-bypass.mjs` 重放补丁 | `PATCHED` / `SYNTAX_OK` / `marker=1` |
+| 4 | `docker restart dsh` | 第 2 次轮询即 `healthy` |
+| 5 | 复验 | 容器内 3080 **200**、公网 **200**、Caddy `serving initial configuration`=1 |
+
+**防复发**：窗口脚本新增第 5c 步（install 后对 profile 侧副本断链 + 重放补丁，`marker<1` 即 `rollback()`），第 7 步改为**未 healthy 即自动回滚**（不再静默停在 502）。同时记录部署不变量：**auth-bypass 必须同时覆盖宿主 CLI 树与 profile 树两份副本；任何 `pnpm install` 后必须重放。**
+
+### 批次 A 最终落地证据（[verify-batch-a-live.sh](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260921/verify-batch-a-live.sh)）
+
+- 公网 `GET /` → HTTP 200（1.31s，35766 字节）；`/dsh-deployment.js` → 200，内容 `globalThis.__DSH_AUTHENTICATED_SETTINGS__ = true;`。
+- 容器 `Up (healthy)`；宿主 CLI = `0.1.6-alpha.2`。
+- profile 官方包：`@deepseek-ai/dsh-base` / `dsh-web-app` 均 `0.1.6-alpha.2`；α1 残留包数 **0**。
+- WorkDSH 业务包：`workdsh-bundle` alpha.50、`plugin-skills` alpha.32、`plugin-experts` alpha.7、`plugin-office` alpha.8、`plugin-connectors` alpha.2、`plugin-library` alpha.3、`plugin-activity` alpha.4。
+- profile 依赖共 12 项 = 2 官方 + `workdsh-bundle` + 8 个业务插件 + `workdsh-provider-identity-local`；**11 个第三方 bundle 已摘除**。
+- 日志（近 10 分钟）：模块/插件错误 0、chokidar EACCES 0、segfault 0、`did not become ready` 1（为修复前那次尝试的残留）；`core` dump 残留 0。
+- 两份 `dsh-client-connection/lib/index.js` 均 `marker=1`。
+
+### 批次 A 上线后用户可见层复验（2026-09-22，浏览器实测）
+
+| 检查项 | 实际观察 | 结论 |
+| --- | --- | --- |
+| 首页 | `https://dsh.10ge.cn/` → `?workdsh-view=conversation`，标题 `DeepSeek Harness`，非 401/502；首屏含工作区 `dsh`、主输入框、工具栏 `+ / 访问模式 / 连接器 / 资料库 / 模型 DeepSeek-V41-Flash High / 发送` | 正常 |
+| 左侧主导航 | 展开态自上而下：`新会话 → 插件 → 助理（待开放） → 专家·技能·连接器 → 定时任务（待开放） → 资料库 → 更多（待开放）`，底部独立 `设置`；折叠态仅图标 | 正常 |
+| 设置去重 | DOM 中 `设置` 精确匹配仅 1 次，6 个导航项名称各自唯一，无重复条目 | 正常 |
+| 行业应用 | 左侧导航、`body.innerText`、整页 HTML 全文检索「行业应用」均 0 命中 | 已移除 |
+| 技能 | `?workdsh-view=skills`，H1 `技能市场`、`可安装 264`、`已安装 29`，分类筛选可用 | 正常 |
+| 专家 | `?workdsh-view=experts&expert-kind=agent`，`我的专家 0`、`目录共 3 个专家`（工作复盘顾问 / 文档评审顾问 / 需求分析顾问） | 正常 |
+| 连接器 | `MCP 服务管理`，`我的 MCP 1 / 1 已连接`（`WorkDSH MCP 示例`，stdio、2 个工具） | 正常 |
+| 资料库 | `?workdsh-view=library`，`我的资料` 空态 + `新建或导入资料` | 正常（空态） |
+| 设置弹窗 | 左栏 `通用设置 / 模型 / 内置插件 / Agent 预设 / 已归档会话`；右栏语言=中文、外观=跟随系统、字号=14px 等 | 正常 |
+| 插件管理 | `官方 2` + `已安装 10`（workdsh-bundle/-access/-activity/-audit/-connectors/-experts/-library/-office/-skills + workdsh-provider-identity-local），无「行业应用」、无重复 | 正常 |
+| 输入框 | `contenteditable` DIV，写入「你好」后发送按钮由 disabled 转可用；清空后恢复 disabled；无脚本崩溃 | 正常 |
+
+**修复后 502 全清**：`docker logs --since 15m` 中 `http.log.error` = 0、`"status":502` = 0、`connection reset by peer` = 0。Caddy 全部历史错误时间戳集中在 `1790007196 ~ 1790007365`（α1 事故期），未复发；浏览器侧报的 `/api/workdsh-office`、`/api/workdsh-connectors`、`/api/costMeter/getState`、`net::ERR_ABORTED` 系页面跳转取消请求，非 502。
+
+**复验中发现的待跟进项（未处理，非批次 A 范围）**
+
+1. 控制台 `[session-controller] control stream failed: TypeError: Cannot convert undefined or null to object` —— 需确认是否 α2 官方行为或本仓插件回归。**（2026-09-22 已闭环：α1 客户端模块 × α2 baseline 字段错配，属升级窗口残留，非本仓缺陷；见顶部 2026-09-22 条目排查项 1）**
+2. `[connection] connection lost, retry #N` 告警计数最高约 243（观察窗口内已收敛、无新增）—— 需确认是否与本次升级/重启相关。**（2026-09-22 已确认：长断连期重连计数，与升级无关）**
+3. `/api/workdsh-office`、`/api/workdsh-connectors` 存在高频重复 POST（近 100 条请求中 75 条为 `/api/workdsh-*`）—— 需确认是否轮询/重试失控。
+4. 主题不一致：业务页主内容区为深色，首页/插件管理/设置为浅色（外观=跟随系统）—— 需确认是否为预期设计。**（2026-09-22 已闭环：第二套主题已移除但业务组件仍用原型硬编码深色板；迁移已落地、待 build/typecheck/浅色实机验证；见顶部 2026-09-22 条目排查项 2）**
+
+**回滚资产与清理（[check-rollback-and-cleanup.sh](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260921/check-rollback-and-cleanup.sh)）**：α1 清单三件套（`package.json.bak.alpha2.*`、`cordis.patch.yml.bak.alpha2.*`、`pnpm-lock.yaml.bak.alpha2.*`）均在；`/data/dsh/.alpha1-nm-backup-20260921151335/node_modules` 1.4G（`dsh-base` = `0.1.6-alpha.1`）；`standalone.alpha1.bak.20260921151335` 为 α1 CLI 树 —— **回滚路径仍完整有效**。已清理补丁过程残留 `index.js.orig`（两份），两份 `dsh-client-connection` 现 `marker=1 / nlink=1`。
+
+**未执行**：11 个第三方插件逐个回装与复验。
+
 ## 2026-09-21：Gitee PR !1「最少人数」门槛不可由作者解除（实测），两个 PR 状态复核
 
 **用户指令**：继续推进，你来操作。
@@ -1469,6 +1748,14 @@ check:plan 通过（29 模块/50 文档）；12 个独立工作项、三份计�
 # WorkDSH 当前开发台账
 
 更新日期：2026-09-15。当前有效状态以本节、`development-order.json` 与 `modules.json` 为准；下方按日期保留的日志记录当时状态，不能据此覆盖后续发行或用户决定。
+
+## 最新入口（2026-09-22）
+
+当前任务：无进行中任务。「新建任务」任务创建器（workbench α.15 / bundle α.52）已实现、本地端到端验证、线上 `dsh.10ge.cn` 部署与浏览器复验全部完成，证据见本文件顶部「2026-09-22（续二）」章节。
+
+下一步（择一，待用户指定）：① 裁决该章节列出的已知偏差（工作空间下拉默认预选、`net::ERR_ABORTED` 一族是否需修）；② 项目联动与专家落库分支在线上无数据，需先建线上项目/专家后复验；③ 返回主线 D04 专家 / TM-01。
+
+阻塞项：无。治理与门禁 `check:plan`（30 modules; 50 documents）、`check:versions` 均 PASS。本批未执行：浅色/深色外观实机目检（UI-DESIGN §17）、线上截图存档（浏览器截图工具不可用）。本地工作区改动未提交（26 个修改 + 1 个新增文件）。
 
 ## 每周发行计划（2026-09-14）
 

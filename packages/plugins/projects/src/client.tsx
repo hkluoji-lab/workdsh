@@ -114,7 +114,7 @@ export function apply(ctx: Context): void {
       inject: () => ({ management, focusProject }),
     }, ProjectLineageChip));
   ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'workdsh-projects', inject: () => ({ management, startTask, openTask }) }, ProjectsPanel));
-  ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'workdsh-projects', label: '项目', order: 20 }, ProjectsNavigationIcon));
+  ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'workdsh-projects', label: '项目', order: 5 }, ProjectsNavigationIcon));
 }
 
 /**
@@ -124,7 +124,8 @@ export function apply(ctx: Context): void {
  * 不会留下「有入口、无页面」的行——官方 Sidebar 的行按钮直接调用
  * `ctx.layout.selectPanel(id)`，对未注册的 main 会抛
  * `layout.selectPanel: main panel "workdsh-projects" is not registered`。
- * order 20 使项目排在「助理（10）」与「定时任务（40）」之间，与 UI-DESIGN 第 5 节的导航顺序一致。
+ * order 5 使项目排在「新建任务（0）」之后、「助理（10）」之前，与 UI-DESIGN
+ * 第 5 节的导航顺序一致。
  */
 export function ProjectsNavigationIcon() {
   return <Icon name="project" />;
