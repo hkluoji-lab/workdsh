@@ -76,8 +76,7 @@ try {
   }
   const tarballs = [];
   // Verify the complete presentation: native Team panel plus the WorkDSH
-  // Siri-style activity strip. Browser Use is disabled in this isolated Team
-  // fixture below because its own lifecycle has a separate packaged probe.
+  // Siri-style activity strip.
   for (const directory of ['packages/providers/identity-local', 'packages/plugins/audit', 'packages/plugins/access', 'packages/plugins/skills', 'packages/plugins/experts', 'packages/bundle', 'packages/plugins/activity']) {
     const manifest = JSON.parse(await readFile(join(root, directory, 'package.json'), 'utf8'));
     await command(pnpm, ['--filter', manifest.name, 'pack', '--pack-destination', artifacts], root);
@@ -91,9 +90,6 @@ try {
   await command(pnpm, ['pack', '--pack-destination', artifacts], fixture); tarballs.push(join(artifacts, 'workdsh-native-team-probe-0.0.0.tgz'));
   await command(dsh, ['--profile', 'native-team', '--from-default-profile', 'web', '--dump-config']);
   await command(dsh, ['plugin', '--profile', 'native-team', 'add', ...tarballs, '--offline']);
-  const profilePatch = join(home, 'profiles/native-team/cordis.patch.yml');
-  const browserOverride = '- id: browser-use-playwright-mcp\n  disabled: true\n';
-  await writeFile(profilePatch, browserOverride);
   pass('seven-independent-packages-installed-via-official-cli');
   let host = await start();
   const created = await api(host, { action: 'create', cwd, workspaceId });

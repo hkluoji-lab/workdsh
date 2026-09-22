@@ -1,3 +1,9 @@
+# 0.1.0-alpha.53 — 2026-09-23
+
+- 收敛注入：移除 `cordis.patch.yml` 的 `browser-use`（`@deepseek-ai/dsh-browser-use`）与 `browser-use-playwright-mcp`（`@deepseek-ai/dsh-experimental-browser-use-playwright-mcp`）两条 insert，并移除本包对应依赖。原注入使 Profile 根额外落地一份 `@deepseek-ai/dsh-scope`，与 Host 核心自带副本互不可见，触发 MCP 服务重名注册并使插件树加载失败。缺陷归属已裁定为官方缺陷本体（`…-browser-use-runtime@0.1.6-alpha.2` 把 `dsh-scope` 声明为硬依赖，而 `dsh-scope` 使用模块私有 Symbol，先天禁止跨副本；官方已在 `0.1.7-alpha.1` 将该依赖改回 peer）+ WorkDSH 为唯一触发方，处置按用户 2026-09-23 裁决「收敛注入」执行。
+- 官方浏览器使用能力（2026-09-15 上线）随本版暂缓，待官方修复版本进入基线后单独恢复；`probe:browser-use:playwright` 独立探针与 `scripts/probe-browser-use-playwright.mjs` 一并移除。computer-use 链路不受影响（其依赖链未把 `dsh-scope` 当硬依赖）。
+- 组合包自身代码未变。
+
 # 0.1.0-alpha.52 — 2026-09-22
 
 - 搭载 `workdsh-plugin-workbench@0.1.0-alpha.15`：「新建任务」由「点击即起空会话」改为任务创建器（UI-DESIGN 第 5 节）。组合包自身代码未变，本版只为携带客户端制品。
