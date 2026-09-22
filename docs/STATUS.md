@@ -1,3 +1,460 @@
+## 2026-09-22（续四）：D04 收尾与 AT-01～27 逐项签收（结论：不签收）
+
+按用户指令「收尾 D04 并执行 AT-01～27」执行。逐项裁定与证据已重写进 [D04 EP-07 验证与 AT-01～AT-27 证据矩阵](evidence/d04-experts-ep07-verification.md)（该文件前一版只到 AT-23 且为 26 模块/`0.1.5-rc.1` 口径，本轮整篇更新到 30 模块/`0.1.6-alpha.2`）。
+
+### 本轮实测的自动化层（全绿，数字为本轮实测）
+
+| 检查 | 结果 |
+| --- | --- |
+| `node scripts/check-plan.mjs` | PASS：**30 modules; 50 documents** |
+| `corepack pnpm test:planning` | 2 / 2 pass |
+| `corepack pnpm test:integration` | **110 / 110 pass**（`duration_ms 16594.83`） |
+| `corepack pnpm check:versions` | PASS：513 条 DSH 锁定 `0.1.6-alpha.2`；Cordis 4.0.2 only |
+| `corepack pnpm typecheck` | 退出码 0（12 个 filter） |
+| `corepack pnpm build` | 退出码 0 |
+
+### AT-01～AT-27 裁定
+
+| 裁定 | 项数 | AT |
+| --- | --- | --- |
+| ✅ 集成通过（本轮实测） | 11 | AT-01 / 04 / 05 / 06 / 07 / 08 / 14 / 15 / 16 / 17 / 22 |
+| ◐ 部分（领域/契约已过，端到端未验） | 10 | AT-02（另含 📦✅）/ 09 / 10 / 11 / 18 / 20（另含 📦✅）/ 21 / 24 / 25 / 26 |
+| ⛔ 本轮阻断 | 2 | AT-03 / 12 |
+| ⬜ 未执行 | 4 | AT-13 / 19 / 23 / 27 |
+
+`acceptance.json` 口径已核对并入档：该文件是 P0～P3 的**任务级**用例台账（74 条），**不含 `AT-*`、也不引用 `P1-02`**，D04 的验收真源是专家验收矩阵与 D04 证据文件，故本轮不向其增补 AT 条目。
+
+### 打包浏览器层本轮实测：3 项 PASS 后被打断
+
+`corepack pnpm probe:experts` → **失败，退出码 1**：
+
+```
+PASS: Six independent Profile layers installed outside checkout
+PASS: Packaged expert Host and real local identity/access/audit serve defaults
+PASS: Real native Session created and fixed binding verified
+A [Error]: expect(locator).toContainText(expected) failed
+  Locator: locator('[contenteditable="true"]').first()   （scripts/probe-experts-package.mjs:124）
+ELIFECYCLE Command failed with exit code 1.
+```
+
+即：仓库外独立六包安装、打包 Host + 真实本地治理服务默认目录、真实原生 Session 创建与固定绑定校验**均已通过**（这是 ADR-0019 路线 iii 落地的直接证据），随后浏览器点击「用此示例召唤专家」触发的**同一 Host 内第 2 次 create** 失败，第 4～10 项检查（草稿预填、已有文本不被覆盖、创建专家入口、编辑器三尺寸、技能选择、使用预览与发布、草稿/已发布分离、浏览器零错误、两次冷重启）全部未执行。
+
+失败原因**不是本轮新发现**：与 2026-09-17 章节登记的既有缺陷同源（提交 `9802707`），也即 `probe:browser` 自 `b8e562d` 起的同一卡点——WorkDSH 自有 bundle patch 引入官方 `browser-use-playwright-mcp` 后，`dsh-scope` 私有 `Symbol` 双副本导致 per-agent scope 失效、MCP 服务重名注册落全局层 → `mcp-client(playwright-mcp): initial connection or tool synchronization failed`。**修法归属本轮未决定**（官方改 `Symbol.for`/改回 peer，或 WorkDSH 收敛 bundle 组成/去重），本轮未改产品代码、bundle 组成或上游。**该归属与处置已于 2026-09-23 裁决为「官方缺陷本体 + WorkDSH 唯一触发方」并按「收敛注入」处置完毕，见本节上方「续五」。**
+
+### 两处必须登记的副作用与更正
+
+1. **真实打包截图材料失效**：`scripts/probe-experts-package.mjs` 使用固定文件名，本轮失败运行**覆盖了历史上成功运行的截图与 `report.json`**；`.artifacts/experts-package/` 现在只有 `failure.png` / `failure-text.txt` / `failure-errors.json`（`[]`）/ `failure-inputs.json`（`[]`）/ `host.log` 与六个新 tarball，且 `.artifacts/` 未纳入版本控制。因此「真实打包截图」这一签收要件当前**不可用**，须在打包层恢复后重跑留档。**2026-09-23 复跑后该要件已恢复**（`report.json` + 20 张成功截图），四个 `failure.*` 遗留文件按原样保留、以时间戳区分；见「续五」。
+2. **ADR-0019 阻塞状态更正**：前一版证据文件把 AT-18/19/20 记为「被 ADR-0019 阻塞 1/2 挡住」，**该结论已过时**。ADR-0019 采纳的备选 iii（治理三包各贡献独立配置层 + 安装脚本装六包）已落地：本轮探针前 3 项 PASS 即其证据；本轮源码核对确认 `experts`/`access`/`audit`/`identity-local` 的 `dist/*.js` 对 workspace 包**零运行时导入**（仅剩 `.d.ts` 的 `import type`，experts 仍 16 处指向 private `workdsh-contracts`；仓库外 TypeScript 消费仍未验证）。AT-18/19/20 现在的缺口是 MCP 阻断 + 若干场景（200% 缩放、暗/浅色、未保存离开、Host 缺席/超时/重连、移除重装、跨功能回归）尚无探针覆盖。
+3. **台账滞后（归 X4，不属 D04）**：`docs/modules.json` 的 experts `release.version` 仍为 `0.1.0-alpha.4`（2026-09-16），而 [MODULE-VERSIONS](MODULE-VERSIONS.md) 记的公开 prerelease 为 α.5、本地候选已是 α.7；本轮未改该字段。模块版本线 `0.1` 与 `experts@0.1.0-alpha.7`、`bundle@0.1.0-alpha.52` 的记录本身一致（MODULE-VERSIONS 第 33/35 行；bundle 已于 2026-09-23 处置时 bump 至 `0.1.0-alpha.53`，见「续五」）。
+
+### D04 判定
+
+按完成标准逐条核对，**7 个要件中「全部 AT-01～AT-27」与「真实打包截图」两项不满足，其余满足或部分满足**。**D04 保持 `in_progress`，本轮不予签收**，不递增包版本、不发布、不自动提交。收口顺序：先裁决 MCP 重名缺陷的归属与处置 → 恢复打包浏览器层并复跑第 4～10 项 → 再执行 AT-13/19/23/27 的真实模型与原生路径验收。**其中前两步已于 2026-09-23 完成（见「续五」）；第三步（AT-13/19/23/27 及第 6 节其余未执行项）尚未开始，故 D04 仍不签收。**
+
+## 2026-09-23（续五）：MCP 重名缺陷裁决与「收敛注入」处置（bundle → α.53）
+
+按用户指令「先裁决 MCP 重名缺陷归属与处置」执行，随后按用户裁决「收敛注入，立即解锁」+「本轮一并核实线上影响面」处置完毕。完整记录见 [D04 EP-07 验证与 AT-01～AT-27 证据矩阵](evidence/d04-experts-ep07-verification.md) 第 8 节。
+
+### 归属裁定
+
+**官方缺陷本体 + WorkDSH 为唯一触发方**（非 WorkDSH 实现错误）。四条实测证据：
+
+| 证据 | 内容 |
+| --- | --- |
+| (a) 声明不一致 | `@deepseek-ai/dsh-experimental-browser-use-runtime@0.1.6-alpha.2` 的 `dependencies` = `{dsh-mcp-client, dsh-scope, schemastery}`，而同包 `peerDependencies` 已含 `cordis`/`dsh-tools`/`dsh-browser-use`/`dsh-agent`/`dsh-system-prompt`；`dsh-scope` 在其它官方包中**一律**是 peer（`dsh-mcp-client` 自己就把它声明为 peer）。全仓 0.1.6-alpha.2 扫描：**仅**该 runtime 与 `dsh-sdk-minimal` 把 `dsh-scope` 当硬依赖（故 computer-use 链路不受影响） |
+| (b) 该类包先天禁止跨副本 | `dsh-scope` 的 `const kScope = Symbol("dsh.scope")` 在 `0.1.6-alpha.2` 与 `0.1.7-alpha.2` **两版完全一致**，均为模块私有 Symbol；把「按约定单例」的包当硬依赖，在「Host 核心根 ≠ Profile 根」的官方拓扑下必然产生互不可见的两份 |
+| (c) 官方已按同一方向修复 | `…-browser-use-runtime@0.1.7-alpha.1` 的 `dependencies` 只剩 `schemastery`，`dsh-scope` 与 `dsh-mcp-client` 双双移入 `peerDependencies` |
+| (d) 去 WorkDSH 化最小探针（可复现） | 纯官方模板 Profile（实测 `browser-use` 计数 **0**）只装 `…-playwright-mcp`，**完全不经过 `workdsh-bundle`**：`0.1.6-alpha.2` 在 Profile 根落地真实 `dsh-scope` 副本，`0.1.7-alpha.1` **不落地**（`find -type d -name dsh-scope` 无输出）。两次实验 `$DSH_HOME/profiles/` 下均无共享 `node_modules` 层 ⇒ 重复与 WorkDSH 的 bundle 组成无关，也不是 WorkDSH 的实现错误 |
+
+探针现场 `/tmp/wd-stock`（0.1.6）、`/tmp/wd-stock17`（0.1.7），临时 `$DSH_HOME`，未进版本控制、未触碰用户 Profile。
+
+### 处置（收敛注入）——bundle α.52 → α.53
+
+| 位置 | 改动 |
+| --- | --- |
+| `packages/bundle/cordis.patch.yml` | 删除 `browser-use` 与 `browser-use-playwright-mcp` 两条 insert（原第 8～15 行） |
+| `packages/bundle/package.json` | 删除上述两条 `dependencies`；版本 → `0.1.0-alpha.53` |
+| 根 `package.json` | 删除 `pnpm.overrides` 中 `dsh-browser-use`、`…-browser-use-playwright-mcp`、`…-browser-use-runtime` 三条 |
+| `scripts/probe-install.mjs` | 删除配置断言 2 条与移除负例 2 条 |
+| `scripts/probe-native-team-web.mjs` | 删除向 native-team Profile 写 `browser-use-playwright-mcp` disabled 的隔离 hack 与相应注释 |
+| `scripts/probe-browser-use-playwright.mjs` + `probe:browser-use:playwright` | **删除**（该探针只直连 `@playwright/mcp/cli.js`、不经过 Host/Profile/loader，唯一依赖路径即被移除的包） |
+
+**代价（已登记）**：2026-09-15 上线的官方浏览器使用（browser-use）能力随本版暂缓；恢复条件为官方修复版本进入基线（0.1.7-alpha.1 起已改回 peer），届时单独恢复注入与探针。**未改动**上游官方包与源码、Host/Profile 生命周期、computer-use 链路。
+
+### 复验（全绿）
+
+| 检查 | 结果 |
+| --- | --- |
+| `corepack pnpm check:plan` | PASS：30 modules / 50 documents |
+| `corepack pnpm check:versions` | PASS：**507** 条 DSH 锁定 `0.1.6-alpha.2`（513 → 507） |
+| `corepack pnpm typecheck` / `build` | 退出码 0 |
+| `corepack pnpm install --no-frozen-lockfile` | `Packages: -6`；lockfile 中 `browser-use` 残留 **0** |
+| `corepack pnpm probe:install` | 3 项全 PASS |
+| `corepack pnpm probe:experts` | **全绿，退出码 0：13 项断言全部 PASS**（含此前被阻断的浏览器层第 4～13 项） |
+
+`probe:experts` 现已覆盖：示例召唤真实任务 + 原生草稿预填一次、定向交接保留已有文本且不影响其他 Session、创建专家入口、编辑器三尺寸、真实技能选择与共享技能不被卸载、完整使用预览与 stale digest 拒绝、草稿深链只读→显式发布→召唤、草稿/已发布分离、浏览器零错误、两次冷重启保留绑定。`report.json`（13 checks）与 20 张成功截图重新产出，「真实打包截图」签收要件恢复可用。
+
+### 线上 `dsh.10ge.cn` 影响面核实（用户要求一并核实）
+
+- **物理重复已存在**：全局 dsh 自带 **260** 个 `@deepseek-ai` 包（含 `dsh-scope` 等核心），线上 Profile 根另装 **210** 个（含第二份 `dsh-scope`）；线上 `workdsh-bundle@0.1.0-alpha.52` 的 patch 确实 insert 了这两条。
+- **但未触发**：Profile 根**同时具备完整核心包集**（`dsh-agent-loop`/`dsh-mcp-resources`/`dsh-system-prompt`/`dsh-tools`/`dsh-mcp-client`/`dsh-scope` 均在），Profile 内解析统一落在 Profile 根，实际只存在一份生效的 `dsh-scope`。
+- **症状计数全为 0**（当前容器运行期，`StartedAt=2026-09-22T15:38:28Z`、`Up 7 hours (healthy)`、`Restarts=0`）：`duplicate loader entry` / `agent-team` / `is already registered` / `mcp-client(playwright-mcp)` / `browser-use` 均 **0**；最近 72h 内的 3141 条 `duplicate loader entry id: agent-team` **全部在本次容器启动之前**（前一次运行期，与 2026-09-21 批次 A 隔离变量操作同期）。
+- **结论：线上无需干预**，登记为**潜伏风险**（若 Profile 核心包集被裁减或拓扑变化使解析跨根，同一机制会复现）。α.53 起新装/重装不再产生该重复；线上沿用 α.52 属既有制品，按既有指令本轮不改线上。
+
+### D04 状态
+
+阻断解除、材料缺口补齐，但 **AT-13/19/23/27 的真实模型与原生路径仍未执行**，AT-09/10/11/18/20/21/26 的未执行项不变，AT 矩阵未重新裁定。**D04 仍保持 `in_progress`、不予签收**；下一步按证据文档第 6 节清单继续验收后一次性回填矩阵。本轮未提交、未推送、未发布。
+
+## 2026-09-23（续六）：企业门户与登录门禁（D17 / P1-13，本机已实现，线上切换未执行）
+
+按用户指令「根据 dsh.10ge.cn 布局应用，需要添加一个登录页，打开网站先进行登录跳转到工作台……请帮我分析思考下网站首页布局及实现」执行，并已完成两轮裁决：**同域路径分流 + 新增独立模块 portal + 复用同组 `DSH_AUTH_*` + 首页四段 + 先不做案例只做能力证明 + 只放联系方式 + 现在开工 P0**。
+
+### 定位与边界（[ADR-0034](adr/0034-enterprise-portal-and-edge-authentication.md)）
+
+- **这是部署边缘面，不是 Harness 功能插件**。登录门禁必须早于应用加载，功能插件在时序上不可能承担；因此它不声明 `dsh.bundle` / 可加载 `exports` / `bin`，不注册 Agent 工具，不发布 npm，随部署交付。
+- **入口形态**：门户占 `/portal`、`/portal/*`、`/login`、`/logout`、`/api/portal/*`；`/` 未登录给门户首页、已登录放行工作台；其余路径先验签名 Cookie，有效放行到 `127.0.0.1:3080`，无效 302 到 `/login?next=`。**DSH、Cloudflare、镜像均不改动，回滚＝删除派生 Caddyfile 增量并重载。**
+- **代码落点 `packages/portal`**（而非仓库根 `portal/`：门禁脚本的模块路径正则只接受 `packages/...` 与 `examples/...`），`workdsh-portal@0.1.0-alpha.1`，与 `website/` 各自版本线。台账登记：`modules.json` 新增模块、`development-order.json` 追加 **D17**（`tasks: ["P1-13"]`、`dependsOn: ["D01"]`、`status: todo`）与批次 **B6**、`MODULE-VERSIONS.md` 新增版本行、`UI-DESIGN.md` 新增 §19 公网营销面（§1 加豁免句）。
+- **凭据复用同组 `DSH_AUTH_USERNAME` / `DSH_AUTH_PASSWORD`**，会话签名密钥由同一口令经 `createHmac('sha256','workdsh-portal-session-v1')` 派生：重启后会话仍有效、改口令即全量失效，**不新增任何密钥管理**。无状态签名 Cookie（HMAC-SHA256 / `HttpOnly` / `SameSite=Lax` / 生产 `Secure`），服务端不保存会话、不落库。登录事件只写门户自有结构化 stderr JSON 日志，**不写 audit 插件表、不进 Harness 会话日志**。
+- **零造假约束**：只有一组凭据 → 只写「忘记密码请联系管理员」，不放自助找回；`identity-oidc` 未实现 → 不放企业微信/钉钉/SSO 按钮；无真实客户授权 → 不做案例分区，以真实截图与「可申请试用实例」代替；页脚联系方式与备案信息留 `TODO(部署前必须替换)` 占位。
+
+### 已落文件（`packages/portal/`，10 个）
+
+`package.json`、`README.md`（路由契约表 / 配置表 / **官方能力复用记录** / 5 条验收条件 / 部署与回滚 / 未验证范围）、`src/{config,session,server}.mjs`、`site/{index.html,login.html,styles.css,portal.js}`、`tests/session.test.mjs`。
+
+首页分区顺序：首屏 → 依托的底座 → 能做什么 → 私有化与联署定制 → 能力证明 → 信任与安全 → 联系方式；**案例分区本轮不做**。登录页左右双栏，服务端注入错误提示与回跳地址，**禁用 JavaScript 时表单仍可提交并看到结果**。
+
+### 本机实测（全部为真实执行，`PORTAL_COOKIE_SECURE=0`、`127.0.0.1:3083`）
+
+| 检查 | 结果 |
+| --- | --- |
+| `node --test packages/portal/tests/session.test.mjs` | **6 / 6 pass**（口令校验、会话读回、篡改/换密钥/换用户/过期/空签名一律拒绝、`safeNext` 白名单、Cookie 属性、限流阈值与清理） |
+| `node scripts/check-plan.mjs` | PASS：**31 modules; 50 documents**（较上轮 +1 模块，即 `packages/portal`） |
+| HTTP 服务契约 | **20 项场景实测全部符合预期**（见下） |
+| 浏览器目检（Playwright 1.58.2 + Chromium） | 4 组视口 `scrollWidth == innerWidth`，**无横向溢出**；console error 0、pageerror 0、4xx/5xx 0、requestfailed 0；CSS/JS/图片资源全 200 无 404 |
+
+服务契约实测明细（响应码与 `Location` 均为实测值）：
+
+| 场景 | 预期 | 实测 |
+| --- | --- | --- |
+| `GET /portal`、`GET /login` | 200 | 200 |
+| `GET /` 未登录 | 302 `/portal` | 302 `/portal` |
+| `GET /portal/assets/mark.svg` | 200 | 200 `image/svg+xml` |
+| `GET /portal/assets/../../etc/passwd`、`nope.txt` | 404 | 404、404 |
+| 错误口令 | 303 `/login?error=credentials` | 一致 |
+| 空口令 | 303 `/login?error=missing` | 一致 |
+| 正确口令 + `next=/session/abc123` | 303 `/session/abc123` + `Set-Cookie` | 一致（`Path=/; HttpOnly; SameSite=Lax; Max-Age=43200`） |
+| `GET /api/portal/auth` 有 Cookie / 无 Cookie / 篡改 Cookie | 204 / 401 / 401 | 204 + `X-Portal-User: admin`、401、401 |
+| 已登录访问 `/login?next=/session/abc123` | 303 回跳 | 303 `/session/abc123` |
+| 恶意 `next`：`https://evil.example/x`、`//evil.example/x` | 落回 `/` | 303 `/`、303 `/` |
+| `GET /logout` | 303 + `Max-Age=0` | 303 `/portal` + `Max-Age=0` |
+| 连续错误口令达阈值 | 429 / `throttled` | 第 10 次失败后转 `303 /login?error=throttled`；`Accept: application/json` 时 **429** `{"ok":false,"error":"throttled"}`（限流期内正确口令同样被拒，符合设计） |
+| 未配置凭据独立实例（`:3084`） | 失败关闭 | `303 /login?error=unconfigured`，页面显示「本站尚未完成登录配置，请联系管理员。」 |
+| JSON 登录 | 200 `application/json` | 200，`redirect` 字段返回净化后的 `next` |
+| 非 GET/HEAD/POST、未知路径 | 405 / 404 | 405（`Allow: GET, HEAD, POST`）/ 404 |
+
+浏览器登录流程：`POST /api/portal/login` → 303 → `GET /` 302 → `GET /portal` 200，最终落在门户首页（本机无工作台可放行，符合预期）；提交瞬间实测到 `disabled=true` 与文案「登录中…」。`/login?error=credentials` 与 `?error=throttled` 两页分别显示「用户名或密码不正确。」「尝试次数过多，请稍后再试。」且互不串味。
+
+### 顶部品牌位换为 10GE 字标（本轮追加）
+
+按用户指令「网站顶部左侧 logo WorkDSH logo 要换掉为 10ge」执行，并按后续指令「先去掉 WorkDSH 文案，只留 10GE」收敛为**只留字标**。三处品牌位（`site/index.html` 头部与页脚、`site/login.html`）由「方形 26×26 `mark.svg` + `<span>WorkDSH</span>`」改为单个 10GE 横向字标；字标几何与配色取自唯一权威来源 [GeWordmark.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/src/client/components/GeWordmark.tsx)，门户无构建步骤故**内联同一 SVG**（保留虹膜外环 `currentColor`，26px 下仍是官方同款钢环）。`styles.css` 的 `.brand img` / `.footer-brand img` 固定尺寸规则改为 `.brand svg` / `.footer-brand svg { flex: none }`，并删除 `.brand` / `.footer-brand` 中随文案一并失效的 `gap`、`font-size`、`font-weight`、`letter-spacing`。
+
+- **无障碍**：文案去掉后字标改为承担可访问名，故由 `aria-hidden` 改为 `role="img" aria-label="10GE"`；实测 `getByRole('link', { name: '10GE' })` 命中 1 个，品牌链接的可访问名不为空。
+- **比例与尺寸**：字标为 235×70（3.36:1）且 cap height 等于整框高，26px 框高即约 24px 光学字高，与线上侧栏字标实测比例（`.artifacts/live-brand-row.png`）一致；页脚取 22px。顶部不再并排产品名——与侧栏「10GE + DSH JOB AI」的锁排有意不同：门户顶部位置更紧凑，产品名由首屏标题与页脚文案承担。
+- **颜色**：字母与几何沿用品牌蓝 `#2670DA`（与门户 CTA 蓝 `#377dff` 仅差 4° 色相，同族不冲突）；虹膜外环 `currentColor` @ `0.85` 继承 `--text #eef2fa`。
+- **实测**（Playwright 1.58.2 + Chromium）：`/portal` 与 `/login` 在 1440×900 与 390×844 下 `scrollWidth == innerWidth`（1440/1440、390/390），**无横向溢出**；品牌位实测盒即字标盒 **87×26**（头部/登录）与 **74×22**（页脚），比例 3.346 / 3.364，`textContent` 为空（无残留文案）；`currentColor` 解析为 `rgb(238, 242, 250)`；旧 `img` 引用归零；console error 0、pageerror 0、4xx/5xx 0。6 倍放大目检刻度环、瞳与高光与线上字标一致（`.artifacts/portal-brand-10ge-{header,footer,zoom}.png`，脚本 `.artifacts/portal-brand-check.mjs`）。`node scripts/check-plan.mjs` PASS：**31 modules; 50 documents**。
+- **未做**：favicon 仍为方形 `mark.svg`（3.36:1 字标不适合做 favicon，且仓库内没有现成的方形 10GE 标识资产，不自造）；`mark.svg` 继续作为 favicon 素材保留，故 README「部署」节的素材拷贝清单无需变更。
+
+### 首页企业介绍分区（`#about`，本轮追加）
+
+按用户指令「请分析首页布局并实现企业介绍、产品功能及私有化定制等模块」执行。**布局分析结论**：`#capabilities`（能做什么，6 张带「已可用 / 建设中」徽标的能力卡）与 `#onprem`（私有化与联署定制，3 种交付形态 + 数据与凭据边界 / 六步定制流程 / 交付物清单）在前序已实现且内容完整，**本轮真正缺口是企业介绍**；另有一处结构问题一并修掉——站点导航与页脚导航都缺 `#about` 与 `#proof` 入口。
+
+- **事实依据**（用户裁决「只用可核实事实 + TODO 占位」）：`#about` 的「基本信息」只写能自证的四项——品牌与站点（10GE · dsh.10ge.cn）、产品（WorkDSH —— 企业级 AI 智能体工作台）、技术底座（DeepSeek Harness 官方公开插件接口）、交付形态（公网 SaaS / 企业私有化部署 / 混合部署）；运营主体、成立时间与团队规模、服务区域与响应方式写「待配置」并在源码内用 `TODO(部署前必须替换)` 标注，与页脚既有做法一致。区内不出现客户 logo、证言、年限、规模或资质——这些在仓库内无从核实，**不为撑门面编造**。
+- **位置**（用户裁决「私有化与定制之后、能力证明之前」）：`#about` 插在 `#onprem` 与 `#proof` 之间；为使底纹继续交替，`#proof` 由 `section-alt` 改为 `section`、`#trust` 由 `section` 改为 `section-alt`。最终顺序：首屏 → `#foundation` → `#capabilities` → `#onprem` → `#about` → `#proof` → `#trust` → `#contact` + 页脚。
+- **改动文件**：[site/index.html](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/site/index.html)（新分区 = 标题区 + `.split` 左「我们怎么做事」4 条 `.ticks`／右「基本信息」7 行 `.facts`；导航两处各插 `<a href="#about">企业介绍</a>`；`#proof`/`#trust` 底纹类互换）、[site/styles.css](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/site/styles.css)（新增 `.section-alt .facts > div`、`.facts` / `.facts > div`（标签列 128px）/ `.facts dt` / `.facts dd`，与 560px 断点下的单列堆叠；另加 `.ticks li > strong:first-child { margin-right: 6px }`——标签起首时与后接正文断开，同 `.steps strong` 的做法）。文档侧同步 [UI-DESIGN](file:///Users/apple/Documents/AI-luoji/workdsh/docs/UI-DESIGN.md) §19 的「首页分区顺序」与新增的「企业介绍的事实边界」。
+- **实测**（Playwright 1.58.2 + Chromium，本机 `127.0.0.1:3083`）：1440×900 / 1000×800 / 390×844 三档 `scrollWidth == innerWidth`（1440/1440、1000/1000、390/390）**无横向溢出**；`#about` 渲染**7 行**事实表，1440 下分区盒 1440×871.58；390 下逐元素复核 `scrollWidth == clientWidth`（`.ticks li` 350/350、`.facts > div` 348/348）；导航盒 498×35.8；`getByRole('link', { name: '10GE' })` 仍命中 1；console error 0、pageerror 0、4xx/5xx 0。目检修正了上一版标签列 104px 时「成立时间与团队规模」「服务区域与响应方式」折行的问题（改 128px 后单行），并确认 390 下 `.facts` 为「标签在上、值在下」的单列堆叠、`.ticks` 无截断。截图 `/tmp/workdsh-portal-brand/portal-{1440,1000,390}-about.png` 与 390 视口图，留证 `.artifacts/portal-about-1440.png`，脚本 `.artifacts/portal-brand-check.mjs`（已加 `aboutBox` / `aboutFactsRows` / `navBox` 采集与各档 about 截图）。`node scripts/check-plan.mjs` PASS：**31 modules; 50 documents**。
+- **未做**：`#about` 的三条「待配置」与页脚联系方式、备案、运营主体同样是部署前必须替换的真实信息；未新增客户案例、资质、Logo 墙；未改动服务端与部署增量（`packages/portal/src/server.mjs` 无变化）。
+
+### 首页整体设计精修 + 企业简介落地（本轮追加）
+
+用户提供企业正式简介（10GE 是技术型企业、不做「交付即结束」的项目、三条原则、客户买的是越用越懂自己业务的智能体工作环境），并要求「整体设计一个更美观的首页布局方案」。分区顺序与所有权不变，本轮只做内容替换与视觉精修。
+
+- **企业简介落地（内容层）**：`#about` 由「自撰做事原则 + 基本信息」改为**企业正式简介**——标题「不做「交付即结束」的项目。」+ 定位段落（长期资产经营、自有技术团队、交付透明）+ 三条原则卡（按需定制 / 联署共建 / 持续陪伴，`.cards-3`）+「我们提供的服务范围」4 条 `.ticks`（智能体定制 / 技能安装与调优 / 工作台搭建 / 日常运维与迭代）+「基本信息」7 行不改结构（品牌与站点改为 `10GE · 10ge.cn`）+ 结语 `.about-quote`（左侧 2px 品牌色竖线）。口径不再由我方自撰，三条「待配置」主体信息照旧保留 `TODO(部署前必须替换)`。
+- **视觉精修（表现层）**：① 首屏加品牌色径向光晕（纯 CSS 渐变，无图片资源）；② `.card` hover 抬升 2px + 边框提亮，并用 `prefers-reduced-motion: reduce` 只保留颜色反馈；③ `.steps` 六步序号之间加一条渐隐竖线连成流程；④ 顶部导航滚动高亮当前分区（`.site-nav a.is-active`，`portal.js` 新增 `IntersectionObserver`，判定带取视口中线，页面最后一屏也能高亮；无脚本时导航仍是普通锚点）；⑤ `#contact` 补一组 CTA（进入工作台 / 先看能做到什么）。
+- **同时修掉的一处排版缺陷**：上一轮用 `.ticks li > strong:first-child` 加标签间距，但 `:first-child` 忽略文本节点，`#onprem`「私有化部署把应用与数据放在企业内网；**是否出网取决于所选模型与连接器**，……」这类句中标粗也被命中，导致标点前多出 6px 空隙。改为显式类 `.ticks-labeled`（只标在标签确实位于句首的三处列表：`#about` 服务范围、`#trust`、`login.html`），实测句中标粗 `margin-right: 0px`、句首标签 `6px`。
+- **实测**（Playwright 1.58.2 + Chromium，`127.0.0.1:3083`）：1440 / 1000 / 390 三档 `scrollWidth == innerWidth` 无横向溢出；滚动高亮逐区实测 `foundation / capabilities / onprem / about / trust / contact` **各自命中且仅命中自身**；`prefers-reduced-motion` 分支实测 `transition-property` 由 `border-color, transform` 降为 `border-color`；首屏光晕像素抽样（1 倍 CSS 坐标）：ycss≈100 处 `10,18,33` → ycss≈200 `8,13,24` → ycss≈350 起回到底色 `7,10,16`，**低于流程末尾无硬边**；console error 0、pageerror 0、4xx/5xx 0。截图留证 `.artifacts/portal-design-{hero-1440,hero-390,about-1440,about-cards-390,onprem-1440,contact-1440}.png`，脚本 `.artifacts/portal-brand-check.mjs`（追加 hero / about / onprem / contact 截图与滚动高亮断言）。`node scripts/check-plan.mjs` PASS：**31 modules; 50 documents**。
+- **未做 / 未验证**：未做真实设备与 2x DPR 校验；`#about` 三条「待配置」与页脚联系方式、备案信息仍是部署前必须替换的真实信息；未提交、未推送；线上零改动。
+
+### 首页版式差异化 A+B 档全量落地（本轮追加）
+
+用户对上一轮的「首页更美观方案」三档（A 版式差异化 / B 结构增强 / C 需真实案例授权）裁决为 **`A + B 两档一起`**，并明确 **`底座与能力都保留卡片`**。分区顺序、所有权与事实口径均不变，本轮只改版式结构与表现层。
+
+- **A 档（版式差异化 + 细节）**：① 首屏之后新增 `.trustbar` 窄信任带（4 条已成立事实，只复述不新增承诺）；② 7 处分区 eyebrow 加两位编号 `.eyebrow-num`（01–07）；③ `#foundation` 改 `.cards-indexed`，由 CSS 计数器生成 01–06 序号、`padding: 20px`、标题回到 16px，与能力卡区分密度；④ `#onprem` 三种交付形态由 3 张卡改为 `.segments` 分段对照（去边框、1px 竖线分区、首项不留线与左内边距）；⑤ `#about` 三条原则由 3 张卡改为 `.tenets` 无框排版块（1px 顶部横线 + 20px 标题，靠字号与留白分层）；⑥ `.badge` 提级（22px 高、虚线 + 空心点 / `.badge-ok` 实线 + 实心点，状态不靠颜色单独承载）；⑦ `.card h3` 18px、`.cards` gap 20px、`.card-note` 左 2px 竖线、`.contrast dt` 胶囊化、主按钮投影。
+- **B 档（结构增强）**：① `#proof` 由 4 张等大截图墙改为 **1 大 3 小**——首条 `.shot-feature` 跨满列并左图右文作主证据，其余三条等重并列；② 每条截图加统一 28px 窗口条（三个圆点用径向渐变生成，不新增图片资源），图文改用 `.shot-body` 统一内边距，明确「这是产品界面而非设计稿」；③ `#trust` FAQ 卡片化（`.faq details` 12px 圆角 + 1px 边框 + `var(--bg)` 底 + hover/open 提亮边框），与左侧列表视觉等重；④ `#contact` 改为整幅 CTA 带（品牌色径向 + 深色线性渐变底纹，右侧联系块改半透明底适配）。
+- **实测（Playwright 1.58.2 + Chromium，`127.0.0.1:3083`，全部为本轮真实执行）**：
+  - 版式结构：`.segments` 3 列各 373.3px、`border-left` = `[0px, 1px, 1px]`、`padding-left` = `[0px, 34px, 34px]`；`.tenets` 3 列各 346.7px、三项 `border-top` 均 1px、h3 20px；`.shots` 3 列各 360px，主证据宽 **1120px**（跨满列）、小卡 360px，主证据 `img.right == .shot-body.left == 822.7px`（左图右文成立），4 条窗口条均 28px；`.faq` 4 条、`border-radius: 12px`、`1px solid`、底色 `rgb(7, 10, 16)`；`#contact` 底纹含 `radial-gradient(760px 320px at 12% 0% …)`、联系块底 `rgba(255, 255, 255, 0.04)`；`.trustbar` 高 56px / 4 条；`.eyebrow-num` 计数 7；`#foundation` 序号卡 6 张。
+  - 整页高度 7024px（上一轮 6955px）；分区高度 hero 680 / trustbar 56 / foundation 774 / capabilities 802 / onprem 1028 / about 1161 / proof 1154 / trust 619 / contact 475。
+  - 横向溢出：`scrollWidth == innerWidth`，`/portal` 1440 / 1000 / 390 与 `/login` 1440 / 390 **五档全部为 0**。
+  - 滚动高亮：`foundation / capabilities / onprem / about / trust / contact` **6/6 各自命中且仅命中自身**。
+  - `prefers-reduced-motion: reduce`：`transitionProperty` = `border-color`、卡片 hover 后 `transform` = `none`。
+  - console error 0、pageerror 0、requestfailed 0、4xx/5xx 0。
+- **本轮修掉的一处真实缺陷**：`.hero-figure::before` 的外扩光晕（`inset: -18% -12%`）在 1000 / 390 视口顶出横向滚动条（`scrollWidth` 分别为 1033 / 411）。逐区隐藏法定位到 `.hero`（隐藏后回落至 `scrollWidth == innerWidth`），并用伪元素几何复核：1000px 下 `pseudoRight = 1033.8`、390px 下 `411.8`，与实测 `scrollWidth` 吻合。修法：`.hero` 加 `overflow: hidden`（1440px 下光晕范围 390–1114 未触及 hero 边界，观感不变）。修复后五档全部归零。**该缺陷在上一轮已存在，只是上一轮只测了 1440/1000/390 的 `scrollWidth` 却未在改动后复跑，本轮复跑才暴露**。
+- **改动文件**：`packages/portal/site/index.html`、`packages/portal/site/styles.css`（`portal.js` 本轮未改）。验证脚本 `.artifacts/portal-brand-check.mjs` 追加 `#proof` / `#trust` / `#foundation` 截图、版式结构量化块、`reduced motion` 断言与五档溢出一览。截图留证 `.artifacts/portal-layout-{full-1440,full-390,foundation-1440,onprem-1440,about-1440,proof-1440,trust-1440,contact-1440,proof-390,segments-390,tenets-390}.png`。文档同步 [UI-DESIGN.md §19](file:///Users/apple/Documents/AI-luoji/workdsh/docs/UI-DESIGN.md)（新增「分区版式差异化」六条与 `.hero` 裁切要求，更新分区顺序含 `.trustbar`）。
+- **未做 / 未验证**：未做 1920 档与真实设备、2x DPR 校验；未提交、未推送；线上零改动。C 档（真实客户案例与量化指标）在取得客户授权前不做。
+
+### 线上切入口径（用户 2026-09-23 二次裁决）
+
+- **未登录访问 `/` 给门户首页**（不是直接给登录页）：门户自有路径直连门户服务，其余路径先过门禁。
+- **门户服务跑在容器内**，沿用 `/survey`（3082）的「派生 Caddyfile + 派生 entrypoint + 宿主目录即容器 `/data/dsh`」做法。
+
+### 部署增量（已产出，未执行）
+
+部署侧只读核实（未改任何线上文件）：
+
+| 事实 | 实测值 |
+| --- | --- |
+| 容器与镜像 | `dsh` / `1panel/deepseek-harness:0.1.5-rc.1`，公网映射 `0.0.0.0:3080 → 8443` |
+| Caddy 版本与指令 | **v2.11.4**；`forward_auth` 为 2.7+ 标准指令，官方文档「Expanded form」确认**默认以 GET 访问 `uri`**（正好匹配门户的 `GET /api/portal/auth`）；`http.handlers.reverse_proxy` 已加载 |
+| 端口 | 容器内 **3083 空闲**（`/proc/net/tcp` 实测无监听） |
+| 挂载 | 宿主 `…/data/dsh` **已整体 rw 挂载**为容器 `/data/dsh` ⇒ 门户放进 `/data/dsh/portal` 即生效，**无需新增挂载** |
+| 既有公开面 | `/survey/` 在文档中标注「可公开」，**刻意不纳入门禁**，否则问卷失效 |
+| 语法校验路径 | `/etc/caddy/Caddyfile` 是宿主文件的只读挂载 ⇒ 改宿主即改它，`caddy validate` 可直接校验 |
+
+增量与回滚命令已写入 [packages/portal/README](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/README.md) 的「部署」节：两个 Caddy snippet（`portal_gate` / `portal_gate_root`）+ 两条公开 route + 三处 `import portal_gate`（`@settings_api`、`/plugins/events`、兜底 route）+ 派生 entrypoint 的口令保留行与门户启动块（带自愈循环）+ `wait -n` 追加 `portal_pid`。回滚＝还原两个派生文件并重启容器。
+
+本轮顺带做的一处代码修正：`/api/portal/auth` 的 401 **不再带 `WWW-Authenticate`**（原值 `Portal` 不是注册方案，且 `forward_auth` 的 401 是判断信号，保留会让浏览器弹原生凭据框）。复测：会话测试 **6 / 6 pass**，无 Cookie 401（响应头中确无 `WWW-Authenticate`）、有效 Cookie 204 + `X-Portal-User`、篡改 Cookie 401。
+
+### 未执行 / 未验证（如实登记）
+
+- ~~**线上路由切换与 `forward_auth` 行为未执行**~~ → **已于 2026-09-23 执行并实测**，见下「线上部署已执行」。
+- ~~**未验证应用放行链路**~~ → **已验证**：线上带会话 `GET /` 为 200，浏览器实测进入工作台。
+- **未做真实设备与 2x DPR 校验**；截图尺寸等于视口 CSS 像素。
+- **企业 SSO、自助找回密码、线索后台、多租户**均未实现且页面不放入口（`identity-oidc` 属 B5）。
+- **页脚联系方式、运营主体与备案信息仍是占位**，部署前必须替换为真实信息；本轮 `#about` 又新增三处同类占位（运营主体、成立时间与团队规模、服务区域与响应方式）。`site/index.html` 内已用 `TODO(部署前必须替换)` 标注。
+- 未提交、未推送、未发布 npm。工作区另有本轮之前的未提交改动（bundle α.53 收敛注入等），与本轮无关。
+
+### 线上部署已执行（2026-09-23，用户指令「登录名账号 18938845688，密码设置为 Aa@88822166，然后上传部署到网站 dsh.10ge.cn 同步」）
+
+按上述指令执行，**线上已切换完成**。全程走「派生副本 + 只读挂载」，**未改镜像、未改官方 entrypoint 本体、未改 Cloudflare、未新增挂载**。
+
+**凭据变更（含一次必须说明的偏离）**：官方 entrypoint 对 `DSH_AUTH_PASSWORD` 有硬约束 `(( ${#auth_password} < 12 ))` —— 短于 12 位容器会直接崩溃循环；用户给出的原始值 `Aa@88822166` 为 **11 位**，不满足。**未擅自补位**，而是交用户裁决，结果为补一位 **`Aa@88822166!`**（12 位）；用户名 `18938845688` 纯数字，符合 `^[A-Za-z0-9._-]+$`。改后本地预校验通过（username OK / password OK）才落盘。
+
+| 线上路径 | 变化 | 备份（时间戳 `20260922232318`） |
+| --- | --- | --- |
+| `…/deepseek-harness/.env` | `DSH_AUTH_USERNAME="18938845688"`、`DSH_AUTH_PASSWORD="Aa@88822166!"` | `.env.bak.portal.20260922232318` |
+| `…/data/dsh/tmp/Caddyfile` | 1479 → **2554 字节**（2 snippet + 2 route + 3 处 `import portal_gate`） | `Caddyfile.bak.portal.20260922232318` |
+| `…/data/dsh/tmp/docker-entrypoint.sh` | 4828 → **5521 字节**（口令保留行 + 门户启动块 + `wait -n` 追加 `portal_pid`） | `docker-entrypoint.sh.bak.portal.20260922232318` |
+| `…/data/dsh/portal/{package.json,src,site}` | 新建，7 个源文件从 `packages/portal/` 原样拷贝 | 无（新增目录） |
+| `…/data/dsh/portal/assets/` | 新建，`mark.svg` + 5 张 png（共 3.4M） | 无（新增目录） |
+
+**落位正确性**：7 个源文件 + 6 个素材全部 `md5sum` 与仓库本地一致。
+
+**派生脚本**（沿用 `/survey` 先例，落在宿主机 `…/data/dsh/tmp/`，带 `MARKER` 幂等判断、花括号配平校验与大小增量断言，失败即不写出坏文件）：
+
+| 脚本 | 本地实测 | 幂等复跑 |
+| --- | --- | --- |
+| `add-portal-caddy.py` | `1359 → 2222` chars（1479 → 2554 bytes） | `already patched; copied unchanged` |
+| `add-portal-entrypoint.py` | `4734 → 5317` chars（4828 → 5521 bytes），`bash -n` OK | 同上 |
+
+**执行中暴露的两处实施细节（README 原部署节未写，已回填）**：① `docker compose up -d` **不检测 `.env` 内容变化** —— 实测第一次只输出 `Container dsh Running`（未重建），`docker inspect` 确认容器内仍是旧凭据后才 `--force-recreate` 生效；② `caddy validate` 有两个前置环境变量，缺任一个都会失败：`CADDY_ACCESS_HOST`（否则 `default_sni` 报 `wrong argument count`）、`XDG_DATA_HOME=/data/caddy XDG_CONFIG_HOME=/data/caddy/config`（否则 pki 写 `/root/.local` 报 `read-only file system`）。
+
+**先预演后重启**：为避免门禁单点使整站不可达，先在容器内 3083 独立拉起门户做 pre-flight（`/portal` 200、`/login` 200、`/api/portal/auth` 401、正确口令 303 + `Set-Cookie … HttpOnly; SameSite=Lax; Max-Age=43200; Secure`、Cookie 校验 204、篡改 401、`/logout` 303），全部符合预期后才 `caddy validate` → 重启容器。
+
+**线上 15 项验收探针（对公网 `https://dsh.10ge.cn`，全部实测）**：匿名 `GET /` → `302 → /portal`；`/portal`、`/login` 各 200；匿名 `/session/abc123` → `302 → /login?next=/session/abc123`；匿名 `/plugins/events` → 302 到登录；**`/survey/` → 200（刻意不加门禁，问卷仍可匿名填写）**；`/api/portal/auth` 匿名 401；错误口令 → `303 → /login?error=credentials&next=%2F`；正确口令 → `303 → /` 且下发 `HttpOnly; SameSite=Lax; Max-Age=43200; Secure`；带会话 `GET /` → 200；深链登录后落到 `/session/does-not-exist`（未登录时进不去、登录后能进不存在页而非兜底）；恶意 `next`（绝对 URL）→ `303 → /`（拒绝开放重定向）；`/logout` → `303 → /portal`；8 项门户静态资源全 200 且字节数与仓库一致。**Cloudflare 302 缓存疑问关闭**：实测 `cache-control: no-store` + `cf-cache-status: DYNAMIC`，302 未被边缘缓存。
+
+**浏览器级回归（Playwright 1.58.2 + Chromium 对公网域名）**：匿名落 `/portal`；9 个分区 ID（hero / trustbar / foundation / capabilities / onprem / about / proof / trust / contact）齐全；`brandAria = 10GE`；零坏图；`scrollWidth == innerWidth == 1440`；页高 7026px；导航 6 锚点；页内「待配置」占位 7 处；登录页表单与深链 `input[name=next]` 正常；真实登录后工作台标题 `DeepSeek Harness`、侧栏与任务列表正常、`bootFailure = 0`（唯一 error 是对不存在会话的预期 404）。**工作台零回归**。
+
+**服务状态**：容器 `status=running health=healthy restarts=0`；门户进程 `pid=71 ppid=68`（父进程即 `bash /usr/local/bin/docker-entrypoint.sh`）、uid=1000，自愈循环生效。
+
+**线上留证截图**：`live-portal-1440-full.png`、`live-login-1440.png`、`live-workbench-1440.png`（采集脚本 `live-check.mjs`）。
+
+**回滚方式**：
+
+```sh
+A=/opt/1panel/apps/deepseek-harness/deepseek-harness
+cp -p $A/data/dsh/tmp/Caddyfile.bak.portal.20260922232318            $A/data/dsh/tmp/Caddyfile
+cp -p $A/data/dsh/tmp/docker-entrypoint.sh.bak.portal.20260922232318 $A/data/dsh/tmp/docker-entrypoint.sh
+printf '88888888\n' | sudo -S cp -p $A/.env.bak.portal.20260922232318 $A/.env
+# docker compose up -d --force-recreate
+```
+
+回滚后网站恢复「匿名直达工作台」。DSH 后端、Cloudflare 隧道与容器镜像始终不受影响。
+
+**线上仍留 7 处 `TODO(部署前必须替换)` 占位**：用户 2026-09-23 裁决「**先按现状部署**」，故线上页面显示「待配置」。拿到真实信息（页脚备案与运营主体、3 项联系方式、`#about` 的运营主体 / 成立时间与团队规模 / 服务区域与响应方式）后需再落位一次（`scp site/index.html` 即生效，静态文件无需重启）。
+
+**本轮未做**：未提交、未推送；favicon 仍是 `mark.svg`（未换方形 10GE 资产）。
+
+## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
+
+按用户裁决「按 5 批切分，从第 1 批开始，先修复线上缺陷」执行。B1 出口标准是「线上可复现缺陷按归因处置（我方修复项复验通过，官方/环境项登记留证）」，本轮完成其中「我方修复项」三条。
+
+### 归属判定表（复现 → 归属 → 处置）
+
+| 缺陷 | 复现证据 | 归属 | 处置 |
+| --- | --- | --- | --- |
+| 浅色主题下资料库/技能/专家/连接器面板仍为深色 | 线上 body `--dsw-alias-bg-base=#fff`、`body` 背景 `rgb(255,255,255)`，而 `.wd-library-content`=`rgb(17,17,17)`、`.wd-skills`=`rgb(18,18,18)` | **我方（部署滞后）** | 已修：重新构建 + 部署 |
+| 项目面板出现英文 `signal timed out` 红字 | 冷启动 Host 上 5s 超时先于服务返回，`DOMException(TimeoutError)` 被原样抛出 | **我方（代码）** | 已修：超时放宽到 15s + 中文文案 |
+| 资料库窄视口下二级栏只能折叠、开关不可见 | 556×702 下 `button.wd-library-nav-toggle` computed `display:block` 但 `offsetWidth/Height=0`、`checkVisibility()=false`；父链 `BUTTON → HEADER → ASIDE.wd-library-sidebar` 而该 aside 在同断点被 `display:none` | **我方（代码）** | 已修：开关移出折叠容器 |
+| 设置 → 模型报 `加载提供方目录失败: settings are unavailable in this browser` | 差分实验：同一服务器、同一 profile 下 `127.0.0.1` 正常、`dsh.10ge.cn` 失败，唯一变量是页面主机名 | **官方底座（非 loopback 组合下的未文档化限制）** | 已定位到行级根因并收口；不改上游，登记留证 + 候选最小扩展方案（见下「设置 → 模型报错：差分实验与根因收口」） |
+| 首屏命中缓存 HTML 时只剩 `Failed to load plugins / client-modules: HTML did not preload …` | 连续 reload 无效，`?_cb=<ts>` 后正常（`_cb` 是工具注入的 URL 级穿透参数，官方包与仓库均无引用） | **官方底座（rev 进程级随机 + index 响应无缓存指令）× 我方运维（重启频次）** | 已定位到行级根因并在**部署层**加固：Caddy 对 `/`、`/index.html` 加 `Cache-Control: no-store`，并一并清理遗留路由；见下「首屏坏页：跨代 rev 错配定位与部署层加固」 |
+| 切面板时 `net::ERR_ABORTED /api/workdsh-{connectors,office,...}` | 各插件 `ctx.effect(() => () => lifetime.abort())` + skills `superseded?.abort()` | **设计内取消** | 不改；登记为「监控噪声」 |
+| 生产页请求 `GET /@vite/client` 且 `net::ERR_ABORTED` | 线上网络失败项唯一非取消类 | **未定（官方底座/部署）** | 本轮新发现，未修 |
+
+### 代码改动（3 个文件，均未提交）
+
+- [styles.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/library/src/client/styles.ts#L11)：`@media(max-width:760px)` 增加 `.wd-library{grid-template-rows:auto minmax(0,1fr)}`，并给 `.wd-library-nav-toggle` 补完整可点样式（`display:flex`、`height:44px`、边框/底色/前景均走 `--dsw-*` 令牌）。
+- [LibraryPanel.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/library/src/client/LibraryPanel.tsx#L111-L113)：开关按钮从 `aside > header` 提到 `section.wd-library` 顶层（成为网格第一行），`aria-label` 由「打开导航」改为「切换导航」与技能/专家/连接器一致。
+- [management.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/projects/src/client/management.ts#L10-L24)：`AbortSignal.timeout(5_000)` → `15_000`，并捕获 `TimeoutError` 转中文文案「项目服务响应超时，请重试。」。
+
+深色缺陷的根因判定在排查中发生过一次改判：起初怀疑是 `var(--dsw-*)` 兜底值命中，**实测证明线上构建产物里根本没有 `var()`**——线上 `dist/client/styles.js` 为 `--bg:#121212;--line:#303030;…` 硬编码，`grep -c dsw-alias-bg-base` 为 0。这些包在 `f32cdb5`（2026-09-22「业务页硬编码深色板迁移到官方 `--dsw-*` 语义 token」）之后未重新构建部署，因此修复路径是「构建 + 部署」而非改代码。
+
+### 构建与本地预览验证
+
+| 项 | 实测 |
+| --- | --- |
+| `corepack pnpm run build` | 退出码 0（12 个 filter） |
+| 令牌化核对（本地 dist） | library `dsw-alias-bg-base`=2 / skills=1 / experts=1 / connectors=2 / projects=2，`--bg:#121212` 硬编码计数**全为 0**；`grid-template-rows:auto minmax(0,1fr)` 命中 1 |
+| 本地预览 | `corepack pnpm preview`（3031，`?token=…` 鉴权，无 token 返回 401） |
+
+本地预览复验（浏览器实测，556×702）：
+
+- **通过**：浅色主题下 `.wd-library` / `.wd-library-content` / `.wd-library-sidebar` 背景均 `rgb(255,255,255)`、`--bg` 解析为 `#fff`；`.wd-skills` / `.wd-experts` / `section.wd-connectors` / `section.wd-projects` 背景同为 `rgb(255,255,255)`，无「系统浅色 + 业务面板深色」割裂。
+- **通过**：项目面板 `signal timed out` 与 `项目服务响应超时` 均未出现，`role=alert` 计数 0，正常渲染出项目列表与 5 个模板。
+- **通过**：干净标签页内依次进入资料库/项目/专家·技能·连接器，控制台 `(none)`。
+- **过程教训**：`preview:install` 采用的是**内容寻址 tgz**（`.artifacts/preview/<sha256>/…tgz`），`build` 之后不重装预览，3031 仍服务旧包——首轮复验因此把「开关仍 0×0」误判为未修。执行 `corepack pnpm preview:install` 重装后方为有效复验。
+
+窄视口开关的行为在复验中被确认：`button.wd-library-nav-toggle` 现在 `display:flex`、`offsetWidth=476/252`、`offsetHeight=44`、`checkVisibility()=true`，且 `document.querySelector('.wd-library-sidebar .wd-library-nav-toggle')` 为 `null`（已不在折叠容器内）；点击它切换的是**官方全局侧边栏**（点击前后官方侧边栏按钮 aria-label 在「收起侧边栏 / 打开侧边栏」间变化），资料库二级栏 `aside.wd-library-sidebar` 始终 `display:none`。这与技能/专家/连接器的 `.nav-toggle` 绑定完全一致（三者也注入 `toggleNavigation: () => ctx.layout.toggleSidebar()`），**属既有产品行为而非本次引入的缺陷**。
+
+**用户裁决（2026-09-22）：保持现状，登记为设计缺口。** 即「≤760px 下资料库二级栏折叠后无入口展开」不修，等后续批次统一处理；本轮不为此改动代码。
+
+### 线上部署（`dsh.10ge.cn`）
+
+沿用既有做法：新增上传目录 + 保持模块版本号不变（历史窗口已用 `wd-upload-nav` / `wd-upload-newtask` / `wd-upload-alpha2` 同样方式）。
+
+| 步 | 命令与实测 |
+| --- | --- |
+| 打包 | `pnpm --filter <5 包> pack --pack-destination .artifacts/b1` → connectors α.2 / experts α.7 / library α.3 / projects α.3 / skills α.32；逐个解包核对 `dsw-alias-bg-base` 命中且硬编码深色计数为 0 |
+| 上传 | `scp` → 宿主 `…/data/workspace/wd-upload-b1/`（容器内 `/workspace`，bind mount） |
+| 备份 | 线上 profile `package.json.bak-b1` 与 `pnpm-lock.yaml.bak-b1` |
+| 改依赖 | 脚本 `.artifacts/b1/patch-profile.cjs`（gitignored 部署辅助脚本）把 5 条 `file:/workspace/wd-upload-*/…tgz` 改写为 `wd-upload-b1`（逐条打印改写前后路径） |
+| 安装 | `docker exec dsh sh -lc 'cd /data/dsh/profiles/web && HOME=/data/dsh/home pnpm install'` → `Packages: +5 -96`、`Done in 10.1s` |
+| 重启 | `docker restart dsh` → `status=Up 14 seconds (healthy)`、`local3080=200`，日志无 `plugin tree failed` / `duplicate loader entry` |
+
+安装踩坑（已解决）：直接 `pnpm install` 报 `[ENOENT] mkdir '/root/.local'`；加 `--store-dir /data/dsh/global-dsh/.pnpm-store` 报 `[ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY]`（store 不一致会触发整目录 purge，风险是中途失败导致线上不可用）。正解是从 `node_modules/.modules.yaml` 读出原始 `storeDir: /data/dsh/home/.local/share/pnpm/store/v11`，即**必须带 `HOME=/data/dsh/home`** 才能复用既有 store、不做 purge。
+
+线上制品核对（容器内实测）：5 个包 `dsw-alias-bg-base` 命中（library=2 / skills=1 / experts=1 / connectors=2 / projects=2）、`--bg:#121212` 计数全为 0、`grid-template-rows:auto minmax(0,1fr)` 命中 1、`项目服务响应超时` 命中 1。
+
+### 线上复验（浏览器实测）
+
+- **通过 · 浅色面板**：body `--dsw-alias-bg-base=#fff`、`backgroundColor=rgb(255,255,255)`、`dsThemeSource=system`、无 `data-ds-dark-theme`；`section.wd-library` / `.wd-library-content` / `.wd-library-sidebar` / `.wd-skills` / `.wd-experts` / `section.wd-connectors` / `section.wd-projects` 背景**一律 `rgb(255,255,255)`**，`color` 为 `rgb(15,17,21)`。面板内非白扫描仅剩官方侧栏 `rgb(249,250,251)`、选中导航行 `rgba(38,49,72,0.06)` 与 `.wd-p-primary` 主按钮 `rgb(15,17,21)`（浅字深底设计态），无残留硬编码深色。
+- **通过 · 项目超时**：点击「项目」后 t≈3s/9s/21s 三次采样，`signal timed out` 与 `项目服务响应超时` 均为 false，`role=alert` 为 `[]`，正常渲染「还没有项目」空状态 + 5 个模板名。
+- **通过 · 窄视口开关**：556×702 下开关 `display:flex`、`offsetWidth=252`、`offsetHeight=44`、`checkVisibility()=true`，且不在 `.wd-library-sidebar` 内；点击切换官方全局侧边栏（aria-label「收起侧边栏」↔「打开侧边栏」）。
+- **通过 · 站点可用性**：`?_cb=<ts>` 加载正常，`HTML did not preload` 与 `Failed to load plugins` 均为 false。
+- **通过 · 侧栏导航**：`nav[aria-label="全局面板"] button` 共 **7** 项（新建任务 / 项目 / 助理（待开放）/ 专家 · 技能 · 连接器 / 定时任务（待开放）/ 资料库 / 更多（待开放））——「插件」行不存在（DOM 全文检索「插件」0 次），符合用户「移除插件导航行」的要求。
+
+### 临时实验与回退
+
+上一轮为验证「设置 → 模型」报错是否由 `ui-plugin-manager` 被禁用引起，曾在线上 profile `cordis.patch.yml` 追加 `- id: ui-plugin-manager / disabled: false`。本轮已用备份 `cordis.patch.yml.bak-b1` 覆盖回退并重启，实测「插件」导航行随之消失（见上）；该实验结论保留：**恢复 `ui-plugin-manager` 后设置 → 模型仍报同一错误，故排除其为根因**。
+
+### 本轮新发现（未修，登记留证）
+
+- **生产页请求 dev/HMR 资源**：线上网络失败项里唯一非「设计内取消」的一条是 `GET https://dsh.10ge.cn/@vite/client type=Script failed=net::ERR_ABORTED`。归属为**官方底座默认装配**：该请求来自官方 `@deepseek-ai/dsh-client-hmr@0.1.6-alpha.2`（与之配套的 `@deepseek-ai/dsh-hmr@0.1.6-alpha.2` 同在 profile 依赖树内），在 profile 的「内置插件」列表中 `hmr` 显示为「已启用」。**本轮未改动**：profile 设置了 `patchReload: live`，禁用 `hmr` 需先权衡实时补丁重载能力，属配置取舍而非缺陷修复。
+- **连接层告警**：强制刷新首页后出现 `[warn] [connection] connection lost, retry #1` 与 `[warn] [connection] generation is still not ready after 3000ms`，页面随后自愈，未影响功能。
+- 以上两项留作 B1 剩余待定位项（`@vite/client` 取舍、连接层告警归因）；`settings are unavailable in this browser` 与**首屏 HTML 缓存坏页**均已在本章定位收口（前者归属官方底座，后者归属官方底座 × 我方运维并已在部署层加固）。
+
+### 首屏坏页：跨代 rev 错配定位与部署层加固（归属官方底座 × 我方运维）
+
+**结论**：坏页 `Failed to load plugins / client-modules: HTML did not preload @deepseek-ai/dsh-client-modules/client.js` 不是某个插件的缺陷，而是官方 rev 协议与官方 index 响应叠加出的**跨代错配**：插件代码 URL 的 rev 由**进程级随机 nonce** 生成，`/plugins` 只服务当前 rev，而首屏 boot 完全依赖 HTML 里那一条 bootstrap 脚本成功执行。任何「HTML 或页面实例来自上一代进程」的情形都会直接白屏。我方无源码修复位（硬约束：不修改上游源码），已在**部署层**加固。
+
+**静态证据链**（`@deepseek-ai/dsh-client-modules@0.1.6-alpha.2`）：
+
+1. `allocateInitialRevision()` 返回 `${initialRevisionNonce}-${n}`，而 `ClientModuleRegistry.initialRevisionNonce = randomBytes(8).toString("hex")` → **每次进程启动换一代 rev**。线上 graph 行 `rev="273bde7de2cb51a0-0/-1/-2"` 即此形态。
+2. `bootInjections()` 产出应用批 `<link rel="preload" as="script">`、引导批 `<script src>`（`comboUrl()` = `/plugins/??<id>/client.js&rev=<rev>`）与 `globalThis.__DSH_BOOT__`；`__ModuleLoader__.create()` 在 `pendingQueue.findIndex(r => r.id === "@deepseek-ai/dsh-client-modules")` 为 `undefined` 时抛出错文本。
+3. `IMMUTABLE_CACHE = "public, max-age=31536000, immutable"`，同处注释明言 `Versioned code is immutable; mismatched revisions are rejected instead of serving newer bytes.`；`chunkRequest()` 对 rev 做**严格相等**比对，不等即 404。
+4. `@deepseek-ai/dsh-host-frontend-static/lib/index.js` 的 `serveStatic()`：index 分支只 `res.writeHead(200, { "content-type": HTML_MIME })`，**不设任何缓存头与验证器**。
+
+**线上实测**：
+
+- rev 语义：引导批正确 rev → `200`；`rev=deadbeefdead` → `404`；上一代组合 rev `273bde7de2cb51a0-0` → `404`。重启后引导批 rev 由 `55d8a8d357ac` 变为 `374625474af4`。
+- index 无缓存指令：`/` 与 `/index.html` 均无 `Cache-Control`/`ETag`/`Last-Modified`/`Expires`；带 `If-None-Match` + `If-Modified-Since` 的条件请求恒 `200` 全量。
+- 触发源：容器 6 小时内重启 **8 次**（`13:05:11 / 13:07:46 / 14:24:34 / 14:24:44 / 14:32:22 / 14:32:40 / 14:43:41 / 14:52:22`，`Restarts=1`），日志中可见跨代存活的长驻标签页（`Referer: …?_cb=1790088440861&workdsh-view=conversation`，早于 14:52 重启）。
+
+**缓存主体逐一排除**：
+
+| 候选主体 | 实测 | 判定 |
+| --- | --- | --- |
+| Cloudflare 边缘（HTML） | `/` → `cf-cache-status: DYNAMIC` | 不缓存 HTML，排除 |
+| Cloudflare 边缘（插件包） | `/plugins/…client.js&rev=X` → `MISS`→`HIT`、`cache-control: max-age=14400`，但 rev 在查询串内且按 rev 键控（换 rev 即 404） | 不跨代复用 |
+| Caddy | 无缓存模块，仅转发；6h 日志对 `/` 零非 200 | 排除 |
+| 应用静态服务 | 见上，无缓存头、无验证器 | 不主动缓存 |
+| Service Worker | 官方包与仓库全仓 grep `serviceWorker\|registerSW\|sw.js` **0 命中** | 不存在 |
+| **客户端浏览器缓存 / 回退缓存** | URL 级穿透参数 `?_cb=<ts>` 能救、单纯 `reload` 不一定救 | **唯一符合观测的主体** |
+
+**处置（用户裁决 2026-09-22：施加部署层加固 + 一并清理遗留路由）**：
+
+Caddyfile（宿主持久化 `…/data/dsh/tmp/Caddyfile`）两处改动：
+
+```diff
+-	route /dsh-deployment.js {
+-		header {
+-			Content-Type "application/javascript; charset=utf-8"
+-			Cache-Control "no-store"
+-		}
+-		respond "globalThis.__DSH_AUTHENTICATED_SETTINGS__ = true;" 200
+-	}
++	# 首屏 HTML 必须禁止任何缓存：官方插件代码 URL 的 rev 由进程级随机 nonce 生成，
++	# 重启即全量失效，旧 HTML 携带旧 rev 会让 boot 直接失败（client-modules: HTML did not preload）。
++	@html_document path / /index.html
++	header @html_document Cache-Control "no-store"
+```
+
+- 删除遗留路由的依据：`/dsh-deployment.js` 在仓库与全部官方包**零引用**，其注入的 `globalThis.__DSH_AUTHENTICATED_SETTINGS__` 全盘仅命中 Caddyfile 自身（含备份）、Caddy `autosave.json` 与一条会话缓存 JSON（对话正文，非运行时引用）；结合 2026-09-18「取消 dsh.10ge.cn 的登录鉴权」，判定为鉴权期的遗留路由。
+- 操作过程：先备份 `Caddyfile.bak.b1html.20260922233729`（md5 `7baa4113e5e46fdf4b7c9c960a03318d`，原配置 md5 `7baa4113…`）；候选文件与基线同跑 `caddy validate`（两者均 `Valid configuration`；需带 `CADDY_ACCESS_HOST=dsh.10ge.cn`，该值取自运行中配置 `autosave.json` 的 `default_sni`，非猜测）。因全局 `admin off` 无法 `caddy reload`，只能 `docker restart dsh` 应用。
+
+**线上复验（边缘 + 浏览器）**：
+
+| 项 | 实测 |
+| --- | --- |
+| `/` | `HTTP/2 200` + `cache-control: no-store`、`cf-cache-status: DYNAMIC` |
+| `/index.html` | `HTTP/2 200` + `cache-control: no-store` |
+| `/dsh-deployment.js` | `HTTP 404`（改前为 `200` + 注入 flag） |
+| 新引导批 | `rev=374625474af4` → `HTTP 200` |
+| 容器 | `Up (healthy)`、`local3080=200`、日志无 `plugin tree failed` / `duplicate loader entry` |
+| 浏览器首屏 | `bootGlobal="object"`、`__ModuleLoader__.mode="live"`、正文渲染出会话内容；`Failed to load plugins` 与 `HTML did not preload` 均 `false` |
+
+控制台仅剩既已登记的连接层告警（`connection lost, retry #1…#3`、`generation is still not ready after 3000ms`，页面自愈）与设计内取消（`net::ERR_ABORTED /api/workdsh-office`）；这两类恰好是**同一跨代机制的运行时旁证**（已打开的页面跨重启后必须重连），不影响功能。
+
+**残留与边界**：本次加固覆盖「HTML 被缓存/回退缓存跨代复用」这一路径；**已打开且未刷新的旧标签页**仍持有上一代 rev（活页面无法从服务端撤销），其后续动态加载仍会 404。彻底修复需官方侧改动（`serveStatic()` 的 index 响应自带 `no-store`，或让 `previousBatchResponses` 的「上一代组合」跨重启保留），本轮不改上游。
+
+### 设置 → 模型报错：差分实验与根因收口（归属官方底座，未改上游）
+
+**结论**：`加载提供方目录失败: settings are unavailable in this browser` 不是我方插件缺陷、也不是部署错误，而是官方客户端 `0.1.6-alpha.2` 对**非 loopback 页面**关闭 settings describe 的既定分支。我方无合规修复位（硬约束：不修改上游源码、不为模型路由另造设置底座），按 B1 出口「官方/环境项登记留证」收口。
+
+**静态证据链**（均取自仓库锁定版本的本地安装包，`0.1.6-alpha.2`）：
+
+1. `@deepseek-ai/dsh-client-connection/lib/client.js`：`isLoopbackHostname()` 只认 `localhost` / `[::1]` / `127.x.x.x`；`installConnection()` 内 `isLoopback = transport?.ownsHost === true || pageLocation === void 0 || isLoopbackHostname(pageLocation.hostname)`，其中 `pageLocation` 取自浏览器 `location`（`apply()` 里 `typeof location === "undefined" ? void 0 : location`）。普通浏览器页面无 `__DSH_TRANSPORT__`（实测 `typeof globalThis.__DSH_TRANSPORT__ === "undefined"`），故 `127.0.0.1` 与 `dsh.10ge.cn` 分别得到 `true` / `false`。
+2. `@deepseek-ai/dsh-client-ui-settings/lib/client.js:1345`（`apply()`）：`const persistence = ctx.remote.$host.isLoopback ? "host" : "memory";`
+3. 同文件 `SettingsDescribeMirror`：构造初始态 `{status: persistence === "host" ? "idle" : "unavailable", view: void 0, error: null}`；且 `load()` 与 `ensure()` 首行均为 `if (this.persistence === "memory") return Promise.resolve();`。→ `memory` 分支下 **`view` 恒为 `undefined`、`error` 恒为 `null`**，镜像永不发起 `remote.settings.describe()`。
+4. `@deepseek-ai/dsh-client-ui-settings-models/lib/client.js`（`load()` L1003-L1020）：先 `Promise.all([remote.llm.listProviders(), remote.llm.listConfigurableProviders(), describeFace.ensure()])`；前两路各自失败会 `failLoad(自己的 message)`，而本缺陷显示的正是第三路的兜底 `failLoad(mirrored.error ?? "settings are unavailable in this browser")` —— 说明两个 remote 读**都成功**（公网 RPC 通道正常），唯 describe 面因 `memory` 分支恒空。
+
+**差分实验**（同一服务器、同一 profile、同一锁定版本，唯一变量＝页面主机名）：
+
+装置：容器内临时起 Node TCP 转发 `3099 → 127.0.0.1:3080`（容器 3080 只绑 loopback，宿主无法直连 `172.19.0.3:3080`；实测宿主直连 `000`），宿主侧 `ssh -L 3198:172.19.0.3:3099`，浏览器访问 `http://127.0.0.1:3198/`。选纯 HTTP 而非 `https://127.0.0.1:3199`，是因为宿主 3080 的证书为 Caddy 自签且 SAN 仅 `dsh.10ge.cn`（`issuer=CN=Caddy Local Authority - ECC Intermediate`），走 HTTPS 需绕过证书告警，不做。
+
+| 页面 | `location.hostname` | `typeof __DSH_TRANSPORT__` | 设置 → 模型 |
+| --- | --- | --- | --- |
+| `http://127.0.0.1:3198/` | `127.0.0.1` | `undefined` | **正常**：标题「模型」+「填入各提供方的 API 密钥即可使用其模型。」+ 列表项「DeepSeek / API 密钥已配置 / 编辑 DeepSeek (deepseek-official)」+「添加提供方」「添加自定义提供方」 |
+| `https://dsh.10ge.cn/` | `dsh.10ge.cn` | `undefined` | **失败**：`加载提供方目录失败: settings are unavailable in this browser` + 「重试」 |
+
+同一差分下另发现一处同源差异（佐证是同一 `isLoopback` 门）：设置对话框头部的**「打开配置文件」按钮只在 loopback 页面出现**，公网页面无此按钮（`@deepseek-ai/dsh-client-ui-settings-general/lib/client.js:829`：`ctx.remote.$host.isLoopback ? new SettingsDocumentStore(...) : void 0`）。
+
+**公网影响面实裁**：设置内「通用设置」「内置插件」「Agent 预设」「已归档会话」均正常渲染，**只有依赖 describe 的「模型」页失败**；模型使用本身不受影响（会话仍可选 `DeepSeek-V41-Flash` 并正常对话）。即实际影响是：**公网页面无法新增/修改提供方与密钥**。
+
+**候选最小扩展方案**（供官方上报，不自行实现）：`SettingsDescribeMirror` 的 `memory` 分支应给出可用的 process-local 视图，或让**描述读**在非 loopback 页面照常走 `remote.settings.describe()`、仅把**写入/持久化**降级，使 `failLoad` 不因持久化策略而触发。官方文档 [web-server.zh.md](dsh-v0.1.6-alpha.2/subsystems/web-server.zh.md) 已承认 `host: '0.0.0.0'` 是「刻意的网络暴露」且「其他组合自行拥有绑定与路由认证策略」，但未记载设置页在该组合下的降级，属**未文档化限制**。
+
+**运维绕行（不改码、非产品修复）**：需要变更提供方/密钥时走 loopback 通道（服务器本机浏览器，或上文的 `ssh -L` + 容器内临时转发），不在公网页面期望该能力。
+
+**装置清理**：实验用容器内 Node 转发进程与两条 SSH 隧道均已在实验后终止（无残留监听）。
+
 ## 2026-09-22（续二）：「新建任务」任务创建器实现与本地端到端验证（workbench α.15 / bundle α.52）
 
 **执行口径（承接上一节用户裁决）**：做成任务创建器（豆包式）；官方「新会话」文案保持不动；面板归 workbench；v1 含专家。
@@ -1751,13 +2208,19 @@ check:plan 通过（29 模块/50 文档）；12 个独立工作项、三份计�
 
 ## 最新入口（2026-09-22）
 
-当前任务：无进行中任务。「新建任务」任务创建器（workbench α.15 / bundle α.52）已实现、本地端到端验证、线上 `dsh.10ge.cn` 部署与浏览器复验全部完成，证据见本文件顶部「2026-09-22（续二）」章节。
+当前任务：**第 1 批（B1）「P1 已上线面收口」进行中**，按用户 2026-09-22 裁决执行：先修复线上缺陷，再结清 D05/D06/D07 三个「模块已发行但步骤未验收」的步骤与 D04 收尾。批次切分已登记 [development-order.json](development-order.json) 的 `batches` / `crossCutting` 键（B1—B5 + X1—X6，`batchesNote` 说明批次只是既有 `steps` 依赖链的切段，不改编号与状态真源）。
 
-下一步（择一，待用户指定）：① 裁决该章节列出的已知偏差（工作空间下拉默认预选、`net::ERR_ABORTED` 一族是否需修）；② 项目联动与专家落库分支在线上无数据，需先建线上项目/专家后复验；③ 返回主线 D04 专家 / TM-01。
+背景：用户要求对 `dsh.10ge.cn` 做全面功能分析并给出待开发功能的批次划分。分析已完成（三方对齐：线上实测、代码实况、台账真源），结论与切分依据见本文件下方「2026-09-22（续三）」章节。分析基线：线上已部署 11 个 WorkDSH 包（bundle α.52 + 10 个模块包，版本与本地源码一致）；界面 10 个入口中「助理 / 定时任务 / 更多」为占位；12 个模块为「仅 README + .gitkeep」的规划占位。
 
-阻塞项：无。治理与门禁 `check:plan`（30 modules; 50 documents）、`check:versions` 均 PASS。本批未执行：浅色/深色外观实机目检（UI-DESIGN §17）、线上截图存档（浏览器截图工具不可用）。
+B1 线上缺陷治理第一轮已闭环（2026-09-22，详见下方「2026-09-22（续三）」）：三项我方缺陷已修复、构建、本地预览复验并部署线上，线上复验通过。第二轮「设置 → 模型」报错已定位到行级根因并收口：**归属官方底座**——官方客户端对非 loopback 页面把 settings 持久化置为 `memory`，`SettingsDescribeMirror` 因此永不产生 describe 视图；差分实验（同一服务器、同一 profile 下 `127.0.0.1` 正常 / `dsh.10ge.cn` 失败，唯一变量为页面主机名）确证，已登记留证并给出候选最小扩展方案，我方不改上游。**未执行**：D05/D06/D07 验收证据回填、D04 收尾；剩余未定位项为首屏 HTML 预载失败（环境/缓存）与生产页请求 `@vite/client`（官方 HMR 装配，属配置取舍）。
 
-提交与推送（2026-09-22）：`f32cdb5`（主题令牌迁移）+ `c199bcf`（任务创建器与导航顺序）已落地。推送实测：`fork`（GitHub `hkluoji-lab/workdsh`）与 `mygitee`（Gitee `szluoji/workdsh`）**均成功**（`a0315fc..c199bcf`）；`github`（`techflag/workdsh`）与 `origin`（Gitee `techflag/workdsh`）**均 403**（`Permission to techflag/workdsh.git denied to hkluoji-lab` / Gitee `Access denied`），与既往记录一致——往上游仍只能走 fork + Pull Request（GitHub PR #4、Gitee PR !1）。完整构建在清理 `styles.ts` 末尾空行后重跑通过，`packages/bundle/dist/client.js` sha256 仍为 `5757d86e…db05`，与线上已部署制品逐字节一致。
+下一步：B1 剩余项按序推进——① 首屏 HTML 缓存坏页定位（判断是否我方可控）；② `@vite/client`（官方 HMR）处置取舍（禁用需权衡 profile 的 `patchReload: live`）；③ D05/D06/D07 验收证据回填使台账归零；④ D04 收尾（AT-01～27 签收）。「设置 → 模型」报错已收口为官方底座限制，是否向官方上报待用户裁决。资料库窄视口二级栏缺口已裁决「保持现状」，不再列入待办。
+
+阻塞项：无阻塞。`check:plan`（30 modules; 50 documents）在新增 `batches` 后仍 PASS。
+
+提交与推送（2026-09-22）：`f32cdb5`（主题令牌迁移）+ `c199bcf`（任务创建器与导航顺序）+ `2dede21`（本登记）已落地。推送实测：`fork`（GitHub `hkluoji-lab/workdsh`）与 `mygitee`（Gitee `szluoji/workdsh`）**均成功**（`c199bcf..2dede21`）；`github`（`techflag/workdsh`）与 `origin`（Gitee `techflag/workdsh`）**均 403**（`Permission to techflag/workdsh.git denied to hkluoji-lab` / Gitee `Access denied`），与既往记录一致——往上游仍只能走 fork + Pull Request（GitHub PR #4、Gitee PR !1）。完整构建在清理 `styles.ts` 末尾空行后重跑通过，`packages/bundle/dist/client.js` sha256 仍为 `5757d86e…db05`，与线上已部署制品逐字节一致。
+
+上游 403 处置（2026-09-22，按用户裁决「把上游收敛为只读」执行）：根因实测——GitHub 上游 `techflag/workdsh` 的 owner 是他人账号（GitHub User `techflag`，2011 年注册），本机凭据身份为 `hkluoji-lab`（id `325064312`，classic PAT），对该仓库权限为 `pull: true`，`push`/`maintain`/`admin`/`triage` **均为 false**；`/user/repository_invitations` 无待处理邀请，`/user/orgs` 无组织；`hkluoji-lab/workdsh` 已确认是 `techflag/workdsh` 的 **fork**（`parent` 字段存在）。故 403 **不是**本地 git 配置或凭据助手缺陷（同一 PAT 推送 `fork` 成功，说明 `repo` 权限正常），本地任何配置改动都无法获得上游写权限。处置：执行 `git remote set-url --push github no_push`、`git remote set-url --push origin no_push`，把两个上游远端收敛为只读。实施后实测：`push --dry-run github|origin` 立即失败于本地哨兵（不再发起网络请求、不再产生 403）；`git push`（默认跟踪 `fork/main`）、`push --dry-run fork`、`push --dry-run mygitee` 均 `Everything up-to-date`；`git ls-remote --heads github|origin` 读取正常（fetch 能力保留）。回退一行即可：`git remote set-url --push github https://github.com/techflag/workdsh`（`origin` 同理恢复为 `https://gitee.com/techflag/workdsh`）。变更前 `.git/config` 已备份为 `.git/config.bak.20260922`；`.git/config` 与其备份均不在版本控制内，本次不涉及任何提交内容改动。往上游贡献仍走 fork + Pull Request。
 
 ## 每周发行计划（2026-09-14）
 
@@ -2851,6 +3314,7 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 | P1-10 | 企业管理后台基础入口 | P1 | todo |
 | P1-11 | 项目配置、待办、任务、资产与交接 | P1 | in_progress |
 | P1-12 | 助理入口包 | P1 | todo |
+| P1-13 | 企业门户与登录门禁（部署边缘面） | P1 | in_progress |
 | P2-01 | 专家团模型及执行映射 | P2 | todo |
 | P2-02 | 专家团失败与取消 | P2 | todo |
 | P2-03 | 自动化配置与调度 | P2 | todo |

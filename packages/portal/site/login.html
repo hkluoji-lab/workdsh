@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070a10">
+<title>登录 — WorkDSH 企业级 AI 智能体工作台</title>
+<meta name="description" content="登录 WorkDSH 企业级 AI 智能体工作台。">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/portal/assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/portal/styles.css">
+</head>
+<body class="auth-body">
+
+<main class="auth">
+  <section class="auth-intro">
+    <div class="auth-intro-inner">
+      <a class="brand" href="/portal">
+        <svg width="87" height="26" viewBox="0 15 235 70" role="img" aria-label="10GE" focusable="false">
+          <path d="M16 15 L0 31 L0 49 L16 33 L16 85 L28 85 L28 15 Z" fill="#2670DA"/>
+          <circle cx="66" cy="50" r="32.5" fill="none" stroke="currentColor" stroke-opacity=".85" stroke-width="5"/>
+          <g stroke="#2670DA" stroke-width="1.8">
+            <line x1="96.4" y1="50" x2="100.3" y2="50"/>
+            <line x1="95.36" y1="57.87" x2="99.13" y2="58.88"/>
+            <line x1="92.33" y1="65.2" x2="95.7" y2="67.15"/>
+            <line x1="87.5" y1="71.5" x2="90.25" y2="74.25"/>
+            <line x1="81.2" y1="76.33" x2="83.15" y2="79.7"/>
+            <line x1="73.87" y1="79.36" x2="74.88" y2="83.13"/>
+            <line x1="66" y1="80.4" x2="66" y2="84.3"/>
+            <line x1="58.13" y1="79.36" x2="57.12" y2="83.13"/>
+            <line x1="50.8" y1="76.33" x2="48.85" y2="79.7"/>
+            <line x1="44.5" y1="71.5" x2="41.75" y2="74.25"/>
+            <line x1="39.67" y1="65.2" x2="36.3" y2="67.15"/>
+            <line x1="36.64" y1="57.87" x2="32.87" y2="58.88"/>
+            <line x1="35.6" y1="50" x2="31.7" y2="50"/>
+            <line x1="36.64" y1="42.13" x2="32.87" y2="41.12"/>
+            <line x1="39.67" y1="34.8" x2="36.3" y2="32.85"/>
+            <line x1="44.5" y1="28.5" x2="41.75" y2="25.75"/>
+            <line x1="50.8" y1="23.67" x2="48.85" y2="20.3"/>
+            <line x1="58.13" y1="20.64" x2="57.12" y2="16.87"/>
+            <line x1="66" y1="19.6" x2="66" y2="15.7"/>
+            <line x1="73.87" y1="20.64" x2="74.88" y2="16.87"/>
+            <line x1="81.2" y1="23.67" x2="83.15" y2="20.3"/>
+            <line x1="87.5" y1="28.5" x2="90.25" y2="25.75"/>
+            <line x1="92.33" y1="34.8" x2="95.7" y2="32.85"/>
+            <line x1="95.36" y1="42.13" x2="99.13" y2="41.12"/>
+          </g>
+          <ellipse cx="66" cy="50" rx="22" ry="17.5" fill="#FFFFFF"/>
+          <circle cx="66" cy="50" r="15.5" fill="#2670DA"/>
+          <circle cx="66" cy="50" r="6.5" fill="#0A1526"/>
+          <circle cx="61" cy="44" r="3" fill="#FFFFFF"/>
+          <path d="M171.58 28.45 A35 35 0 1 0 178.81 53.66 L167.87 52.51 A24 24 0 1 1 162.91 35.22 Z" fill="#2670DA"/>
+          <rect x="140" y="44" width="39" height="12" fill="#2670DA"/>
+          <rect x="187" y="15" width="12" height="70" fill="#2670DA"/>
+          <rect x="187" y="15" width="48" height="12" fill="#2670DA"/>
+          <rect x="187" y="44" width="36" height="12" fill="#2670DA"/>
+          <rect x="187" y="73" width="48" height="12" fill="#2670DA"/>
+        </svg>
+      </a>
+      <p class="eyebrow">企业级 AI 智能体工作台</p>
+      <h1>把任务交给能交付成果的智能体。</h1>
+      <p class="lead">登录后进入工作台：对话式执行、真实文件产出、过程可审计。可私有化部署在企业内网，可按业务定制智能体与技能。</p>
+      <ul class="ticks ticks-labeled">
+        <li><strong>可私有化</strong>应用与数据可部署在企业自己的服务器或私有云。</li>
+        <li><strong>可审计</strong>执行过程留痕，命令与写入按策略审批。</li>
+        <li><strong>可定制</strong>按业务定制专家、技能与连接器，并保留版本与修订。</li>
+      </ul>
+      <p class="auth-foot">忘记密码请联系管理员重置。本站不提供自助找回。</p>
+    </div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <h2>登录</h2>
+      <p class="auth-sub">使用管理员分配的账号进入工作台。</p>
+      {{ERROR}}
+      <form class="auth-form" method="post" action="/api/portal/login" autocomplete="on">
+        <input type="hidden" name="next" value="{{NEXT}}">
+        <div class="field">
+          <label for="username">用户名</label>
+          <input id="username" name="username" type="text" autocomplete="username" required autofocus spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="password">密码</label>
+          <div class="field-row">
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+            <button class="reveal" type="button" data-portal-reveal aria-label="显示密码" aria-pressed="false">显示</button>
+          </div>
+        </div>
+        <button class="button button-primary button-block" type="submit">登录</button>
+      </form>
+      <p class="auth-hint">账号由管理员统一分配，当前不支持企业微信、钉钉或 SSO 登录。</p>
+      <p class="auth-back"><a href="/portal">返回产品介绍</a></p>
+    </div>
+  </section>
+</main>
+
+<script src="/portal/portal.js" defer></script>
+</body>
+</html>

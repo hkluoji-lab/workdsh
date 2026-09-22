@@ -25,6 +25,20 @@
     ]
   },
   {
+    "path": "packages/portal",
+    "title": "企业门户与登录门禁",
+    "moduleVersion": "0.1",
+    "phase": "P1",
+    "task": "P1-13",
+    "status": "in_progress",
+    "directories": [
+      "src",
+      "site",
+      "tests"
+    ],
+    "acceptanceNote": "部署边缘面，不是功能插件：静态企业门户 + 无状态签名 Cookie 门禁。本机服务契约与页面已验证，线上路由切换与 forward_auth 行为已于 2026-09-23 部署并实测（15 项探针 + 浏览器级回归）；企业 SSO 与自助找回后置。"
+  },
+  {
     "path": "packages/bundle",
     "title": "默认组合包",
     "moduleVersion": "0.1",

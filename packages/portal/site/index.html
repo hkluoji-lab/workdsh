@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070a10">
+<title>WorkDSH — 企业级 AI 智能体工作台</title>
+<meta name="description" content="WorkDSH 是基于 DeepSeek Harness 构建的企业级 AI 智能体工作台：可私有化部署、可联接企业内部系统、可按业务定制智能体与技能，交付可留痕、可审计的成果。">
+<link rel="icon" href="/portal/assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/portal/styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="shell header-inner">
+    <a class="brand" href="/portal">
+      <!-- 10GE 字标：与 packages/bundle/src/client/components/GeWordmark.tsx 同形；门户无构建步骤，故内联以保留 currentColor 的虹膜外环。 -->
+      <svg width="87" height="26" viewBox="0 15 235 70" role="img" aria-label="10GE" focusable="false">
+        <path d="M16 15 L0 31 L0 49 L16 33 L16 85 L28 85 L28 15 Z" fill="#2670DA"/>
+        <circle cx="66" cy="50" r="32.5" fill="none" stroke="currentColor" stroke-opacity=".85" stroke-width="5"/>
+        <g stroke="#2670DA" stroke-width="1.8">
+          <line x1="96.4" y1="50" x2="100.3" y2="50"/>
+          <line x1="95.36" y1="57.87" x2="99.13" y2="58.88"/>
+          <line x1="92.33" y1="65.2" x2="95.7" y2="67.15"/>
+          <line x1="87.5" y1="71.5" x2="90.25" y2="74.25"/>
+          <line x1="81.2" y1="76.33" x2="83.15" y2="79.7"/>
+          <line x1="73.87" y1="79.36" x2="74.88" y2="83.13"/>
+          <line x1="66" y1="80.4" x2="66" y2="84.3"/>
+          <line x1="58.13" y1="79.36" x2="57.12" y2="83.13"/>
+          <line x1="50.8" y1="76.33" x2="48.85" y2="79.7"/>
+          <line x1="44.5" y1="71.5" x2="41.75" y2="74.25"/>
+          <line x1="39.67" y1="65.2" x2="36.3" y2="67.15"/>
+          <line x1="36.64" y1="57.87" x2="32.87" y2="58.88"/>
+          <line x1="35.6" y1="50" x2="31.7" y2="50"/>
+          <line x1="36.64" y1="42.13" x2="32.87" y2="41.12"/>
+          <line x1="39.67" y1="34.8" x2="36.3" y2="32.85"/>
+          <line x1="44.5" y1="28.5" x2="41.75" y2="25.75"/>
+          <line x1="50.8" y1="23.67" x2="48.85" y2="20.3"/>
+          <line x1="58.13" y1="20.64" x2="57.12" y2="16.87"/>
+          <line x1="66" y1="19.6" x2="66" y2="15.7"/>
+          <line x1="73.87" y1="20.64" x2="74.88" y2="16.87"/>
+          <line x1="81.2" y1="23.67" x2="83.15" y2="20.3"/>
+          <line x1="87.5" y1="28.5" x2="90.25" y2="25.75"/>
+          <line x1="92.33" y1="34.8" x2="95.7" y2="32.85"/>
+          <line x1="95.36" y1="42.13" x2="99.13" y2="41.12"/>
+        </g>
+        <ellipse cx="66" cy="50" rx="22" ry="17.5" fill="#FFFFFF"/>
+        <circle cx="66" cy="50" r="15.5" fill="#2670DA"/>
+        <circle cx="66" cy="50" r="6.5" fill="#0A1526"/>
+        <circle cx="61" cy="44" r="3" fill="#FFFFFF"/>
+        <path d="M171.58 28.45 A35 35 0 1 0 178.81 53.66 L167.87 52.51 A24 24 0 1 1 162.91 35.22 Z" fill="#2670DA"/>
+        <rect x="140" y="44" width="39" height="12" fill="#2670DA"/>
+        <rect x="187" y="15" width="12" height="70" fill="#2670DA"/>
+        <rect x="187" y="15" width="48" height="12" fill="#2670DA"/>
+        <rect x="187" y="44" width="36" height="12" fill="#2670DA"/>
+        <rect x="187" y="73" width="48" height="12" fill="#2670DA"/>
+      </svg>
+    </a>
+    <nav class="site-nav" aria-label="页面分区">
+      <a href="#foundation">产品定位</a>
+      <a href="#capabilities">能做什么</a>
+      <a href="#onprem">私有化与定制</a>
+      <a href="#about">企业介绍</a>
+      <a href="#trust">信任与安全</a>
+      <a href="#contact">联系我们</a>
+    </nav>
+    <a class="button button-primary button-compact" href="/login?next=%2F">进入工作台</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">企业级 AI 智能体工作台</p>
+        <h1>让 AI 不只回答问题，<br>而是交付成果。</h1>
+        <p class="lead">WorkDSH 基于 DeepSeek Harness 构建。把任务交给能自主规划、调用工具、产出文件的智能体；可私有化部署在企业内网，可联接内部系统，可按业务定制智能体与技能。</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="/login?next=%2F">进入工作台</a>
+          <a class="button button-quiet" href="#contact">预约私有化方案沟通</a>
+        </div>
+        <dl class="contrast">
+          <div>
+            <dt>能执行</dt>
+            <dd>自主拆解任务、调用工具、跑长任务，不是一问一答。</dd>
+          </div>
+          <div>
+            <dt>交付成果</dt>
+            <dd>Word、PowerPoint、Excel、网页、代码与报告落盘为真实文件。</dd>
+          </div>
+          <div>
+            <dt>可审计</dt>
+            <dd>执行过程留痕，命令与写入按策略审批。</dd>
+          </div>
+        </dl>
+      </div>
+      <figure class="hero-figure">
+        <img src="/portal/assets/dashboard.png" width="3006" height="1640" alt="WorkDSH 工作台界面：在对话中制作 HTML，右侧预览成果并交付真实文件。" fetchpriority="high">
+        <figcaption>产品真实界面，非设计稿。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 首屏与正文之间的窄信任带：只复用前文已成立的事实，不在这里引入新承诺。 -->
+  <section class="trustbar" aria-label="交付要点">
+    <div class="shell trustbar-inner">
+      <p>可私有化部署</p>
+      <p>执行过程可审计留痕</p>
+      <p>基于 DeepSeek Harness 构建</p>
+      <p>交付真实文件而非对话框</p>
+    </div>
+  </section>
+
+  <section class="section" id="foundation">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow"><span class="eyebrow-num">01</span>依托的底座</p>
+        <h2>不是一个套壳对话框。</h2>
+        <p class="section-lead">WorkDSH 站在 DeepSeek Harness 之上构建：执行循环、技能解析、插件装配、运行隔离与模型接入都由该底座提供，WorkDSH 负责企业业务对象、授权、修订与交付。</p>
+      </div>
+      <ul class="cards cards-3 cards-indexed">
+        <li class="card">
+          <h3>官方执行循环与技能解析</h3>
+          <p>任务拆解、工具调用、长任务执行与上下文处理由 Harness 提供；不在外层再造第二套 Agent 循环。</p>
+        </li>
+        <li class="card">
+          <h3>原生插件机制</h3>
+          <p>专家、技能、连接器、资料库与办公能力都是可安装、可卸载的功能插件，通过公开契约与会话投影组合。</p>
+        </li>
+        <li class="card">
+          <h3>运行隔离与审批</h3>
+          <p>命令执行与文件写入走官方沙箱与审批管线；插件的可见范围不等于权限，实际操作仍需服务端检查。</p>
+        </li>
+        <li class="card">
+          <h3>模型可替换</h3>
+          <p>模型经官方适配器接入，凭据由企业侧提供，与业务数据和对话内容分离管理。</p>
+        </li>
+        <li class="card">
+          <h3>真实文件产出</h3>
+          <p>产物是可直接交付的文件，不是聊天记录里的代码块；原件可在会话内预览。</p>
+        </li>
+        <li class="card card-muted">
+          <h3>企业级能力<span class="badge">建设中</span></h3>
+          <p>企业 SSO、组织与跨组织隔离、用量与统计正在推进，本页不作交付承诺。</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="capabilities">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow"><span class="eyebrow-num">02</span>能做什么</p>
+        <h2>按业务定制，落到具体交付物。</h2>
+        <p class="section-lead">下面每一项都写成「输入 → 过程 → 交付物」，便于评估它是否解决你的问题。标记为已可用的能力，已经在本版本中实际运行。</p>
+      </div>
+      <ul class="cards cards-3">
+        <li class="card">
+          <h3>智能体专家<span class="badge badge-ok">已可用</span></h3>
+          <p>把角色、专业判断与交付职责写成可发布的专家定义，配备真实技能与工具；任务可绑定专家并保留交接记录。</p>
+          <p class="card-note">多专家 SOP 协作仍在迭代。</p>
+        </li>
+        <li class="card">
+          <h3>企业技能资产<span class="badge badge-ok">已可用</span></h3>
+          <p>技能是可版本化、可导入导出、可复用的能力资产；既有的技能包可导入后在团队内继续使用和打磨。</p>
+          <p class="card-note">交付物：技能包与修订记录。</p>
+        </li>
+        <li class="card">
+          <h3>连接器<span class="badge badge-ok">已可用</span></h3>
+          <p>以 MCP 接入 OA、CRM、数据库与内网 API；连接定义、连接实例与账号凭据分离，按对话显式选择实例，不做跨账号回退。</p>
+          <p class="card-note">交互式 OAuth 与多账号在建。</p>
+        </li>
+        <li class="card">
+          <h3>企业资料库<span class="badge badge-ok">已可用</span></h3>
+          <p>按目录归集资料、搜索正文、预览原件；选中资料即可带着上下文开启新任务，成果继续回到资料库。</p>
+          <p class="card-note">交付物：可检索、可预览的资料集合。</p>
+        </li>
+        <li class="card">
+          <h3>办公文档产出<span class="badge badge-ok">已可用</span></h3>
+          <p>在对话中制作与编辑 Word、PowerPoint、Excel、HTML 与 PDF，边聊边改，最终交付真实文件。</p>
+          <p class="card-note">各格式保真度与跨平台验收仍在推进。</p>
+        </li>
+        <li class="card">
+          <h3>项目与自动化<span class="badge">建设中</span></h3>
+          <p>项目空间承载计划、待办、任务、资产与成员交接；周期性工作由定时任务触发，只负责触发，不复制业务规则。</p>
+          <p class="card-note">不作为本次交付承诺。</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="onprem">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow"><span class="eyebrow-num">03</span>私有化与联署定制</p>
+        <h2>把智能体放进你的内网，按你的业务长出来。</h2>
+        <p class="section-lead">我们提供三种交付形态，并在方案阶段逐项写清数据流向、账号接入方式与验收口径。</p>
+      </div>
+
+      <ul class="segments">
+        <li>
+          <h3>公网 SaaS</h3>
+          <p>快速验证。使用托管实例评估能力与流程，适合先做概念验证再决定部署形态。</p>
+        </li>
+        <li>
+          <h3>企业私有化部署</h3>
+          <p>应用与数据部署在企业自己的服务器或私有云，由企业掌握运行与账号体系。</p>
+        </li>
+        <li>
+          <h3>混合部署</h3>
+          <p>控制面在外、数据面在内的组合形态，按业务敏感度逐层划分边界。</p>
+        </li>
+      </ul>
+
+      <div class="split">
+        <div>
+          <h3 class="sub">数据与凭据边界</h3>
+          <ul class="ticks">
+            <li>连接定义、连接实例与账号凭据三者分离；实例由使用者显式选择，不做跨账号回退。</li>
+            <li>凭据不进入对话内容、前端页面、导出包与运行日志。</li>
+            <li>私有化部署把应用与数据放在企业内网；<strong>是否出网取决于所选模型与连接器</strong>，我们在方案中逐项列出，不作无条件承诺。</li>
+            <li>业务操作按权限检查并留下审计记录；组织与跨组织隔离随企业版推进。</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="sub">六步定制流程</h3>
+          <ol class="steps">
+            <li><strong>需求澄清</strong>业务场景、参与角色、数据边界与验收口径。</li>
+            <li><strong>POC 验证</strong>在隔离环境用真实数据跑通一条端到端链路。</li>
+            <li><strong>定制开发</strong>按需开发技能、专家、连接器与业务页面。</li>
+            <li><strong>联调验收</strong>联接内部系统，按验收清单逐项确认。</li>
+            <li><strong>上线与培训</strong>私有化部署、权限与审计配置、管理员与使用者培训。</li>
+            <li><strong>持续迭代</strong>技能与专家按修订演进，新版本不覆盖历史记录。</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="deliverables">
+        <h3 class="sub">联署定制的交付物清单</h3>
+        <ul class="ticks ticks-inline">
+          <li>私有化部署包、部署说明与回滚方式</li>
+          <li>定制技能包与专家定义（含版本与修订记录）</li>
+          <li>连接器定义与企业侧账号接入说明</li>
+          <li>权限、审计与运行隔离配置</li>
+          <li>使用手册与管理员培训</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="about">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow"><span class="eyebrow-num">04</span>企业介绍</p>
+        <h2>不做「交付即结束」的项目。</h2>
+        <p class="section-lead">10GE 是一家技术型企业。我们把每个客户的业务环境当作长期资产来经营：从企业 Agent 智能体的定制、技能安装与调优，到业务工作台的搭建与日常运维，全程由自有技术团队负责，交付过程对客户完全透明。</p>
+      </div>
+
+      <ul class="tenets">
+        <li>
+          <h3>按需定制</h3>
+          <p>不堆砌功能，只解决客户真实业务里的问题。</p>
+        </li>
+        <li>
+          <h3>联署共建</h3>
+          <p>方案由双方共同确认后落地，每一项能力上线前都经过客户验证。</p>
+        </li>
+        <li>
+          <h3>持续陪伴</h3>
+          <p>环境搭好只是起点，后续的迭代、排障与优化由同一支团队跟进，客户随时找得到人。</p>
+        </li>
+      </ul>
+
+      <div class="split">
+        <div>
+          <h3 class="sub">我们提供的服务范围</h3>
+          <ul class="ticks ticks-labeled">
+            <li><strong>智能体定制</strong>按业务场景定义专家、技能与工具组合，交付可实际运行的智能体应用。</li>
+            <li><strong>技能安装与调优</strong>安装与导入技能资产，并按真实使用反馈持续打磨指令与产出质量。</li>
+            <li><strong>工作台搭建</strong>搭建业务工作台与业务页面，联接内部系统，并配置权限与审计。</li>
+            <li><strong>日常运维与迭代</strong>上线后的排障、优化与版本迭代由同一支团队负责，保留完整修订记录。</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="sub">基本信息</h3>
+          <dl class="facts">
+            <div>
+              <dt>品牌与站点</dt>
+              <dd>10GE · 10ge.cn</dd>
+            </div>
+            <div>
+              <dt>产品</dt>
+              <dd>WorkDSH —— 企业级 AI 智能体工作台</dd>
+            </div>
+            <div>
+              <dt>技术底座</dt>
+              <dd>DeepSeek Harness 官方公开插件接口</dd>
+            </div>
+            <div>
+              <dt>交付形态</dt>
+              <dd>公网 SaaS、企业私有化部署、混合部署</dd>
+            </div>
+            <!-- TODO(部署前必须替换)：以下主体信息必须使用真实信息，不得留占位内容对外发布。 -->
+            <div>
+              <dt>运营主体</dt>
+              <dd>待配置</dd>
+            </div>
+            <div>
+              <dt>成立时间与团队规模</dt>
+              <dd>待配置</dd>
+            </div>
+            <div>
+              <dt>服务区域与响应方式</dt>
+              <dd>待配置</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <p class="about-quote">客户买的不是一套系统，而是一个越用越懂自己业务的智能体工作环境。</p>
+    </div>
+  </section>
+
+  <section class="section" id="proof">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow"><span class="eyebrow-num">05</span>能力证明</p>
+        <h2>先看真实界面。</h2>
+        <p class="section-lead">我们没有可以展示的客户案例，因此不展示客户 logo 与证言。以下是产品的真实界面截图，用于判断它是否符合你的场景；如需进一步验证，可申请试用实例。</p>
+      </div>
+      <ul class="shots">
+        <li class="shot-feature">
+          <img src="/portal/assets/skills.png" width="3006" height="1640" alt="WorkDSH 技能管理界面：浏览、导入和管理技能。" loading="lazy">
+          <div class="shot-body">
+            <h3>技能资产</h3>
+            <p>浏览、导入与管理技能，让工作方法可以被保存、修改和复用。</p>
+          </div>
+        </li>
+        <li>
+          <img src="/portal/assets/ppt.png" width="3006" height="1640" alt="WorkDSH 演示文稿制作界面：对话与演示文稿并排。" loading="lazy">
+          <div class="shot-body">
+            <h3>办公文档产出</h3>
+            <p>对话与演示文稿并排，制作、查看与编辑在同一个工作空间完成。</p>
+          </div>
+        </li>
+        <li>
+          <img src="/portal/assets/library.png" width="3006" height="1646" alt="WorkDSH 资料库界面：按目录管理资料并预览原件。" loading="lazy">
+          <div class="shot-body">
+            <h3>企业资料库</h3>
+            <p>按目录归集资料、搜索正文并预览原件，选中即可带着上下文继续工作。</p>
+          </div>
+        </li>
+        <li>
+          <img src="/portal/assets/team.png" width="3006" height="1640" alt="WorkDSH 专家团队界面：查看团队定位、成员分工与任务入口。" loading="lazy">
+          <div class="shot-body">
+            <h3>专家与团队</h3>
+            <p>查看团队定位、成员分工和任务入口。多专家协作仍在持续迭代。</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="trust">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow"><span class="eyebrow-num">06</span>信任与安全</p>
+        <h2>把边界说清楚。</h2>
+      </div>
+      <div class="split">
+        <div>
+          <ul class="ticks ticks-labeled">
+            <li><strong>权限与审计</strong>资源授权与审计已在本版本实现；跨组织引用默认拒绝，组织级能力随企业版推进。</li>
+            <li><strong>运行隔离</strong>命令与写入受官方沙箱与审批约束，实际操作仍需服务端检查，不以界面隐藏代替鉴权。</li>
+            <li><strong>数据边界</strong>是否出网由所选模型与连接器决定，逐项在方案中列明。</li>
+            <li><strong>版本与发布</strong>已发布对象按修订演进，不原地改写历史；卸载默认保留用户数据。</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="sub">常见问题</h3>
+          <div class="faq">
+            <details>
+              <summary>可以只用我们内网的模型吗？</summary>
+              <p>模型经官方适配器接入，凭据由企业侧提供。具体可用范围取决于所选模型服务与部署形态，我们在方案阶段确认。</p>
+            </details>
+            <details>
+              <summary>能对接我们已有的 OA、CRM 或数据库吗？</summary>
+              <p>连接器以 MCP 接入外部系统，已具备多实例接入与工具发现能力，并已实测对接第三方文档服务。具体系统的接入方式与账号方案在联调阶段确定。</p>
+            </details>
+            <details>
+              <summary>和直接使用对话式 AI 工具有什么区别？</summary>
+              <p>区别在于执行与交付：它自主规划并调用工具完成任务，产出的是可交付文件，过程与结果可留痕、可审批，而不是一段需要你自己复制的回答。</p>
+            </details>
+            <details>
+              <summary>现在哪些能力可以直接用？</summary>
+              <p>技能资产、连接器、资料库、办公文档产出与单专家绑定已在本版本运行；项目空间、定时自动化、专家团 SOP、企业后台与企业 SSO 仍在建设中。</p>
+            </details>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-contact" id="contact">
+    <div class="shell contact-grid">
+      <div>
+        <p class="eyebrow"><span class="eyebrow-num">07</span>联系我们</p>
+        <h2>聊聊你的场景。</h2>
+        <p class="section-lead">告诉我们业务场景、参与角色与数据边界，我们会给出部署形态建议与一份可执行的 POC 方案。</p>
+        <div class="contact-actions">
+          <a class="button button-primary" href="/login?next=%2F">进入工作台</a>
+          <a class="button button-quiet" href="#capabilities">先看能做到什么</a>
+        </div>
+      </div>
+      <!-- TODO(部署前必须替换)：以下联系方式与备案信息必须使用真实信息，不得留占位内容对外发布。 -->
+      <dl class="contact-list">
+        <div>
+          <dt>商务与合作</dt>
+          <dd>待配置</dd>
+        </div>
+        <div>
+          <dt>私有化与技术支持</dt>
+          <dd>待配置</dd>
+        </div>
+        <div>
+          <dt>微信</dt>
+          <dd>待配置</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="shell footer-inner">
+    <div class="footer-brand">
+      <svg width="74" height="22" viewBox="0 15 235 70" role="img" aria-label="10GE" focusable="false">
+        <path d="M16 15 L0 31 L0 49 L16 33 L16 85 L28 85 L28 15 Z" fill="#2670DA"/>
+        <circle cx="66" cy="50" r="32.5" fill="none" stroke="currentColor" stroke-opacity=".85" stroke-width="5"/>
+        <g stroke="#2670DA" stroke-width="1.8">
+          <line x1="96.4" y1="50" x2="100.3" y2="50"/>
+          <line x1="95.36" y1="57.87" x2="99.13" y2="58.88"/>
+          <line x1="92.33" y1="65.2" x2="95.7" y2="67.15"/>
+          <line x1="87.5" y1="71.5" x2="90.25" y2="74.25"/>
+          <line x1="81.2" y1="76.33" x2="83.15" y2="79.7"/>
+          <line x1="73.87" y1="79.36" x2="74.88" y2="83.13"/>
+          <line x1="66" y1="80.4" x2="66" y2="84.3"/>
+          <line x1="58.13" y1="79.36" x2="57.12" y2="83.13"/>
+          <line x1="50.8" y1="76.33" x2="48.85" y2="79.7"/>
+          <line x1="44.5" y1="71.5" x2="41.75" y2="74.25"/>
+          <line x1="39.67" y1="65.2" x2="36.3" y2="67.15"/>
+          <line x1="36.64" y1="57.87" x2="32.87" y2="58.88"/>
+          <line x1="35.6" y1="50" x2="31.7" y2="50"/>
+          <line x1="36.64" y1="42.13" x2="32.87" y2="41.12"/>
+          <line x1="39.67" y1="34.8" x2="36.3" y2="32.85"/>
+          <line x1="44.5" y1="28.5" x2="41.75" y2="25.75"/>
+          <line x1="50.8" y1="23.67" x2="48.85" y2="20.3"/>
+          <line x1="58.13" y1="20.64" x2="57.12" y2="16.87"/>
+          <line x1="66" y1="19.6" x2="66" y2="15.7"/>
+          <line x1="73.87" y1="20.64" x2="74.88" y2="16.87"/>
+          <line x1="81.2" y1="23.67" x2="83.15" y2="20.3"/>
+          <line x1="87.5" y1="28.5" x2="90.25" y2="25.75"/>
+          <line x1="92.33" y1="34.8" x2="95.7" y2="32.85"/>
+          <line x1="95.36" y1="42.13" x2="99.13" y2="41.12"/>
+        </g>
+        <ellipse cx="66" cy="50" rx="22" ry="17.5" fill="#FFFFFF"/>
+        <circle cx="66" cy="50" r="15.5" fill="#2670DA"/>
+        <circle cx="66" cy="50" r="6.5" fill="#0A1526"/>
+        <circle cx="61" cy="44" r="3" fill="#FFFFFF"/>
+        <path d="M171.58 28.45 A35 35 0 1 0 178.81 53.66 L167.87 52.51 A24 24 0 1 1 162.91 35.22 Z" fill="#2670DA"/>
+        <rect x="140" y="44" width="39" height="12" fill="#2670DA"/>
+        <rect x="187" y="15" width="12" height="70" fill="#2670DA"/>
+        <rect x="187" y="15" width="48" height="12" fill="#2670DA"/>
+        <rect x="187" y="44" width="36" height="12" fill="#2670DA"/>
+        <rect x="187" y="73" width="48" height="12" fill="#2670DA"/>
+      </svg>
+    </div>
+    <p class="footer-copy">基于 DeepSeek Harness 构建的企业级 AI 智能体工作台。</p>
+    <nav class="footer-nav" aria-label="页脚导航">
+      <a href="#foundation">产品定位</a>
+      <a href="#capabilities">能做什么</a>
+      <a href="#onprem">私有化与定制</a>
+      <a href="#about">企业介绍</a>
+      <a href="#trust">信任与安全</a>
+      <a href="/login?next=%2F">进入工作台</a>
+    </nav>
+    <!-- TODO(部署前必须替换)：备案号与运营主体必须使用真实信息。 -->
+    <p class="footer-meta">运营主体与备案信息待配置。</p>
+  </div>
+</footer>
+
+<script src="/portal/portal.js" defer></script>
+</body>
+</html>
