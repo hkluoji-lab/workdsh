@@ -20,14 +20,22 @@ const path = '/api/workdsh-projects';
  * on another device, so every operation goes through the authoritative route.
  */
 async function invoke<T>(endpoint: string, payload: unknown, signal?: AbortSignal): Promise<T> {
-  const timeout = AbortSignal.timeout(5_000);
-  const response = await fetch(path, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ endpoint, payload }),
-    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-  });
+  // 15s 与连接器等插件一致；5s 在冷启动的 Host 上会先于服务返回而超时，把原生
+  // "signal timed out" 直接抛到页面上。
+  const timeout = AbortSignal.timeout(15_000);
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ endpoint, payload }),
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    });
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === 'TimeoutError') throw new Error('项目服务响应超时，请重试。');
+    throw cause;
+  }
   const result = await response.json().catch(() => ({})) as {
     ok?: boolean;
     value?: T;
