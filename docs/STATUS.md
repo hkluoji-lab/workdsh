@@ -1755,7 +1755,9 @@ check:plan 通过（29 模块/50 文档）；12 个独立工作项、三份计�
 
 下一步（择一，待用户指定）：① 裁决该章节列出的已知偏差（工作空间下拉默认预选、`net::ERR_ABORTED` 一族是否需修）；② 项目联动与专家落库分支在线上无数据，需先建线上项目/专家后复验；③ 返回主线 D04 专家 / TM-01。
 
-阻塞项：无。治理与门禁 `check:plan`（30 modules; 50 documents）、`check:versions` 均 PASS。本批未执行：浅色/深色外观实机目检（UI-DESIGN §17）、线上截图存档（浏览器截图工具不可用）。本地工作区改动未提交（26 个修改 + 1 个新增文件）。
+阻塞项：无。治理与门禁 `check:plan`（30 modules; 50 documents）、`check:versions` 均 PASS。本批未执行：浅色/深色外观实机目检（UI-DESIGN §17）、线上截图存档（浏览器截图工具不可用）。
+
+提交与推送（2026-09-22）：`f32cdb5`（主题令牌迁移）+ `c199bcf`（任务创建器与导航顺序）已落地。推送实测：`fork`（GitHub `hkluoji-lab/workdsh`）与 `mygitee`（Gitee `szluoji/workdsh`）**均成功**（`a0315fc..c199bcf`）；`github`（`techflag/workdsh`）与 `origin`（Gitee `techflag/workdsh`）**均 403**（`Permission to techflag/workdsh.git denied to hkluoji-lab` / Gitee `Access denied`），与既往记录一致——往上游仍只能走 fork + Pull Request（GitHub PR #4、Gitee PR !1）。完整构建在清理 `styles.ts` 末尾空行后重跑通过，`packages/bundle/dist/client.js` sha256 仍为 `5757d86e…db05`，与线上已部署制品逐字节一致。
 
 ## 每周发行计划（2026-09-14）
 
