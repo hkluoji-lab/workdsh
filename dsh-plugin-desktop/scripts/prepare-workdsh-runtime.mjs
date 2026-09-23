@@ -2,7 +2,7 @@
 
 import { spawnSync } from 'node:child_process'
 import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const WORKDSH_VERSION = '0.1.0-alpha.8'
@@ -48,14 +48,18 @@ async function installReleasedProfile() {
 
   mkdirSync(output, { recursive: true })
   const shim = join(output, process.platform === 'win32' ? 'dsh-runtime.cmd' : 'dsh-runtime')
+  const pnpmShim = join(output, process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
   if (process.platform === 'win32') {
     writeFileSync(shim, `@echo off\r\nnpx --yes @deepseek-ai/dsh@${DSH_VERSION} %*\r\n`)
+    writeFileSync(pnpmShim, '@echo off\r\nnpx --yes pnpm@10.34.5 %*\r\n')
   } else {
     writeFileSync(shim, `#!/bin/sh\nexec npx --yes @deepseek-ai/dsh@${DSH_VERSION} \"$@\"\n`)
+    writeFileSync(pnpmShim, '#!/bin/sh\nexec npx --yes pnpm@10.34.5 "$@"\n')
     chmodSync(shim, 0o755)
+    chmodSync(pnpmShim, 0o755)
   }
   run(process.execPath, [installerPath, '--directory', releaseDir, '--dsh', shim], {
-    env: { ...process.env, DSH_HOME: output },
+    env: { ...process.env, DSH_HOME: output, PATH: `${output}${delimiter}${process.env.PATH ?? ''}` },
   })
 }
 
