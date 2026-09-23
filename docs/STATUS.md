@@ -330,7 +330,7 @@ printf '88888888\n' | sudo -S cp -p $A/.env.bak.portal.20260922232318 $A/.env
 
 **下一步**：等用户逐项裁决是否修复。**未执行**：本轮未做任何修复、未改线上、未提交。
 
-## 2026-09-24（续八）：门户缓存头拆分与素材 WebP 化（P0-1 / P0-2 修复，已提交推送并部署 `dsh.10ge.cn`）
+## 2026-09-24（续八）：门户缓存头拆分与素材 WebP 化（P0-1 / P0-2 修复，含 products 路由回填，已提交推送并部署 `dsh.10ge.cn`）
 
 按用户指令「按建议优先修复 P0-1 缓存头拆分和 P0-2 PNG 转 WebP」执行。**修复范围严格限定这两项**，清单其余 9 项（P1-1、P1-2、P1-3、P2-1～P2-4、P3-1、P3-2）保持待裁决、未动。用户随后裁决「提交并推送」「现在部署」，两项均已执行。
 
@@ -402,16 +402,35 @@ WebP 体积：10 个变体合计 **450,488 B**（原 5 张 3006×1640 PNG 合计
 | 版式回归 | 公网 `#proof` `y=4569.94, w=1440, h=1155.55`（旧 PNG 基线 1154.05，差 1.5px）；截图目检一致 |
 | 门禁回归 | 真实登录 `18938845688` → 303 落 `/`，工作台标题 `DeepSeek Harness`、侧栏在、console 错误 0 |
 
-**暴露的未登记差异（本轮未处置，需裁决）**
+**发现与回填（用户裁决：回填仓库 + 纳入缓存分档）**
 
-线上 `portal/src/server.mjs` 在本次部署前含一个**仓库里没有、文档里也未登记**的 `/portal/products/<name>.html` 公开产品资料页路由（连同 `site/products/2026Q3.html` 68,054 B、`tools/patch-products-route.sh`、`tools/publish-products.sh`，落位时间 2026-09-23 02:10）。若直接以仓库文件覆盖，该页面会静默 404。本次部署未采用覆盖，而是以仓库最新 `server.mjs` 为底**重新叠加该 products 路由**后落位（`serveProductPage` 与 `PRODUCT_CSP` 计数与改造前一致，页面字节数 68,054 与线上完全相同）。因此**仓库与线上此段仍不一致**，建议下一步把路由与该页回填仓库，否则下次从仓库部署会再次踩到同一坑。该路由当前仍是 `no-store`（未纳入本次缓存分档）。
+线上 `portal/src/server.mjs` 在本次部署前含一个**仓库里没有、文档里也未登记**的 `/portal/products/<name>.html` 公开产品资料页路由（连同 `site/products/2026Q3.html` 68,054 B、`tools/patch-products-route.sh`、`tools/publish-products.sh`，落位时间 2026-09-23 02:10）。本次部署未直接覆盖，而是以仓库最新 `server.mjs` 为底**重新叠加该路由**后落位（`serveProductPage` 与 `PRODUCT_CSP` 计数与改造前一致，页面字节数 68,054 与线上完全相同），避免该页静默 404。
+
+用户裁决「回填仓库」+「纳入缓存分档」，已执行：
+
+| 回填文件 | 内容 |
+|---|---|
+| `packages/portal/src/server.mjs` | `sendConditional` 新增 `headers` 参数（覆盖安全头中的单条）；新增 `PRODUCT_NAME_RE`、`PRODUCT_CSP`、`serveProductPage`（走 `CACHE_HTML` 档）；路由挂载 `if (path.startsWith('/portal/products/')) return serveProductPage(req, res, path);` |
+| `packages/portal/site/products/2026Q3.html` | 从线上拷回，68,054 B，md5 `d35c1492bf3a84fb31d0db88196b3be3` |
+| `packages/portal/tools/publish-products.sh` | 从线上拷回，876 B，md5 `6e0c2b1b967fdd628c4ec2979fe09009`，权限 755 |
+| `packages/portal/README.md` | 目录表、路由表、缓存策略表、部署落位表、已知限制共 5 处 |
+
+**未收录** `tools/patch-products-route.sh`：它是一次性插入补丁，其锚点已被 α.2 的 `server.mjs` 取代，保留会造成误用（README「已知限制」已注明）。
+
+产品页分档：与门户首页同档 `no-cache` + ETag（页面含套餐与价格，改版必须立即生效），并**仅对该路径**把 CSP 放宽到允许内联样式/脚本（单文件自包含站点）；其余路径 CSP 仍严格。回填后 `/portal/products/*` 已进入缓存分档表。
+
+回填验证（本机）：`node --check` 通过；3099 实例产品页 200 + `no-cache` + ETag + 放宽 CSP、`If-None-Match` → 304 且 `bytes=0`、弱 ETag → 304、`../../src/server.mjs`/`x.js`/`nope.html`/`2026Q3.htm` 全 404；门户首页 CSP 仍严格；其余资源分档未回退；`node --test` 6 pass；`node scripts/check-plan.mjs` PASS；Playwright 产品页（`textLen=11280`、`inlineStyleSheets=1`、`cards=26`、`overflow=0`）与门户页 console 错误 0。
+
+线上部署：备份 `portal-a2b-backup-20260923183443`；上传 `server.mjs`（md5 `28b0d6cf55809aecbd700e79df7eea6b`，本地与线上一致）、产品页与 `tools/`；3098 预检全通过 → 切换 → 容器 `Up … (healthy)`、`RestartCount=2`（未整容器重启）。
+
+公网复验：`/portal/products/2026Q3.html` 200 + `no-cache` + 放宽 CSP + `cf-cache-status: DYNAMIC` + 68,054 B（关键词命中 6 处）；`/portal`、`/login` 仍 `no-cache`；`styles.css`/`portal.js` `max-age=3600`；`dashboard-1120.webp`/`dashboard.png` `max-age=604800`；`/` 未登录 302、`/api/portal/auth` 401、`/survey/healthz` 200，门禁未回归。
 
 ### 未执行
 
 - 清单其余 9 项未动、未裁决。
-- 未验证：Safari/Firefox、长时会话过期后的前端表现；`/portal/products/*` 未做缓存分档。
+- 未验证：Safari/Firefox、长时会话过期后的前端表现。
 
-**下一步**：裁决是否把 products 路由与页面回填仓库；以及清单其余 9 项是否修复。
+**下一步**：清单其余 9 项是否修复待用户裁决；D04 收尾（AT-13/19/23/27）与 B1 剩余项按台账推进。
 
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
