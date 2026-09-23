@@ -1,3 +1,9 @@
+## 0.1.0-alpha.8 — Unreleased（2026-09-24）
+
+- 作者信息改由 Host 投影：client 不再 `import { parseDocument } from 'yaml'`，专家列表、详情与制作流程统一读取 `ExpertDetail.draftDisplay` / `revisionDisplay`（契约见 `workdsh-contracts@0.1.0-alpha.10`）。front matter 只在 Host 侧解析一次，投影为派生只读值，不回写授权文件。
+- 效果：专家 client 包不再携带 YAML 解析器，`dist/client.browser.js` 为 raw 115,250 B ／ gzip 30,155 B（P1-2 首包体积）。
+- 未改变专家授权文件的格式与语义，也未改变已有公开方法签名。
+
 ## 0.1.0-alpha.7 — Unreleased（2026-09-20）
 
 - 按用户决定删除能力中心「行业应用」标签入口（行业应用暂时用不到，暂无领域实现）；能力页工具栏保留专家/技能/连接器三个标签。

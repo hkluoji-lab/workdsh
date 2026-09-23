@@ -1,6 +1,5 @@
 import * as React from 'react';
-import { parseDocument } from 'yaml';
-import type { ExpertDefinition } from '../shared.js';
+import type { ExpertAuthoredDisplay, ExpertDefinition, ExpertDisplayProjection } from '../shared.js';
 
 function text(value: unknown): string {
   if (typeof value === 'string') return value;
@@ -11,17 +10,12 @@ function text(value: unknown): string {
   return '';
 }
 
-/** Display metadata is projected from the authored file, never written back. */
-function identity(definition: ExpertDefinition) {
-  const frontmatter = definition.agentDocument?.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1];
-  try {
-    const document = frontmatter ? parseDocument(frontmatter) : undefined;
-    const data = document && !document.errors.length ? document.toJS() : undefined;
-    return { name: text(data?.displayName) || definition.name, profession: text(data?.profession) };
-  } catch { return { name: definition.name, profession: '' }; }
+/** Display metadata is projected by the Host from the authored file, never written back. */
+function identity(definition: ExpertDefinition, authored: ExpertAuthoredDisplay | undefined) {
+  return { name: authored?.displayName || definition.name, profession: authored?.profession ?? '' };
 }
 
-export function TeamOverview({ definition }: { definition: ExpertDefinition }) {
+export function TeamOverview({ definition, display }: { definition: ExpertDefinition; display: ExpertDisplayProjection }) {
   const team = definition.team;
   if (!team) return null;
   let leadMetadata: { displayName?: unknown; profession?: unknown; avatar?: string } | undefined;
@@ -34,7 +28,7 @@ export function TeamOverview({ definition }: { definition: ExpertDefinition }) {
   return <section aria-label="团队成员与协作">
     <h2 className="detail-section-title">团队成员</h2>
     <div className="team-member-grid">{members.map(member => {
-      const person = identity(member.definition);
+      const person = identity(member.definition, member.lead ? display.lead : display.members[member.key]);
       if (member.lead && leadMetadata) {
         person.name = text(leadMetadata.displayName) || person.name;
         person.profession = text(leadMetadata.profession) || person.profession;

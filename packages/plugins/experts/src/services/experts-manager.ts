@@ -1,4 +1,4 @@
-import { definitionFromDocuments, parseExpertDocument } from '../authoring/documents.js';
+import { definitionFromDocuments, parseExpertDocument, projectExpertDisplay } from '../authoring/documents.js';
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -745,6 +745,9 @@ export class ExpertsManager extends Service implements ExpertsService {
     return {
       expert, draft,
       ...(revision === undefined ? {} : { revision }),
+      // Authored display metadata is parsed here so the browser bundle ships no YAML parser (P1-2).
+      draftDisplay: projectExpertDisplay(draft.definition),
+      ...(revision === undefined ? {} : { revisionDisplay: projectExpertDisplay(revision.definition) }),
       readiness,
       canUse: caps.canUse, canEdit: caps.canEdit, canManage: caps.canManage,
     };

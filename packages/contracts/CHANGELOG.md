@@ -1,3 +1,9 @@
+# 0.1.0-alpha.10 — 2026-09-24
+
+- 新增 `ExpertAuthoredDisplay` 与 `ExpertDisplayProjection`：专家作者信息的**只读展示投影**（显示名、职业、英文名、头像路径），由 Host 从授权文件的 front matter 派生，不回写文件。
+- `ExpertDetail` 增 `draftDisplay`（必有）与 `revisionDisplay`（有修订时才有）。这是把「浏览器解析 YAML」改为「Host 投影」所需的兼容补全：消费者不再需要自己解析 front matter；构造 `ExpertDetail` 的 Host 侧需补该字段。
+- 目的：专家面板 client 包不再打包 YAML 解析器（P1-2 首包体积）。
+
 # 0.1.0-alpha.9 — 2026-09-18
 
 - 新增 `ProjectTaskContext` 与只读 `ProjectService.taskContext(actor, sessionId)`：按 Session 反查所属项目任务及其固定的项目与配置修订；兼容补全（同时用于项目路径 chip、present 交付归属与项目任务上下文注入），既有方法签名不变。

@@ -53,6 +53,7 @@ const client = await build({
   platform: "browser",
   external: ["react", "react-dom", "react/jsx-runtime"],
   loader:{".css":"text"},
+  minify: true,
   define: { "process.env.NODE_ENV": '"production"', __WORKDSH_WORD_ONLY__: String(wordOnly) },
   plugins: [
     {name:"pdf-worker-source",setup(builder){builder.onLoad({filter:/pdf\.worker\.min\.mjs$/},async args=>({contents:await readFile(args.path,"utf8"),loader:"text"}));}},

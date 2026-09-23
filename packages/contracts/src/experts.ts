@@ -187,11 +187,39 @@ export interface ExpertSummary {
   readonly updatedAt: string;
 }
 
+/**
+ * Display metadata the Host reads once from an authored document's front matter.
+ * Derived, read-only values: the browser bundle carries no YAML parser, and these are
+ * never written back to the authored files.
+ */
+export interface ExpertAuthoredDisplay {
+  /** Authored display name for display (zh preferred), when the document declares one. */
+  readonly displayName?: string;
+  /** Authored profession title for display (zh preferred). */
+  readonly profession?: string;
+  /** Authored English display name, verbatim, used to seed the edit prompt. */
+  readonly displayNameEn?: string;
+  /** Authored `name` field, verbatim, used to seed the edit prompt. */
+  readonly name?: string;
+  /** Front-matter avatar resource path, verbatim, relative to the package root. */
+  readonly avatarPath?: string;
+}
+
+/** Authored display metadata for one work: the lead plus every team member by key. */
+export interface ExpertDisplayProjection {
+  readonly lead: ExpertAuthoredDisplay;
+  readonly members: Readonly<Record<string, ExpertAuthoredDisplay>>;
+}
+
 /** Full detail returned by `get`. */
 export interface ExpertDetail {
   readonly expert: Expert;
   readonly draft: ExpertDraft;
   readonly revision?: ExpertRevision;
+  /** Projection of `draft.definition`'s front matter, so panels never parse YAML. */
+  readonly draftDisplay: ExpertDisplayProjection;
+  /** Projection of `revision.definition`'s front matter; present exactly when `revision` is. */
+  readonly revisionDisplay?: ExpertDisplayProjection;
   readonly readiness: ExpertReadiness;
   readonly canUse: boolean;
   readonly canEdit: boolean;

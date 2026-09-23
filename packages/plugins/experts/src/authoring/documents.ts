@@ -1,6 +1,6 @@
 import { validateResources, packageAvatar, type PackageAssets } from './package-resources.js';
 import { parse, stringify } from 'yaml';
-import type { ExpertDefinition } from 'workdsh-contracts';
+import type { ExpertAuthoredDisplay, ExpertDefinition, ExpertDisplayProjection } from 'workdsh-contracts';
 import { expertDefinitionSchema, normalizeDefinition, validateDefinition } from '../domain/definition.js';
 import { ExpertsError } from '../domain/values.js';
 
@@ -46,6 +46,56 @@ export function parseExpertDocument(text: string): ExpertDefinition {
   const parsed = expertDefinitionSchema.safeParse(fields);
   if (!parsed.success) fail('专家文档缺少必要字段或字段类型不正确。');
   return normalizeDefinition(parsed.data);
+}
+
+/** Front matter of an authored document, or undefined when absent or unparsable. */
+function frontMatter(agentDocument: string | undefined): Record<string, unknown> | undefined {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(agentDocument ?? '');
+  if (!match) return undefined;
+  try {
+    const parsed = parse(match[1], { maxAliasCount: 0 });
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Authored display text: a plain string, or the zh-preferred side of a `{zh, en}` pair. Blank counts as absent. */
+function authoredText(value: unknown): string | undefined {
+  if (typeof value === 'string') return value.trim() ? value : undefined;
+  if (!value || typeof value !== 'object') return undefined;
+  const pair = value as { zh?: unknown; en?: unknown };
+  return [pair.zh, pair.en].find((text): text is string => typeof text === 'string' && Boolean(text.trim()));
+}
+
+/**
+ * Project the display metadata the panels need. The browser bundle ships no YAML parser
+ * (P1-2), so the Host reads the authored front matter once here. Derived, read-only:
+ * these values are never written back to the authored files, and a document without a
+ * readable front matter simply projects nothing.
+ */
+export function projectAuthoredDisplay(definition: ExpertDefinition): ExpertAuthoredDisplay {
+  const metadata = frontMatter(definition.agentDocument) ?? {};
+  const displayName = authoredText(metadata.displayName);
+  const profession = authoredText(metadata.profession);
+  const displayNameEn = authoredText((metadata.displayName as { en?: unknown } | undefined)?.en);
+  const name = authoredText(metadata.name);
+  const avatarPath = typeof metadata.avatar === 'string' && metadata.avatar.trim() ? metadata.avatar : undefined;
+  return {
+    ...(displayName === undefined ? {} : { displayName }),
+    ...(profession === undefined ? {} : { profession }),
+    ...(displayNameEn === undefined ? {} : { displayNameEn }),
+    ...(name === undefined ? {} : { name }),
+    ...(avatarPath === undefined ? {} : { avatarPath }),
+  };
+}
+
+/** Project one work: the lead plus every member, keyed as the team definition keys them. */
+export function projectExpertDisplay(definition: ExpertDefinition): ExpertDisplayProjection {
+  return {
+    lead: projectAuthoredDisplay(definition),
+    members: Object.fromEntries((definition.team?.members ?? []).map(member => [member.key, projectAuthoredDisplay(member.definition)])),
+  };
 }
 
 export function authoringDocuments(definition: ExpertDefinition): Record<string, string> {

@@ -1,7 +1,7 @@
 import type { ActivityPresentation } from 'workdsh-contracts/activity';
 declare module '@deepseek-ai/cordis' { interface Context { activityPresentation: ActivityPresentation; } }
 import { installExpertPresetMenu } from './client/PresetMenu.js';
-import { parseDocument } from 'yaml';
+import type { ExpertAuthoredDisplay } from './shared.js';
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-client-connection/client';
 import type {} from '@deepseek-ai/dsh-api-session-controller/client';
@@ -60,17 +60,16 @@ export function apply(ctx: Context): void {
     const detail = await management.get(binding.expertRevisionRef.expertId, binding.expertRevisionRef.revisionId, signal);
     const definition = detail.revision?.definition;
     if (!definition) return undefined;
-    const local = (value: unknown): string | undefined => typeof value === 'string' ? value : value && typeof value === 'object' ? (value as { zh?: string; en?: string }).zh ?? (value as { en?: string }).en : undefined;
-    const identityOf = (value: typeof definition) => {
-      let metadata: { displayName?: unknown; profession?: unknown; avatar?: string } = {};
-      try { const front = value.agentDocument?.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1]; if (front) { const parsed = parseDocument(front); if (!parsed.errors.length) metadata = parsed.toJS(); } } catch { /* optional authored metadata */ }
-      const path = (metadata.avatar ?? value.avatarRef ?? '').replace(/^\.\//, '');
+    // Authored display metadata is projected by the Host so this bundle carries no YAML parser (P1-2).
+    const authored = detail.revisionDisplay;
+    const identityOf = (value: typeof definition, metadata: ExpertAuthoredDisplay | undefined) => {
+      const path = (metadata?.avatarPath ?? value.avatarRef ?? '').replace(/^\.\//, '');
       const asset = value.packageAssets?.[path] ?? definition.packageAssets?.[path];
       const avatar = asset && /\.(png|jpe?g|webp)$/i.test(path) ? `data:image/${/\.webp$/i.test(path) ? 'webp' : /\.jpe?g$/i.test(path) ? 'jpeg' : 'png'};base64,${asset.base64}` : value.avatarRef;
-      return { name: local(metadata.displayName) || value.name, profession: local(metadata.profession), avatar };
+      return { name: metadata?.displayName || value.name, profession: metadata?.profession, avatar };
     };
-    const leadIdentity = identityOf(definition);
-    return { ...leadIdentity, kind: definition.team ? 'team' : 'expert', ...(definition.team ? { teamName: definition.name, members: [{ key: 'lead', ...leadIdentity, kind: 'expert' as const }, ...definition.team.members.map(member => ({ key: member.key, ...identityOf(member.definition), kind: 'expert' as const }))] } : {}) };
+    const leadIdentity = identityOf(definition, authored?.lead);
+    return { ...leadIdentity, kind: definition.team ? 'team' : 'expert', ...(definition.team ? { teamName: definition.name, members: [{ key: 'lead', ...leadIdentity, kind: 'expert' as const }, ...definition.team.members.map(member => ({ key: member.key, ...identityOf(member.definition, authored?.members[member.key]), kind: 'expert' as const }))] } : {}) };
   })));
 
 
@@ -155,10 +154,8 @@ export function apply(ctx: Context): void {
         const manifest = JSON.parse(manifestText);
         englishName = authoredName(manifest.displayName?.en) || authoredName(manifest.name);
       } else if (!definition.team) {
-        const frontmatter = definition.agentDocument?.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1];
-        const document = frontmatter ? parseDocument(frontmatter) : undefined;
-        const metadata = document && !document.errors.length ? document.toJS() : undefined;
-        englishName = authoredName(metadata?.displayName?.en) || authoredName(metadata?.name);
+        const authored = detail.draftDisplay.lead;
+        englishName = authoredName(authored.displayNameEn) || authoredName(authored.name);
       }
     } catch { /* Missing or invalid name metadata is omitted from the input. */ }
     const name = `${definition.name}${englishName && englishName !== definition.name ? `（${englishName}）` : ''}`;

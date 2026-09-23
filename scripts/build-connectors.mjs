@@ -7,6 +7,7 @@ const result = await build({
   entryPoints: [fileURLToPath(new URL('src/client.tsx', entry))],
   bundle: true, write: false, format: 'cjs', platform: 'browser', target: 'es2022',
   external: ['react', 'react/jsx-runtime'],
+  minify: true, define: { 'process.env.NODE_ENV': '"production"' },
 });
 await writeFile(new URL('dist/client.browser.js', entry), `window.__ModuleLoader__.load({id: "workdsh-plugin-connectors", factory: function(require) {\nconst module = { exports: {} };\n${result.outputFiles[0].text}\nreturn module.exports;\n}});\n`);
 await copyFile(new URL('src/example-server.mjs', entry), new URL('dist/example-server.mjs', entry));

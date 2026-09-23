@@ -135,7 +135,7 @@ export function ExpertDetailModal({ expertId, management, acting, onClose, onSum
       </div>
     </>}
 
-    <TeamOverview definition={definition} />
+    <TeamOverview definition={definition} display={detail.revisionDisplay ?? detail.draftDisplay} />
 
     <details className="expert-settings"><summary>配备技能与能力 · {definition.skillRequirements.length}</summary>
     <h2 className="detail-section-title">配备技能 · {definition.skillRequirements.length}</h2>

@@ -7,6 +7,7 @@ const result = await build({
   entryPoints: [fileURLToPath(new URL('src/client.tsx', entry))],
   bundle: true, write: false, format: 'cjs', platform: 'browser', target: 'es2022',
   external: ['react', 'react/jsx-runtime'],
+  minify: true, define: { 'process.env.NODE_ENV': '"production"' },
 });
 // Use the official registration facade; React remains the renderer's shared instance.
 await writeFile(new URL('dist/client.browser.js', entry),
