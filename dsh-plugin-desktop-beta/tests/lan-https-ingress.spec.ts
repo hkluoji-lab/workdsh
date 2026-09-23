@@ -21,7 +21,7 @@ interface HttpsResult {
 }
 
 beforeAll(async () => {
-  const ca = await generate([{ name: 'commonName', value: 'DSH SSH test root' }], {
+  const ca = await generate([{ name: 'commonName', value: 'WorkDSH test root' }], {
     algorithm: 'sha256',
     keyType: 'ec',
     extensions: [
@@ -347,7 +347,7 @@ describe('LAN HTTPS ingress', () => {
       `Host: ${LAN_ADDRESS}:${String(ingressPort(ingress))}`,
       'Connection: Upgrade',
       'Upgrade: dsh-test',
-      'X-DSH-SSH-Renderer: forged-capability',
+      'X-WorkDSH-Renderer: forged-capability',
       'X-Forwarded-For: 203.0.113.9',
       '',
       'first',

@@ -86,7 +86,7 @@ describe('Desktop Profile selection window', () => {
     expect(selectionState.notice).toEqual({
       tone: 'success',
       title: 'work',
-      body: '已设为当前 Profile。请重启 DSH SSH 以使用该 Profile。',
+      body: '已设为当前 Profile。请重启 WorkDSH 以使用该 Profile。',
     })
 
     window.webListeners.get('will-navigate')?.({ preventDefault: vi.fn() }, 'dsh-profile-selector://restart')
@@ -123,7 +123,7 @@ describe('Desktop Profile selection window', () => {
     expect(selectionState.notice).toEqual({
       tone: 'success',
       title: 'fresh',
-      body: '已设为当前 Profile。请重启 DSH SSH 以使用该 Profile。',
+      body: '已设为当前 Profile。请重启 WorkDSH 以使用该 Profile。',
     })
 
     window.webListeners.get('will-navigate')?.({ preventDefault: vi.fn() }, 'dsh-profile-selector://restart')

@@ -58,7 +58,7 @@ function context(
     ...(arch === undefined ? {} : { arch }),
     packager: {
       ...(executableName === undefined ? {} : { executableName }),
-      appInfo: { productFilename: 'DSH SSH' },
+      appInfo: { productFilename: 'WorkDSH' },
     },
   }
 }
@@ -264,13 +264,13 @@ describe('packaged desktop runtime verification', () => {
   it.each([
     [
       'darwin',
-      join('/build', 'DSH SSH.app', 'Contents', 'Resources', 'app.asar'),
-      join('/build', 'DSH SSH.app', 'Contents', 'MacOS', 'DSH SSH'),
+      join('/build', 'WorkDSH.app', 'Contents', 'Resources', 'app.asar'),
+      join('/build', 'WorkDSH.app', 'Contents', 'MacOS', 'WorkDSH'),
     ],
     [
       'win32',
       join('/build', 'resources', 'app.asar'),
-      join('/build', 'DSH SSH.exe'),
+      join('/build', 'WorkDSH.exe'),
     ],
   ])('inspects the %s selective ASAR layout', (platform, expectedPath, expectedExecutable) => {
     const runtimeContext = context('/build', platform)

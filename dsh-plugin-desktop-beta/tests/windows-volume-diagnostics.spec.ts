@@ -29,12 +29,12 @@ describe('Windows volume diagnostics', () => {
   })
 
   it('accepts fixed NTFS and ReFS volumes', () => {
-    expect(diagnoseWindowsVolumes('win32', [{ label: 'install', path: 'C:\\App\\DSH SSH.exe' }], query({
+    expect(diagnoseWindowsVolumes('win32', [{ label: 'install', path: 'C:\\App\\WorkDSH.exe' }], query({
       root: 'C:\\',
       fileSystem: 'NTFS',
       driveType: 3,
     }))).toEqual([])
-    expect(diagnoseWindowsVolumes('win32', [{ label: 'install', path: 'D:\\App\\DSH SSH.exe' }], query({
+    expect(diagnoseWindowsVolumes('win32', [{ label: 'install', path: 'D:\\App\\WorkDSH.exe' }], query({
       root: 'D:\\',
       fileSystem: 'REFS',
       driveType: 3,

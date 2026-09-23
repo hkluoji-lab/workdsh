@@ -172,7 +172,7 @@ export function DesktopFrameTitlebarView({ api, environment, setMode, t }: Deskt
       data-material={environment.material}
     >
       <div className="dshDesktopFrameIdentity">
-        <span className="dshDesktopFrameProduct">DSH SSH</span>
+        <span className="dshDesktopFrameProduct">WorkDSH</span>
         <DesktopVersionControl version={environment.version} checkForUpdates={api.checkForUpdates} t={t} />
         <DesktopModeControl
           mode={environment.mode}

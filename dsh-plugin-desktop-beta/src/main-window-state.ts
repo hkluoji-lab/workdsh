@@ -1,4 +1,4 @@
-/** Durable bounds for the one DSH SSH main window. */
+/** Durable bounds for the one WorkDSH main window. */
 
 import { randomUUID } from 'node:crypto'
 import {

@@ -35,7 +35,7 @@ export function verifyWindowsPortable(
   const portablePath = join(
     options.desktopRoot,
     'dist',
-    `DSH-SSH-Beta-${options.version}-x64-Portable.zip`,
+    `WorkDSH-Beta-${options.version}-x64-Portable.zip`,
   )
   const stat = statSync(portablePath)
   if (!stat.isFile() || stat.size === 0) {
@@ -43,9 +43,9 @@ export function verifyWindowsPortable(
   }
   const archive = new AdmZip(portablePath)
   const entries = archive.getEntries().filter(entry => !entry.isDirectory)
-  const executable = entries.find(entry => entry.entryName.replaceAll('\\', '/') === 'DSH SSH Beta.exe')
+  const executable = entries.find(entry => entry.entryName.replaceAll('\\', '/') === 'WorkDSH Beta.exe')
   if (executable === undefined) {
-    throw new Error(`Windows portable archive is missing DSH SSH Beta.exe: ${portablePath}`)
+    throw new Error(`Windows portable archive is missing WorkDSH Beta.exe: ${portablePath}`)
   }
   if (!entries.some(entry => entry.entryName.replaceAll('\\', '/') === 'resources/app.asar')) {
     throw new Error(`Windows portable archive is missing resources/app.asar: ${portablePath}`)
@@ -53,7 +53,7 @@ export function verifyWindowsPortable(
   assertPortableExecutableBuffer(
     executable.getData(),
     'Windows portable application',
-    `${portablePath}:DSH SSH Beta.exe`,
+    `${portablePath}:WorkDSH Beta.exe`,
   )
   return portablePath
 }

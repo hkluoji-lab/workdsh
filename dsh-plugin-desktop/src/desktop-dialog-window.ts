@@ -223,7 +223,7 @@ export async function showDesktopMessageBox(
 ): Promise<MessageBoxReturnValue> {
   const result = await showDesktopDialog({
     type: options.type ?? 'none',
-    title: options.title ?? 'DSH SSH',
+    title: options.title ?? 'WorkDSH',
     message: options.message,
     ...(options.detail === undefined ? {} : { detail: options.detail }),
     buttons: options.buttons ?? ['OK'],

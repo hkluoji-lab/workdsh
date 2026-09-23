@@ -9,14 +9,14 @@ describe('desktop crash evidence', () => {
     const reporter = { start: vi.fn() }
 
     startDesktopCrashReporting(reporter, {
-      productName: 'DSH SSH',
+      productName: 'WorkDSH',
       version: '2.0.1',
       platform: 'win32',
       arch: 'x64',
     })
 
     expect(reporter.start).toHaveBeenCalledWith({
-      productName: 'DSH SSH',
+      productName: 'WorkDSH',
       uploadToServer: false,
       globalExtra: {
         appVersion: '2.0.1',

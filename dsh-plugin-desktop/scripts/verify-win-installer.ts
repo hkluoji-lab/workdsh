@@ -90,9 +90,9 @@ export function verifyWindowsInstaller(
   const distDir = join(options.desktopRoot, 'dist')
   const installerPath = join(
     distDir,
-    `DSH-SSH-${options.version}-x64-Setup.exe`,
+    `WorkDSH-${options.version}-x64-Setup.exe`,
   )
-  const applicationPath = join(distDir, 'win-unpacked', 'DSH SSH.exe')
+  const applicationPath = join(distDir, 'win-unpacked', 'WorkDSH.exe')
 
   assertPortableExecutable(installerPath, 'Windows NSIS installer')
   assertPortableExecutable(applicationPath, 'unpacked Windows application')

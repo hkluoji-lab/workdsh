@@ -11,7 +11,7 @@ import {
 
 describe('Desktop relaunch arguments', () => {
   const argv = [
-    '/Applications/DSH SSH.app/Contents/MacOS/DSH SSH',
+    '/Applications/WorkDSH.app/Contents/MacOS/WorkDSH',
     'desktop-main.cjs',
     '--profile=work',
     DESKTOP_RECOVERY_MODE_ARGUMENT,

@@ -32,16 +32,16 @@ describe('desktop npm launcher', () => {
   })
 
   it('names the installed product and selected profile behavior', () => {
-    expect(DESKTOP_CLI_HELP).toContain('DSH SSH')
+    expect(DESKTOP_CLI_HELP).toContain('WorkDSH')
     expect(DESKTOP_CLI_HELP).toContain('selected Web-capable profile')
     expect(DESKTOP_CLI_HELP).toContain('--export-diagnostics')
   })
 
   it('resolves the packaged Desktop user-data directory without Electron', () => {
     expect(defaultDesktopUserDataDirectory('win32', { APPDATA: 'C:\\Users\\Example\\AppData\\Roaming' }, 'ignored'))
-      .toBe('C:\\Users\\Example\\AppData\\Roaming\\DSH SSH')
+      .toBe('C:\\Users\\Example\\AppData\\Roaming\\WorkDSH')
     expect(defaultDesktopUserDataDirectory('darwin', {}, '/Users/example'))
-      .toBe('/Users/example/Library/Application Support/DSH SSH')
+      .toBe('/Users/example/Library/Application Support/WorkDSH')
   })
 
   it('exports diagnostics without launching Electron', async () => {

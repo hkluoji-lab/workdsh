@@ -10,7 +10,7 @@ import type {
   PersistedWindowsWindowMaterial,
 } from './window-material.ts'
 
-/** Electron platforms supported by the DSH SSH native adapter. */
+/** Electron platforms supported by the WorkDSH native adapter. */
 export type DesktopPlatform = 'darwin' | 'win32' | 'linux'
 
 /** Native presentation modes selected by the desktop-shell Cordis row. */
@@ -248,7 +248,7 @@ export interface DesktopRuntime {
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
-    /** Electron adapter provided by the DSH SSH launcher. */
+    /** Electron adapter provided by the WorkDSH launcher. */
     desktopRuntime: DesktopRuntime
   }
 }

@@ -22,9 +22,9 @@ function shellSpec(env?: Record<string, string>): ShellExecSpec {
 const adaptation: WindowsAclAdaptation = {
   platform: 'win32',
   electron: true,
-  execPath: 'C:\\Program Files\\DSH SSH\\DSH SSH.exe',
-  upstreamRunner: 'C:\\Program Files\\DSH SSH\\resources\\app.asar\\runner.js',
-  trampoline: 'C:\\Program Files\\DSH SSH\\resources\\app.asar\\desktop-runner.js',
+  execPath: 'C:\\Program Files\\WorkDSH\\WorkDSH.exe',
+  upstreamRunner: 'C:\\Program Files\\WorkDSH\\resources\\app.asar\\runner.js',
+  trampoline: 'C:\\Program Files\\WorkDSH\\resources\\app.asar\\desktop-runner.js',
 }
 
 describe('Windows Electron PowerShell sandbox adaptation', () => {

@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-desktop",
   "version": "2.0.5",
-  "description": "DSH SSH: an Electron shell composed as a DeepSeek Harness Cordis plugin",
+  "description": "WorkDSH: an Electron shell composed as a DeepSeek Harness Cordis plugin",
   "license": "MIT",
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
@@ -326,7 +326,7 @@
   },
   "build": {
     "appId": "io.techflag.dsh.ssh",
-    "productName": "DSH SSH",
+    "productName": "WorkDSH",
     "asar": {
       "smartUnpack": true
     },
@@ -399,7 +399,7 @@
           ]
         }
       ],
-      "artifactName": "DSH-SSH-${version}-${arch}-Portable.${ext}",
+      "artifactName": "WorkDSH-${version}-${arch}-Portable.${ext}",
       "icon": "build/app-icon.ico"
     },
     "nsis": {
@@ -413,10 +413,10 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "differentialPackage": false,
-      "shortcutName": "DSH SSH",
+      "shortcutName": "WorkDSH",
       "uninstallerIcon": "build/app-icon.ico",
       "useZip": false,
-      "artifactName": "DSH-SSH-${version}-${arch}-Setup.${ext}"
+      "artifactName": "WorkDSH-${version}-${arch}-Setup.${ext}"
     },
     "linux": {
       "asarUnpack": [

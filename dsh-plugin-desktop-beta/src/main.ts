@@ -1,4 +1,4 @@
-/** DSH SSH executable: minimal Electron bootstrap around the Host Cordis root. */
+/** WorkDSH executable: minimal Electron bootstrap around the Host Cordis root. */
 
 import { app, crashReporter, safeStorage, shell } from 'electron'
 import { randomUUID } from 'node:crypto'

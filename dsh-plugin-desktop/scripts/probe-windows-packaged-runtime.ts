@@ -31,7 +31,7 @@ export function probeInstalledWindowsRuntime(
   platform: NodeJS.Platform = process.platform,
 ): InstalledWindowsRuntimeProbe {
   const root = resolve(installRoot)
-  const executable = join(root, 'DSH SSH.exe')
+  const executable = join(root, 'WorkDSH.exe')
   try {
     if (platform !== 'win32') {
       throw new Error('installed Windows runtime probe requires a native Windows host')
@@ -42,8 +42,8 @@ export function probeInstalledWindowsRuntime(
       electronPlatformName: 'win32',
       arch: 1,
       packager: {
-        executableName: 'DSH SSH',
-        appInfo: { productFilename: 'DSH SSH' },
+        executableName: 'WorkDSH',
+        appInfo: { productFilename: 'WorkDSH' },
       },
     })
     return { installRoot: root, executable, success: true, error: null }

@@ -31,7 +31,7 @@ function fakeChild(): FakeChild {
 
 function options(spawn: ProfileMaterializerSpawn): ProfileMaterializerOptions {
   return {
-    appExecutable: '/Applications/DSH SSH.app/Contents/MacOS/DSH SSH',
+    appExecutable: '/Applications/WorkDSH.app/Contents/MacOS/WorkDSH',
     clearEnvironmentPath: '/private/clear-env.mjs',
     pnpmBinPath: '/private/pnpm/bin/pnpm.mjs',
     nodeBinDir: '/private/node-bin',
@@ -62,7 +62,7 @@ describe('profile materializer', () => {
     child.emit('close', 0, null)
     const result = await resultPromise
 
-    expect(command).toBe('/Applications/DSH SSH.app/Contents/MacOS/DSH SSH')
+    expect(command).toBe('/Applications/WorkDSH.app/Contents/MacOS/WorkDSH')
     expect(args).toEqual([
       '--import',
       pathToFileURL('/private/clear-env.mjs').href,

@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-desktop-beta",
   "version": "2.0.5-beta.2",
-  "description": "DSH SSH Beta: an Electron shell composed as a DeepSeek Harness Cordis plugin",
+  "description": "WorkDSH Beta: an Electron shell composed as a DeepSeek Harness Cordis plugin",
   "license": "MIT",
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
@@ -331,7 +331,7 @@
   },
   "build": {
     "appId": "io.techflag.dsh.ssh.beta",
-    "productName": "DSH SSH Beta",
+    "productName": "WorkDSH Beta",
     "asar": {
       "smartUnpack": true
     },
@@ -368,7 +368,7 @@
         "build/tray-iconTemplate.png",
         "build/tray-iconTemplate@2x.png"
       ],
-      "artifactName": "DSH-SSH-Beta-${version}-${arch}.${ext}",
+      "artifactName": "WorkDSH-Beta-${version}-${arch}.${ext}",
       "target": [
         "dir"
       ],
@@ -406,7 +406,7 @@
           ]
         }
       ],
-      "artifactName": "DSH-SSH-Beta-${version}-${arch}-Portable.${ext}",
+      "artifactName": "WorkDSH-Beta-${version}-${arch}-Portable.${ext}",
       "icon": "build/app-icon.png"
     },
     "nsis": {
@@ -419,9 +419,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "differentialPackage": false,
-      "shortcutName": "DSH SSH Beta",
+      "shortcutName": "WorkDSH Beta",
       "useZip": false,
-      "artifactName": "DSH-SSH-Beta-${version}-${arch}-Setup.${ext}"
+      "artifactName": "WorkDSH-Beta-${version}-${arch}-Setup.${ext}"
     },
     "linux": {
       "asarUnpack": [

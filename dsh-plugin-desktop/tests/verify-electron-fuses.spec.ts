@@ -20,7 +20,7 @@ function result(
     readonly key: string
   }[],
   configuration: ElectronArtifactBuildResult['configuration'] = {
-    productName: 'DSH SSH',
+    productName: 'WorkDSH',
   },
 ): ElectronArtifactBuildResult {
   return {
@@ -49,9 +49,9 @@ describe('final Electron fuse verification', () => {
   it('maps only requested platform and architecture keys to complete runtime contexts', () => {
     const expected = [
       join('/build', 'linux-unpacked', 'dsh-plugin-desktop'),
-      join('/build', 'mac-universal', 'DSH SSH.app', 'Contents', 'MacOS', 'DSH SSH'),
-      join('/build', 'win-unpacked', 'DSH SSH.exe'),
-      join('/build', 'win-arm64-unpacked', 'DSH SSH.exe'),
+      join('/build', 'mac-universal', 'WorkDSH.app', 'Contents', 'MacOS', 'WorkDSH'),
+      join('/build', 'win-unpacked', 'WorkDSH.exe'),
+      join('/build', 'win-arm64-unpacked', 'WorkDSH.exe'),
     ].sort()
 
     expect(resolveFinalPackagedRuntimeContexts(
@@ -68,33 +68,33 @@ describe('final Electron fuse verification', () => {
         electronPlatformName: 'linux',
         packager: {
           executableName: 'dsh-plugin-desktop',
-          appInfo: { productFilename: 'DSH SSH' },
+          appInfo: { productFilename: 'WorkDSH' },
         },
       },
       {
         appOutDir: join('/build', 'mac-universal'),
         arch: 4,
         electronPlatformName: 'darwin',
-        packager: { appInfo: { productFilename: 'DSH SSH' } },
+        packager: { appInfo: { productFilename: 'WorkDSH' } },
       },
       {
         appOutDir: join('/build', 'win-arm64-unpacked'),
         arch: 3,
         electronPlatformName: 'win32',
-        packager: { appInfo: { productFilename: 'DSH SSH' } },
+        packager: { appInfo: { productFilename: 'WorkDSH' } },
       },
       {
         appOutDir: join('/build', 'win-unpacked'),
         arch: 1,
         electronPlatformName: 'win32',
-        packager: { appInfo: { productFilename: 'DSH SSH' } },
+        packager: { appInfo: { productFilename: 'WorkDSH' } },
       },
     ])
   })
 
   it('honors Linux executableName and recovers a configured suffixless architecture', () => {
     const configured = result([{ key: 'linux', archs: [Arch.arm64] }], {
-      productName: 'DSH SSH',
+      productName: 'WorkDSH',
       linux: { defaultArch: 'arm64', executableName: 'dsh-desktop' },
     })
     const executable = join('/build', 'linux-unpacked', 'dsh-desktop')
@@ -143,8 +143,8 @@ describe('final Electron fuse verification', () => {
   })
 
   it('ignores a stale sibling architecture from an earlier build', () => {
-    const expected = join('/build', 'win-unpacked', 'DSH SSH.exe')
-    const stale = join('/build', 'win-arm64-unpacked', 'DSH SSH.exe')
+    const expected = join('/build', 'win-unpacked', 'WorkDSH.exe')
+    const stale = join('/build', 'win-arm64-unpacked', 'WorkDSH.exe')
     const exists = vi.fn((filename: string) => filename === expected || filename === stale)
 
     expect(resolveFinalPackagedRuntimeContexts(
@@ -160,18 +160,18 @@ describe('final Electron fuse verification', () => {
   })
 
   it('fails when one requested architecture is missing even if a sibling exists', () => {
-    const x64Executable = join('/build', 'win-unpacked', 'DSH SSH.exe')
+    const x64Executable = join('/build', 'win-unpacked', 'WorkDSH.exe')
 
     expect(() => resolveFinalPackagedRuntimeContexts(
       result([{ key: 'win', archs: [Arch.x64, Arch.arm64] }]),
       filename => filename === x64Executable,
-    )).toThrow('win/arm64 at /build/win-arm64-unpacked/DSH SSH.exe')
+    )).toThrow('win/arm64 at /build/win-arm64-unpacked/WorkDSH.exe')
   })
 
   it('checks a macOS directory build even when MacPackager omits its target', () => {
     const built = {
       outDir: '/build',
-      configuration: { productName: 'DSH SSH', mac: { target: [{ target: 'dir', arch: 'arm64' }] } },
+      configuration: { productName: 'WorkDSH', mac: { target: [{ target: 'dir', arch: 'arm64' }] } },
       platformToTargets: new Map([[{ buildConfigurationKey: 'mac' }, new Map()]]),
     } satisfies ElectronArtifactBuildResult
     expect(resolveFinalPackagedRuntimeContexts(built, () => true)).toEqual([
@@ -184,7 +184,7 @@ describe('final Electron fuse verification', () => {
     const platform = { buildConfigurationKey: 'win' }
     const built = {
       outDir: '/build',
-      configuration: { productName: 'DSH SSH' },
+      configuration: { productName: 'WorkDSH' },
       platformToTargets: new Map([[platform, new Map([
         ['nsis', { archs: new Map([
           [Arch.x64, '/build/win-unpacked'],
@@ -207,7 +207,7 @@ describe('final Electron fuse verification', () => {
     ])]])
     const built = {
       outDir: '/build',
-      configuration: { productName: 'DSH SSH' },
+      configuration: { productName: 'WorkDSH' },
       platformToTargets: new Map([[platform, new Map([
         ['dmg', { packager: { packagerOptions: { targets: requestedTargets } } }],
       ])]]),
@@ -215,10 +215,10 @@ describe('final Electron fuse verification', () => {
     const universalExecutable = join(
       '/build',
       'mac-universal',
-      'DSH SSH.app',
+      'WorkDSH.app',
       'Contents',
       'MacOS',
-      'DSH SSH',
+      'WorkDSH',
     )
     const exists = vi.fn((filename: string) => filename === universalExecutable)
 
@@ -231,8 +231,8 @@ describe('final Electron fuse verification', () => {
 
   it('checks every requested final executable after all artifact builds', async () => {
     const executables = [
-      join('/build', 'mac-arm64', 'DSH SSH.app', 'Contents', 'MacOS', 'DSH SSH'),
-      join('/build', 'mac', 'DSH SSH.app', 'Contents', 'MacOS', 'DSH SSH'),
+      join('/build', 'mac-arm64', 'WorkDSH.app', 'Contents', 'MacOS', 'WorkDSH'),
+      join('/build', 'mac', 'WorkDSH.app', 'Contents', 'MacOS', 'WorkDSH'),
     ]
     const events: string[] = []
     const read = vi.fn<ElectronFuseReader>(async (executable) => {
@@ -269,14 +269,14 @@ describe('final Electron fuse verification', () => {
   ])('fails loud when required fuse %s is not enabled', async (option, name) => {
     const read: ElectronFuseReader = async () => fuseWire({ [option]: FuseState.DISABLE })
 
-    await expect(verifyElectronExecutableFuses('/build/DSH SSH.exe', read))
+    await expect(verifyElectronExecutableFuses('/build/WorkDSH.exe', read))
       .rejects.toThrow(`${name}=DISABLE`)
   })
 
   it('wraps an unreadable final executable with its resolved path', async () => {
     const read: ElectronFuseReader = async () => { throw new Error('missing sentinel') }
 
-    await expect(verifyElectronExecutableFuses('/build/DSH SSH.exe', read))
-      .rejects.toThrow('/build/DSH SSH.exe')
+    await expect(verifyElectronExecutableFuses('/build/WorkDSH.exe', read))
+      .rejects.toThrow('/build/WorkDSH.exe')
   })
 })

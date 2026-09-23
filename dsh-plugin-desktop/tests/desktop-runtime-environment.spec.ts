@@ -38,10 +38,10 @@ function options(
   return {
     platform,
     appExecutable: platform === 'win32'
-      ? 'C:\\Program Files\\DSH 100% Desktop\\DSH SSH.exe'
-      : "/Applications/DSH O'Brien.app/Contents/MacOS/DSH SSH",
+      ? 'C:\\Program Files\\DSH 100% Desktop\\WorkDSH.exe'
+      : "/Applications/DSH O'Brien.app/Contents/MacOS/WorkDSH",
     pnpmBinPath: platform === 'win32'
-      ? 'C:\\Program Files\\DSH SSH\\resources\\app.asar.unpacked\\node_modules\\pnpm\\bin\\pnpm.mjs'
+      ? 'C:\\Program Files\\WorkDSH\\resources\\app.asar.unpacked\\node_modules\\pnpm\\bin\\pnpm.mjs'
       : "/Applications/DSH O'Brien.app/Contents/Resources/app.asar.unpacked/node_modules/pnpm/bin/pnpm.mjs",
     electronVersion: '43.4.0',
     stateDir,
@@ -539,8 +539,8 @@ describe('desktop Host dsh runtime', () => {
     const environment: NodeJS.ProcessEnv = { Path: 'C:\\Windows' }
     const runtimeOptions = {
       platform: 'win32' as const,
-      appExecutable: 'C:\\Program Files\\DSH SSH\\DSH SSH.exe',
-      dshBootstrapPath: 'C:\\Program Files\\DSH SSH\\resources\\app.asar\\desktop-cli.js',
+      appExecutable: 'C:\\Program Files\\WorkDSH\\WorkDSH.exe',
+      dshBootstrapPath: 'C:\\Program Files\\WorkDSH\\resources\\app.asar\\desktop-cli.js',
       profileName: 'web',
       homeDir: 'C:\\Users\\tester\\.dsh',
       stateDir,

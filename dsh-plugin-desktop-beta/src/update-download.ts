@@ -1,4 +1,4 @@
-/** Headless, confirmation-gated downloads for DSH SSH installers. */
+/** Headless, confirmation-gated downloads for WorkDSH installers. */
 
 import { randomUUID } from 'node:crypto'
 import { chmod, lstat, mkdir, open, readFile, rename, unlink } from 'node:fs/promises'
@@ -21,7 +21,7 @@ export const DESKTOP_DOWNLOAD_URLS: Readonly<Record<DesktopDownloadPlatform, str
 }
 
 /** Header pinning a download request and response to the checked release. */
-export const DESKTOP_TARGET_VERSION_HEADER = 'X-DSH-SSH-Target-Version'
+export const DESKTOP_TARGET_VERSION_HEADER = 'X-WorkDSH-Target-Version'
 
 /** Maximum accepted installer size, in bytes. */
 export const MAX_UPDATE_DOWNLOAD_BYTES = 1024 * 1024 * 1024
@@ -180,7 +180,7 @@ export function desktopUpdateFilename(
   validatedVersion(version, channel)
   const extension = platform === 'darwin' ? 'dmg' : 'exe'
   const platformName = platform === 'darwin' ? 'mac' : 'windows'
-  const product = channel === 'beta' ? 'DSH-SSH-Beta' : 'DSH-SSH'
+  const product = channel === 'beta' ? 'WorkDSH-Beta' : 'WorkDSH'
   return `${product}-${version}-${platformName}.${extension}`
 }
 

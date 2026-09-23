@@ -3,13 +3,13 @@ export const DESKTOP_RELEASE_IDENTITIES = Object.freeze({
   stable: Object.freeze({
     releaseChannel: 'stable' as const,
     packageName: 'dsh-plugin-desktop',
-    productName: 'DSH SSH',
+    productName: 'WorkDSH',
     appId: 'io.techflag.dsh.ssh',
   }),
   beta: Object.freeze({
     releaseChannel: 'beta' as const,
     packageName: 'dsh-plugin-desktop-beta',
-    productName: 'DSH SSH Beta',
+    productName: 'WorkDSH Beta',
     appId: 'io.techflag.dsh.ssh.beta',
   }),
 })
