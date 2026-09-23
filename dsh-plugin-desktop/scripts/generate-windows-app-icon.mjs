@@ -27,7 +27,8 @@ export const WINDOWS_APP_ICON_SIZES = Object.freeze([
 
 const SOURCE_CANVAS_SIZE = 1024
 const SMALL_FRAME_MAX_SIZE = 40
-const BRAND_BLUE = '#4D6BFE'
+const BRAND_BLUE = '#176BFF'
+const BRAND_CYAN = '#18CFE7'
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const sourcePath = join(packageRoot, 'build', 'app-icon.png')
@@ -42,13 +43,14 @@ const outputPath = join(packageRoot, 'build', 'app-icon.ico')
  */
 async function loadSmallFrameArtwork() {
   const source = await readFile(markPath, 'utf8')
-  if (!source.includes(`fill="${BRAND_BLUE}"`) || /<style\b/iu.test(source)) {
+  if (!(source.includes(`fill="${BRAND_BLUE}"`) || source.includes(`stroke="${BRAND_BLUE}"`)) || /<style\b/iu.test(source)) {
     throw new Error(`generate-windows-app-icon: tray-icon.svg must use the fixed brand color ${BRAND_BLUE}`)
   }
   const mark = source
     .replace(/^<svg[^>]*>\s*/u, '')
     .replace(/<\/svg>\s*$/u, '')
     .replaceAll(BRAND_BLUE, '#000000')
+    .replaceAll(BRAND_CYAN, '#000000')
   return Buffer.from(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">'
     + '<rect width="50" height="50" rx="11" fill="#FFFFFF"/>'

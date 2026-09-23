@@ -10,8 +10,9 @@ const buildRoot = join(packageRoot, 'build')
 const sourcePath = join(buildRoot, 'tray-icon.svg')
 const source = await readFile(sourcePath, 'utf8')
 
-const BRAND_BLUE = '#4D6BFE'
-if (!source.includes(`fill="${BRAND_BLUE}"`) || /<style\b/iu.test(source)) {
+const BRAND_BLUE = '#176BFF'
+const BRAND_CYAN = '#18CFE7'
+if (!(source.includes(`fill="${BRAND_BLUE}"`) || source.includes(`stroke="${BRAND_BLUE}"`)) || /<style\b/iu.test(source)) {
   throw new Error(`generate-tray-icons: tray-icon.svg must use the fixed brand color ${BRAND_BLUE}`)
 }
 
@@ -25,7 +26,7 @@ const variants = [
 ]
 
 await Promise.all(variants.map(async ([filename, color, size]) => {
-  const rendered = source.replaceAll(BRAND_BLUE, color)
+  const rendered = source.replaceAll(BRAND_BLUE, color).replaceAll(BRAND_CYAN, color)
   await sharp(Buffer.from(rendered))
     .resize({ width: size, height: size, fit: 'contain' })
     .png({ compressionLevel: 9 })
