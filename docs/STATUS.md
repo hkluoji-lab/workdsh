@@ -432,6 +432,71 @@ WebP 体积：10 个变体合计 **450,488 B**（原 5 张 3006×1640 PNG 合计
 
 **下一步**：清单其余 9 项是否修复待用户裁决；D04 收尾（AT-13/19/23/27）与 B1 剩余项按台账推进。
 
+## 2026-09-24（续九）：P1-2 工作台自有 client 首包压缩（构建压缩 + 专家身份投影移回 Host）
+
+按用户指令「先修复 P1-2 工作台首包体积问题」执行。体检结论是工作台首包 2.07MB（gzip），其中单个 `/plugins/??` combo 包 1.35MB、含 59 个 client 模块；combo 只做包级拼接、无单包代码分割，官方 61 个 client 条目不可由 WorkDSH 修改，因此本轮只优化自有 client 条目。
+
+### 定位
+
+- 自有 client 全部由 esbuild 直接产出**未压缩** CJS：8 个构建脚本都没有 `minify`。
+- 专家面板在浏览器里 `import { parseDocument } from 'yaml'`，把 YAML 解析器打进 client 包，且列表／详情／制作流程都在客户端解析 `agentDocument` 的 front matter。
+
+### 改动
+
+| 文件 | 内容 |
+|---|---|
+| `scripts/build-client-probe.mjs`、`build-skills.mjs`、`build-experts.mjs`、`build-connectors.mjs`、`build-office.mjs`、`build-library.mjs`、`build-projects.mjs`、`build-activity.mjs` | client 构建加 `minify: true` 与 `define: { 'process.env.NODE_ENV': '"production"' }`；`external` 保持 `react`／`react/jsx-runtime`，继续共享官方 renderer 的同一 React 实例 |
+| `packages/contracts/src/experts.ts` | 新增 `ExpertAuthoredDisplay`／`ExpertDisplayProjection`；`ExpertDetail` 增 `draftDisplay`（必有）与 `revisionDisplay`（有修订时才有） |
+| `packages/plugins/experts/src/services/experts-manager.ts`、`src/authoring/documents.ts` | Host 侧一次性读 front matter，投影显示名／职业／英文名／头像路径；仅派生只读值，不回写授权文件 |
+| `packages/plugins/experts/src/client.tsx`、`client/ExpertDetailModal.tsx`、`client/TeamOverview.tsx` | 删除客户端 `yaml` 解析，改为读取 Host 投影 |
+
+### 实测
+
+`node /tmp/p1-2/measure.mjs`（对 `dist` 产物按 gzip level 9／brotli 计量）：
+
+- 自有 client 8 条目合计 **raw 458,905 B ／ gzip 127,109 B**；修复前同口径 gzip 为 194,446 B，即 **−67,337 B（约 −34.6%）**。
+- 最大条目 experts 去掉 YAML 解析器并压缩后为 gzip 29.4KB。
+- 官方 client 条目 gzip 合计 11,447,611 B，本轮未改动。
+
+### 未执行
+
+- 未在 Cloudflare 链路上复测实际传输体积与 brotli（P2-1 未裁决）；combo 仍无单包代码分割。
+- 只做体积优化，未改客户端产品行为。`corepack pnpm build`、`typecheck`、`test:integration`（110/110）在含本改动的树上通过。
+
+**下一步**：体检清单其余 8 项（P1-1、P1-3、P2-1～P2-4、P3-1、P3-2）待用户裁决。
+
+## 2026-09-24（续十）：「助理」侧栏入口开发实现（D16 / P1-12 首期切片，本机已可用）
+
+按用户指令「现在dsh.10ge.cn网站左侧伴中，助理待开发，请分析并开发实现可用」执行。
+
+### 定位
+
+「助理」此前不是缺页面，而是工作台 `businessPanels` 代注册的「待开放」占位：该占位只登记 `sidebar.panellist` 行、没有对应的 `main` 页面，点击会抛 `layout.selectPanel: main panel "workdsh-assistant" is not registered`。因此正确的收口方式是由页面所属插件同时自持 `main` 与同名侧栏行。
+
+### 改动
+
+- 新增 `packages/plugins/assistant`（模块版本 0.1 → `workdsh-plugin-assistant@0.1.0-alpha.1`，channel `local-candidate`）：领域值／校验、`workdsh_assistant` 存储域、单一 Host 服务 `WorkdshAssistant`、`/api/workdsh-assistant` 端点、`workdsh_assistant_list/_get/_create/_update` 四个工具、页面与自持侧栏入口（`order: 10`）。
+- 助理是**引用型工作入口**：引用技能修订、专家修订与连接器实例。引用解析在 Host 侧用 `ctx.get(name, true)` 读取兄弟插件公开服务，owner 缺席时降级为「X服务当前不可用」，不伪造可用；不导入兄弟插件内部实现、不读其数据表。不拥有执行、会话、凭据、数据与权限，不新建 Agent loop。
+- actor 一律由 Host 解析：页面端点走 `ctx.workdshIdentity.profile()`，工具走 `ctx.workdshIdentity.resolve()`；请求体与模型都不能自带所有者。状态键为「组织_主体」。修订只追加 + `expectedRevisionId` 乐观并发，删除语义为归档。
+- 工作台 `businessPanels` 移除助理占位，`packages/plugins/workbench` 升 `0.1.0-alpha.16`；根 `build`／`typecheck` 链与 `test:assistant` 登记新包；`scripts/install-preview.mjs` 加装该层。
+- 台账同步：ADR-0027 状态与实施记录、PLAN P1-12、`docs/modules.json` assistant 条目、`development-order.json` D16 note、`docs/design/assistant/README.md`（含官方能力复用记录 6 字段表）。
+
+### 验证
+
+- `corepack pnpm install --no-frozen-lockfile`、`node scripts/check-plan.mjs` PASS（31 模块／50 文档）、`corepack pnpm typecheck`、`corepack pnpm build` 均通过。
+- `corepack pnpm test:assistant` 4/4 通过：持久化与只追加修订、按主体隔离、归档与恢复、重启后引用保留；无效草稿显式拒绝；owner 已加载时判定可用性并拒绝过期引用；连接器目录按结构镜像且 owner 缺席不阻塞创建。
+- `corepack pnpm test:integration` 110/110 通过；`corepack pnpm check:versions` PASS（507 条锁定 0.1.6-alpha.2）。
+- 浏览器实测（`corepack pnpm preview:install` + `corepack pnpm preview`，127.0.0.1:3031）：侧栏「助理」导航到 `?workdsh-view=assistant` 并渲染真实面板（不再是待开放占位）；新建助理成功进入「使用中 1」；详情弹框显示职责描述／引用能力／触发方式；编辑弹框的引用能力下拉按 技能（29）／专家（3，均标注可用）／连接器（1，ready）分组；`POST /api/workdsh-assistant` 全部成功、无 4xx/5xx，未出现 `layout.selectPanel` 报错。
+
+### 未执行
+
+- 真实模型执行助理、定时触发与外部消息入站、多主体多组织端到端鉴权与撤权均未验证。
+- 助理未纳入项目发布包：`scripts/pack-project-release.mjs` 仍为 9 包，与 `docs/modules.json`「尚未进入项目发布包」口径一致。
+- D16 步骤状态仍为 `todo`（依赖 D08 未完成，且 check-plan 只允许一个 `in_progress`，当前由 D04 占用）。
+- 未提交、未推送、未部署 `dsh.10ge.cn`。
+
+**下一步**：D16 待 D08 完成后按验收矩阵收口；`dsh.10ge.cn` 部署需用户授权。
+
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
 按用户裁决「按 5 批切分，从第 1 批开始，先修复线上缺陷」执行。B1 出口标准是「线上可复现缺陷按归因处置（我方修复项复验通过，官方/环境项登记留证）」，本轮完成其中「我方修复项」三条。

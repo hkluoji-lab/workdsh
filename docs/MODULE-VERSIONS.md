@@ -28,12 +28,12 @@
 
 | 模块 | 版本线 | 当前包版本 | 实现状态 |
 | --- | --- | --- | --- |
-| 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.9` | implemented |
+| 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.10` | implemented |
 | 共享展示组件 | 0.1 | `workdsh-ui@0.1.0-alpha.6` | implemented |
 | 企业门户与登录门禁 | 0.1 | `workdsh-portal@0.1.0-alpha.2` | in_progress |
 | 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.53` | in_progress |
-| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.15` | implemented |
-| 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.7` | in_progress |
+| 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.16` | implemented |
+| 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.8` | in_progress |
 | 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.32` | implemented |
 | 连接器管理 | 0.1 | `workdsh-plugin-connectors@0.1.0-alpha.2` | in_progress |
 | 资源授权 | 0.1 | `workdsh-plugin-access@0.1.0-alpha.5` | implemented |
@@ -43,6 +43,7 @@
 | 协作与活动展示 | 0.1 | `workdsh-plugin-activity@0.1.0-alpha.4` | in_progress |
 | 项目管理 | 0.1 | `workdsh-plugin-projects@0.1.0-alpha.2` | in_progress |
 | 资料库 | 0.1 | `workdsh-plugin-library@0.1.0-alpha.3` | implemented |
+| 助理 | 0.1 | `workdsh-plugin-assistant@0.1.0-alpha.1` | in_progress |
 
 2026-09-18 更新：bundle、experts、skills、office、activity、projects、library 跟随 DSH 0.1.6-alpha.2 升级 bump；contracts 补 bump α.9（补记 2026-09-17 项目任务上下文只读契约 `ProjectTaskContext`/`taskContext`，属兼容补全）；experts/office/activity 同时携带其未发布批次；公开发行仍以上次 prerelease 为准。
 
@@ -61,6 +62,10 @@
 2026-09-23 更新（二）：新增模块 **企业门户与登录门禁** `workdsh-portal@0.1.0-alpha.1`（Unreleased，0.1 版本线）——按用户裁决新增 `packages/portal`：静态企业门户（首页四段 + 登录页）与单文件 Node 服务（签名 Cookie 会话、失败限流、`/api/portal/auth` 供 Caddy `forward_auth` 使用）。该模块属部署边缘面、不是功能插件，不声明 `dsh.bundle`/`exports`/`bin`，不发布 npm，随部署交付；边界与所有权见 [ADR-0034](adr/0034-enterprise-portal-and-edge-authentication.md)。线上路由切换未执行。
 
 2026-09-24 更新：portal α.1→**α.2**（Unreleased）——按用户裁决修复两项线上性能缺陷（`dsh.10ge.cn` 性能体检的 P0 项）：① 缓存头与安全头分离，`packages/portal/src/server.mjs` 的 `SECURITY_HEADERS` 不再向静态资源套用 `Cache-Control: no-store`，改为按类分档（HTML `no-cache` + ETag、站内 CSS/JS `max-age=3600`、图片素材 `max-age=604800`），并新增 ETag 条件请求（命中返回 304 且零正文）；接口、跳转与错误页保持 `no-store`。② 门户 5 张界面截图上 WebP 双尺寸 `srcset`（原 3006px PNG 保留为回退），首屏图片上线量 3.34MB → 约 115KB@1x / 325KB@2x。本版已于同日部署到 `dsh.10ge.cn` 并完成线上复验（门户首屏 9 个资源 166,291B；公网三档视口图片档位正确、无溢出、无 console 错误；登录门禁零回归）。部署时发现线上 `server.mjs` 含一段仓库未登记的 `/portal/products/*` 公开产品页路由，本版按「仓库文件 + 重新叠加该路由」落位；随后按用户裁决**已回填仓库并纳入缓存分档**：`server.mjs` 新增 `serveProductPage`（与门户首页同档 `no-cache` + ETag，仅该路径放宽 CSP 以支持单文件自包含页面）、`site/products/2026Q3.html`、`tools/publish-products.sh` 与 README 五处，同日再次部署并完成公网复验（产品页 200 `no-cache` + 放宽 CSP，其余分档与门禁无回归）。详见 [STATUS](STATUS.md) 2026-09-24（续八）。
+
+2026-09-24 更新（二）：新增模块 **助理** `workdsh-plugin-assistant@0.1.0-alpha.1`（Unreleased，0.1 版本线）；workbench α.15→**α.16**。助理按 [ADR-0027](adr/0027-assistant-entry-pack-boundary.md) 实现为**引用型工作入口包**：单一 Host 服务 `workdshAssistant`、`/api/workdsh-assistant` 端点、`workdsh_assistant_*` 工具，引用技能修订／专家修订／连接器实例，解析在 Host 侧读兄弟插件公开服务；不拥有执行、会话、凭据、数据与权限。模块版本线 0.1，channel `local-candidate`，尚未进入项目发布包。workbench α.16 的变更是把「助理」占位从 `businessPanels` 移除——助理页面改由该插件自持 `main`（`key: workdsh-assistant`）与同名 `sidebar.panellist` 行（`order: 10`），只升工作台会让「助理」入口消失，故两包需同批安装。同批还包含 P1-2 首包压缩（自有 client 构建加 `minify`、专家 front matter 解析移回 Host，见 [STATUS](STATUS.md) 2026-09-24（续九））。D16 步骤状态仍为 `todo`（依赖 D08）。
+
+2026-09-24 更新（三）：contracts α.9→**α.10**、experts α.7→**α.8**（均 Unreleased）——P1-2 首包压缩中**源码与公开契约真正发生变化**的两个模块：contracts 新增 `ExpertAuthoredDisplay`／`ExpertDisplayProjection` 与 `ExpertDetail.draftDisplay`／`revisionDisplay`；experts 的 client 改为读取该投影、不再在浏览器解析 front matter。其余模块（skills、connectors、office、library、projects、activity、bundle）本轮只改了**仓库根 `scripts/build-*.mjs` 的构建开关**（`minify` + `process.env.NODE_ENV`），模块源码与公开契约未变，因此不随本批 bump，避免以全局构建开关带动未变化模块锁步升级。公开 prerelease 仍以上次发行回执为准，本批待下次发行携带；P1-2 的实测体积见 [STATUS](STATUS.md) 2026-09-24（续九）。
 
 以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
 

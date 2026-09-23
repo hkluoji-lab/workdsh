@@ -79,19 +79,28 @@
   {
     "path": "packages/plugins/assistant",
     "title": "助理",
+    "moduleVersion": "0.1",
     "phase": "P1",
     "task": "P1-12",
-    "status": "planned",
+    "status": "in_progress",
     "directories": [
       "src/domain",
       "src/services",
       "src/storage",
       "src/tools",
       "src/remote",
+      "src/client",
       "src/client/components",
       "src/harness",
       "tests"
-    ]
+    ],
+    "release": {
+      "version": "0.1.0-alpha.1",
+      "channel": "local-candidate",
+      "date": "2026-09-24",
+      "evidence": "docs/design/assistant/README.md"
+    },
+    "acceptanceNote": "首期切片为本机本地候选（模块 workdsh-plugin-assistant@0.1.0-alpha.1，尚未进入项目发布包）：对象与只追加修订、引用解析、列表与详情／编辑分离、归档与恢复、按主体与组织隔离。设计与官方能力复用记录见 docs/design/assistant/README.md。未验证真实模型执行、定时触发、外部消息入站与多主体多组织端到端鉴权；D16 步骤状态仍为 todo（依赖 D08）。"
   },
   {
     "path": "packages/plugins/experts",

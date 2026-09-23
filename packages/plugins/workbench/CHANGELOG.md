@@ -1,3 +1,9 @@
+# 0.1.0-alpha.16 — 2026-09-24
+
+- 「助理」入口交还 `workdsh-plugin-assistant`：助理页面已实现，由该插件自持 `main`（`key: workdsh-assistant`）与同名的 `sidebar.panellist` 行（`order: 10`），工作台不再为它登记待开放占位。
+- `businessPanels` 现为「定时任务」「更多」两项。类注释补上助理这一例，继续说明「已有真实页面的入口由页面所属插件注册 `main` + 同名行」，避免插件缺席时留下点击即抛 `layout.selectPanel: main panel "…" is not registered` 的入口。
+- 组合包需与 `workdsh-plugin-assistant@0.1.0-alpha.1` 同批安装：只升工作台会让「助理」入口消失。
+
 # 0.1.0-alpha.15 — 2026-09-22
 
 「新建任务」由「点击即起空会话」改为任务创建器（UI-DESIGN 第 5 节，2026-09-22 用户决定：做成豆包式创建器，官方「新会话」入口文案不动）。

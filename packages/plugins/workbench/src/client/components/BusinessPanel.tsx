@@ -24,8 +24,9 @@ export type BusinessPanelDefinition = {
    * 注册说明用的 `main` 面板，并让侧栏标签追加待开放后缀。
    *
    * 已有真实页面的入口不由本表登记：页面所属插件自己注册 `main` 与同名
-   * `sidebar.panellist` 行（例如资料库归 workdsh-plugin-library，能力中心归
-   * workdsh-plugin-skills）。否则插件缺席时会出现「有入口、无页面」，点击即抛
+   * `sidebar.panellist` 行（例如助理归 workdsh-plugin-assistant、资料库归
+   * workdsh-plugin-library，能力中心归 workdsh-plugin-skills）。否则插件缺席时会
+   * 出现「有入口、无页面」，点击即抛
    * `layout.selectPanel: main panel "…" is not registered`。
    * 规划状态以 docs/development-order.json 的步骤 ID 为准。
    */
@@ -36,16 +37,6 @@ export type BusinessPanelDefinition = {
 };
 
 export const businessPanels = [
-  {
-    id: 'workdsh-assistant',
-    label: '助理',
-    icon: 'assistant',
-    order: 10,
-    pending: {
-      description: '创建和管理面向具体工作的 AI 助理。',
-      boundary: '本入口待开放：助理尚未实现（开发顺序 D16 / P1-12），页面没有可读取的助理对象，不会返回任何数据。当前可用的路径：先到「专家 · 技能 · 连接器」创建专家，再用原生新任务开始对话。',
-    },
-  },
   {
     id: 'workdsh-automation',
     label: '定时任务',
