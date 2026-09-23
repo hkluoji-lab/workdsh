@@ -84,6 +84,8 @@ export const ALLOWED_SMART_UNPACK_PACKAGE_ROOTS = [
   // pnpm embeds executable and native helper payloads.
   'node_modules/pnpm',
   'node_modules/sharp',
+  // ssh2 ships an optional native crypto helper that electron-builder smart-unpacks.
+  'node_modules/ssh2',
 ] as const
 
 /** Platform package families selected by native dependencies at package time. */

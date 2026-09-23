@@ -542,6 +542,7 @@ describe('packaged desktop runtime verification', () => {
     expect(ALLOWED_SMART_UNPACK_PACKAGE_ROOTS).toContain('node_modules/fs-ext')
     expect(ALLOWED_SMART_UNPACK_PACKAGE_ROOTS).toContain('node_modules/node-pty')
     expect(ALLOWED_SMART_UNPACK_PACKAGE_ROOTS).toContain('node_modules/pnpm')
+    expect(ALLOWED_SMART_UNPACK_PACKAGE_ROOTS).toContain('node_modules/ssh2')
     expect(ALLOWED_SMART_UNPACK_PACKAGE_PREFIXES).toContain('node_modules/@vscode/ripgrep-')
     expect(ALLOWED_SMART_UNPACK_PACKAGE_PREFIXES).toContain('node_modules/@img/sharp-')
   })
