@@ -130,6 +130,16 @@ jobs:
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
         run: yarn workspace ${{ matrix.workspace }} dist:win-portable
+      - name: Upload Windows installer and portable archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.workspace }}-windows-x64
+          path: |
+            ${{ matrix.workspace }}/dist/*.exe
+            ${{ matrix.workspace }}/dist/*.zip
+            ${{ matrix.workspace }}/dist/*.blockmap
+          if-no-files-found: error
+          retention-days: 14
 
   # macOS-only universal packaging smoke on a real macOS runner: the signed
   # release is built manually on a credentialed machine, so an unsigned DMG
