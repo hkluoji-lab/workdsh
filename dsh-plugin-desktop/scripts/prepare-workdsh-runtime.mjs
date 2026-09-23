@@ -33,14 +33,18 @@ async function installReleasedProfile() {
   await download(`${base}/release-manifest.json`, manifestPath)
   const installerPath = join(releaseDir, 'install-workdsh.mjs')
   await download(`${base}/install-workdsh.mjs`, installerPath)
+  let installer = readFileSync(installerPath, 'utf8')
+  installer = installer.replace(
+    'profilePackage.packageManager = manifest.packageManager;',
+    "profilePackage.packageManager = manifest.packageManager;\n  profilePackage.devEngines = { ...profilePackage.devEngines, packageManager: { name: 'pnpm', version: manifest.packageManager.slice('pnpm@'.length), onFail: 'ignore' } };",
+  )
   if (process.platform === 'win32') {
-    let installer = readFileSync(installerPath, 'utf8')
     installer = installer
       .replace("import { spawnSync } from 'node:child_process';", "import { spawnSync as nativeSpawnSync } from 'node:child_process';")
       .replace('const argv = process.argv.slice(2);', "const portableSpawn = (command, args, options = {}) => nativeSpawnSync(command, args, { ...options, shell: true });\nconst argv = process.argv.slice(2);")
       .replaceAll('spawnSync(', 'portableSpawn(')
-    writeFileSync(installerPath, installer)
   }
+  writeFileSync(installerPath, installer)
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   for (const item of manifest.packages) {
     await download(`${base}/${item.filename}`, join(releaseDir, item.filename))
