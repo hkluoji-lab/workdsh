@@ -237,19 +237,21 @@ jobs:
           TAG: ${{ github.ref_name }}
         shell: bash
         run: |
+          VERSION="${TAG#desktop-v}"
           cat > release-notes.md <<'EOF'
-          WorkDSH Desktop v2.0.5 Alpha 1 提供 Windows x64 安装版、便携版和 macOS Universal DMG，同时提供稳定与 Beta 桌面变体。
+          WorkDSH Desktop 提供 Windows x64 安装版、便携版和 macOS Universal DMG，同时提供稳定与 Beta 桌面变体。
 
           - 桌面产品名称统一为 WorkDSH
-          - README 新增项目、资料库和桌面端下载说明
+          - 安装包内置完整 WorkDSH 运行时，启动后可直接使用项目、资料库、专家、技能和连接器
+          - 应用、Dock、托盘和安装包图标统一为 WorkDSH 蓝色 W 标识
+          - README 包含项目、资料库和桌面端下载说明
           - Windows 包在原生 Windows Runner 构建和验证
           - macOS 包为 Intel/Apple Silicon Universal 未签名预览包
-          - 修复 SSH 中断上传后遗留空文件的问题
 
           这是 Alpha 预发布。请在升级前备份本地配置和数据；未签名包可能触发系统安全提示。所有文件的 SHA-256 见 `SHA256SUMS`。
           EOF
           gh release create "$TAG" release-assets/* \
             --repo "$GITHUB_REPOSITORY" \
-            --title "WorkDSH Desktop v2.0.5 Alpha 1" \
+            --title "WorkDSH Desktop ${VERSION}" \
             --notes-file release-notes.md \
             --prerelease
