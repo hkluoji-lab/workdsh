@@ -5,6 +5,7 @@ on:
     branches: [master]
   push:
     branches: [master]
+    tags: ['desktop-v*']
   workflow_dispatch:
 
 permissions:
@@ -177,6 +178,15 @@ jobs:
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
         run: yarn workspace ${{ matrix.workspace }} dist:mac-smoke
+      - name: Upload macOS universal DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.workspace }}-macos-universal
+          path: |
+            ${{ matrix.workspace }}/dist/mac-smoke/*.dmg
+            ${{ matrix.workspace }}/dist/mac-smoke/*.dmg.blockmap
+          if-no-files-found: error
+          retention-days: 14
 
   # Upstream toolchain smoke: the portable-shell scripts must resolve the
   # pinned submodule's own Yarn/pnpm release on Windows.
