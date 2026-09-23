@@ -621,10 +621,10 @@ find "$D/data/dsh" "$D/data/workspace" ! -user 1000 -exec chown -h 1000:1000 {} 
 ### 未执行（本轮范围外）
 
 - 上游 V8 SIGSEGV 未处理（已在 [v8-gc-sigsegv-repro.md](evidence/v8-gc-sigsegv-repro.md) 立档，需上游修复或升级 Node 才能消除）。
-- 服务器临时产物未清：`/tmp/wd-fix-eacces.sh`、`/tmp/measure-live.mjs`、`/root/dsh-ownership-before.txt`、profile 内 `package.json.bak.eaccesfix.20260923230830` 与 `pnpm-lock.yaml.bak.eaccesfix.20260923230830`、`/workspace/wd-upload-assistant/`（9 tgz + 清单）。
+- 服务器临时产物已按用户裁决清理（2026-09-24）：删除 `/tmp/wd-fix-eacces.sh`、`/tmp/measure-live.mjs`、profile 内 `package.json.bak.eaccesfix.20260923230830` 与 `pnpm-lock.yaml.bak.eaccesfix.20260923230830`；**保留** `/root/dsh-ownership-before.txt`（31.2 MB 修复前属主清单）与 `/workspace/wd-upload-assistant/`（9 tgz + `expected-sha256.txt`，供后续同版本重发与对照）。清理后容器仍 `running / healthy / restarts=0`。
 - 未在 Cloudflare 链路复测传输体积/brotli；其余 [续十一] 未执行项不变。
 
-**下一步**：①用户裁决是否清理上述服务器临时产物（含 `root` 属主备份）；②回到 P1-2 剩余体检项与 D16 收口。
+**下一步**：①回到 P1-2 剩余体检项（P1-1、P1-3、P2-1～P2-4、P3-1、P3-2）与 D16 收口；②上游 V8 SIGSEGV 待 Node 版本升级窗口时复测。
 
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
