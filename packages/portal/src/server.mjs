@@ -37,6 +37,20 @@ const SITE_FILES = new Map([
 // 门户首页与登录页都按 CACHE_HTML 处理：必须回源校验，因此不会出现陈旧页面。
 const INDEX_HTML = ['index.html', 'text/html; charset=utf-8', CACHE_HTML];
 
+// 公开产品资料页（/portal/products/<name>.html）。
+// 这些页面是单文件自包含站点（内联样式与脚本），因此仅对该路径放宽 CSP。
+const PRODUCT_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*\.html$/;
+const PRODUCT_CSP = [
+  "default-src 'none'",
+  "img-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
+  "form-action 'self'",
+  "base-uri 'none'",
+  "frame-ancestors 'none'",
+].join('; ');
+
 const ASSET_TYPES = new Map([
   ['.svg', 'image/svg+xml'],
   ['.png', 'image/png'],
@@ -89,13 +103,14 @@ function matchesIfNoneMatch(header, etag) {
 }
 
 // 静态页面与素材的统一出口：命中条件请求时只回 304，不传正文。
-function sendConditional(req, res, { type, cacheControl, body }) {
+// headers 用于覆盖安全头中的单条（目前只有产品页要放宽 CSP）。
+function sendConditional(req, res, { type, cacheControl, body, headers = {} }) {
   const buffer = Buffer.isBuffer(body) ? body : Buffer.from(body ?? '');
   const etag = etagOf(buffer);
   if (matchesIfNoneMatch(req.headers['if-none-match'], etag)) {
-    return send(res, 304, { 'Cache-Control': cacheControl, ETag: etag }, '');
+    return send(res, 304, { ...headers, 'Cache-Control': cacheControl, ETag: etag }, '');
   }
-  return send(res, 200, { 'Content-Type': type, 'Cache-Control': cacheControl, ETag: etag }, buffer);
+  return send(res, 200, { ...headers, 'Content-Type': type, 'Cache-Control': cacheControl, ETag: etag }, buffer);
 }
 
 function sendText(res, status, text) {
@@ -168,6 +183,26 @@ async function renderLogin(req, res, { error, next }) {
     .replace('{{ERROR}}', message ? `<p class="form-error" role="alert">${escapeHtml(message)}</p>` : '')
     .replace('{{NEXT}}', escapeHtml(safeNext(next)));
   sendConditional(req, res, { type: 'text/html; charset=utf-8', cacheControl: CACHE_HTML, body });
+}
+
+// 产品页正文含套餐与价格，按 HTML 档处理：改版后立即生效（no-cache 强制回源校验）且未改时拿 304。
+async function serveProductPage(req, res, requestPath) {
+  const name = requestPath.slice('/portal/products/'.length);
+  if (!PRODUCT_NAME_RE.test(name) || name.includes('..')) return sendText(res, 404, 'Not found');
+  const base = resolve(config.siteDir, 'products');
+  const target = resolve(base, name);
+  if (!target.startsWith(base + sep)) return sendText(res, 404, 'Not found');
+  try {
+    if (!(await stat(target)).isFile()) return sendText(res, 404, 'Not found');
+    sendConditional(req, res, {
+      type: 'text/html; charset=utf-8',
+      cacheControl: CACHE_HTML,
+      headers: { 'Content-Security-Policy': PRODUCT_CSP },
+      body: await readFile(target),
+    });
+  } catch {
+    sendText(res, 404, 'Not found');
+  }
 }
 
 async function serveAsset(req, res, requestPath) {
@@ -268,6 +303,7 @@ async function route(req, res) {
   }
   if (SITE_FILES.has(path)) return serveSiteFile(req, res, SITE_FILES.get(path));
   if (path.startsWith('/portal/assets/')) return serveAsset(req, res, path);
+  if (path.startsWith('/portal/products/')) return serveProductPage(req, res, path);
 
   return sendText(res, 404, 'Not found');
 }

@@ -18,6 +18,8 @@
 | `src/session.mjs` | 口令校验、签名会话、回跳白名单、失败限流（纯函数） |
 | `src/server.mjs` | HTTP 服务：路由、静态页、登录/退出、`/api/portal/auth` |
 | `site/` | `index.html`（企业首页）、`login.html`（登录页）、`styles.css`、`portal.js` |
+| `site/products/` | 公开产品资料页（单文件自包含 HTML），经 `/portal/products/<name>.html` 直出 |
+| `tools/publish-products.sh` | 部署侧脚本：把一份产品页拷到线上并验证（不需要重启、不改代码） |
 | `tests/session.test.mjs` | 会话与门禁契约测试，`node --test`，无外部依赖 |
 
 ## 路由契约
@@ -31,6 +33,7 @@
 | `GET /api/portal/auth` | 供 Caddy `forward_auth`：有效 204（附 `X-Portal-User`），无效 401，**不发跳转、不带 `WWW-Authenticate`**（避免浏览器原生凭据框） |
 | `GET /portal/styles.css`、`/portal/portal.js` | 站点静态文件（白名单） |
 | `GET /portal/assets/<name>` | 真实产品截图与品牌标识，来自 `PORTAL_ASSETS_DIR`；图片以 WebP 双尺寸交付（PNG 保留为回退） |
+| `GET /portal/products/<name>.html` | 公开产品资料页，来自 `site/products/`。只放行 `.html` 且文件名受限字符集；这些页是单文件自包含站点，**仅此路径**把 CSP 放宽到允许内联样式/脚本 |
 | `GET /` | 302 到 `/portal`；根路径的前门由 Caddy 判定会话后决定放行工作台或门户首页 |
 
 Cookie：`dsh_portal_session`，`HttpOnly`、`SameSite=Lax`、生产 `Secure`，无状态 HMAC-SHA256 签名，载荷只含用户名与签发/过期时间。回跳地址只接受同源相对路径，且拒绝指向 `/login`、`/logout`、`/portal`、`/api/*`。
@@ -44,6 +47,7 @@ Cookie：`dsh_portal_session`，`HttpOnly`、`SameSite=Lax`、生产 `Secure`，
 | 门户首页、登录页 | `no-cache` | ETag | 可复用但每次必须回源校验：命中即 304 零正文，**不会陈旧** |
 | `styles.css`、`portal.js` | `public, max-age=3600` | ETag | 文件名无内容指纹，用 1 小时窗口换取「不会长期留旧样式」 |
 | `/portal/assets/*`（图片、`mark.svg`） | `public, max-age=604800` | ETag | 文件名固定、内容极少变动 |
+| `/portal/products/*.html` | `no-cache` | ETag | 与门户首页同档：产品页含套餐与价格，改版后必须立即生效 |
 | `/api/portal/*`、`/logout`、`/`、404/405 | `no-store` | 无 | 会话判定信号与跳转不得被任何中间层缓存 |
 
 - ETag 取响应正文的 SHA-1：静态文件与登录页（正文含注入的错误提示与回跳地址）共用同一判据，不额外维护版本号；`If-None-Match` 按 GET 弱比较，客户端回写 `W/"…"` 同样命中。
@@ -130,8 +134,11 @@ PORTAL_COOKIE_SECURE=0 DSH_AUTH_USERNAME=admin DSH_AUTH_PASSWORD=local-only \
 
 | 宿主路径 | 内容 |
 | --- | --- |
-| `…/data/dsh/portal/{package.json,src,site}` | 从仓库 `packages/portal/` 原样拷贝 |
-| `…/data/dsh/portal/assets/` | 从仓库 `website/assets/` 拷贝 `mark.svg`、`dashboard.png`、`skills.png`、`ppt.png`、`library.png`、`team.png` |
+| `…/data/dsh/portal/{package.json,src,site}` | 从仓库 `packages/portal/` 原样拷贝（`site/` 含 `site/products/`） |
+| `…/data/dsh/portal/tools/` | 从仓库 `packages/portal/tools/` 拷贝，供部署侧发布产品页 |
+| `…/data/dsh/portal/assets/` | 从仓库 `website/assets/` 拷贝 `mark.svg`、`dashboard.png`、`skills.png`、`ppt.png`、`library.png`、`team.png`，以及 α.2 起的 10 个 `-<width>.webp` |
+
+α.2 起仓库已包含线上全部门户代码（不再存在只在线上存在的路由），因此可直接覆盖 `src/server.mjs`。
 
 ### 2. 派生 Caddyfile 增量
 
@@ -296,7 +303,7 @@ docker compose up -d --force-recreate
 - 未登录访问 `/` 会经一次 302 落到 `/portal`（门户首页），与 ADR-0034「`/` 未登录时给门户首页」一致。
 - 门户服务不可用会让 `forward_auth` 失败、整站不可达（见 ADR-0034 失败边界），因此启动块带自愈循环，且必须先验证 `caddy validate`。
 - 多副本部署下限流计数不共享；当前为单实例。
-- **线上存在一段仓库未回填的代码**：线上 `src/server.mjs` 含 `/portal/products/<name>.html` 公开产品资料页路由（放宽 CSP 的单文件页面，配套 `site/products/2026Q3.html` 与 `tools/patch-products-route.sh`、`tools/publish-products.sh`），落位时间 2026-09-23，仓库与本文档均未登记。因此**不要直接用仓库文件覆盖线上 `server.mjs`**，否则该页面会静默 404；α.2 部署是在仓库文件之上重新叠加该路由后落位的。回填仓库前，每次部署都要照此处理。
+- 产品页路由已在 α.2 回填仓库（此前线上先于仓库存在，属未登记漂移）。回填时**未收录**当时线上 `tools/patch-products-route.sh`：它是一次性插入补丁，锚点已被 α.2 的函数签名改动取代，路由本身也已进 `src/server.mjs`，保留只会误导；产品页的日常更新走 `tools/publish-products.sh`（纯拷文件，不需要重启）。
 
 ## 未验证范围
 
