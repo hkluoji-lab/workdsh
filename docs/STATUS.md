@@ -539,7 +539,7 @@ WebP 体积：10 个变体合计 **450,488 B**（原 5 张 3006×1640 PNG 合计
 1. **首次运行因哈希清单路径 bug 触发自动回滚（`deploy.log.run1-pathbug`）**。生成 `expected-sha256.txt` 时用了「解开目录名 + 文件名」，拼出 `workdsh-bundle-0.1.0-alpha.54/workdsh-bundle-0.1.0-alpha.54/dist/client.js` 形式的双重路径，导致 25 项全部取不到文件、`SHA_MISMATCH=25`。脚本按设计执行 `rollback`：清单与锁文件还原、`pnpm install` 成功、`回滚后 healthy [2]`、公网 302，容器回到 bundle α.52 / experts α.7 / 无 assistant，`restarts=0`。修正为按 `package.json.name` 生成 `name/dist/client.js` 后重跑通过。**回滚链路首次被真实触发并验证可用。**
 2. **官方 `dsh plugin --profile web add … --offline` 三次尝试全部失败，实际走 `pnpm add --prefer-offline` 回退路径**。失败形态：两次 `[ERR_PNPM_EACCES] … rename archiver-utils/node_modules → archiver-utils_tmp_…`，一次 `EACCES … open pnpm store …/tarball-integrity`（`ADD_RC=243`）。回退 `pnpm add` 成功（`Packages: +19 -103`，`Done in 6.4s`），第 4 步 `DEPS_OK 9/9` 复核通过。**故本次线上更新不是官方 CLI 路径**；根因（store 与 `node_modules` 存在 root 属主文件）未修，官方 CLI 路径在本环境仍不可用，见下「未执行」。
 3. **`chown -R 1000:1000` 大量 `Operation not permitted`**：pnpm 以 root 新写的目录（如 `node_modules/workdsh-plugin-assistant`、`node_modules/workdsh-bundle`）属主为 `root:root`。统计 `node_modules` 下 11,656 个 `luoji` + 88 个 `root`。容器进程本身 `uid=0(root)`，读取无影响；启动后 20 分钟内 `grep -c EACCES` 为 **0**。非致命，登记为残留。
-4. 第 7 步 `assistant client 含 AssistantPanel 标识: 0` —— 压缩后字符串字面量被消除，该断言本不是必须项（真正的门禁是 sha256 与 `bundle client 含 workdsh-assistant: 1`），非失败。
+4. 第 7 步 `assistant client 含 AssistantPanel 标识: 0` —— 压缩后字符串字面量被消除，该断言本不是必须项（真正的门禁是 sha256 与 `bundle client 含 workdsh-assistant: 1`），非失败。（事故 2、3 的根因与修复见 [续十二]。）
 
 ### 线上浏览器级复验（Playwright，脚本 `.artifacts/deploy-20260924/verify-live.mjs`）
 
@@ -560,11 +560,71 @@ WebP 体积：10 个变体合计 **450,488 B**（原 5 张 3006×1640 PNG 合计
 
 - 未在 Cloudflare 链路上复测实际传输体积与 brotli（P2-1 未裁决）；combo 仍无单包代码分割。
 - 真实模型执行助理、定时触发与外部消息入站、多主体多组织端到端鉴权与撤权仍未验证（D16 步骤状态仍为 `todo`）。
-- 官方 `dsh plugin add --offline` 在本环境的 `EACCES` 根因未修（仅以 `pnpm add` 回退绕过）；`node_modules` 88 个 `root:root` 属主残留未清。
+- 官方 `dsh plugin add --offline` 在本环境的 `EACCES` 根因未修（仅以 `pnpm add` 回退绕过）；`node_modules` 88 个 `root:root` 属主残留未清。**已于 [续十二] 修复**（属主归一 `1000:1000`，官方 CLI 路径恢复可用）。
 - 未复验专家面板列表／详情身份显示（P1-2 同时移除了 browser-use YAML 注入后的回归面）；未重跑 `test:integration` 之外的其它套件。
 - 未纳入项目发布包：`scripts/pack-project-release.mjs` 仍为 9 包，助理未进包。
 
-**下一步**：①裁决是否修官方 CLI `--offline` 的 `EACCES`（清 root 属主或改 store 位置）；②P1-2 剩余体检项（P1-1、P1-3、P2-1～P2-4、P3-1、P3-2）待用户裁决；③D16 待 D08 完成后按验收矩阵收口。
+**下一步**：①裁决是否修官方 CLI `--offline` 的 `EACCES`（**已于 [续十二] 修复**）；②P1-2 剩余体检项（P1-1、P1-3、P2-1～P2-4、P3-1、P3-2）待用户裁决；③D16 待 D08 完成后按验收矩阵收口。
+
+## 2026-09-24（续十二）：官方 CLI `EACCES` 根因修复（属主归一 `1000:1000`）
+
+按用户指令「修复官方 CLI 的 EACCES 权限问题」执行，收口 [续十一] 事故 2 与「未执行」第 3 条。**本轮为纯运维修复，不改仓库代码、不变更任何模块版本。**
+
+### 根因
+
+EACCES 不是镜像缺陷，也**不是官方 CLI 的缺陷**，而是历史部署窗口自己造成的属主污染：
+
+| 环节 | 事实 |
+|---|---|
+| 包装脚本 | 容器内 `/usr/local/bin/dsh` 在 uid 0 下执行 `exec gosu node …`，容器内 `node` = **uid 1000 / gid 1000** |
+| 运行时身份 | entrypoint 启动的**全部服务**（dsh 主进程、`portal/src/server.mjs`、`survey/server.mjs`、`tmp/sse-keepalive.mjs`、profile 内 `node_modules` 子进程、`tools/cloud189-mcp`）均以 **1000** 运行（仅 caddy 为 1001） |
+| 污染来源 | 历史部署窗口用 `docker run --rm --entrypoint sh … -c "pnpm …"` **绕过包装脚本、以 root 跑 pnpm**，在 `data/dsh` 与 `data/workspace` 留下 **160,967 个 `root:root` 条目**（绝大多数在官方安装树 `global-dsh`，其余分布在 `profiles/web` 183、`home` 899、`tools` 84 及 `data/workspace`） |
+| 故障形态 | 其后官方 CLI 以 uid 1000 访问这些路径即 `EACCES`（[续十一] 事故 2 的两次 `ERR_PNPM_EACCES`：`rename archiver-utils/node_modules → archiver-utils_tmp_…`、`open store/…/tarball-integrity`） |
+
+### 修复
+
+```bash
+D=/opt/1panel/apps/deepseek-harness/deepseek-harness
+find "$D/data/dsh" "$D/data/workspace" ! -user 1000 -exec chown -h 1000:1000 {} +   # CHOWN_RC=0（约 1.5s）
+```
+
+- 残留复核：**0**。
+- `data/caddy`（`1001:docker`，与 caddy 进程身份一致）**故意不动**。
+- 备份 `/root/dsh-ownership-before.txt` 记录了修复前 160,967 行属主清单。
+
+窗口脚本 [.artifacts/deploy-20260924/fix-eacces.sh](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260924/fix-eacces.sh)（日志 `fix-eacces.log`，`TS=20260923230830`）遵循一条纪律：**只用镜像自带的 `/usr/local/bin/dsh` 包装脚本**（内部 gosu 到 1000）执行安装，绝不再用 `--entrypoint sh -c "pnpm …"`；回滚分支用的也是 `--user 1000:1000` 的 pnpm。
+
+### 验证实测
+
+| 步 | 检查 | 结果 |
+|---|---|---|
+| 0 | 修复后前置 | `running / healthy / restarts=0`；非 1000 属主残留 **0**；`activity client.js sha256=38f8326f…557cd`；`node_modules` 顶层 440 |
+| 1 | **复刻此前两个失败 syscall（uid 1000 下探测）** | `OK rename node_modules/`、`OK rename node_modules/archiver-utils/`、`OK write store/<activity>.tgz/tarball-integrity`、`OK write store/v11/`（`PERM_OK=1`） |
+| 3 | **官方 CLI 原命令 `dsh plugin --profile web add … --offline`** | 尝试 1 `ADD_RC=1`（见下「关键限定」）；**尝试 2 `ADD_RC=0`**，`Packages: +108 -96`，`Done in 5.6s using pnpm v11.7.0` |
+| 4 | 强制解包：删 `node_modules/workdsh-plugin-activity` 让 CLI 从 store 真实重建 | `EXTRACT_RC=0`，`Packages: +1 -95`，`Done in 5.5s` |
+| 5 | 停机前清单一致性 | `DEPS_OK 9/9` 均指向 `/workspace/wd-upload-assistant/`；未动模块 3/3 仍指向 `wd-upload-alpha2`；`BUNDLES_OK count=14 缺失=无`；`SHA_OK`（activity `client.js` 字节与基线一致）；`node_modules` **440 → 440**；9 个版本与 [续十一] 部署一致（bundle α.54 / assistant α.1 / experts α.8 / skills α.32 / connectors α.2 / office α.8 / library α.3 / projects α.3 / activity α.4） |
+| 6 | 安装后属主复核 | 非 1000 属主条目 **0**（官方 CLI 不再引入新污染） |
+| 7-8 | 启动与线上 | `启动后 healthy [2]`；`plugin/module 错误数: 0`；`chokidar EACCES: 0`；公网 302（门户门禁下正常）；`restarts=0` |
+| — | 脚本出口 | `WINDOW_DONE  PERM_OK=1  CLI_RC=0  EXTRACT_RC=0` |
+
+### 关键限定（不得误读）
+
+- **尝试 1 的失败不是 EACCES，而是 SIGSEGV**。`dsh plugin` 给出的诊断 `operation-e2wJXz/pnpm.log` 全文为 `Command was killed with SIGSEGV (Segmentation fault): pnpm add … --offline`。这是仓库已立档的上游 V8 并发标记 GC 缺陷（[v8-gc-sigsegv-repro.md](evidence/v8-gc-sigsegv-repro.md)，Linux x86_64 + Node v24.21.0，约 35% 崩溃率，无任何旗标组合可降到 0），**与权限无关**。
+- 因此本轮的准确结论是：**官方 CLI 路径的 `EACCES` 已消除**（步 1 的两个失败 syscall 在 uid 1000 下均通过、步 3 尝试 2 与步 4 均为官方 CLI 真实成功）；残留的只是这个独立的 SIGSEGV 偶发，重试即可通过，与 entrypoint 层 4 的启动期重试语义一致。脚本内 3 次重试即为此而设。
+- 修复的是**属主**，不是「改 store 位置」或「放宽权限」；CLI 仍是官方路径，未引入第二条安装通道。
+
+### 回归复验
+
+- 服务侧：`running / healthy / restarts=0`，公网 302，启动后日志 `plugin tree failed | duplicate loader | EACCES` 计数 **0**。
+- 浏览器级：重跑 [verify-live.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260924/verify-live.mjs)，结果与 [续十一] 完全一致——`panelVisible True`、侧栏行未变、`selectPanelErrors []`、能力选择器仍为 技能 34 / 专家 12 / 连接器 3（共 50 项）、仅 `net::ERR_ABORTED`（导航语义）。**node_modules 重建未引起客户端回归。**
+
+### 未执行（本轮范围外）
+
+- 上游 V8 SIGSEGV 未处理（已在 [v8-gc-sigsegv-repro.md](evidence/v8-gc-sigsegv-repro.md) 立档，需上游修复或升级 Node 才能消除）。
+- 服务器临时产物未清：`/tmp/wd-fix-eacces.sh`、`/tmp/measure-live.mjs`、`/root/dsh-ownership-before.txt`、profile 内 `package.json.bak.eaccesfix.20260923230830` 与 `pnpm-lock.yaml.bak.eaccesfix.20260923230830`、`/workspace/wd-upload-assistant/`（9 tgz + 清单）。
+- 未在 Cloudflare 链路复测传输体积/brotli；其余 [续十一] 未执行项不变。
+
+**下一步**：①用户裁决是否清理上述服务器临时产物（含 `root` 属主备份）；②回到 P1-2 剩余体检项与 D16 收口。
 
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
