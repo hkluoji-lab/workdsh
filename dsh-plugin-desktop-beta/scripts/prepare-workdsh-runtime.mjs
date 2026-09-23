@@ -6,7 +6,7 @@ import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const WORKDSH_VERSION = '0.1.0-alpha.8'
-const DSH_VERSION = '0.1.7-alpha.1'
+const DSH_VERSION = '0.1.7-rc.1'
 const desktopRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const output = join(desktopRoot, 'build', 'workdsh-runtime')
 const destination = join(output, 'profiles', 'workdsh')
@@ -49,18 +49,39 @@ async function installReleasedProfile() {
   }
   writeFileSync(installerPath, installer)
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  manifest.harness = DSH_VERSION
+  for (const name of Object.keys(manifest.runtimeOverrides ?? {})) {
+    if (name === '@deepseek-ai/dsh' || name.startsWith('@deepseek-ai/dsh-')) {
+      manifest.runtimeOverrides[name] = DSH_VERSION
+    }
+  }
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
+  installer = readFileSync(installerPath, 'utf8').replace(
+    "  execute(['plugin', '--profile', profile, 'add', join(directory, item.filename)]);",
+    "  execute(['plugin', '--profile', profile, 'allow-version', `${name}@${item.version}`, '--dsh-version', expectedHarness, '--accept-risk']);\n  execute(['plugin', '--profile', profile, 'add', join(directory, item.filename)]);",
+  )
+  writeFileSync(installerPath, installer)
   for (const item of manifest.packages) {
     await download(`${base}/${item.filename}`, join(releaseDir, item.filename))
   }
 
   mkdirSync(output, { recursive: true })
+  const bootstrap = join(output, '.dsh-cli')
+  rmSync(bootstrap, { recursive: true, force: true })
+  mkdirSync(bootstrap, { recursive: true })
+  writeFileSync(join(bootstrap, 'package.json'), JSON.stringify({ private: true, dependencies: { '@deepseek-ai/dsh': DSH_VERSION } }, null, 2) + '\n')
+  const overrides = Object.entries(manifest.runtimeOverrides ?? {}).map(([name, version]) => `  ${JSON.stringify(name)}: ${JSON.stringify(version)}`).join('\n')
+  writeFileSync(join(bootstrap, 'pnpm-workspace.yaml'), `overrides:\n${overrides}\n`)
+  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+  run(npx, ['--yes', 'pnpm@11.8.0', '--dir', bootstrap, 'install', '--prod', '--ignore-scripts'], { shell: process.platform === 'win32' })
+  const bootstrapCli = join(bootstrap, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js')
   const shim = join(output, process.platform === 'win32' ? 'dsh-runtime.cmd' : 'dsh-runtime')
   const pnpmShim = join(output, process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
   if (process.platform === 'win32') {
-    writeFileSync(shim, `@echo off\r\nnpx --yes @deepseek-ai/dsh@${DSH_VERSION} %*\r\n`)
+    writeFileSync(shim, `@echo off\r\n"${process.execPath}" "${bootstrapCli}" %*\r\n`)
     writeFileSync(pnpmShim, '@echo off\r\nnpx --yes pnpm@11.8.0 %*\r\n')
   } else {
-    writeFileSync(shim, `#!/bin/sh\nexec npx --yes @deepseek-ai/dsh@${DSH_VERSION} \"$@\"\n`)
+    writeFileSync(shim, `#!/bin/sh\nexec "${process.execPath}" "${bootstrapCli}" \"$@\"\n`)
     writeFileSync(pnpmShim, '#!/bin/sh\nexec npx --yes pnpm@11.8.0 "$@"\n')
     chmodSync(shim, 0o755)
     chmodSync(pnpmShim, 0o755)
@@ -68,6 +89,7 @@ async function installReleasedProfile() {
   run(process.execPath, [installerPath, '--directory', releaseDir, '--dsh', shim, '--corepack', pnpmShim], {
     env: { ...process.env, DSH_HOME: output, PATH: `${output}${delimiter}${process.env.PATH ?? ''}` },
   })
+  rmSync(bootstrap, { recursive: true, force: true })
 }
 
 async function prepareNodeExecutable(path) {
