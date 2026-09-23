@@ -60,6 +60,8 @@ Cookie：`dsh_portal_session`，`HttpOnly`、`SameSite=Lax`、生产 `Secure`，
 
   `srcset` 的宽度档对应实际版式槽位：首屏图槽位 `min(1120px, 100vw-40px)`；主证据图 3 列跨列时约占 663px；其余三张在 3 列网格中各约 360px。窄屏落到单列时统一按 `100vw-40px`。改版式后需同步复核 `sizes`。
 
+- **经 Cloudflare 的实测差异（2026-09-24 线上复验）**：图片素材的 ETag 原样透传，客户端回写后拿到 304；站内 CSS/JS 由 CF 压缩，ETag 被改写为 `"<原值>-gzip"`，客户端回写这个改写值仍能命中 304（正文未变）；门户 HTML 由 CF 用 brotli 压缩后**ETag 被整条移除**，因此 HTML 拿不到 304、每次导航都是 200 全量（当前 br 后仅 7.8KB，量级可接受）。若日后要求 HTML 也走 304，需改用 CF 不剥离的校验器（如 `Last-Modified`）或调整压缩策略，属部署侧决策。
+
 ## 配置
 
 | 变量 | 默认 | 说明 |
@@ -238,7 +240,9 @@ pids+=("$portal_pid")
 
 `PORTAL_COOKIE_SECURE` 保持默认开启（线上经 Cloudflare 为 HTTPS），**不要**设成 `0`。
 
-### 4. 执行顺序（2026-09-23 已按此在线上执行一次，下含实测坑）
+### 4. 执行顺序（2026-09-23 已按此在线上执行一次，2026-09-24 按 α.2 再执行一次，下含实测坑）
+
+**α.2 增量（缓存分档 + WebP 落位）**：`site/index.html`、`site/styles.css` 落位即生效，无需重启；`assets/` 只需新增 10 个 `-<width>.webp`，原 PNG 保留；**`src/server.mjs` 改动必须重启门户进程**才生效。重启方式为 `kill` 门户 `node` 进程，由 entrypoint 看护 `while true` 循环在 3 秒内拉起新代码——看护是子 shell，其 PID 不退，因此 `wait -n` 不触发整容器重启（实测 `RestartCount` 不变）。落位前先在容器内**备用端口**（如 3098）用同一份 `server.mjs` 预演一遍公开面，确认后再切换生产。静态页与素材可在切换前后任意时刻落位。
 
 宿主机 `…/data/dsh/tmp/` 下已有两个带断言的派生脚本，可直接复跑（幂等）：
 
@@ -292,6 +296,7 @@ docker compose up -d --force-recreate
 - 未登录访问 `/` 会经一次 302 落到 `/portal`（门户首页），与 ADR-0034「`/` 未登录时给门户首页」一致。
 - 门户服务不可用会让 `forward_auth` 失败、整站不可达（见 ADR-0034 失败边界），因此启动块带自愈循环，且必须先验证 `caddy validate`。
 - 多副本部署下限流计数不共享；当前为单实例。
+- **线上存在一段仓库未回填的代码**：线上 `src/server.mjs` 含 `/portal/products/<name>.html` 公开产品资料页路由（放宽 CSP 的单文件页面，配套 `site/products/2026Q3.html` 与 `tools/patch-products-route.sh`、`tools/publish-products.sh`），落位时间 2026-09-23，仓库与本文档均未登记。因此**不要直接用仓库文件覆盖线上 `server.mjs`**，否则该页面会静默 404；α.2 部署是在仓库文件之上重新叠加该路由后落位的。回填仓库前，每次部署都要照此处理。
 
 ## 未验证范围
 

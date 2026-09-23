@@ -60,7 +60,7 @@
 
 2026-09-23 更新（二）：新增模块 **企业门户与登录门禁** `workdsh-portal@0.1.0-alpha.1`（Unreleased，0.1 版本线）——按用户裁决新增 `packages/portal`：静态企业门户（首页四段 + 登录页）与单文件 Node 服务（签名 Cookie 会话、失败限流、`/api/portal/auth` 供 Caddy `forward_auth` 使用）。该模块属部署边缘面、不是功能插件，不声明 `dsh.bundle`/`exports`/`bin`，不发布 npm，随部署交付；边界与所有权见 [ADR-0034](adr/0034-enterprise-portal-and-edge-authentication.md)。线上路由切换未执行。
 
-2026-09-24 更新：portal α.1→**α.2**（Unreleased）——按用户裁决修复两项线上性能缺陷（`dsh.10ge.cn` 性能体检的 P0 项）：① 缓存头与安全头分离，`packages/portal/src/server.mjs` 的 `SECURITY_HEADERS` 不再向静态资源套用 `Cache-Control: no-store`，改为按类分档（HTML `no-cache` + ETag、站内 CSS/JS `max-age=3600`、图片素材 `max-age=604800`），并新增 ETag 条件请求（命中返回 304 且零正文）；接口、跳转与错误页保持 `no-store`。② 门户 5 张界面截图上 WebP 双尺寸 `srcset`（原 3006px PNG 保留为回退），首屏图片上线量 3.34MB → 约 115KB@1x / 325KB@2x。未部署到线上前线上仍为旧行为。
+2026-09-24 更新：portal α.1→**α.2**（Unreleased）——按用户裁决修复两项线上性能缺陷（`dsh.10ge.cn` 性能体检的 P0 项）：① 缓存头与安全头分离，`packages/portal/src/server.mjs` 的 `SECURITY_HEADERS` 不再向静态资源套用 `Cache-Control: no-store`，改为按类分档（HTML `no-cache` + ETag、站内 CSS/JS `max-age=3600`、图片素材 `max-age=604800`），并新增 ETag 条件请求（命中返回 304 且零正文）；接口、跳转与错误页保持 `no-store`。② 门户 5 张界面截图上 WebP 双尺寸 `srcset`（原 3006px PNG 保留为回退），首屏图片上线量 3.34MB → 约 115KB@1x / 325KB@2x。本版已于同日部署到 `dsh.10ge.cn` 并完成线上复验（门户首屏 9 个资源 166,291B；公网三档视口图片档位正确、无溢出、无 console 错误；登录门禁零回归）。部署时发现线上 `server.mjs` 含一段仓库未登记的 `/portal/products/*` 公开产品页路由，本版按「仓库文件 + 重新叠加该路由」落位，仓库回填待裁决，详见 [STATUS](STATUS.md) 2026-09-24（续八）。
 
 以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
 

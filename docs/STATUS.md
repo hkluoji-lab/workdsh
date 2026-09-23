@@ -330,9 +330,9 @@ printf '88888888\n' | sudo -S cp -p $A/.env.bak.portal.20260922232318 $A/.env
 
 **下一步**：等用户逐项裁决是否修复。**未执行**：本轮未做任何修复、未改线上、未提交。
 
-## 2026-09-24（续八）：门户缓存头拆分与素材 WebP 化（P0-1 / P0-2 修复，本机已验证，线上未部署）
+## 2026-09-24（续八）：门户缓存头拆分与素材 WebP 化（P0-1 / P0-2 修复，已提交推送并部署 `dsh.10ge.cn`）
 
-按用户指令「按建议优先修复 P0-1 缓存头拆分和 P0-2 PNG 转 WebP」执行。**修复范围严格限定这两项**，清单其余 9 项（P1-1、P1-2、P1-3、P2-1～P2-4、P3-1、P3-2）保持待裁决、未动。
+按用户指令「按建议优先修复 P0-1 缓存头拆分和 P0-2 PNG 转 WebP」执行。**修复范围严格限定这两项**，清单其余 9 项（P1-1、P1-2、P1-3、P2-1～P2-4、P3-1、P3-2）保持待裁决、未动。用户随后裁决「提交并推送」「现在部署」，两项均已执行。
 
 模块版本：`workdsh-portal@0.1.0-alpha.1` → **`0.1.0-alpha.2`**。
 
@@ -372,13 +372,46 @@ WebP 体积：10 个变体合计 **450,488 B**（原 5 张 3006×1640 PNG 合计
   渲染尺寸与自然尺寸匹配（例 `rendered=501x274 natural=1120x612`），`complete=true`。
 - 版式回归对照：本机 `#proof` 区块 `y=4569.94, w=1440, h=1155.55`；线上基线 `y=4569.94, w=1440, h=1154.05` —— 高度差 **1.5px**（1154px 的 0.13%，来自尺寸取整），截图目检一致。
 
+### 提交与推送（已执行）
+
+- `31eae5c perf(portal): 缓存头按类分档与 ETag 条件请求，截图上 WebP 双尺寸（α.2）` —— 门户代码、素材与版本号（15 files）。
+- `c8d977e docs(portal): 记录 α.2 缓存分档契约、WebP 交付方式与线上体检 P0 修复证据` —— `docs/` 三份（因 `.gitignore` 含 `/docs/`，用 `git add -f`）。
+- 推送：`fork`(GitHub hkluoji-lab) 与 `mygitee`(Gitee szluoji) 均成功（本轮 `fork` 恢复可达，上一轮曾 DNS 超时）。
+
+### 线上部署（已执行，`packages/portal/README.md` 部署节 Path 1）
+
+| 步骤 | 实测 |
+|---|---|
+| 备份 | 宿主 `data/dsh/tmp/portal-a2-backup-20260923173703/`：`server.mjs`(11935B)、`index.html`(25622B)、`styles.css`(18885B)、`package.json`(312B) |
+| 落位 | `src/server.mjs`、`site/index.html`、`site/styles.css`、`package.json` + `assets/` 新增 10 个 `.webp`；14 个文件 `md5` 与仓库/构建产物**逐项一致** |
+| 容器内预检（3098，不碰生产） | 首页/登录页 200 `no-cache`、样式表 200 `max-age=3600`、WebP 与 PNG 200 `max-age=604800`、`/api/portal/auth` 401、`If-None-Match` → 304 且 `bytes=0`、目录穿越 404 |
+| 切换 | `kill` 门户进程，entrypoint 看护 `while true` 循环 3 秒内拉起新代码；容器 `RestartCount` 仍为 2、`Up … (healthy)`，未发生整容器重启（看护子 shell 不退，`wait -n` 不触发） |
+| 静态页 | 落位即生效，未重启容器；`server.mjs` 改动才需要进程重启 |
+
+**线上复验（对公网 `dsh.10ge.cn`）**
+
+| 探针 | 实测 |
+|---|---|
+| `/portal`、`/login` | 200 + `Cache-Control: no-cache`，`cf-cache-status: DYNAMIC` |
+| `/portal/styles.css`、`/portal/portal.js` | 200 + `public, max-age=3600`；经 CF 为 `etag: "…-gzip"` |
+| `/portal/assets/*.webp`、`dashboard.png`、`mark.svg` | 200 + `public, max-age=604800` + ETag |
+| 条件请求（经 CF） | WebP 5 档全部 **304**；CSS/JS 带 `Accept-Encoding` 回写 CF 的 `-gzip` ETag 后 **304** |
+| `/`（未登录） | 302 → `/portal` + `no-store`；`/api/portal/auth` 401 + `no-store` |
+| 门户首页传输量 | 首屏 9 个资源合计 **166,291 B**（1x 档）；改造前为 html+css+js+svg+**3,342,764 B PNG** ≈ 3.36 MB。`/portal` 经 CF brotli 为 **7,842 B**（原始 27,029 B） |
+| 浏览器级（公网，3 档视口） | desktop-1440 dpr1 取 1120/680/360 档、retina-1440 dpr2 取 2400/1360/720 档、mobile-390 dpr3 取 1120/1360/720 档；三档 `overflow=0`、console 错误 0 |
+| 版式回归 | 公网 `#proof` `y=4569.94, w=1440, h=1155.55`（旧 PNG 基线 1154.05，差 1.5px）；截图目检一致 |
+| 门禁回归 | 真实登录 `18938845688` → 303 落 `/`，工作台标题 `DeepSeek Harness`、侧栏在、console 错误 0 |
+
+**暴露的未登记差异（本轮未处置，需裁决）**
+
+线上 `portal/src/server.mjs` 在本次部署前含一个**仓库里没有、文档里也未登记**的 `/portal/products/<name>.html` 公开产品资料页路由（连同 `site/products/2026Q3.html` 68,054 B、`tools/patch-products-route.sh`、`tools/publish-products.sh`，落位时间 2026-09-23 02:10）。若直接以仓库文件覆盖，该页面会静默 404。本次部署未采用覆盖，而是以仓库最新 `server.mjs` 为底**重新叠加该 products 路由**后落位（`serveProductPage` 与 `PRODUCT_CSP` 计数与改造前一致，页面字节数 68,054 与线上完全相同）。因此**仓库与线上此段仍不一致**，建议下一步把路由与该页回填仓库，否则下次从仓库部署会再次踩到同一坑。该路由当前仍是 `no-store`（未纳入本次缓存分档）。
+
 ### 未执行
 
-- **未部署到线上**：`dsh.10ge.cn` 仍为旧行为（门户全站 `no-store`、3.34 MB PNG 直出）。部署需用户单独授权，按 `packages/portal/README.md` 部署节执行。
-- 未提交、未推送（等用户指令）。
 - 清单其余 9 项未动、未裁决。
+- 未验证：Safari/Firefox、长时会话过期后的前端表现；`/portal/products/*` 未做缓存分档。
 
-**下一步**：等用户决定是否部署 α.2 到线上，以及其余清单项是否修复。
+**下一步**：裁决是否把 products 路由与页面回填仓库；以及清单其余 9 项是否修复。
 
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
