@@ -30,7 +30,7 @@
 | --- | --- | --- | --- |
 | 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.9` | implemented |
 | 共享展示组件 | 0.1 | `workdsh-ui@0.1.0-alpha.6` | implemented |
-| 企业门户与登录门禁 | 0.1 | `workdsh-portal@0.1.0-alpha.1` | in_progress |
+| 企业门户与登录门禁 | 0.1 | `workdsh-portal@0.1.0-alpha.2` | in_progress |
 | 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.53` | in_progress |
 | 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.15` | implemented |
 | 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.7` | in_progress |
@@ -59,6 +59,8 @@
 2026-09-23 更新：bundle α.52→**α.53**（Unreleased）——收敛注入：移除 `cordis.patch.yml` 的 `browser-use` 与 `browser-use-playwright-mcp` 两条 insert 及对应依赖，消除 Profile 根与 Host 核心各持一份 `@deepseek-ai/dsh-scope` 导致的 MCP 服务重名注册（归属裁定为官方缺陷本体 + WorkDSH 为唯一触发方，按用户裁决「收敛注入、立即解锁」处置）；官方浏览器使用能力随本版暂缓，`probe:browser-use:playwright` 独立探针一并移除。组合包代码未变，本表状态列与"当前开发制品"同步至 α.53。公开 prerelease 仍为 bundle α.47（项目级 `v0.1.0-alpha.7`），待下次发行携带。
 
 2026-09-23 更新（二）：新增模块 **企业门户与登录门禁** `workdsh-portal@0.1.0-alpha.1`（Unreleased，0.1 版本线）——按用户裁决新增 `packages/portal`：静态企业门户（首页四段 + 登录页）与单文件 Node 服务（签名 Cookie 会话、失败限流、`/api/portal/auth` 供 Caddy `forward_auth` 使用）。该模块属部署边缘面、不是功能插件，不声明 `dsh.bundle`/`exports`/`bin`，不发布 npm，随部署交付；边界与所有权见 [ADR-0034](adr/0034-enterprise-portal-and-edge-authentication.md)。线上路由切换未执行。
+
+2026-09-24 更新：portal α.1→**α.2**（Unreleased）——按用户裁决修复两项线上性能缺陷（`dsh.10ge.cn` 性能体检的 P0 项）：① 缓存头与安全头分离，`packages/portal/src/server.mjs` 的 `SECURITY_HEADERS` 不再向静态资源套用 `Cache-Control: no-store`，改为按类分档（HTML `no-cache` + ETag、站内 CSS/JS `max-age=3600`、图片素材 `max-age=604800`），并新增 ETag 条件请求（命中返回 304 且零正文）；接口、跳转与错误页保持 `no-store`。② 门户 5 张界面截图上 WebP 双尺寸 `srcset`（原 3006px PNG 保留为回退），首屏图片上线量 3.34MB → 约 115KB@1x / 325KB@2x。未部署到线上前线上仍为旧行为。
 
 以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
 

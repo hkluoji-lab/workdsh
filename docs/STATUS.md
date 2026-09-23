@@ -283,6 +283,103 @@ printf '88888888\n' | sudo -S cp -p $A/.env.bak.portal.20260922232318 $A/.env
 
 **本轮未做**：未提交、未推送；favicon 仍是 `mark.svg`（未换方形 10GE 资产）。
 
+## 2026-09-24（续七）：`dsh.10ge.cn` 性能全面体检（只诊断，未改任何代码或线上配置）
+
+按用户指令「全面分析测试还有哪些性能不完善的地方，待修复的，请汇总发我，我来决策是否修复提升」执行。本轮**只读排查**，未提交、未推送、未改线上。
+
+**当前任务**：性能待修复清单已汇总并交用户逐项裁决，**未获裁决前不开工**。
+
+**实测环境**：客户端出口经 ipinfo 确认在**香港**（`16.5.50.11`，AS48266）；源站 `192.168.11.205`（20 核 / 46.8GiB / 根分区 168G 用 47G）。
+
+### 关键数字（本轮实测）
+
+| 维度 | 实测 |
+|---|---|
+| 源站直连 TTFB | `/portal/` 5.4ms，`/portal/assets/dashboard.png` 8.0ms |
+| 服务器 → 自己公网域名 TTFB | 1.25—1.32s（同机同域名，纯 CF 绕行成本） |
+| 香港客户端 TTFB（5 次） | 1.23 / 1.29 / 1.60 / 3.61 / 1.44 s；`connect≈0.22s`、`tls≈0.47s` |
+| 客户端边缘 PoP | `cf-ray: …-AMS` / `…-LHR`（欧洲） |
+| 源站隧道边缘 PoP | `Registered tunnel connection … location=lax11 / lax05 / sjc11 / sjc10 protocol=quic`（美国西部，4 条 HA 连接） |
+| 门户缓存 | `/portal/`、`styles.css`、`portal.js`、`/portal/assets/*.png`、`/login`、`/survey/` **全部 `cache-control: no-store`**，`cf-cache-status: DYNAMIC` |
+| 门户冷启动重量 | html 7232 + css 6129 + js 1056 + svg 518 + **PNG 3342764** ≈ **3.36 MB**，`no-store` → 每次访问全量重下 |
+| 门户素材（均 3006×1640 PNG，无 WebP / 无 srcset） | dashboard 895395、library 805125、skills 664791、ppt 607549、team 369904 |
+| 工作台 HTML | `cache-control: no-store`，gzip **4146B** |
+| 工作台资源缓存 | `/assets/*` → `cache-control: max-age=14400`；`/plugins/??…&rev=<hash>` → `public, max-age=31536000, immutable`；边缘 `HIT` |
+| 工作台冷启动重量（gzip 上线量） | html 4146 + index.js 241069 + vendor.js 209631 + index.css 14121 + vendor.css 8668 + `/plugins/??` 1354098 + 223105 + 11571 ≈ **2.07 MB** |
+| 压缩协商 | `/` 用 **brotli**（4223B，比 gzip 7232B 小 42%）；`styles.css` 与 `vendor-*.js` 只有 **gzip**（无 br） |
+| 条件请求 | 全站无 `ETag`；门户无 `Last-Modified`，带 `If-None-Match` / `If-Modified-Since` 一律返回 **200 全量**（无 304） |
+| 容器 | `Up 12 hours (healthy)`，`RestartCount=2`，`OOMKilled=false`，`NanoCpus=0`、`Memory=0`、`PidsLimit` 未设（**无资源上限**）；CPU 0.56%、MEM 798.6MiB(1.67%)、PIDS 94 |
+| 容器日志 | `Segmentation fault`（主 dsh node 进程，日志第 57 行，与 `docs/evidence/v8-gc-sigsegv-repro.md` 同源）×1；HTTP 5xx ×17；`context canceled` ×10 |
+| Caddy | `failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB)` ×3（HTTP/3 QUIC 接收缓冲） |
+| cloudflared | 6h 内 `canceled by remote with error code 0` ×10（SSE 断流，保活中继已部署未根除） |
+| 数据增长 | `data/dsh` **8.8G**：home 5.6G、global-dsh 1.9G、profiles 758M、cache 234M、tools 155M、storages 129M；无清理策略 |
+
+### 清单（P0→P3，逐项证据见上表）
+
+- **P0-1 门户 `no-store` 覆盖静态资源**：根因 `packages/portal/src/server.mjs` 的 `SECURITY_HEADERS`（`Cache-Control: no-store`）经 `send()` 合并进**每一个**响应，连 PNG/CSS/JS 一起。
+- **P0-2 门户 3.34MB PNG 未优化**：3006×1640 原图直出，无 WebP/AVIF、无响应式尺寸。P0-1 使其代价 ×每次访问。
+- **P1-1 公网绕行**：客户端边缘在欧洲、隧道边缘在美国西部，而客户端（香港）与源站（中国）都在亚洲 → 每请求 ~1.3s，其中 ~0.85s 是 TLS 之后的纯 CF/隧道绕行。属基础设施/套餐项，需用户裁决。
+- **P1-2 工作台首包 2.07MB（gzip）**，其中单个 `/plugins/??` 包 1.35MB 含 59 个 client 模块、无代码分割。
+- **P1-3 容器无资源上限 + 历史 V8 SIGSEGV 崩溃**：`RestartCount=2`，主进程崩溃即整容器退出（entrypoint `wait -n`）→ 中断在途会话；层 4 只覆盖启动期重试。
+- **P2-1 CSS/JS 未走 brotli**（仅 gzip），边缘已缓存 gzip 变体所致。
+- **P2-2 登录路径 `scryptSync` 同步阻塞**（`session.mjs` 两次同步 scrypt），与 `forward_auth` 同进程单线程。
+- **P2-3 Caddy HTTP/3 UDP 接收缓冲未调**（宿主 sysctl 可解）。
+- **P2-4 `data/dsh` 8.8G 无清理策略**（当前磁盘 47G/457G，非紧急）。
+- **P3-1 SSE 断流仍在**（已缓解未根除，成因在办公出口中间设备）。
+- **P3-2 生产环境加载了 `@deepseek-ai/dsh-client-hmr/client.js`**（dev HMR 客户端进生产预加载清单）；`/assets/index-*.js` 的 `Last-Modified` 在不同请求间出现两个值（正文 SHA-256 一致），成因未定论，登记留证。
+
+**下一步**：等用户逐项裁决是否修复。**未执行**：本轮未做任何修复、未改线上、未提交。
+
+## 2026-09-24（续八）：门户缓存头拆分与素材 WebP 化（P0-1 / P0-2 修复，本机已验证，线上未部署）
+
+按用户指令「按建议优先修复 P0-1 缓存头拆分和 P0-2 PNG 转 WebP」执行。**修复范围严格限定这两项**，清单其余 9 项（P1-1、P1-2、P1-3、P2-1～P2-4、P3-1、P3-2）保持待裁决、未动。
+
+模块版本：`workdsh-portal@0.1.0-alpha.1` → **`0.1.0-alpha.2`**。
+
+### 改动
+
+| 文件 | 改动 |
+|---|---|
+| `packages/portal/src/server.mjs` | **P0-1**：`SECURITY_HEADERS` 中的 `no-store` 改为只兜底未显式覆盖的响应；新增 `CACHE_HTML`/`CACHE_CODE`/`CACHE_ASSET` 三档常量；新增 `etagOf()`（正文 SHA-1 base64url）、`matchesIfNoneMatch()`（GET 弱比较，兼容 `W/"…"` 回写）、`sendConditional()`（命中回 304 且零正文，未命中带 ETag 回 200）；`serveSiteFile` / `renderLogin` / `serveAsset` 改为接收 `req` 并走 `sendConditional` |
+| `packages/portal/site/index.html` | **P0-2**：5 处 `<img>` 包进 `<picture><source type="image/webp" srcset sizes>`，原 PNG 保留为回退；首屏图加 `fetchpriority="high"` |
+| `packages/portal/site/styles.css` | `<picture>` 显式 `display:block`（3 处），主证据图 `picture`/`img` 补 `height:100%` |
+| `website/assets/*.webp`（新增 10 个） | `cwebp -q 84 -m 6 -sharp_yuv -resize`，每条 PNG 生成 2 档宽度 |
+| `packages/portal/package.json`、`packages/portal/README.md`、`docs/modules.json`、`docs/MODULE-VERSIONS.md` | 版本线 bump 至 α.2 并记录缓存分档契约、WebP 生成命令与 `sizes` 槽位关系 |
+
+分档结果（安全头对所有响应恒定，缓存头按响应类型分档）：
+
+| 响应 | `Cache-Control` | 校验器 |
+|---|---|---|
+| 门户首页 `/portal`、登录页 `/login` | `no-cache` | ETag |
+| `/portal/styles.css`、`/portal/portal.js` | `public, max-age=3600` | ETag |
+| `/portal/assets/*`（WebP / PNG / `mark.svg`） | `public, max-age=604800` | ETag |
+| `/api/portal/*`、`/logout`、`/`、404/405 | `no-store` | 无 |
+
+WebP 体积：10 个变体合计 **450,488 B**（原 5 张 3006×1640 PNG 合计 3,342,764 B）。按页面实际取用的档位计：1x 桌面约 **117 KB**、2x 约 **325 KB**，对比改造前每次访问全量重下 3.34 MB。
+
+### 验证（本机，全部通过）
+
+- 契约测试：`node --test packages/portal/tests/session.test.mjs` → **6 pass / 0 fail**。
+- curl 探针 15 项：三类资源命中预期 `Cache-Control` + ETag；`/api/portal/auth` 401、`/`→302、`/nope`→404 均保持 `no-store`；5 类资源带 `If-None-Match` 全部 **304 + `bytes=0`**；弱 ETag 回写 `W/"…"` 命中 304，无关 ETag 回 200；目录穿越 4 例（`../`、`%2e%2e%2f`、`.php`、不存在）全 404；登录页 ETag 随 `error` 参数变化而不同。
+- 浏览器级（Playwright，3 档视口）：
+
+  | 视口 | 实际取到的图片 | 横向溢出 | console 错误 |
+  |---|---|---|---|
+  | desktop-1440 dpr1 | dashboard-1120 / skills-680 / ppt-360 / library-360 / team-360 | 无 | 0 |
+  | retina-1440 dpr2 | dashboard-2400 / skills-1360 / ppt-720 / library-720 / team-720 | 无 | 0 |
+  | mobile-390 dpr3 | dashboard-1120 / skills-1360 / ppt-720 / library-720 / team-720 | 无 | 0 |
+
+  渲染尺寸与自然尺寸匹配（例 `rendered=501x274 natural=1120x612`），`complete=true`。
+- 版式回归对照：本机 `#proof` 区块 `y=4569.94, w=1440, h=1155.55`；线上基线 `y=4569.94, w=1440, h=1154.05` —— 高度差 **1.5px**（1154px 的 0.13%，来自尺寸取整），截图目检一致。
+
+### 未执行
+
+- **未部署到线上**：`dsh.10ge.cn` 仍为旧行为（门户全站 `no-store`、3.34 MB PNG 直出）。部署需用户单独授权，按 `packages/portal/README.md` 部署节执行。
+- 未提交、未推送（等用户指令）。
+- 清单其余 9 项未动、未裁决。
+
+**下一步**：等用户决定是否部署 α.2 到线上，以及其余清单项是否修复。
+
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
 按用户裁决「按 5 批切分，从第 1 批开始，先修复线上缺陷」执行。B1 出口标准是「线上可复现缺陷按归因处置（我方修复项复验通过，官方/环境项登记留证）」，本轮完成其中「我方修复项」三条。
