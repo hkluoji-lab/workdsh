@@ -31,7 +31,7 @@
 | 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.10` | implemented |
 | 共享展示组件 | 0.1 | `workdsh-ui@0.1.0-alpha.6` | implemented |
 | 企业门户与登录门禁 | 0.1 | `workdsh-portal@0.1.0-alpha.2` | in_progress |
-| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.53` | in_progress |
+| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.54` | in_progress |
 | 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.16` | implemented |
 | 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.8` | in_progress |
 | 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.32` | implemented |
@@ -41,7 +41,7 @@
 | 本地身份提供方 | 0.1 | `workdsh-provider-identity-local@0.1.0-alpha.5` | implemented |
 | Office 浏览器编辑插件 | 0.1 | `workdsh-plugin-office@0.1.0-alpha.8` | in_progress |
 | 协作与活动展示 | 0.1 | `workdsh-plugin-activity@0.1.0-alpha.4` | in_progress |
-| 项目管理 | 0.1 | `workdsh-plugin-projects@0.1.0-alpha.2` | in_progress |
+| 项目管理 | 0.1 | `workdsh-plugin-projects@0.1.0-alpha.3` | in_progress |
 | 资料库 | 0.1 | `workdsh-plugin-library@0.1.0-alpha.3` | implemented |
 | 助理 | 0.1 | `workdsh-plugin-assistant@0.1.0-alpha.1` | in_progress |
 
@@ -66,6 +66,8 @@
 2026-09-24 更新（二）：新增模块 **助理** `workdsh-plugin-assistant@0.1.0-alpha.1`（Unreleased，0.1 版本线）；workbench α.15→**α.16**。助理按 [ADR-0027](adr/0027-assistant-entry-pack-boundary.md) 实现为**引用型工作入口包**：单一 Host 服务 `workdshAssistant`、`/api/workdsh-assistant` 端点、`workdsh_assistant_*` 工具，引用技能修订／专家修订／连接器实例，解析在 Host 侧读兄弟插件公开服务；不拥有执行、会话、凭据、数据与权限。模块版本线 0.1，channel `local-candidate`，尚未进入项目发布包。workbench α.16 的变更是把「助理」占位从 `businessPanels` 移除——助理页面改由该插件自持 `main`（`key: workdsh-assistant`）与同名 `sidebar.panellist` 行（`order: 10`），只升工作台会让「助理」入口消失，故两包需同批安装。同批还包含 P1-2 首包压缩（自有 client 构建加 `minify`、专家 front matter 解析移回 Host，见 [STATUS](STATUS.md) 2026-09-24（续九））。D16 步骤状态仍为 `todo`（依赖 D08）。
 
 2026-09-24 更新（三）：contracts α.9→**α.10**、experts α.7→**α.8**（均 Unreleased）——P1-2 首包压缩中**源码与公开契约真正发生变化**的两个模块：contracts 新增 `ExpertAuthoredDisplay`／`ExpertDisplayProjection` 与 `ExpertDetail.draftDisplay`／`revisionDisplay`；experts 的 client 改为读取该投影、不再在浏览器解析 front matter。其余模块（skills、connectors、office、library、projects、activity、bundle）本轮只改了**仓库根 `scripts/build-*.mjs` 的构建开关**（`minify` + `process.env.NODE_ENV`），模块源码与公开契约未变，因此不随本批 bump，避免以全局构建开关带动未变化模块锁步升级。公开 prerelease 仍以上次发行回执为准，本批待下次发行携带；P1-2 的实测体积见 [STATUS](STATUS.md) 2026-09-24（续九）。
+
+2026-09-24 更新（四）：bundle α.53→**α.54**（Unreleased）——本版是 α.53「收敛注入」的**首个上线制品**（α.53 只到本地候选，线上仍为 α.52），并搭载 workbench α.16 的客户端制品（「助理」入口由工作台占位移交 `workdsh-plugin-assistant@0.1.0-alpha.1` 自持）。组合包自身代码未变，只改版本号。同批部署把 P1-2 压缩后的**其余自有 client 制品按原版本号重发**（skills α.32、connectors α.2、office α.8、library α.3、projects α.3、activity α.4；模块源码与公开契约均未变，故不 bump，仅重发构建产物，理由见「更新（三）」），使自有 client 制品**仓库 dist raw** 由 856,544 B 降至 458,905 B（约 −46%）；**线上下发口径**为 857,294 B → 497,569 B（约 −42%，见 [STATUS](STATUS.md) 2026-09-24（续十一））。同时更正本表 projects 行 `0.1.0-alpha.2` → `0.1.0-alpha.3`（该行自 2026-09-22 起滞后，实际交付制品与线上均已为 α.3）。线上部署与复验见 [STATUS](STATUS.md) 2026-09-24（续十一）。
 
 以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
 

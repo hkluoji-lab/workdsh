@@ -497,6 +497,75 @@ WebP 体积：10 个变体合计 **450,488 B**（原 5 张 3006×1640 PNG 合计
 
 **下一步**：D16 待 D08 完成后按验收矩阵收口；`dsh.10ge.cn` 部署需用户授权。
 
+## 2026-09-24（续十一）：bundle α.54 + 助理上线 + P1-2 全量落地部署 `dsh.10ge.cn`（含浏览器级复验）
+
+按用户指令「好的，执行部署」执行。开工前用户裁决两点：部署制品范围＝**全量落地 P1-2**；α.53「收敛注入」＝**照此上线**。本节收口 [续十] 的「未提交、未推送、未部署」与「下一步」中的部署项。
+
+### 定位
+
+- 工作台客户端制品被**内联**进 `workdsh-bundle/dist/client.js`（`packages/bundle/src/client/harness/client.ts` 有 `import * as workbench from 'workdsh-plugin-workbench'`），线上 profile **没有**独立 `workdsh-plugin-workbench`。因此 workbench α.16 的「移除助理占位」只能靠新 bundle 版本携带，沿用 α.52「本版只为携带客户端制品」先例。
+- α.53「收敛注入」此前只到本地候选：线上仍是 α.52（仍含 `browser-use` / `browser-use-playwright-mcp` 两条 insert）。本轮上 α.54 是**收敛注入首次上线**。
+- P1-2 的压缩改动落在构建脚本（`minify` + `define`），**模块源码未变**，按 [MODULE-VERSIONS](MODULE-VERSIONS.md)「更新（三）」既定立场不 bump 版本，只按原版本号**重发构建产物**。
+- bundle 与 assistant 必须**同批安装**：只升 bundle 而不装 assistant 会让「助理」入口消失（工作台占位已移除）。
+
+### 改动（本机）
+
+| 文件 | 内容 |
+|---|---|
+| `packages/bundle/CHANGELOG.md` | 新增 §α.54（搭载 workbench α.16；收敛注入首个上线制品；同批重发压缩制品） |
+| `packages/bundle/package.json` | `0.1.0-alpha.53` → `0.1.0-alpha.54` |
+| `docs/MODULE-VERSIONS.md` | 表格 bundle 行 → `0.1.0-alpha.54`；**更正 projects 行** `0.1.0-alpha.2` → `0.1.0-alpha.3`（该行自 2026-09-22 起滞后，实际交付制品与线上早已是 α.3）；新增「更新（四）」 |
+
+部署制品 9 个（`.artifacts/deploy-20260924/dist`）：bundle α.54、assistant α.1、experts α.8、skills α.32、connectors α.2、office α.8、library α.3、projects α.3、activity α.4。窗口脚本 `.artifacts/deploy-20260924/deploy-assistant.sh`（照 `deploy-newtask.sh` 模板，10 步、含 `bundles` 自愈与清单/锁文件自动回滚）。
+
+### 部署实测（第二次运行 `TS=20260923225718`，日志 `.artifacts/deploy-20260924/deploy.log`）
+
+| 步 | 检查 | 结果 |
+|---|---|---|
+| 0 | 停机前基线 | `distinct_modules=67 own_bytes=857294`，`has_assistant=false` |
+| 4 | 依赖清单 | `DEPS_OK 9/9`（均指向 `/workspace/wd-upload-assistant/`）；`REPAIRED: bundles 已补齐`；`BUNDLES_OK count=14`（13→14，新增 `workdsh-plugin-assistant`） |
+| 6 | auth-bypass 标记 | profile 侧标记数 1（pnpm 重装未覆盖） |
+| 7 | 版本 | `VERSION_CHECK_OK`（9 个包全部为新版本） |
+| 7 | 字节 | `SHA_MISMATCH=0`（25 个文件逐一与本机构建一致） |
+| 7 | 内容断言 | `bundle patch 含 browser-use: 0`（收敛注入生效）、`含 computer-use: 4`、`bundle client 含 workdsh-assistant: 1` |
+| 8 | 启动 | `启动后 healthy [2]` |
+| 9 | 日志/公网 | `plugin/module 错误数: 0`、`chokidar EACCES: 0`、`layout.selectPanel 报错: 0`、公网 HTTP 302（门户门禁下正常） |
+| 10 | 服务端下发字节 | `plugins_urls=74 distinct_modules=68 served_bytes=5576120 own_bytes=497569`，`has_assistant=true` |
+
+**P1-2 线上实测收益**：自有 client 合计 **857,294 B → 497,569 B（−359,725 B，约 −42%）**。[MODULE-VERSIONS](MODULE-VERSIONS.md) 更新（四）中记的 856,544→458,905 B 是**仓库 dist 口径**，以线上下发口径为准。逐条 `own` 变化：bundle 54,697→38,539、experts 363,365→115,345（去 YAML 解析器并压缩，降幅最大）、skills 122,877→86,978、projects 116,599→78,816、library 87,593→59,778、connectors 63,132→46,897、activity 31,549→21,785、office 17,482→11,517。
+
+### 事故与偏差（均已闭环，登记留证）
+
+1. **首次运行因哈希清单路径 bug 触发自动回滚（`deploy.log.run1-pathbug`）**。生成 `expected-sha256.txt` 时用了「解开目录名 + 文件名」，拼出 `workdsh-bundle-0.1.0-alpha.54/workdsh-bundle-0.1.0-alpha.54/dist/client.js` 形式的双重路径，导致 25 项全部取不到文件、`SHA_MISMATCH=25`。脚本按设计执行 `rollback`：清单与锁文件还原、`pnpm install` 成功、`回滚后 healthy [2]`、公网 302，容器回到 bundle α.52 / experts α.7 / 无 assistant，`restarts=0`。修正为按 `package.json.name` 生成 `name/dist/client.js` 后重跑通过。**回滚链路首次被真实触发并验证可用。**
+2. **官方 `dsh plugin --profile web add … --offline` 三次尝试全部失败，实际走 `pnpm add --prefer-offline` 回退路径**。失败形态：两次 `[ERR_PNPM_EACCES] … rename archiver-utils/node_modules → archiver-utils_tmp_…`，一次 `EACCES … open pnpm store …/tarball-integrity`（`ADD_RC=243`）。回退 `pnpm add` 成功（`Packages: +19 -103`，`Done in 6.4s`），第 4 步 `DEPS_OK 9/9` 复核通过。**故本次线上更新不是官方 CLI 路径**；根因（store 与 `node_modules` 存在 root 属主文件）未修，官方 CLI 路径在本环境仍不可用，见下「未执行」。
+3. **`chown -R 1000:1000` 大量 `Operation not permitted`**：pnpm 以 root 新写的目录（如 `node_modules/workdsh-plugin-assistant`、`node_modules/workdsh-bundle`）属主为 `root:root`。统计 `node_modules` 下 11,656 个 `luoji` + 88 个 `root`。容器进程本身 `uid=0(root)`，读取无影响；启动后 20 分钟内 `grep -c EACCES` 为 **0**。非致命，登记为残留。
+4. 第 7 步 `assistant client 含 AssistantPanel 标识: 0` —— 压缩后字符串字面量被消除，该断言本不是必须项（真正的门禁是 sha256 与 `bundle client 含 workdsh-assistant: 1`），非失败。
+
+### 线上浏览器级复验（Playwright，脚本 `.artifacts/deploy-20260924/verify-live.mjs`）
+
+登录门户 → 工作台 → 关掉官方首访「Internal Testing Notice」弹框 → 点侧栏「助理」：
+
+| 断言 | 实测 |
+|---|---|
+| 侧栏行未被替换 | `新建任务 / 项目 / 助理 / 专家 · 技能 · 连接器 / 定时任务（待开放）/ 资料库 / 更多（待开放）`，官方 Workspace／Session／Settings 行原样保留；「助理」在 `项目` 之后、能力中心之前（`order: 10`） |
+| 面板真渲染（非占位） | `[data-testid="workdsh-assistant"]` 可见，`h1=助理`，副标题与 `使用中 0 / 已归档 0` 标签正确；页面内无 `待开放` 文案 |
+| 引用的是真实能力对象 | 新建弹框 `select[aria-label="选择要引用的能力"]` 共 50 项：技能 34 / 专家 12 / 连接器 3 分组（非手填名称） |
+| 创建 → 详情 → 编辑 → 归档全链路 | 创建成功（卡片「修订 1 · 引用 0」、无错误提示）；详情弹框含 `职责描述 / 引用能力 / 触发方式` 与 `归档 / 编辑`；编辑弹框回填名称、`保存新修订`；归档后 `使用中 0 / 已归档 1` |
+| `layout.selectPanel` 报错 | **0**（点击自持侧栏行进页面无异常） |
+| console error / pageerror / HTTP≥400 | 0；仅 7 条 `net::ERR_ABORTED`（`page.goto` 切换页面时取消在途 `??` combo 与 `assets/*` 请求，属导航语义，非服务端错误） |
+
+复验期间在线上真实创建了一条记录（名 `部署复验 2026-09-23`，因 `toISOString()` 取 UTC 日期）并**已归档**，仅出现在「已归档」标签下；如需清理请在该标签恢复后再处置（助理的删除语义是归档，不提供硬删）。
+
+### 未执行
+
+- 未在 Cloudflare 链路上复测实际传输体积与 brotli（P2-1 未裁决）；combo 仍无单包代码分割。
+- 真实模型执行助理、定时触发与外部消息入站、多主体多组织端到端鉴权与撤权仍未验证（D16 步骤状态仍为 `todo`）。
+- 官方 `dsh plugin add --offline` 在本环境的 `EACCES` 根因未修（仅以 `pnpm add` 回退绕过）；`node_modules` 88 个 `root:root` 属主残留未清。
+- 未复验专家面板列表／详情身份显示（P1-2 同时移除了 browser-use YAML 注入后的回归面）；未重跑 `test:integration` 之外的其它套件。
+- 未纳入项目发布包：`scripts/pack-project-release.mjs` 仍为 9 包，助理未进包。
+
+**下一步**：①裁决是否修官方 CLI `--offline` 的 `EACCES`（清 root 属主或改 store 位置）；②P1-2 剩余体检项（P1-1、P1-3、P2-1～P2-4、P3-1、P3-2）待用户裁决；③D16 待 D08 完成后按验收矩阵收口。
+
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
 按用户裁决「按 5 批切分，从第 1 批开始，先修复线上缺陷」执行。B1 出口标准是「线上可复现缺陷按归因处置（我方修复项复验通过，官方/环境项登记留证）」，本轮完成其中「我方修复项」三条。
