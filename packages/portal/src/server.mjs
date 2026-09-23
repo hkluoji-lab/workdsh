@@ -251,7 +251,7 @@ async function handleLogin(req, res) {
   }
 
   const userOk = fields.username === config.username;
-  const passwordOk = verifyPassword(fields.password, config.password);
+  const passwordOk = await verifyPassword(fields.password, config.password);
   if (!userOk || !passwordOk) {
     throttle.fail(ip, now);
     log('login.failed', { ip, user: fields.username });

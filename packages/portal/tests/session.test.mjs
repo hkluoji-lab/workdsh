@@ -17,12 +17,12 @@ import {
 
 const key = deriveKey('correct horse battery staple');
 
-test('口令校验接受正确口令并拒绝错误口令', () => {
-  assert.equal(verifyPassword('s3cret-pass', 's3cret-pass'), true);
-  assert.equal(verifyPassword('s3cret-pass', 's3cret-pas'), false);
-  assert.equal(verifyPassword('', 's3cret-pass'), false);
-  assert.equal(verifyPassword('s3cret-pass', ''), false);
-  assert.equal(verifyPassword('s3cret-pass', undefined), false);
+test('口令校验接受正确口令并拒绝错误口令', async () => {
+  assert.equal(await verifyPassword('s3cret-pass', 's3cret-pass'), true);
+  assert.equal(await verifyPassword('s3cret-pass', 's3cret-pas'), false);
+  assert.equal(await verifyPassword('', 's3cret-pass'), false);
+  assert.equal(await verifyPassword('s3cret-pass', ''), false);
+  assert.equal(await verifyPassword('s3cret-pass', undefined), false);
 });
 
 test('签发的会话可读回并保留有效期', () => {

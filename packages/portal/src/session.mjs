@@ -1,6 +1,9 @@
 // 会话与口令：无状态签名 Cookie + 常量时间口令校验 + 进程内失败限流。
 // 仅使用 Node 内置模块；不落库、不写业务数据、不拥有第二套账号真源。
-import { createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHmac, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
+
+const scryptAsync = promisify(scrypt);
 
 export const COOKIE_NAME = 'dsh_portal_session';
 
@@ -10,11 +13,12 @@ export function deriveKey(secret) {
 }
 
 // 两侧都先过 scrypt 再常量时间比较，避免通过长度或提前返回泄漏口令信息。
-export function verifyPassword(submitted, expected) {
+// 使用异步 scrypt：KDF 走 libuv 线程池，不再阻塞与 forward_auth 共用的单线程事件循环
+// （此前两次 scryptSync 会让同一进程内所有并发请求排队等 KDF）。
+export async function verifyPassword(submitted, expected) {
   if (typeof submitted !== 'string' || typeof expected !== 'string' || expected === '') return false;
   const salt = 'workdsh-portal-password-v1';
-  const a = scryptSync(submitted, salt, 32);
-  const b = scryptSync(expected, salt, 32);
+  const [a, b] = await Promise.all([scryptAsync(submitted, salt, 32), scryptAsync(expected, salt, 32)]);
   return timingSafeEqual(a, b);
 }
 

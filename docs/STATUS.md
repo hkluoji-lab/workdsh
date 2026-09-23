@@ -624,7 +624,127 @@ find "$D/data/dsh" "$D/data/workspace" ! -user 1000 -exec chown -h 1000:1000 {} 
 - 服务器临时产物已按用户裁决清理（2026-09-24）：删除 `/tmp/wd-fix-eacces.sh`、`/tmp/measure-live.mjs`、profile 内 `package.json.bak.eaccesfix.20260923230830` 与 `pnpm-lock.yaml.bak.eaccesfix.20260923230830`；**保留** `/root/dsh-ownership-before.txt`（31.2 MB 修复前属主清单）与 `/workspace/wd-upload-assistant/`（9 tgz + `expected-sha256.txt`，供后续同版本重发与对照）。清理后容器仍 `running / healthy / restarts=0`。
 - 未在 Cloudflare 链路复测传输体积/brotli；其余 [续十一] 未执行项不变。
 
-**下一步**：①回到 P1-2 剩余体检项（P1-1、P1-3、P2-1～P2-4、P3-1、P3-2）与 D16 收口；②上游 V8 SIGSEGV 待 Node 版本升级窗口时复测。
+**下一步**：①回到 P1-2 剩余体检项（P1-1、P1-3、P2-1～P2-4、P3-1、P3-2）与 D16 收口；②上游 V8 SIGSEGV 待 Node 版本升级窗口时复测。（体检项中的 P1-3 / P2-1～P2-4 已于 [续十三] 处置。）
+
+## 2026-09-24（续十三）：体检清单续做（P1-3 / P2-3 / P2-2 / P2-4 已实施，P2-1 判为无需修复）
+
+按用户裁决「部署层三项（P1-3、P2-3、P2-4）+ P2-1 + P2-2」执行 [续十二]「下一步」的剩余体检项。**未选：P1-1（CF 套餐/边缘位置）、P3-1（办公出口中间设备）、P3-2（生产加载 HMR 客户端）**，均属不可控项或未裁决项，本轮只读登记。
+
+### 结论速览
+
+| 项 | 处置 | 结果 |
+|---|---|---|
+| P1-3 容器资源上限 | 已落盘并重建 | `.env` `CPUS=12` / `MEMORY_LIMIT=8G`；compose `deploy.resources.limits.pids: 4096` |
+| P2-3 HTTP/3 UDP 接收缓冲 | 已落盘持久化 | `/etc/sysctl.d/99-dsh-http3.conf` → `net.core.rmem_max` 212992 → **16777216** |
+| P2-2 登录路径同步 KDF | 代码已改 + 已部署 | `scryptSync` → 异步 `scrypt`；事件循环阻塞 **321.1ms → 1.9ms**；portal bump `0.1.0-alpha.2` → **`alpha.3`** |
+| P2-4 `data/dsh` 陈旧树 | 已按判据删除 | `global-dsh` 1.9G → **1.0G**，`data/dsh` 8.8G → **8.0G** |
+| P2-1 CSS/JS 走 brotli | **判定无需修复** | 镜像 Caddy 确实无 brotli，但 CF 边缘已下发 `br` 且小于源站 gzip |
+
+### P1-3：容器资源上限
+
+改造前容器**无任何上限**：`Mem=0 / MemSwap=0 / NanoCpus=0 / CpuShares=0 / PidsLimit=<no value>`（compose 模板里 `CPUS`、`MEMORY_LIMIT` 出厂值均为 `0`）。
+按宿主规格（20 核 / 46G 内存）取 `12` / `8G`，PID 取 `4096`（改前实测仅用 77）。
+
+落盘用幂等脚本 [ensure-resource-limits.py](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260924/ensure-resource-limits.py)（`DONE changed=yes`；备份 `.env.bak.limits.20260923232020`、`docker-compose.yml.bak.limits.20260923232042`）。
+
+> ⚠️ **踩坑：PID 不能写顶层 `pids_limit`。** 只要 `deploy.resources.limits` 存在，compose 会把 `limits.pids` 按 0 归一，与顶层 `pids_limit` 冲突 →
+> `can't set distinct values on 'pids_limit' and 'deploy.resources.limits.pids': invalid compose project`（首次落盘后 `docker compose` 直接失败）。
+> 改为 `deploy.resources.limits.pids` 后正常；落盘前在 `/tmp/limtest` 副本干跑验证过幂等复跑（`DONE changed=no`）与 `yaml.safe_load` 结构。
+
+重建后核对：`Mem=8589934592 / NanoCpus=12000000000 / Pids=4096 / Restarts=0`；`healthy [2]`；匿名根 `302`；启动后 `plugin tree failed | duplicate loader | EACCES` 计数 **0**；`stats cpu=1.61% mem=831.2MiB / 8GiB pids=70`；SEK / portal / survey 分别在 3081 / 3083 / 3082 正常监听。
+
+### P2-3：HTTP/3 (QUIC) UDP 接收缓冲
+
+Caddy 开 HTTP/3 后每连接刷 `failed to sufficiently increase receive buffer size`，根因是宿主 `net.core.rmem_max`（原 `212992`）太小。新建 `/etc/sysctl.d/99-dsh-http3.conf`：
+
+```
+net.core.rmem_max = 16777216
+```
+
+生效后 `sysctl net.core.rmem_max` = `16777216`（`rmem_default` 保持 `212992`）；**容器重建后本次启动该告警 0 次**（改前为每连接一条）。
+
+### P2-2：登录路径 `scryptSync` → 异步 `scrypt`
+
+`packages/portal/src/session.mjs` 的 `verifyPassword` 用两次同步 `scryptSync`，登录时 KDF 会阻塞**与 Caddy `forward_auth` 共用的**单线程事件循环——任何一次登录都会让同进程内所有并发请求排队等 KDF。
+
+改动（仓库 3 个文件）：
+
+- [session.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/src/session.mjs#L3-L23)：`import { scrypt }` + `promisify(scrypt)`，`verifyPassword` 转 `async`，两侧 KDF 用 `Promise.all` 提交到 libuv 线程池；常量时间比较与「两侧都过 KDF」的语义不变。
+- [server.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/src/server.mjs#L254)：唯一调用点加 `await`。
+- [session.test.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/tests/session.test.mjs#L20-L26)：用例转 `async` 并 `await`。
+- [package.json](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/package.json#L3)：`0.1.0-alpha.2` → `0.1.0-alpha.3`。
+
+| 验证 | 结果 |
+|---|---|
+| `node --test packages/portal/tests/session.test.mjs` | 6 pass / 0 fail |
+| 匿名 `/api/portal/auth`（forward_auth 判定点） | `401` |
+| 正确口令登录（`Accept: application/json`） | `200` + `Set-Cookie: dsh_portal_session` |
+| 带会话 `/api/portal/auth` | `200` → `204` |
+| 错误口令 | `401` |
+| 公网链路（CF → Caddy → forward_auth） | 匿名根 `302`、登录 `200`、带会话根 `200`、带会话 `/portal` `200` |
+
+部署方式：线上 `data/dsh/portal/src/*.mjs` 与仓库 `packages/portal/src/` 已逐字节一致（`diff` 空）⇒ 原地覆盖，备份 `*.bak.syncscrypt.20260923232234`，随后匹配命令行前缀 `kill` portal 进程让 entrypoint 看护循环重拉（新 pid 起于 23:22:56，晚于安装时间）。
+
+**事件循环阻塞 A/B 实测**（容器内，Node v24.21.0，6 并发登录 / 12 次 KDF，默认 `UV_THREADPOOL_SIZE=4`，脚本 [kdf-loop-block-ab.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260924/kdf-loop-block-ab.mjs)）：
+
+| 实现 | 事件循环最长阻塞 | 墙钟 |
+|---|---|---|
+| `scryptSync` | **321.1 ms** | 319.8 ms |
+| `scryptAsync` | **1.9 ms** | 91.3 ms |
+
+> 该探针本身踩过一次坑：同步阻塞全部发生在计时窗口内的**微任务**里，`clearInterval` 会先于任何 tick 执行，导致采样恒为 0（首版结果为 `sync=0`）；必须在窗口结束后再等一个定时器周期才结账。
+
+另：换版重拉后**首次**匿名根请求返回 `502`（`cf-ray …-AMS`），随后连续 5 次均 `302`，判为瞬态；根因未定位，未复现。
+
+### P2-4：`data/dsh` 陈旧树清理
+
+判据三条缺一不可（详见 skill「磁盘：陈旧树判据与清理」）：**compose 挂载点**、**容器内 entrypoint 引用**、**运行中进程引用**。
+
+- compose 只挂载 `global-dsh/standalone → /usr/local/lib/node_modules/@deepseek-ai/dsh`（保留）。
+- 容器内 `/usr/local/bin/docker-entrypoint.sh` 对 `global-dsh` / `_a2` / `alpha1` 的 `grep -c` 均为 **0**。
+- `/proc/*/cmdline|cwd|maps` 扫描无真实持有者（唯一命中是探针自身那条 `sh -c`，属误报）。
+
+删除 `global-dsh/{_a2, _a2-standalone, standalone.alpha1.bak.20260921151335}`（名义 1.2G）：
+
+| 项 | 前 | 后 |
+|---|---|---|
+| `global-dsh` | 1.9G | **1.0G** |
+| `data/dsh` | 8.8G | **8.0G** |
+
+> 名义 1.2G 与实际回收约 0.8G 的差额来自 **pnpm 硬链接**：删除前 `du` 把 `node_modules` 的硬链接计在 `_a2` 名下（故当时只显 106M），删除后 `node_modules` 才显出自己的 277M。脚本 [prune-stale-trees.sh](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-20260924/prune-stale-trees.sh)；删除前清单留在宿主 `/root/dsh-prune-manifest-20260923232916.txt`（323 行）；三棵树均为 npm 可重装的官方制品，回滚即重装。
+
+删除后复验：容器 `Up (healthy)`、`node v24.21.0`、官方 CLI `/usr/local/bin/dsh --version` = `0.1.6-alpha.2`、挂载树 `lib/ node_modules/ package.json …` 完整、匿名根 `302`、`/portal` `200`。
+
+### P2-1：CSS/JS 走 brotli —— 判定无需修复
+
+勘察发现原判断的前提已过时：
+
+| 事实 | 证据 |
+|---|---|
+| 该镜像的 Caddy **未编译 brotli 编码器** | Caddyfile 为 `encode zstd gzip`；`caddy list-modules \| grep '^http.encoders'` 只有 `http.encoders.gzip` 与 `http.encoders.zstd`（Caddy v2.11.4；brotli 属第三方插件） |
+| 但**浏览器侧已经拿到 `br`** | 经 Cloudflare 时边缘自行重压缩，`content-encoding: br` 且 `cf-cache-status: HIT` |
+
+| 资源 | 源站 gzip | 边缘 br |
+|---|---|---|
+| `/assets/vendor-CCJJTK99.js` | 209631 | **178578** |
+| `/assets/index-8VXBH-f-.js` | 241069 | **217158** |
+| `/assets/vendor-BNsW4eBh.css` | 8668 | **7685** |
+| `/assets/index-lP1BfJ4l.css` | 14121 | **11814** |
+
+⇒ 源站再压只影响「源站 → 边缘」一段，收益极小；而自建带 brotli 的派生 Caddy 需新增镜像构建与发布流程。**用户裁决：维持现状，登记为无需修复。**
+
+### 未执行（本轮范围外）
+
+- **P1-1**（CF 套餐/边缘位置，`cf-ray` 落在 `AMS`）、**P3-1**（办公出口中间设备）：属不可控项，未选。
+- **P3-2**（生产加载 HMR 客户端 `/@vite/client`）：未选，仍未修。
+- P2-2 的限流（`LoginThrottle`）路径未单独构造 10 次失败以触发 429，仅在代码层确认未受影响。
+- 本轮未跑仓库级 `build` / `typecheck`；portal 只跑了自己的 6 条单测（无构建步骤，`private` + 纯 `node` 运行）。
+- `global-dsh/patch-auth-bypass.mjs`（920B，2026-09-17）、`global-dsh/index.js.corrupt.20260922041909`（28K）来历未确认，**暂留**；二者都不在任何挂载点内。
+- 上游 V8 SIGSEGV 仍在（见 [v8-gc-sigsegv-repro.md](evidence/v8-gc-sigsegv-repro.md)）。
+
+**仓库改动未提交**：`packages/portal/src/session.mjs`、`packages/portal/src/server.mjs`、`packages/portal/tests/session.test.mjs`、`packages/portal/package.json`，以及本轮新增的 4 个窗口脚本（`.artifacts/deploy-20260924/`）。
+
+**下一步**：①提交推送 P2-2 代码与文档；②D16 助理收口（真实模型执行、定时触发、消息入站、多主体鉴权仍未验证）；③P3-2 与上游 V8 SIGSEGV 待裁决/上游修复。
 
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
