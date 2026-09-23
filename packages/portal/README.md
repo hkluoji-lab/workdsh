@@ -1,6 +1,6 @@
 # packages/portal — 企业门户与登录门禁
 
-模块版本线：`0.1`（`workdsh-portal@0.1.0-alpha.1`）。任务 ID：`P1-13`。决策依据：[ADR-0034](../../docs/adr/0034-enterprise-portal-and-edge-authentication.md)。
+模块版本线：`0.1`（`workdsh-portal@0.1.0-alpha.2`）。任务 ID：`P1-13`。决策依据：[ADR-0034](../../docs/adr/0034-enterprise-portal-and-edge-authentication.md)。
 
 ## 定位与所有权
 
@@ -30,10 +30,35 @@
 | `GET /logout`、`POST /api/portal/logout` | 清除会话，303 到 `/portal` |
 | `GET /api/portal/auth` | 供 Caddy `forward_auth`：有效 204（附 `X-Portal-User`），无效 401，**不发跳转、不带 `WWW-Authenticate`**（避免浏览器原生凭据框） |
 | `GET /portal/styles.css`、`/portal/portal.js` | 站点静态文件（白名单） |
-| `GET /portal/assets/<name>` | 真实产品截图与品牌标识，来自 `PORTAL_ASSETS_DIR` |
+| `GET /portal/assets/<name>` | 真实产品截图与品牌标识，来自 `PORTAL_ASSETS_DIR`；图片以 WebP 双尺寸交付（PNG 保留为回退） |
 | `GET /` | 302 到 `/portal`；根路径的前门由 Caddy 判定会话后决定放行工作台或门户首页 |
 
 Cookie：`dsh_portal_session`，`HttpOnly`、`SameSite=Lax`、生产 `Secure`，无状态 HMAC-SHA256 签名，载荷只含用户名与签发/过期时间。回跳地址只接受同源相对路径，且拒绝指向 `/login`、`/logout`、`/portal`、`/api/*`。
+
+## 缓存策略与素材（α.2）
+
+安全头（CSP / `nosniff` / `Referrer-Policy` / `X-Frame-Options`）对所有响应恒定；**缓存头按响应类型分档**，`SECURITY_HEADERS` 里的默认值 `no-store` 只兜底未被显式覆盖的响应（接口、跳转、404/405、错误页）。
+
+| 响应 | `Cache-Control` | 校验器 | 理由 |
+| --- | --- | --- | --- |
+| 门户首页、登录页 | `no-cache` | ETag | 可复用但每次必须回源校验：命中即 304 零正文，**不会陈旧** |
+| `styles.css`、`portal.js` | `public, max-age=3600` | ETag | 文件名无内容指纹，用 1 小时窗口换取「不会长期留旧样式」 |
+| `/portal/assets/*`（图片、`mark.svg`） | `public, max-age=604800` | ETag | 文件名固定、内容极少变动 |
+| `/api/portal/*`、`/logout`、`/`、404/405 | `no-store` | 无 | 会话判定信号与跳转不得被任何中间层缓存 |
+
+- ETag 取响应正文的 SHA-1：静态文件与登录页（正文含注入的错误提示与回跳地址）共用同一判据，不额外维护版本号；`If-None-Match` 按 GET 弱比较，客户端回写 `W/"…"` 同样命中。
+- 素材交付：`website/assets/` 下 5 张界面截图各有 `-<width>.webp` 双尺寸变体，页面用 `<picture><source type="image/webp" srcset sizes>` 声明，原 3006px PNG 保留为不支持 WebP 时的回退。生成命令（`cwebp`）：
+
+  ```sh
+  cd website/assets
+  for spec in "dashboard 1120" "dashboard 2400" "skills 680" "skills 1360" \
+              "ppt 360" "ppt 720" "library 360" "library 720" "team 360" "team 720"; do
+    set -- $spec
+    cwebp -q 84 -m 6 -sharp_yuv -quiet -resize "$2" 0 "$1.png" -o "$1-$2.webp"
+  done
+  ```
+
+  `srcset` 的宽度档对应实际版式槽位：首屏图槽位 `min(1120px, 100vw-40px)`；主证据图 3 列跨列时约占 663px；其余三张在 3 列网格中各约 360px。窄屏落到单列时统一按 `100vw-40px`。改版式后需同步复核 `sizes`。
 
 ## 配置
 

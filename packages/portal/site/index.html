@@ -97,7 +97,11 @@
         </dl>
       </div>
       <figure class="hero-figure">
-        <img src="/portal/assets/dashboard.png" width="3006" height="1640" alt="WorkDSH 工作台界面：在对话中制作 HTML，右侧预览成果并交付真实文件。" fetchpriority="high">
+        <picture>
+          <!-- WebP 与 PNG 同尺寸语义：width/height 用原图比例占位防抖动，实际取哪一档由 sizes 决定。 -->
+          <source type="image/webp" sizes="(min-width: 1160px) 1120px, calc(100vw - 40px)" srcset="/portal/assets/dashboard-1120.webp 1120w, /portal/assets/dashboard-2400.webp 2400w">
+          <img src="/portal/assets/dashboard.png" width="3006" height="1640" alt="WorkDSH 工作台界面：在对话中制作 HTML，右侧预览成果并交付真实文件。" fetchpriority="high">
+        </picture>
         <figcaption>产品真实界面，非设计稿。</figcaption>
       </figure>
     </div>
@@ -332,28 +336,40 @@
       </div>
       <ul class="shots">
         <li class="shot-feature">
-          <img src="/portal/assets/skills.png" width="3006" height="1640" alt="WorkDSH 技能管理界面：浏览、导入和管理技能。" loading="lazy">
+          <picture>
+            <source type="image/webp" sizes="(min-width: 1160px) 663px, (min-width: 901px) calc((100vw - 40px) * 0.592), calc(100vw - 40px)" srcset="/portal/assets/skills-680.webp 680w, /portal/assets/skills-1360.webp 1360w">
+            <img src="/portal/assets/skills.png" width="3006" height="1640" alt="WorkDSH 技能管理界面：浏览、导入和管理技能。" loading="lazy">
+          </picture>
           <div class="shot-body">
             <h3>技能资产</h3>
             <p>浏览、导入与管理技能，让工作方法可以被保存、修改和复用。</p>
           </div>
         </li>
         <li>
-          <img src="/portal/assets/ppt.png" width="3006" height="1640" alt="WorkDSH 演示文稿制作界面：对话与演示文稿并排。" loading="lazy">
+          <picture>
+            <source type="image/webp" sizes="(min-width: 1160px) 360px, (min-width: 721px) calc((100vw - 80px) / 3), calc(100vw - 40px)" srcset="/portal/assets/ppt-360.webp 360w, /portal/assets/ppt-720.webp 720w">
+            <img src="/portal/assets/ppt.png" width="3006" height="1640" alt="WorkDSH 演示文稿制作界面：对话与演示文稿并排。" loading="lazy">
+          </picture>
           <div class="shot-body">
             <h3>办公文档产出</h3>
             <p>对话与演示文稿并排，制作、查看与编辑在同一个工作空间完成。</p>
           </div>
         </li>
         <li>
-          <img src="/portal/assets/library.png" width="3006" height="1646" alt="WorkDSH 资料库界面：按目录管理资料并预览原件。" loading="lazy">
+          <picture>
+            <source type="image/webp" sizes="(min-width: 1160px) 360px, (min-width: 721px) calc((100vw - 80px) / 3), calc(100vw - 40px)" srcset="/portal/assets/library-360.webp 360w, /portal/assets/library-720.webp 720w">
+            <img src="/portal/assets/library.png" width="3006" height="1646" alt="WorkDSH 资料库界面：按目录管理资料并预览原件。" loading="lazy">
+          </picture>
           <div class="shot-body">
             <h3>企业资料库</h3>
             <p>按目录归集资料、搜索正文并预览原件，选中即可带着上下文继续工作。</p>
           </div>
         </li>
         <li>
-          <img src="/portal/assets/team.png" width="3006" height="1640" alt="WorkDSH 专家团队界面：查看团队定位、成员分工与任务入口。" loading="lazy">
+          <picture>
+            <source type="image/webp" sizes="(min-width: 1160px) 360px, (min-width: 721px) calc((100vw - 80px) / 3), calc(100vw - 40px)" srcset="/portal/assets/team-360.webp 360w, /portal/assets/team-720.webp 720w">
+            <img src="/portal/assets/team.png" width="3006" height="1640" alt="WorkDSH 专家团队界面：查看团队定位、成员分工与任务入口。" loading="lazy">
+          </picture>
           <div class="shot-body">
             <h3>专家与团队</h3>
             <p>查看团队定位、成员分工和任务入口。多专家协作仍在持续迭代。</p>

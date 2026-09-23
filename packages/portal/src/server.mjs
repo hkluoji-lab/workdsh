@@ -2,6 +2,7 @@
 // 部署边缘面：只提供门户静态页、登录/退出与 /api/portal/auth（供 Caddy forward_auth 使用）。
 // 不注册 Agent 工具、不代理应用流量、不写业务数据、不做任何业务授权判断。
 import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
 import { loadConfig } from './config.mjs';
@@ -23,10 +24,18 @@ const key = deriveKey(config.password || 'unconfigured');
 const throttle = new LoginThrottle(config.throttle);
 const credentialsConfigured = config.username !== '' && config.password !== '';
 
+// 缓存策略与安全头分离。此前 no-store 被合并进每一个响应，连图片一起，导致每次访问都要重下门户全部素材。
+const CACHE_HTML = 'no-cache'; // 可复用但每次必须回源校验：配合 ETag 拿 304，且绝不陈旧。
+const CACHE_CODE = 'public, max-age=3600'; // 站内 CSS/JS 文件名无内容指纹，用 1 小时窗口换取安全。
+const CACHE_ASSET = 'public, max-age=604800'; // 图片素材文件名固定、内容极少变动，给 7 天。
+
 const SITE_FILES = new Map([
-  ['/portal/styles.css', ['styles.css', 'text/css; charset=utf-8']],
-  ['/portal/portal.js', ['portal.js', 'text/javascript; charset=utf-8']],
+  ['/portal/styles.css', ['styles.css', 'text/css; charset=utf-8', CACHE_CODE]],
+  ['/portal/portal.js', ['portal.js', 'text/javascript; charset=utf-8', CACHE_CODE]],
 ]);
+
+// 门户首页与登录页都按 CACHE_HTML 处理：必须回源校验，因此不会出现陈旧页面。
+const INDEX_HTML = ['index.html', 'text/html; charset=utf-8', CACHE_HTML];
 
 const ASSET_TYPES = new Map([
   ['.svg', 'image/svg+xml'],
@@ -50,6 +59,8 @@ const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'same-origin',
   'X-Frame-Options': 'DENY',
+  // 默认不可缓存：接口、跳转与错误页一律走最保守策略。
+  // 只有静态页面与素材由 sendConditional 显式传入 Cache-Control 覆盖此处（见 CACHE_* 常量）。
   'Cache-Control': 'no-store',
 };
 
@@ -61,6 +72,30 @@ function send(res, status, headers, body) {
   const payload = body === undefined ? '' : body;
   res.writeHead(status, { ...SECURITY_HEADERS, ...headers });
   res.end(payload);
+}
+
+// ETag 取自响应正文本身：静态文件与登录页（正文含注入的错误提示与回跳地址）用同一套判据，无需额外维护版本号。
+function etagOf(buffer) {
+  return `"${createHash('sha1').update(buffer).digest('base64url')}"`;
+}
+
+function matchesIfNoneMatch(header, etag) {
+  if (typeof header !== 'string' || header === '') return false;
+  return header.split(',').some((token) => {
+    const value = token.trim();
+    // GET 上是弱比较：客户端把强 ETag 回写成 W/"..." 也应命中。
+    return value === '*' || value.replace(/^W\//, '') === etag;
+  });
+}
+
+// 静态页面与素材的统一出口：命中条件请求时只回 304，不传正文。
+function sendConditional(req, res, { type, cacheControl, body }) {
+  const buffer = Buffer.isBuffer(body) ? body : Buffer.from(body ?? '');
+  const etag = etagOf(buffer);
+  if (matchesIfNoneMatch(req.headers['if-none-match'], etag)) {
+    return send(res, 304, { 'Cache-Control': cacheControl, ETag: etag }, '');
+  }
+  return send(res, 200, { 'Content-Type': type, 'Cache-Control': cacheControl, ETag: etag }, buffer);
 }
 
 function sendText(res, status, text) {
@@ -107,10 +142,9 @@ async function loginFields(req) {
   return { username: form.get('username') ?? '', password: form.get('password') ?? '', next: form.get('next') ?? '' };
 }
 
-async function serveSiteFile(res, entry) {
-  const [name, type] = entry;
-  const body = await readFile(join(config.siteDir, name));
-  send(res, 200, { 'Content-Type': type }, body);
+async function serveSiteFile(req, res, entry) {
+  const [name, type, cacheControl] = entry;
+  sendConditional(req, res, { type, cacheControl, body: await readFile(join(config.siteDir, name)) });
 }
 
 // 登录页在服务端注入错误提示与回跳地址：禁用 JavaScript 时表单仍可提交并看到结果。
@@ -127,16 +161,16 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => map[char]);
 }
 
-async function renderLogin(res, { error, next }) {
+async function renderLogin(req, res, { error, next }) {
   const template = await readFile(join(config.siteDir, 'login.html'), 'utf8');
   const message = LOGIN_ERRORS.get(error);
   const body = template
     .replace('{{ERROR}}', message ? `<p class="form-error" role="alert">${escapeHtml(message)}</p>` : '')
     .replace('{{NEXT}}', escapeHtml(safeNext(next)));
-  send(res, 200, { 'Content-Type': 'text/html; charset=utf-8' }, body);
+  sendConditional(req, res, { type: 'text/html; charset=utf-8', cacheControl: CACHE_HTML, body });
 }
 
-async function serveAsset(res, requestPath) {
+async function serveAsset(req, res, requestPath) {
   const name = requestPath.slice('/portal/assets/'.length);
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name) || name.includes('..')) return sendText(res, 404, 'Not found');
   const type = ASSET_TYPES.get(extname(name).toLowerCase());
@@ -145,7 +179,7 @@ async function serveAsset(res, requestPath) {
   if (!target.startsWith(config.assetsDir + sep)) return sendText(res, 404, 'Not found');
   try {
     if (!(await stat(target)).isFile()) return sendText(res, 404, 'Not found');
-    send(res, 200, { 'Content-Type': type }, await readFile(target));
+    sendConditional(req, res, { type, cacheControl: CACHE_ASSET, body: await readFile(target) });
   } catch {
     sendText(res, 404, 'Not found');
   }
@@ -226,14 +260,14 @@ async function route(req, res) {
 
   // 门户服务不是根路径的前门（根路径由 Caddy 判定会话后决定放行工作台或门户首页）。
   if (path === '/') return redirect(res, 302, '/portal');
-  if (path === '/portal' || path === '/portal/') return serveSiteFile(res, ['index.html', 'text/html; charset=utf-8']);
+  if (path === '/portal' || path === '/portal/') return serveSiteFile(req, res, INDEX_HTML);
   if (path === '/login') {
     const session = currentSession(req, now);
     if (session) return redirect(res, 303, safeNext(url.searchParams.get('next'), '/'));
-    return renderLogin(res, { error: url.searchParams.get('error'), next: url.searchParams.get('next') });
+    return renderLogin(req, res, { error: url.searchParams.get('error'), next: url.searchParams.get('next') });
   }
-  if (SITE_FILES.has(path)) return serveSiteFile(res, SITE_FILES.get(path));
-  if (path.startsWith('/portal/assets/')) return serveAsset(res, path);
+  if (SITE_FILES.has(path)) return serveSiteFile(req, res, SITE_FILES.get(path));
+  if (path.startsWith('/portal/assets/')) return serveAsset(req, res, path);
 
   return sendText(res, 404, 'Not found');
 }
