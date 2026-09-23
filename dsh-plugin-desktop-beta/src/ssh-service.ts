@@ -116,10 +116,12 @@ export class SshService {
   /** Exclusive create. Cleanup only after this operation successfully opened a new file. */
   async upload(id: string, path: string, source: Readable): Promise<void> {
     const s = this.get(id), target = remotePath(path)
-    const output = s.sftp.createWriteStream(target, { flags: 'wx', mode: 0o600 })
-    let created = false; output.once('open', () => { created = true })
+    let handle: Buffer
+    try { handle = await new Promise<Buffer>((resolve, reject) => s.sftp.open(target, 'wx', 0o600, (error, value) => error ? reject(error) : resolve(value))) }
+    catch { throw new Error('上传失败：请检查同名文件、权限或连接') }
+    const output = s.sftp.createWriteStream(target, { handle, mode: 0o600 })
     try { await pipeline(source, output) } catch {
-      if (created) await new Promise<void>(resolve => s.sftp.unlink(target, () => resolve()))
+      await new Promise<void>(resolve => s.sftp.unlink(target, () => resolve()))
       throw new Error('上传失败：请检查同名文件、权限或连接')
     }
   }
