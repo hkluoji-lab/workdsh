@@ -38,6 +38,9 @@ async function installReleasedProfile() {
     'profilePackage.packageManager = manifest.packageManager;',
     "profilePackage.packageManager = manifest.packageManager;\n  profilePackage.devEngines = { ...profilePackage.devEngines, packageManager: { name: 'pnpm', version: manifest.packageManager.slice('pnpm@'.length), onFail: 'ignore' } };",
   )
+  installer = installer
+    .replace("const runtimeArgs = ['pnpm', '--dir',", "const runtimeArgs = ['--dir',")
+    .replace("spawnSync(corepack, ['pnpm', '--dir',", "spawnSync(corepack, ['--dir',")
   if (process.platform === 'win32') {
     installer = installer
       .replace("import { spawnSync } from 'node:child_process';", "import { spawnSync as nativeSpawnSync } from 'node:child_process';")
@@ -55,10 +58,10 @@ async function installReleasedProfile() {
   const pnpmShim = join(output, process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
   if (process.platform === 'win32') {
     writeFileSync(shim, `@echo off\r\nnpx --yes @deepseek-ai/dsh@${DSH_VERSION} %*\r\n`)
-    writeFileSync(pnpmShim, '@echo off\r\nif "%~1"=="pnpm" shift\r\nnpx --yes pnpm@11.8.0 %*\r\n')
+    writeFileSync(pnpmShim, '@echo off\r\nnpx --yes pnpm@11.8.0 %*\r\n')
   } else {
     writeFileSync(shim, `#!/bin/sh\nexec npx --yes @deepseek-ai/dsh@${DSH_VERSION} \"$@\"\n`)
-    writeFileSync(pnpmShim, '#!/bin/sh\nif [ "$1" = pnpm ]; then shift; fi\nexec npx --yes pnpm@11.8.0 "$@"\n')
+    writeFileSync(pnpmShim, '#!/bin/sh\nexec npx --yes pnpm@11.8.0 "$@"\n')
     chmodSync(shim, 0o755)
     chmodSync(pnpmShim, 0o755)
   }
