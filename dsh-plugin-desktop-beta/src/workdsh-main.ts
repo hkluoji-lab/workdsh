@@ -61,6 +61,14 @@ function materializeRuntimeProfile(home: string): string {
     const from = join(source, name)
     if (existsSync(from)) cpSync(from, join(target, name), { force: true })
   }
+  // The released profile grants exact WorkDSH plugin versions permission to run
+  // with its bundled DSH runtime. Keep that approval when materializing the
+  // profile; without it the sidebar entries render but their panels are denied.
+  const sourceCompatibility = join(source, 'compatibility.json')
+  const targetCompatibility = join(target, 'compatibility.json')
+  if (existsSync(sourceCompatibility) && !existsSync(targetCompatibility)) {
+    cpSync(sourceCompatibility, targetCompatibility)
+  }
   const installedVersion = existsSync(marker) ? readFileSync(marker, 'utf8').trim() : undefined
   if (existsSync(targetModules) && installedVersion !== RUNTIME_VERSION) {
     const stat = lstatSync(targetModules)
