@@ -1,26 +1,62 @@
 # packages/portal — 企业门户与登录门禁
 
-模块版本线：`0.1`（`workdsh-portal@0.1.0-alpha.2`）。任务 ID：`P1-13`。决策依据：[ADR-0034](../../docs/adr/0034-enterprise-portal-and-edge-authentication.md)。
+模块版本线：`0.1`（`workdsh-portal@0.1.0-alpha.4`）。任务 ID：`P1-13`。决策依据：[ADR-0034](../../docs/adr/0034-enterprise-portal-and-edge-authentication.md)。
 
 ## 定位与所有权
 
 这是**部署边缘面，不是 Harness 功能插件**。它必须在应用加载之前完成身份判断，因此不可能由 Loader/Profile 装配的插件承担。
 
-- 拥有：门户静态页（企业介绍、登录页）、登录/退出接口、签名会话 Cookie、失败限流、面向 Caddy `forward_auth` 的会话校验端点。
-- 不拥有：领域数据、账号体系、组织与角色、业务授权、审计记录、Agent 执行。登录事件只写本服务自己的结构化 stderr 日志（单行 JSON），**不写 audit 插件的数据表**，也不进入 Harness 会话日志。
+- 拥有：门户静态页（企业介绍、登录页）、登录/退出接口、**账号表**（主账号 + 额外成员账号）、签名会话 Cookie、失败限流、面向 Caddy `forward_auth` 的会话校验端点。
+- 不拥有：领域数据、组织与角色、业务授权、审计记录、Agent 执行。登录事件只写本服务自己的结构化 stderr 日志（单行 JSON），**不写 audit 插件的数据表**，也不进入 Harness 会话日志。账号表只服务"能不能进站"，不代表任何业务角色或权限。
 - 不声明 `dsh.bundle`、`exports`、`main` 或 `bin`，不注册任何 Slot、Remote 或 Agent 工具，不发布 npm；随部署交付。
 
 ## 目录
 
 | 路径 | 内容 |
 | --- | --- |
-| `src/config.mjs` | 只读环境变量的配置装载；默认引用仓库内 `website/assets` 的真实截图 |
-| `src/session.mjs` | 口令校验、签名会话、回跳白名单、失败限流（纯函数） |
+| `src/config.mjs` | 只读环境变量的配置装载 + 账号表装载；默认引用仓库内 `website/assets` 的真实截图 |
+| `src/session.mjs` | 凭据归一化、口令校验、签名会话、回跳白名单、失败限流（纯函数） |
 | `src/server.mjs` | HTTP 服务：路由、静态页、登录/退出、`/api/portal/auth` |
 | `site/` | `index.html`（企业首页）、`login.html`（登录页）、`styles.css`、`portal.js` |
 | `site/products/` | 公开产品资料页（单文件自包含 HTML），经 `/portal/products/<name>.html` 直出 |
 | `tools/publish-products.sh` | 部署侧脚本：把一份产品页拷到线上并验证（不需要重启、不改代码） |
-| `tests/session.test.mjs` | 会话与门禁契约测试，`node --test`，无外部依赖 |
+| `tests/session.test.mjs`、`tests/accounts.test.mjs` | 会话、凭据归一化与账号表契约测试，`node --test 'tests/*.test.mjs'`，无外部依赖 |
+
+## 账号表（α.4）
+
+登录口径 = **官方那组口令（主账号）+ 账号表（额外成员账号）**。
+
+| 来源 | 位置 | 说明 |
+| --- | --- | --- |
+| 主账号 | `DSH_AUTH_USERNAME` / `DSH_AUTH_PASSWORD` | 复用官方同一组环境变量，仍是第一账号与运维口径 |
+| 额外账号 | `<模块目录>/accounts.json`（可用 `PORTAL_ACCOUNTS_FILE` 改路径） | 官方只提供一组口令，多账号在官方侧没有落点，故放门户自己的数据目录 |
+
+```json
+{
+  "accounts": [
+    { "username": "<成员手机号>", "password": "<在服务器上设置，不要写进仓库>" }
+  ]
+}
+```
+
+- **精确口径以线上为准，文档不记明文口令**：查当前生效的账号名（不打印口令）：`sudo -u luoji python3 -c "import json;print([a['username'] for a in json.load(open('/opt/1panel/apps/deepseek-harness/deepseek-harness/data/dsh/portal/accounts.json'))['accounts']])"`；主账号名见 `.env` 的 `DSH_AUTH_USERNAME`。
+- **主账号口令受官方硬约束**：`DSH_AUTH_PASSWORD` 必须 **≥ 12 位**，且 `DSH_AUTH_USERNAME` 只能 `[A-Za-z0-9._-]`，否则容器启动即失败并反复重启。改主账号口令要动 `.env`，**必须 `docker compose up -d --force-recreate`**（compose 不检测 `.env` 内容变化，实测普通 `up -d` 不会重建），工作台因此中断约 1 分钟；额外账号（账号表）没有长度限制，且只需重拉门户进程。
+- **为什么是文件而不是环境变量**：环境变量不适合承载列表（转义、`$` 展开、引号都要小心），且容器 compose 的 `environment:` 列表由 1Panel 模板生成、应用升级时会被覆盖，而 `data/dsh/portal/` 是持久数据卷。文件默认 `0600`，权限比 `chown root` 的 `.env`（`0644`）更紧。
+- **只影响"能不能进站"**：账号表不产生角色、组织或权限，仍是单实例、单组织的部署边缘面；企业 SSO 与自助找回仍归 `identity-oidc`（B5）。
+- **账号变更即时生效，但需重拉门户进程**：账号表在进程启动时读入，改动后重启门户进程即可（`kill` 该进程，entrypoint 看护循环 3 秒内重拉，容器与工作台不中断）；不要为此重建容器。
+- **账号表写坏不锁站**：文件缺失/非 JSON/缺 `accounts` 数组只登记 `warning`，主账号照常可用；重复用户名、空用户名或空口令按条目跳过并告警。
+- **签名密钥由全部账号派生**：新增、删除或改动任一账号口令都会让既有会话立即失效（与"改口令即全量失效"一致），不引入额外密钥管理。
+
+### 凭据输入归一化（α.4，现场故障修复）
+
+登录失败的两类现场原因是"看起来一样、字节不同"，都在服务端吸收掉：
+
+| 输入形态 | 处理 |
+| --- | --- |
+| 中文输入法打出的全角符号（`！＠．－` 等 `U+FF01—U+FF5E`） | 折叠为对应半角字符 |
+| 从聊天工具/备忘录粘贴带来的首尾空白（含全角空格 `U+3000`） | 去除首尾空白 |
+
+提交值与配置值走同一函数后再比较；**不做大小写折叠、不做截断**，因此"口令区分大小写"仍然成立。登录失败日志只登记输入形态（`pwLength`、`pwFullWidth`、`usernameNormalized`），**不落任何凭据内容**。
 
 ## 路由契约
 
@@ -28,7 +64,7 @@
 | --- | --- |
 | `GET /portal`、`/portal/` | 门户首页；公开、不校验会话 |
 | `GET /login` | 登录页；已登录时 303 到 `next`（默认 `/`） |
-| `POST /api/portal/login` | 表单或 JSON 登录；成功 303 到 `next` 并下发 Cookie，失败 303 回登录页并带 `error` |
+| `POST /api/portal/login` | 表单或 JSON 登录；用户名与口令先归一化再比对，任一账号匹配即成功；成功 303 到 `next` 并下发 Cookie，失败 303 回登录页并带 `error` |
 | `GET /logout`、`POST /api/portal/logout` | 清除会话，303 到 `/portal` |
 | `GET /api/portal/auth` | 供 Caddy `forward_auth`：有效 204（附 `X-Portal-User`），无效 401，**不发跳转、不带 `WWW-Authenticate`**（避免浏览器原生凭据框） |
 | `GET /portal/styles.css`、`/portal/portal.js` | 站点静态文件（白名单） |
@@ -70,9 +106,10 @@ Cookie：`dsh_portal_session`，`HttpOnly`、`SameSite=Lax`、生产 `Secure`，
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
-| `DSH_AUTH_USERNAME` / `DSH_AUTH_PASSWORD` | 无 | **复用官方同一组口令**，不新增凭据真源；未配置时登录失败关闭 |
+| `DSH_AUTH_USERNAME` / `DSH_AUTH_PASSWORD` | 无 | **复用官方同一组口令**作为主账号；未配置且账号表为空时登录失败关闭 |
+| `PORTAL_ACCOUNTS_FILE` | `<模块目录>/accounts.json` | 额外账号表路径，见「账号表」一节 |
 | `PORTAL_BIND` / `PORTAL_PORT` | `127.0.0.1` / `3083` | 只绑定环回，仅同容器 Caddy 可达 |
-| `PORTAL_SESSION_TTL_HOURS` | `12` | 会话有效期；签名密钥由口令派生，改口令即全量失效 |
+| `PORTAL_SESSION_TTL_HOURS` | `12` | 会话有效期；签名密钥由全部账号派生，任一账号口令变动即全量失效 |
 | `PORTAL_COOKIE_SECURE` | 开启 | 本机 http 预览时设为 `0` |
 | `PORTAL_ASSETS_DIR` | 仓库 `website/assets` | 部署时指向实际素材目录 |
 
@@ -91,16 +128,16 @@ PORTAL_COOKIE_SECURE=0 DSH_AUTH_USERNAME=admin DSH_AUTH_PASSWORD=local-only \
 | 官方文档路径 | [HARNESS-OFFICIAL-DEVELOPMENT](../../docs/HARNESS-OFFICIAL-DEVELOPMENT.md)；`docs/dsh-v0.1.6-alpha.2/architecture.md`、`capability-seams.md` |
 | 锁定发布包 / 公开入口 | 基线 `@deepseek-ai/dsh@0.1.6-alpha.2`。官方 Web 侧公开扩展面为 Slots / Client model / Remote / 会话投影，**均要求在应用与 Loader 启动之后生效** |
 | 已有探针 | 官方未提供"应用加载前"的鉴权扩展点。部署侧实测：线上容器 Caddy **v2.11.4**，`forward_auth` 为 2.7+ 标准指令（已核对官方文档「Expanded form」：默认以 **GET** 访问 `uri`），`http.handlers.reverse_proxy` 已加载；容器内 **3083 空闲**；宿主 `…/data/dsh` 已整体 rw 挂载为容器 `/data/dsh`，门户**无需新增挂载** |
-| 直接复用 | 无需改造即可复用的部分：官方口令以环境变量形式提供，门户只读同一组值，不引入第二套账号；`forward_auth` 由既有容器内 Caddy 承担，不新增反向代理实现 |
-| WorkDSH 需补的业务差异 | 官方只提供宿主层基础认证能力，不提供服务端渲染的登录页、登录页宣传、会话 Cookie、退出登录、失败限流与登录后回跳。这些必须由门户实现 |
+| 直接复用 | 无需改造即可复用的部分：官方口令以环境变量形式提供，门户把它作为主账号读取，不另建凭据管理；`forward_auth` 由既有容器内 Caddy 承担，不新增反向代理实现。**α.4 的额外账号**是官方侧没有落点的能力（官方只提供一组口令），按"仅实现官方不拥有的领域"补在部署层，不是第二套身份体系 |
+| WorkDSH 需补的业务差异 | 官方只提供宿主层基础认证能力，不提供服务端渲染的登录页、登录页宣传、会话 Cookie、退出登录、失败限流、登录后回跳与多成员账号。这些必须由门户实现 |
 | 缺口与选择顺序 | 顺序为「直接复用官方能力 → 公开 service/provider/tool/Remote/Slot 扩展 → 仅实现官方不拥有的领域」。前两级在时序上不可用（插件晚于应用加载），因此按第三级实现，并把落点放在部署层而非插件层 |
-| 未复用而被否决的替代 | 恢复 Caddy `basic_auth`、把登录做成功能插件、独立子域门户、门户自带反向代理，理由见 ADR-0034 |
-| 待补缺口 | 企业 SSO 与多账号属于 `identity-oidc`（B5）。届时门户只保留退出与跳转，不复制其职责 |
+| 未复用而被否决的替代 | 恢复 Caddy `basic_auth`、把登录做成功能插件、独立子域门户、门户自带反向代理，以及（α.4）把额外账号塞进 compose `environment:` 列表——最后一项因 1Panel 模板会覆盖且环境变量不适合承载列表而否决，理由见 ADR-0034 |
+| 待补缺口 | 企业 SSO、账号生命周期（自助注册、找回、停用）与组织/角色归属属于 `identity-oidc`（B5）。届时门户只保留退出与跳转，不复制其职责 |
 
 ## 验收条件
 
-1. `node --test packages/portal/tests/session.test.mjs` 通过：口令校验、签名 Cookie 防篡改、回跳白名单、失败限流。
-2. 本机 `PORTAL_COOKIE_SECURE=0` 下实测（**已执行 20 项**）：门户首页与登录页 200；`/` 302 到 `/portal`；静态资源白名单命中、目录穿越与非白名单扩展名 404；错误口令 303 `error=credentials`、空口令 `error=missing`；正确口令下发 Cookie 并 303 到 `next`；`/logout` 清 Cookie；`/api/portal/auth` 无 Cookie 401、篡改 Cookie 401、有效 Cookie 204；恶意 `next`（绝对 URL、协议相对）落回 `/`；连续失败达阈值转 `error=throttled`，`Accept: application/json` 时 429；未配置口令的实例失败关闭（`error=unconfigured`）；非 GET/HEAD/POST 405、未知路径 404。
+1. `node --test 'packages/portal/tests/*.test.mjs'` 通过（α.4 起 **12 项**）：凭据归一化（全角符号与首尾空白）、口令校验、账号表装载（含缺失/写坏/重复/只配一半官方口令四类容错）、签名 Cookie 防篡改、回跳白名单、失败限流。
+2. 本机 `PORTAL_COOKIE_SECURE=0` 下实测（**已执行 20 项**）：门户首页与登录页 200；`/` 302 到 `/portal`；静态资源白名单命中、目录穿越与非白名单扩展名 404；错误口令 303 `error=credentials`、空口令 `error=missing`；正确口令下发 Cookie 并 303 到 `next`；`/logout` 清 Cookie；`/api/portal/auth` 无 Cookie 401、篡改 Cookie 401、有效 Cookie 204；恶意 `next`（绝对 URL、协议相对）落回 `/`；连续失败达阈值转 `error=throttled`，`Accept: application/json` 时 429；未配置口令的实例失败关闭（`error=unconfigured`）；非 GET/HEAD/POST 405、未知路径 404。**α.4 增量本机实测**：主账号在"原始 / 全角符号 / 带尾空白"三种输入下均 200，少一位的旧口令 401；账号表账号原始与全角输入均 200，错误口令与不存在账号 401。
 3. 1440、1000 与 390 视口无意外横向溢出；首页与登录页目检通过（**已执行**：五组视口 `scrollWidth == innerWidth`，console/页面错误与 4xx/5xx 均为 0，滚动高亮 6/6 命中，`prefers-reduced-motion` 分支只保留颜色反馈）。
 4. 线上切换后：匿名访问 `dsh.10ge.cn` 不得直达工作台；匿名访问 `/` 得到门户首页；深链匿名访问应 302 到 `/login?next=`，登录后回原页；`/survey/` 仍可匿名填写；`app` 内视觉零回归。**（已执行 2026-09-22，逐项实测见下）**
 
@@ -137,6 +174,31 @@ PORTAL_COOKIE_SECURE=0 DSH_AUTH_USERNAME=admin DSH_AUTH_PASSWORD=local-only \
 | `…/data/dsh/portal/{package.json,src,site}` | 从仓库 `packages/portal/` 原样拷贝（`site/` 含 `site/products/`） |
 | `…/data/dsh/portal/tools/` | 从仓库 `packages/portal/tools/` 拷贝，供部署侧发布产品页 |
 | `…/data/dsh/portal/assets/` | 从仓库 `website/assets/` 拷贝 `mark.svg`、`dashboard.png`、`skills.png`、`ppt.png`、`library.png`、`team.png`，以及 α.2 起的 10 个 `-<width>.webp` |
+| `…/data/dsh/portal/accounts.json` | α.4 起的**额外账号表**（不在仓库里，只存在于线上，含口令）。`0600`、属主 `1000:1000`，与门户进程同一用户可读 |
+
+`accounts.json` 落位（**只在线上维护，不要提交进仓库**）。用 `printf | base64 -d` 或 python 写，别让口令经过 shell 的引号/展开：
+
+```sh
+sudo python3 - "$A/data/dsh/portal/accounts.json" <<'PY'
+import json, os, sys
+path = sys.argv[1]
+os.umask(0o077)
+with open(path, "w", encoding="utf-8") as fh:
+    json.dump({"accounts": [{"username": "<成员手机号>", "password": "<口令>"}]}, fh, ensure_ascii=False)
+os.chmod(path, 0o600)
+os.chown(path, 1000, 1000)
+PY
+```
+
+改账号后不必动容器与 entrypoint：`kill` 门户 `node` 进程（见第 4 节重启方式），看护循环 3 秒内以新账号表重拉。
+
+改**主账号**（官方那组）则不同：要动 `.env`，且必须 `docker compose up -d --force-recreate`，工作台中断约 1 分钟。改完先复核解析结果再重建——
+
+```sh
+sudo sed -n 's/^\(DSH_AUTH_USERNAME=\).*/\1<新用户名>/p' $A/.env
+sudo -n test "$(sudo awk -F'"' '/^DSH_AUTH_PASSWORD=/{print length($2)}' $A/.env)" -ge 12 && echo "口令长度达标"
+cd $A && sudo docker compose config | grep -A1 DSH_AUTH_PASSWORD   # 确认 dotenv 未把 # 当注释
+```
 
 α.2 起仓库已包含线上全部门户代码（不再存在只在线上存在的路由），因此可直接覆盖 `src/server.mjs`。
 
@@ -302,12 +364,14 @@ docker compose up -d --force-recreate
 - `forward_auth` 的失败跳转只带**路径**（`{http.request.uri.path}`），不带查询串：匿名访问 `/session/x?y=1` 登录后回到 `/session/x`。
 - 未登录访问 `/` 会经一次 302 落到 `/portal`（门户首页），与 ADR-0034「`/` 未登录时给门户首页」一致。
 - 门户服务不可用会让 `forward_auth` 失败、整站不可达（见 ADR-0034 失败边界），因此启动块带自愈循环，且必须先验证 `caddy validate`。
-- 多副本部署下限流计数不共享；当前为单实例。
+- 多副本部署下限流计数不共享；当前为单实例。限流按客户端 IP 分桶，且**只在有 `cf-connecting-ip`（Clients-Connecting-IP）时才是真实终端 IP**：线上经 Cloudflare 隧道时 Caddy 的 `X-Forwarded-For` 恒为隧道主机地址，门户优先取 `cf-connecting-ip`，缺失时才回退转发头与套接字地址。
 - 产品页路由已在 α.2 回填仓库（此前线上先于仓库存在，属未登记漂移）。回填时**未收录**当时线上 `tools/patch-products-route.sh`：它是一次性插入补丁，锚点已被 α.2 的函数签名改动取代，路由本身也已进 `src/server.mjs`，保留只会误导；产品页的日常更新走 `tools/publish-products.sh`（纯拷文件，不需要重启）。
 
 ## 未验证范围
 
-- **已执行 2026-09-23**：线上路由切换与 `forward_auth` 的实际行为已实测（15 项探针 + 浏览器级回归），见「验收条件」第 4 条。凭据同步改为 `18938845688` / `Aa@88822166!`（原始口令 11 位，经用户裁决补一位以满足官方 `>= 12` 硬约束）。
+- **已执行 2026-09-23**：线上路由切换与 `forward_auth` 的实际行为已实测（15 项探针 + 浏览器级回归），见「验收条件」第 4 条。凭据同步为用户指定的 12 位口令（原 11 位补一位以满足官方 `>= 12` 硬约束）——明文不写进文档，见 `.env` 的 `DSH_AUTH_PASSWORD`。
+- **已执行 2026-09-24（凭据轮换）**：主账号口令按要求换为 12 位新口令（官方约束达标，无需改动官方一组 env 的结构），账号表额外交付成员账号。落位前先复核 `.env` 解析（`docker compose config` 实测口令解析长度 12、尾部含 `#`，确认 dotenv 未把 `#` 当注释），容器内 3098 预演 12 项全绿后才 `--force-recreate`（普通 `up -d` 不重建，已实测）。重建后 `Up (healthy)`、`listening … accounts:2`；公网复验 14 项全绿：两个账号新口令均 `auth=204` 且 `GET /` 200，两套旧口令均 401，全角 `＃`/尾随空格仍 204，匿名门禁 6 项无回归。
+- **未验证**：α.4 未构造 10 次失败以在线触发 `error=throttled`（判定其行为仍由单测覆盖）；未在第二台真实外网电脑上复现原始故障现场（原始失败请求未带输入形态日志，故"当时那一台到底多了/换了哪个字节"无法事后取证，只能以服务端吸收差异 + 日志补形态收口）。
 - **已验证**：Cloudflare 对 302 不缓存（`cf-cache-status: DYNAMIC` + `cache-control: no-store`）。
 - 未验证：Safari/Firefox、多副本部署下的限流一致性、长时会话过期后的前端表现。
 - 门户是本机单实例假设（进程内限流）；多副本时限流计数不共享，签名校验仍然正确。

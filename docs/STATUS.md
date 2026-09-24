@@ -746,6 +746,94 @@ net.core.rmem_max = 16777216
 
 **下一步**：①提交推送 P2-2 代码与文档；②D16 助理收口（真实模型执行、定时触发、消息入站、多主体鉴权仍未验证）；③P3-2 与上游 V8 SIGSEGV 待裁决/上游修复。
 
+## 2026-09-24（续十四）：外网登录失败归因与修复 + 门户账号表（D17 / P1-13，portal α.4，已部署 `dsh.10ge.cn`）
+
+用户报告：外网其他电脑用 `18938845688` / `Aa@88822166!` 登录 `dsh.10ge.cn` 提示密码错；并要求新增账号 `15889358287` / `Aa@123456!`。
+
+### 归因（结论 + 证据 + 未取证项）
+
+先在容器本次运行期（`StartedAt 2026-09-24T04:27:26Z`）的日志上统计 `login.*` 的 IP 分布：
+
+| 事件 / IP | 次数 | 判读 |
+|---|---|---|
+| `login.failed` / `192.168.11.205` | **10** | 经 CF 隧道进来的真实终端尝试，**被记成隧道主机地址**——所有外网客户端共用一个身份 |
+| `login.succeeded` / `192.168.11.205` | 7 | 同一来源也能成功 ⇒ 凭据与服务端校验逻辑本身可用 |
+| `login.blocked` | **0** | **限流从未实际触发**（故不是「被限流挡掉」） |
+
+同一凭据从本机公网 IP 实测登录成功（`303 → /`、下发 Cookie、`/api/portal/auth` 204），服务端链路正常。逐项排除：11 位旧口令（少末位 `!`）→ 401；全角 `！` → 401；首尾空格 → 401。
+
+**结论**：不是凭据错误，也不是门禁坏掉，而是**「看起来一样、字节不同」**这一类的输入差异（中文输入法把 `!` `@` 打成全角 `！` `＠`，或从聊天/备忘录粘贴带上首尾空白），加上一个**并发的风险放大器**——限流桶被全站共用（`X-Forwarded-For` 经隧道恒为隧道主机地址），任何一个人的失败都记在所有人头上，10 次即能让全站 15 分钟内都登不上。
+
+**未取证**：当时的失败请求没有输入形态日志，**「那台电脑到底多/换了哪个字节」无法事后坐实**，只能以「服务端吸收差异 + 日志补形态」收口；下次复现可直接由日志判定。未取证的推断已如实登记，不当作已证实。
+
+### 修复（portal `0.1.0-alpha.3` → **`alpha.4`**）
+
+| # | 改动 | 落点 |
+|---|---|---|
+| 1 | 凭据归一化：全角符号 `U+FF01—U+FF5E` 折叠为半角、去首尾空白（含全角空格 `U+3000`），提交值与配置值过同一函数后比较；**不做大小写折叠、不做截断** | [session.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/src/session.mjs) |
+| 2 | 限流按真实客户端 IP 分桶：优先 `cf-connecting-ip`，其次 `X-Forwarded-For` / `x-real-ip` / 套接字地址 | [server.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/src/server.mjs) |
+| 3 | **账号表**：`accounts.json`（`{"accounts":[{"username","password"}]}`）承载额外成员账号；主账号仍是官方 `DSH_AUTH_USERNAME` / `DSH_AUTH_PASSWORD`。文件缺失/非 JSON/缺数组只告警不锁站；重复或空条目跳过并告警；会话签名密钥由全部账号派生（增删改任一账号即全量会话失效） | [config.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/src/config.mjs) |
+| 4 | 失败日志只登记输入形态 `pwLength` / `pwFullWidth` / `usernameNormalized`，不落任何凭据内容 | [server.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/src/server.mjs) |
+| 5 | 登录页提示补一句「`! @ . -` 等符号请用英文半角输入」 | [login.html](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/site/login.html) |
+
+未复用而被否决的替代：把额外账号写进 compose `environment:` 列表（1Panel 模板会在应用升级时覆盖，且环境变量不适合承载列表）；`data/dsh/portal/` 是持久卷，`accounts.json` 可设 `0600`，比 root 属主的 `.env`（`0644`）更紧。SSO / 账号生命周期仍归 `identity-oidc`（B5），门户不建第二套身份体系。
+
+### 验证
+
+| 层 | 结果 |
+|---|---|
+| 单测 `node --test 'packages/portal/tests/*.test.mjs'` | **12 / 12 pass**（新增 [accounts.test.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/tests/accounts.test.mjs) 5 条 + 归一化用例；`node --test tests/` 在 Node v24.15.0 报 `MODULE_NOT_FOUND`，脚本已改 glob 形式） |
+| 容器内 **备用端口 3098** 预演（切换生产前） | 启动日志 `accounts:2`；公开面 `/portal` 200、`/login` 200、匿名 `/api/portal/auth` 401、`/` 302；主账号原始/全角/尾空格 3 种输入 `auth=204`，旧 11 位与大小写不同 `auth=401`；账号表账号原始/全角 `auth=204`，错口令与不存在账号 `auth=401` |
+| 公网复验（对 `dsh.10ge.cn`，经 CF） | 门禁 7 项：`/` 302→`/portal`、`/portal` 200、`/login` 200、匿名 auth 401、`/session/abc123` 302→`/login?next=`、`/survey/` 200、`/portal/styles.css` 200；双账号各 2 种输入 `auth=204` 且 `Location: /`；错口令与不存在账号 `auth=401`；带会话 `GET /` 200；Cookie 属性 `HttpOnly; SameSite=Lax; Max-Age=43200; Secure`；带会话 `/plugins/events` 5 秒内 `200` 且收到 `: connected` + 全量图帧 |
+| 限流分桶修复的线上证据 | 失败日志 `ip` 已是真实终端地址（`14.154.124.166`、`240e:3bb:2ea0:c61:…`），不再是隧道主机 `192.168.11.205` |
+
+### 部署（就地换版，未重建容器）
+
+替换前先对账：线上 `src/*.mjs` 与 `package.json` 的 `md5sum` 与 `git show HEAD:packages/portal/…` **全等**，确认线上无漂移后原地覆盖。备份 `*.bak.a4.20260924053337`；`accounts.json` 落位 `0600 / 1000:1000`（`find … ! -user 1000` = 0）。切换方式为匹配命令行前缀 `kill` 门户进程（`old_pid=3099499`），entrypoint 看护循环 3 秒后重拉（新 pid `3229309`，`listening … accounts:2`，容器 `RestartCount` 不变）。预演脚本用完即删（含明文口令）。
+
+**未执行**：未构造 10 次失败在线上触发 `error=throttled`（其行为由单测覆盖）；未跑仓库级 `build` / `typecheck` / `check-plan`；未在第二台真实外网电脑复现原始故障现场。
+
+**仓库改动未提交**：`packages/portal/{src/{session,server,config}.mjs, tests/{session,accounts}.test.mjs, site/login.html, package.json, README.md}`、`docs/modules.json`、`docs/STATUS.md`。
+
+**下一步**：①提交推送本轮 portal α.4 代码与文档；②把本轮运维事实写回 skill `dsh-10ge-ops`（账号表落位、限流取 `cf-connecting-ip`）；③D16 助理收口、P3-2、上游 V8 SIGSEGV 仍待办。
+
+## 2026-09-24（续十五）：门户凭据轮换（D17 / P1-13，纯配置，无代码改动，已部署 `dsh.10ge.cn`）
+
+用户要求把两个账号口令都换成 `Aa@123456AI#`，并保证外网可登录。
+
+### 约束裁决（先确认再动手）
+
+用户首轮给的是 11 位 `Aa@123456AI`，而 `18938845688` 是官方 env 组主账号、`DSH_AUTH_PASSWORD` 被镜像硬约束 **≥ 12 位**（违反即容器崩溃循环）。已向用户说明并让其裁决，用户选择「两账号都进账号表」（env 组退为占位）。**随后用户把口令改为 12 位 `Aa@123456AI#`，长度冲突消失**，故实现改为回到更简单的既有结构：`18938845688` 作官方主账号、`15889358287` 作账号表额外账号，不引入占位账号概念。
+
+### 落地
+
+| 项 | 值 |
+|---|---|
+| `.env` `DSH_AUTH_USERNAME` / `DSH_AUTH_PASSWORD` | `18938845688` / 12 位新口令（**明文不落文档**，见服务端 `.env`） |
+| `accounts.json` | 额外账号 `15889358287`，口令与主账号相同（**明文不落文档**），`0600 / 1000:1000` |
+| 备份 | `.env.bak.acct.20260924055534`、`accounts.json.bak.acct.20260924055534`（另有 `…055421` 为中间态，已被覆盖） |
+
+`#` 在 dotenv 里必须双引号包裹才不被当注释截断——本仓库 `.env` 用 `KEY="value"` 形式，实测 `docker compose config` 解析出的口令长度 12、尾部含 `#`，**未被截断**。
+
+### 验证
+
+| 层 | 结果 |
+|---|---|
+| 单测 | **12 / 12 pass**（本次未改代码，仍回归一次） |
+| 容器内 3098 预演（重建前） | 12 项全绿：`accounts:2`；公开面 `/portal` 200、`/login` 200、匿名 auth 401、`/` 302；主账号新口令 / 全角 `＃` / 尾随空格均 `auth=204`，旧口令与少末位 `#` 均 `auth=401`；账号表账号新口令与全角均 `auth=204`，上一轮口令与不存在账号 `auth=401` |
+| 重建 | `docker compose up -d --force-recreate`（`.env` 变更必须强制重建，普通 `up -d` 不重建）；重建后 `Up (healthy)`、`listening … accounts:2`、无 `DSH_AUTH_*` 报错 |
+| 公网复验 | 14 项全绿：匿名 `/` 302→`/portal`、`/portal` 200、`/login` 200、auth 401、`/session/abc123` 302→`/login?next=`、`/survey/` 200；两账号新口令均 `auth=204` + `GET /` 200 + `Location: /`；全角 `＃` 与尾随空格仍 204；两套旧口令（`Aa@88822166!`、`Aa@123456!`）均 401；Cookie `HttpOnly; SameSite=Lax; Max-Age=43200; Secure` |
+
+### 影响与未执行
+
+- **既有会话全部失效**（签名密钥由全部账号派生），用户需重新登录；属预期，不是故障。
+- **工作台中断约 1 分钟**（重建容器），非账号表的 3 秒级热重拉。
+- 文档中的明文口令已清理（`README.md` 示例与历史条目改为不记明文；`STATUS` 本轮亦不记明文），此后口径为「口令只在服务端 `.env` / `accounts.json`」。
+- **未执行**：未跑仓库级 `build` / `typecheck` / `check-plan`；未在第二台真实外网电脑实测（沿用上一轮的登录日志可查证方式）。
+- **仓库改动**：`packages/portal/README.md`、`docs/STATUS.md`（本次无源码改动，`src/*` 与 α.4 部署时逐字节一致，未重新拷贝）。
+
+**下一步**：①提交推送本轮文档与 α.4 代码；②D16 助理收口、P3-2、上游 V8 SIGSEGV 仍待办。
+
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
 按用户裁决「按 5 批切分，从第 1 批开始，先修复线上缺陷」执行。B1 出口标准是「线上可复现缺陷按归因处置（我方修复项复验通过，官方/环境项登记留证）」，本轮完成其中「我方修复项」三条。

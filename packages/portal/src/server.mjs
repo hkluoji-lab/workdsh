@@ -5,13 +5,14 @@ import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
-import { loadConfig } from './config.mjs';
+import { loadAccounts, loadConfig } from './config.mjs';
 import {
   COOKIE_NAME,
   LoginThrottle,
   clearedCookie,
   deriveKey,
   issueSession,
+  normalizeCredential,
   parseCookies,
   readSession,
   safeNext,
@@ -20,9 +21,12 @@ import {
 } from './session.mjs';
 
 const config = loadConfig();
-const key = deriveKey(config.password || 'unconfigured');
+const { accounts, warnings: accountWarnings } = loadAccounts(config);
+// 签名密钥由全部账号派生：新增、删除或改动任一账号口令都会让既有会话立即失效，
+// 与「改口令即全量失效」的原有约束一致，不引入额外密钥管理。
+const key = deriveKey([...accounts].map(([user, secret]) => `${user}\u0000${secret}`).join('\u0001') || 'unconfigured');
 const throttle = new LoginThrottle(config.throttle);
-const credentialsConfigured = config.username !== '' && config.password !== '';
+const accountsConfigured = accounts.size > 0;
 
 // 缓存策略与安全头分离。此前 no-store 被合并进每一个响应，连图片一起，导致每次访问都要重下门户全部素材。
 const CACHE_HTML = 'no-cache'; // 可复用但每次必须回源校验：配合 ETag 拿 304，且绝不陈旧。
@@ -122,7 +126,11 @@ function redirect(res, status, location) {
 }
 
 function clientIp(req) {
-  // 门户只绑定 127.0.0.1，仅 Caddy 可达，因此转发头可信；否则退回套接字地址。
+  // 门户经 Cloudflare 隧道进入时，Caddy 的 X-Forwarded-For 恒为隧道所在主机的地址，
+  // 与真实终端无关——直接用它会让限流退化成「全站共用一个桶」，一个人失败十次就锁住所有人。
+  // CF 会在边缘注入 cf-connecting-ip，优先取它；无 CF 的场景再回退到转发头与套接字地址。
+  const cf = req.headers['cf-connecting-ip'];
+  if (typeof cf === 'string' && cf.trim() !== '') return cf.trim();
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded !== '') return forwarded.split(',')[0].trim();
   const real = req.headers['x-real-ip'];
@@ -132,7 +140,18 @@ function clientIp(req) {
 
 function currentSession(req, now) {
   const token = parseCookies(req.headers.cookie).get(COOKIE_NAME);
-  return readSession({ key, token, user: config.username, now });
+  return readSession({ key, token, users: accounts, now });
+}
+
+// 登录失败时只登记输入的形态（长度、是否含全角字符或首尾空白），不落任何凭据内容：
+// 「看起来一样、字节不同」的输入是登录失败最常见的一类原因，形态足以判定。
+function credentialShape({ username, password }) {
+  const raw = typeof password === 'string' ? password : '';
+  return {
+    pwLength: raw.length,
+    pwFullWidth: /[\uff01-\uff5e\u3000]/.test(raw),
+    usernameNormalized: normalizeCredential(username) !== username,
+  };
 }
 
 async function readBody(req, limit = 8192) {
@@ -238,7 +257,7 @@ async function handleLogin(req, res) {
       ? send(res, 429, { 'Content-Type': 'application/json' }, '{"ok":false,"error":"throttled"}')
       : redirect(res, 303, `/login?error=throttled&next=${encodeURIComponent(next)}`);
   }
-  if (!credentialsConfigured) {
+  if (!accountsConfigured) {
     log('login.rejected', { ip, reason: 'credentials-unconfigured' });
     return wantsJson
       ? send(res, 503, { 'Content-Type': 'application/json' }, '{"ok":false,"error":"unconfigured"}')
@@ -250,21 +269,23 @@ async function handleLogin(req, res) {
       : redirect(res, 303, `/login?error=missing&next=${encodeURIComponent(next)}`);
   }
 
-  const userOk = fields.username === config.username;
-  const passwordOk = await verifyPassword(fields.password, config.password);
-  if (!userOk || !passwordOk) {
+  // 用户名与口令都先归一化再比对（见 session.mjs）：全角符号与首尾空白不再造成「看着一样却登不上」。
+  const user = normalizeCredential(fields.username);
+  const expected = accounts.get(user);
+  const passwordOk = await verifyPassword(fields.password, expected ?? '');
+  if (expected === undefined || !passwordOk) {
     throttle.fail(ip, now);
-    log('login.failed', { ip, user: fields.username });
+    log('login.failed', { ip, user, ...credentialShape(fields) });
     return wantsJson
       ? send(res, 401, { 'Content-Type': 'application/json' }, '{"ok":false,"error":"credentials"}')
       : redirect(res, 303, `/login?error=credentials&next=${encodeURIComponent(next)}`);
   }
 
-  const { token, expiresAt } = issueSession({ key, user: config.username, now, ttlMs: config.sessionTtlMs });
+  const { token, expiresAt } = issueSession({ key, user, now, ttlMs: config.sessionTtlMs });
   throttle.reset(ip);
-  log('login.succeeded', { ip, user: config.username });
+  log('login.succeeded', { ip, user });
   return wantsJson
-    ? send(res, 200, { 'Content-Type': 'application/json', 'Set-Cookie': sessionCookie({ token, maxAgeMs: expiresAt - now, secure: config.cookieSecure }) }, JSON.stringify({ ok: true, user: config.username, redirect: next }))
+    ? send(res, 200, { 'Content-Type': 'application/json', 'Set-Cookie': sessionCookie({ token, maxAgeMs: expiresAt - now, secure: config.cookieSecure }) }, JSON.stringify({ ok: true, user, redirect: next }))
     : send(res, 303, { Location: next, 'Set-Cookie': sessionCookie({ token, maxAgeMs: expiresAt - now, secure: config.cookieSecure }) }, '');
 }
 
@@ -320,8 +341,10 @@ const sweep = setInterval(() => throttle.retain(), 60_000);
 sweep.unref();
 
 server.listen(config.port, config.bind, () => {
-  log('listening', { bind: config.bind, port: config.port, assetsDir: config.assetsDir, cookieSecure: config.cookieSecure });
-  if (!credentialsConfigured) {
+  log('listening', { bind: config.bind, port: config.port, assetsDir: config.assetsDir, cookieSecure: config.cookieSecure, accounts: accounts.size });
+  // 只登记账号数量与告警，不登记用户名与口令。
+  for (const message of accountWarnings) log('warning', { scope: 'accounts', message });
+  if (!accountsConfigured) {
     log('warning', { message: 'DSH_AUTH_USERNAME / DSH_AUTH_PASSWORD 未配置：登录按失败关闭处理，不会放行任何会话。' });
   }
 });

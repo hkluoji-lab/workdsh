@@ -12,13 +12,27 @@ export function deriveKey(secret) {
   return createHmac('sha256', 'workdsh-portal-session-v1').update(secret).digest();
 }
 
-// 两侧都先过 scrypt 再常量时间比较，避免通过长度或提前返回泄漏口令信息。
+// 凭据归一化：登录失败的两类现场原因是「看起来一样、字节不同」——
+//  ① 中文输入法把半角符号打成全角（！＠．－ 等，U+FF01—U+FF5E）；
+//  ② 从聊天工具、备忘录粘贴时带上首尾空白（含全角空格 U+3000）。
+// 提交值与配置值都过同一函数后再比较，比较口径保持一致；不做大小写折叠，也不截断。
+export function normalizeCredential(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/[\uff01-\uff5e]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0))
+    .replace(/\u3000/g, ' ')
+    .trim();
+}
+
+// 两侧都先归一化、再过 scrypt 常量时间比较，避免通过长度或提前返回泄漏口令信息。
 // 使用异步 scrypt：KDF 走 libuv 线程池，不再阻塞与 forward_auth 共用的单线程事件循环
 // （此前两次 scryptSync 会让同一进程内所有并发请求排队等 KDF）。
 export async function verifyPassword(submitted, expected) {
-  if (typeof submitted !== 'string' || typeof expected !== 'string' || expected === '') return false;
+  const given = normalizeCredential(submitted);
+  const want = normalizeCredential(expected);
+  if (given === '' || want === '') return false;
   const salt = 'workdsh-portal-password-v1';
-  const [a, b] = await Promise.all([scryptAsync(submitted, salt, 32), scryptAsync(expected, salt, 32)]);
+  const [a, b] = await Promise.all([scryptAsync(given, salt, 32), scryptAsync(want, salt, 32)]);
   return timingSafeEqual(a, b);
 }
 
@@ -29,7 +43,9 @@ export function issueSession({ key, user, now, ttlMs }) {
   return { token: `${payload}.${mac}`, expiresAt };
 }
 
-export function readSession({ key, token, user, now }) {
+// users 为当前有效账号集合（Set 或 Map，只要有 has()）：
+// 账号被删除或改名后，旧会话在下一次校验即失效，不依赖 Cookie 里的用户名自证。
+export function readSession({ key, token, users, now }) {
   if (typeof token !== 'string' || token === '') return null;
   const dot = token.lastIndexOf('.');
   if (dot <= 0) return null;
@@ -43,7 +59,7 @@ export function readSession({ key, token, user, now }) {
   } catch {
     return null;
   }
-  if (!data || typeof data !== 'object' || data.u !== user) return null;
+  if (!data || typeof data !== 'object' || typeof users?.has !== 'function' || !users.has(data.u)) return null;
   if (typeof data.e !== 'number' || data.e <= now) return null;
   return { user: data.u, issuedAt: data.i, expiresAt: data.e };
 }

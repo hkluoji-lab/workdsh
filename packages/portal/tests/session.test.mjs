@@ -8,6 +8,7 @@ import {
   clearedCookie,
   deriveKey,
   issueSession,
+  normalizeCredential,
   parseCookies,
   readSession,
   safeNext,
@@ -16,6 +17,7 @@ import {
 } from '../src/session.mjs';
 
 const key = deriveKey('correct horse battery staple');
+const users = new Set(['admin']);
 
 test('口令校验接受正确口令并拒绝错误口令', async () => {
   assert.equal(await verifyPassword('s3cret-pass', 's3cret-pass'), true);
@@ -25,11 +27,24 @@ test('口令校验接受正确口令并拒绝错误口令', async () => {
   assert.equal(await verifyPassword('s3cret-pass', undefined), false);
 });
 
+test('凭据归一化吸收全角符号与首尾空白', async () => {
+  assert.equal(normalizeCredential('\uff21\uff22c1\uff01'), 'ABc1!', '全角字母、数字与符号折叠为半角');
+  assert.equal(normalizeCredential('  a b  '), 'a b', '首尾空白被去除，中间空白保留');
+  assert.equal(normalizeCredential('a\u3000'), 'a', '全角空格同样按空白处理');
+  assert.equal(normalizeCredential(undefined), '');
+  assert.equal(normalizeCredential(42), '');
+
+  assert.equal(await verifyPassword('Aa@88822166\uff01', 'Aa@88822166!'), true, '中文输入法的全角 ！ 等价于半角 !');
+  assert.equal(await verifyPassword('  Aa@88822166!  ', 'Aa@88822166!'), true, '粘贴带来的首尾空白被忽略');
+  assert.equal(await verifyPassword('Aa@88822166\u3000', 'Aa@88822166!'), false, '全角空格不能替掉末尾的半角 !');
+  assert.equal(await verifyPassword('aa@88822166!', 'Aa@88822166!'), false, '不做大小写折叠');
+});
+
 test('签发的会话可读回并保留有效期', () => {
   const now = 1_800_000_000_000;
   const { token, expiresAt } = issueSession({ key, user: 'admin', now, ttlMs: 60_000 });
   assert.equal(expiresAt, now + 60_000);
-  const session = readSession({ key, token, user: 'admin', now: now + 1_000 });
+  const session = readSession({ key, token, users, now: now + 1_000 });
   assert.equal(session.user, 'admin');
   assert.equal(session.expiresAt, expiresAt);
 });
@@ -40,13 +55,15 @@ test('被篡改、换密钥、换用户与过期的会话一律拒绝', () => {
   const [payload, mac] = [token.slice(0, token.lastIndexOf('.')), token.slice(token.lastIndexOf('.') + 1)];
 
   const forged = `${Buffer.from(JSON.stringify({ u: 'admin', i: now, e: now + 10 ** 9 })).toString('base64url')}.${mac}`;
-  assert.equal(readSession({ key, token: forged, user: 'admin', now }), null, '改载荷必须失败');
-  assert.equal(readSession({ key: deriveKey('other'), token, user: 'admin', now }), null, '换密钥必须失败');
-  assert.equal(readSession({ key, token, user: 'someone-else', now }), null, '换用户必须失败');
-  assert.equal(readSession({ key, token, user: 'admin', now: now + 60_001 }), null, '过期必须失败');
-  assert.equal(readSession({ key, token: `${payload}.`, user: 'admin', now }), null, '空签名必须失败');
-  assert.equal(readSession({ key, token: 'not-a-token', user: 'admin', now }), null, '无分隔符必须失败');
-  assert.equal(readSession({ key, token: undefined, user: 'admin', now }), null, '缺失必须失败');
+  assert.equal(readSession({ key, token: forged, users, now }), null, '改载荷必须失败');
+  assert.equal(readSession({ key: deriveKey('other'), token, users, now }), null, '换密钥必须失败');
+  assert.equal(readSession({ key, token, users: new Set(['someone-else']), now }), null, '换用户必须失败');
+  assert.equal(readSession({ key, token, users: new Set(), now }), null, '账号集合为空必须失败');
+  assert.equal(readSession({ key, token, now }), null, '缺账号集合必须失败');
+  assert.equal(readSession({ key, token, users, now: now + 60_001 }), null, '过期必须失败');
+  assert.equal(readSession({ key, token: `${payload}.`, users, now }), null, '空签名必须失败');
+  assert.equal(readSession({ key, token: 'not-a-token', users, now }), null, '无分隔符必须失败');
+  assert.equal(readSession({ key, token: undefined, users, now }), null, '缺失必须失败');
 });
 
 test('回跳只接受同源相对路径', () => {

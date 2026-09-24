@@ -1,11 +1,11 @@
 {
   "name": "workdsh-portal",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "private": true,
   "type": "module",
   "description": "WorkDSH 企业门户与登录门禁（部署边缘面，不是 Harness 功能插件）",
   "scripts": {
     "start": "node src/server.mjs",
-    "test": "node --test tests/session.test.mjs"
+    "test": "node --test 'tests/*.test.mjs'"
   }
 }
