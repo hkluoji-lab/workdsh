@@ -386,6 +386,9 @@
       ],
       "x64ArchFiles": "**/node_modules/{node-pty/prebuilds/darwin-*/**,fs-ext/prebuilds/darwin-*/**,node-addon-require-builtin-darwin-*/**,@deepseek-ai/libreoffice-kit-darwin-*/**,@deepseek-ai/node-addon-system-darwin-*/**,@img/sharp-darwin-*/**,@img/sharp-libvips-darwin-*/**,@koromix/koffi-darwin-*/**,@napi-rs/canvas-darwin-*/**,@trycua/cua-driver-darwin-*/**,@ubjs/node-darwin-*/**,@vscode/ripgrep-darwin-*/**,sherpa-onnx-darwin-*/**}"
     },
+    "dmg": {
+      "format": "UDBZ"
+    },
     "win": {
       "asarUnpack": [
         "build/app-icon.png",
