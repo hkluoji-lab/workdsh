@@ -1,24 +1,14 @@
-<p align="center">
-  <a href="https://dshdesktop.cn"><img src="assets/desktop-hero-en.png" alt="WorkDSH, an open-source desktop client built on DeepSeek Harness" width="100%"></a>
-</p>
-
 <h1 align="center">WorkDSH</h1>
 
 <p align="center">
   <strong>An open-source desktop client for Windows and macOS, built on DeepSeek Harness.</strong>
 </p>
 
-<h3 align="center"><a href="https://dshdesktop.cn">One-click download, ready to use out of the box.</a></h3>
-
 <p align="center">
   Everything is a plugin — the desktop itself is a plugin.
 </p>
 
 <p align="center"><sub>An independent community project, not affiliated with, authorized by, or endorsed by DeepSeek.<br>No DeepSeek employee or official upstream DeepSeek Harness team member currently participates in this repository; upstream contributors shown by GitHub are inherited from synchronized fork history.<br><a href="README.md">中文</a> · English</sub></p>
-
-<p align="center">
-  <img src="assets/desktop-chat-en.png" alt="WorkDSH chat interface in English" width="100%">
-</p>
 
 <p align="center">
   <a href="https://github.com/techflag/workdsh/releases"><img src="https://img.shields.io/github/v/release/techflag/workdsh?include_prereleases&amp;style=flat&amp;label=release&amp;color=4D6BFE" alt="Latest release"></a>
@@ -53,7 +43,7 @@ Together with every plugin author, we want to build an open, composable, and sus
 
 | Logo | Introduction |
 | --- | --- |
-| <a href="https://dshdesktop.cn/sponsors/wuying"><img src="assets/sponsors/wuying-cloud-computer-logo.png" alt="Alibaba Cloud Wuying Cloud Computer" width="96"></a> | [**Alibaba Cloud · Wuying Cloud Computer**](https://dshdesktop.cn/sponsors/wuying)<br>Thanks to **Alibaba Cloud** Wuying Cloud Computer for sponsoring this project. Wuying Cloud Computer Personal Edition provides a cloud desktop for individual users, with compute, storage, and the desktop environment hosted in the cloud. It supports access from multiple device types and lets users choose specifications on demand, making it useful for remote work, learning, development, and lightweight creative workflows.<br><br>[**Register in WeChat →**](https://dshdesktop.cn/sponsors/wuying) |
+| <img src="assets/sponsors/wuying-cloud-computer-logo.png" alt="Alibaba Cloud Wuying Cloud Computer" width="96"> | **Alibaba Cloud · Wuying Cloud Computer**<br>Thanks to Alibaba Cloud Wuying Cloud Computer for sponsoring this project. |
 | <a href="https://astraflow.ucloud.cn/modelverse/playground?ytag=geo_waituo_dsh"><img src="assets/sponsors/astraflow-logo.png" alt="UCloud AstraFlow" width="96"></a> | [**UCloud · AstraFlow**](https://astraflow.ucloud.cn/modelverse/playground?ytag=geo_waituo_dsh)<br>Thanks to **UCloud** AstraFlow for sponsoring this project. **UCloud** AstraFlow ModelVerse supports one-click access to 200+ models, including Kimi K3, DeepSeek V4/V3, Qwen 3, GLM5.2, happyhorse, and other leading open-source models worldwide, with no self-training required.<br><br>[**Visit website →**](https://astraflow.ucloud.cn/modelverse/playground?ytag=geo_waituo_dsh) |
 | <a href="https://88api.ai/sign-up?aff=VnEb"><img src="assets/sponsors/88api-logo.png" alt="88API" width="120"></a> | [**88API**](https://88api.ai/sign-up?aff=VnEb)<br>88API is a one-stop multi-model API aggregation platform operated by an overseas company, with stable, efficient service and invoice support. It provides official-transfer and open-source DeepSeek channels, with pricing as low as 50% off, and is designed to work well with WorkDSH. One API key can connect to many domestic and overseas models across text chat, image, audio, music, and video generation APIs for AI coding, agent automation, content creation, and application development.<br><br>[**Register now →**](https://88api.ai/sign-up?aff=VnEb) |
 
@@ -69,7 +59,6 @@ Ordinary users can start with the [user guide](docs/user-guide.en.md); the devel
 | --- | --- |
 | Install and use the application | [User guide](docs/user-guide.en.md) |
 | Check platforms, prerequisites, and product boundaries | [FAQ](docs/faq.en.md) |
-| Understand data processing and privacy choices | [Privacy Policy](PRIVACY.md) |
 | Understand why the project exists | [Why WorkDSH](docs/why-desktop.en.md) |
 | See the full documentation and README map | [Documentation index](docs/README.en.md) |
 
