@@ -992,7 +992,7 @@ describe('published package surface', () => {
     expect(windowsJob).not.toContain('dsh-plugin-desktop-beta')
     expect(windowsJob).toContain('- run: yarn workspace dsh-plugin-desktop check:win-package')
     expect(windowsJob).toContain('run: yarn workspace dsh-plugin-desktop dist:win')
-    expect(windowsJob).toContain('run: yarn workspace dsh-plugin-desktop dist:win-portable')
+    expect(windowsJob).not.toContain('dist:win-portable')
     expect(windowsJob).toContain('DSH_PACKAGE_CHECK_ALREADY_RAN: \'1\'')
     expect(macosJob).not.toContain('- run: yarn check')
     expect(macosJob).not.toContain('dsh-plugin-desktop-beta')

@@ -94,9 +94,9 @@ jobs:
       - if: needs.changes.outputs.product == 'true'
         run: yarn check
 
-  # Windows-only logic and unsigned NSIS/portable builds on a real Windows runner:
+  # Windows-only logic and unsigned NSIS build on a real Windows runner:
   # updates, window options, pwsh sandbox, volume diagnostics, and packaging.
-  # The package gate runs once; both artifacts reuse its build output.
+  # The package gate runs once before packaging.
   desktop-windows:
     needs: changes
     if: needs.changes.outputs.product == 'true'
@@ -124,17 +124,12 @@ jobs:
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
         run: yarn workspace dsh-plugin-desktop dist:win
-      - name: Build Windows portable archive
-        env:
-          DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
-        run: yarn workspace dsh-plugin-desktop dist:win-portable
-      - name: Upload Windows installer and portable archive
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: dsh-plugin-desktop-windows-x64
           path: |
             dsh-plugin-desktop/dist/*.exe
-            dsh-plugin-desktop/dist/*.zip
             dsh-plugin-desktop/dist/*.blockmap
           if-no-files-found: error
           retention-days: 14
@@ -236,7 +231,7 @@ jobs:
         run: |
           VERSION="${TAG#desktop-v}"
           cat > release-notes.md <<'EOF'
-          WorkDSH Desktop 提供 Windows x64 安装版、便携版和 macOS Intel x64 与 Apple Silicon arm64 独立 DMG。
+          WorkDSH Desktop 提供 Windows x64 安装版和 macOS Intel x64 与 Apple Silicon arm64 独立 DMG。
 
           - 桌面产品名称统一为 WorkDSH
           - 安装包内置完整 WorkDSH 运行时，启动后可直接使用项目、资料库、专家、技能和连接器
