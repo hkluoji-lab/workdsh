@@ -834,6 +834,61 @@ net.core.rmem_max = 16777216
 
 **下一步**：①提交推送本轮文档与 α.4 代码；②D16 助理收口、P3-2、上游 V8 SIGSEGV 仍待办。
 
+## 2026-09-24（续十六）：项目模板 5 → 15 扩充与线上落地（projects α.4）
+
+用户反馈侧栏「项目」面板的「从模板创建」只有 5 个模板（产品需求全流程、市场调研与竞品分析、团队知识库、项目交付、Bug 跟踪/测试验收），询问是否还有其他模板并要求「同步更新最全面的模板」。
+
+### 核查结论：5 个即全部，本轮是「扩充」不是「补漏」
+
+模板的唯一硬编码真源是 [project-manager.ts](file:///Users/apple/Documents/AI-luoji/workdsh/packages/plugins/projects/src/services/project-manager.ts) 的 `templates` 数组，`templates()` 直接返回该数组、前端渲染全部、无数量上限也无数量断言。穷尽检索 [PROJECT-DESIGN.md](file:///Users/apple/Documents/AI-luoji/workdsh/docs/PROJECT-DESIGN.md) 第 7.1.1 节（只规定「从模板创建」分区的交互：卡片含名称 + 一句场景说明，点击后打开预填但未提交的弹框）、`docs/research/workbuddy-project-screens.md` S07 截图记录、contracts 与测试，**均未定义模板清单**。范围由用户裁决为「全部新增 10 个」。
+
+### 落地
+
+| 项 | 值 |
+|---|---|
+| 新增 10 个模板 | 内容营销与社媒运营、客户跟进与商机管理、数据分析与经营报表、活动策划与执行、招投标与解决方案、招聘与人才选拔、培训与课程开发、财务预算与成本核算、品牌与视觉设计、网站建设与 SEO 增长（合计 **15**） |
+| 语义不变 | 模板仍是**纯预填数据**：只预填项目名称、场景描述与初始指令，创建后可编辑，不自动执行、不预先绑定专家或技能，也不改变项目权限语义 |
+| 版本 | `workdsh-plugin-projects` `0.1.0-alpha.3` → `0.1.0-alpha.4`；`docs/modules.json` 的模块版本线仍为 `0.1`，无需变更 |
+
+### 本机验证
+
+`corepack pnpm test`（`packages/plugins/projects`）：**10 / 10 pass**，`duration_ms 1249.5`；构建链 `workdsh-contracts@0.1.0-alpha.10` → `workdsh-ui@0.1.0-alpha.6` → `tsc` → `scripts/build-projects.mjs` 全绿。
+
+### 部署 `dsh.10ge.cn`（增量窗口，单制品）
+
+脚本 [deploy-projects-alpha4.sh](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-projects-alpha4/deploy-projects-alpha4.sh)，`TS=20260924125232`，沿用「只用镜像自带 `/usr/local/bin/dsh` 包装脚本（内部 gosu 1000）、绝不以 root 跑 pnpm」纪律。
+
+| 步骤 | 实测 |
+|---|---|
+| 制品 | `workdsh-plugin-projects-0.1.0-alpha.4.tgz`，sha256 `066ff177…2e2f98`，上传后与本机构建**逐字节一致**（`SHA_MISMATCH=0`） |
+| 官方安装 | `dsh plugin --profile web add … --offline`，`ADD_RC=0`（`Packages: +1 -95`，`Done in 5.5s`） |
+| 清单断言 | `projects → file:/workspace/wd-upload-projects-alpha4/workdsh-plugin-projects-0.1.0-alpha.4.tgz`；其余 8 项（bundle α.54 / assistant α.1 / experts α.8 / skills α.32 / connectors α.2 / office α.8 / library α.3 / activity α.4）**未动**；`bundles` 14 项无重复 |
+| 属主 | `profile/package.json`、`node_modules`、`node_modules/workdsh-plugin-projects` 均 `1000:1000` |
+| auth-bypass | profile 侧 `dsh-client-connection` 标记数仍为 **1**，无需重新打补丁 |
+| 启动 | 容器 `healthy [2]`；`plugin/module 错误数: 0`、`chokidar EACCES: 0`；公网 HTTP 302（门户门禁，正常） |
+
+### 线上浏览器级复验（Playwright）
+
+脚本 [verify-projects-live.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/.artifacts/deploy-projects-alpha4/verify-projects-live.mjs)，结果 `live-projects-templates.png` / `live-projects-create.png` / `live-projects-prefill.png` + `verify-projects-live.json`（`/tmp/dsh-deploy/projects-alpha4/`）：
+
+| 事实 | 结果 |
+|---|---|
+| 「项目」面板 | `panelVisible true`，「从模板创建」分区下 **15 张模板卡片**，15 张的名称与场景描述逐条与源码一致 |
+| 新建项目弹框（第二条独立入口） | 模板下拉 **16 项** = 1 项「选择模板」占位 + 15 个模板 |
+| 模板预填 | 选「网站建设与 SEO 增长」→ 名称回填同名、指令回填「按搜索意图组织内容与结构，效果结论以真实流量数据为准。」；弹框随后取消，**未在线上创建任何数据** |
+| 页面错误 | `errors: []`（无 console/pageerror/HTTP ≥400） |
+
+> 复验时发现门户口令已按「续十五」轮换，脚本已改为读取线上 `.env` 现值；口令只落在 `/tmp` 临时文件、**未回显**，用后已删除，未进入仓库。
+
+### 未执行
+
+- 未跑仓库级 `build` / `typecheck` / `check-plan`（本次仅改一个模块的模板数组与其版本/变更日志）。
+- 未在真实模型下用新模板跑通一次完整项目任务（模板是纯预填数据，不改变任务链路；真实任务抽查另行安排）。
+
+**仓库改动**：`packages/plugins/projects/src/services/project-manager.ts`、`packages/plugins/projects/package.json`、`packages/plugins/projects/CHANGELOG.md`、`packages/plugins/projects/README.md`、`docs/STATUS.md`。
+
+**下一步**：①提交推送本轮改动；②新模板的真实任务链路抽查；③D16 助理收口、P3-2 等既有待办不变。
+
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 
 按用户裁决「按 5 批切分，从第 1 批开始，先修复线上缺陷」执行。B1 出口标准是「线上可复现缺陷按归因处置（我方修复项复验通过，官方/环境项登记留证）」，本轮完成其中「我方修复项」三条。

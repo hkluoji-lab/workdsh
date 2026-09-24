@@ -41,7 +41,7 @@
 | 本地身份提供方 | 0.1 | `workdsh-provider-identity-local@0.1.0-alpha.5` | implemented |
 | Office 浏览器编辑插件 | 0.1 | `workdsh-plugin-office@0.1.0-alpha.8` | in_progress |
 | 协作与活动展示 | 0.1 | `workdsh-plugin-activity@0.1.0-alpha.4` | in_progress |
-| 项目管理 | 0.1 | `workdsh-plugin-projects@0.1.0-alpha.3` | in_progress |
+| 项目管理 | 0.1 | `workdsh-plugin-projects@0.1.0-alpha.4` | in_progress |
 | 资料库 | 0.1 | `workdsh-plugin-library@0.1.0-alpha.3` | implemented |
 | 助理 | 0.1 | `workdsh-plugin-assistant@0.1.0-alpha.1` | in_progress |
 
@@ -68,6 +68,8 @@
 2026-09-24 更新（三）：contracts α.9→**α.10**、experts α.7→**α.8**（均 Unreleased）——P1-2 首包压缩中**源码与公开契约真正发生变化**的两个模块：contracts 新增 `ExpertAuthoredDisplay`／`ExpertDisplayProjection` 与 `ExpertDetail.draftDisplay`／`revisionDisplay`；experts 的 client 改为读取该投影、不再在浏览器解析 front matter。其余模块（skills、connectors、office、library、projects、activity、bundle）本轮只改了**仓库根 `scripts/build-*.mjs` 的构建开关**（`minify` + `process.env.NODE_ENV`），模块源码与公开契约未变，因此不随本批 bump，避免以全局构建开关带动未变化模块锁步升级。公开 prerelease 仍以上次发行回执为准，本批待下次发行携带；P1-2 的实测体积见 [STATUS](STATUS.md) 2026-09-24（续九）。
 
 2026-09-24 更新（四）：bundle α.53→**α.54**（Unreleased）——本版是 α.53「收敛注入」的**首个上线制品**（α.53 只到本地候选，线上仍为 α.52），并搭载 workbench α.16 的客户端制品（「助理」入口由工作台占位移交 `workdsh-plugin-assistant@0.1.0-alpha.1` 自持）。组合包自身代码未变，只改版本号。同批部署把 P1-2 压缩后的**其余自有 client 制品按原版本号重发**（skills α.32、connectors α.2、office α.8、library α.3、projects α.3、activity α.4；模块源码与公开契约均未变，故不 bump，仅重发构建产物，理由见「更新（三）」），使自有 client 制品**仓库 dist raw** 由 856,544 B 降至 458,905 B（约 −46%）；**线上下发口径**为 857,294 B → 497,569 B（约 −42%，见 [STATUS](STATUS.md) 2026-09-24（续十一））。同时更正本表 projects 行 `0.1.0-alpha.2` → `0.1.0-alpha.3`（该行自 2026-09-22 起滞后，实际交付制品与线上均已为 α.3）。线上部署与复验见 [STATUS](STATUS.md) 2026-09-24（续十一）。
+
+2026-09-24 更新（五）：projects α.3→**α.4**（Unreleased）——按用户要求把「从模板创建」的内置模板由 5 个扩充到 **15** 个（新增内容营销与社媒运营、客户跟进与商机管理、数据分析与经营报表、活动策划与执行、招投标与解决方案、招聘与人才选拔、培训与课程开发、财务预算与成本核算、品牌与视觉设计、网站建设与 SEO 增长）。模板仍是纯预填数据（只预填名称、一句场景描述与初始指令，不自动执行、不预绑专家或技能、不改变权限语义），公开契约与其余模块均未变。该版本已于同日增量部署到 `dsh.10ge.cn` 并完成浏览器级复验（面板 15 张卡片、新建弹框模板下拉 16 项），详见 [STATUS](STATUS.md) 2026-09-24（续十六）。
 
 以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
 

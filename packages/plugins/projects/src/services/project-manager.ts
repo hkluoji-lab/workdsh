@@ -14,6 +14,16 @@ const templates: readonly ProjectTemplate[] = [
   { id: 'knowledge', name: '团队知识库', description: '持续沉淀 SOP、经验和 FAQ', instruction: '优先复用项目资产，输出可维护、可追溯的团队知识。' },
   { id: 'delivery', name: '项目交付', description: '管理客户需求、计划、风险和周报', instruction: '跟踪交付范围、负责人、时间、风险和验收证据。' },
   { id: 'bugs', name: 'Bug 跟踪/测试验收', description: '持续跟踪 Bug、测试用例和验收', instruction: '问题必须关联复现步骤、负责人、优先级、状态和验证证据。' },
+  { id: 'content', name: '内容营销与社媒运营', description: '选题、排期、素材、发布与复盘', instruction: '以目标平台和受众为约束维护选题库、内容日历与发布复盘，效果结论以真实数据为准。' },
+  { id: 'sales', name: '客户跟进与商机管理', description: '线索、商机阶段、跟进记录与报价', instruction: '记录客户背景、沟通结论与下一步动作，商机阶段变化必须留有可核验依据。' },
+  { id: 'analytics', name: '数据分析与经营报表', description: '指标口径、数据源、周期报表与归因', instruction: '先固定指标口径与数据来源，每个结论都能回溯到原始数据。' },
+  { id: 'campaign', name: '活动策划与执行', description: '目标、预算、排期、物料与复盘', instruction: '明确目标与预算，逐项跟踪负责人、时间点和验收标准。' },
+  { id: 'bidding', name: '招投标与解决方案', description: '需求澄清、方案、报价与投标', instruction: '对齐客户需求与评分要点，方案和报价必须对应可核验的依据。' },
+  { id: 'hiring', name: '招聘与人才选拔', description: '岗位 JD、简历筛选、面试与评估', instruction: '以岗位要求为基准记录候选人证据，评估结论与事实依据分开保存。' },
+  { id: 'training', name: '培训与课程开发', description: '课程目标、大纲、课件与考核', instruction: '从学习目标倒推大纲与练习，保证课件、练习与考核口径一致。' },
+  { id: 'finance', name: '财务预算与成本核算', description: '预算、成本、毛利与结算', instruction: '所有金额注明口径与来源，调整保留修订记录，不以估算值冒充结算值。' },
+  { id: 'design', name: '品牌与视觉设计', description: '设计简报、方案、评审与规范', instruction: '以设计简报作为验收基准，方案与评审意见逐条对应。' },
+  { id: 'seo', name: '网站建设与 SEO 增长', description: '关键词、内容、外链与流量监控', instruction: '按搜索意图组织内容与结构，效果结论以真实流量数据为准。' },
 ];
 type Stored = ProjectState & { projects: Record<string, Project>; configs: Record<string, ProjectConfigRevision>; workItems: Record<string, ProjectWorkItem>; assets: Record<string, ProjectAssetRef>; tasks: Record<string, ProjectTaskLink>; activity: Record<string, ProjectActivity> };
 export class ProjectManager extends Service implements ProjectService {
