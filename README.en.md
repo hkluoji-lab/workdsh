@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/techflag/workdsh/releases/latest"><img src="https://img.shields.io/github/v/release/techflag/workdsh?style=flat&amp;label=release&amp;color=4D6BFE" alt="Latest release"></a>
+  <a href="https://github.com/techflag/workdsh/releases"><img src="https://img.shields.io/github/v/release/techflag/workdsh?include_prereleases&amp;style=flat&amp;label=release&amp;color=4D6BFE" alt="Latest release"></a>
   <a href="https://github.com/techflag/workdsh/releases"><img src="https://img.shields.io/github/downloads/techflag/workdsh/total?style=flat&amp;label=downloads&amp;color=4D6BFE" alt="Total downloads"></a>
   <a href="https://github.com/techflag/workdsh"><img src="https://img.shields.io/github/stars/techflag/workdsh?style=flat&amp;label=%E2%98%85&amp;color=08C" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2EA44F?style=flat" alt="MIT License"></a>
@@ -35,12 +35,12 @@ WorkDSH integrates the local Web UI, Host service, and plugin system from [DeepS
 
 ## Download and install
 
-The current Alpha desktop preview supports Windows x64 and macOS Universal. Packages are validated on native Windows, Intel Mac, and Apple Silicon build paths, with no separate Node.js installation required.
+The desktop app is in Alpha testing, targeting Windows x64 and macOS Universal. On [Releases](https://github.com/techflag/workdsh/releases), choose the newest Desktop release that **actually contains installers**. A release containing only source archives does not mean desktop installers have shipped.
 
 | Platform | Download | Installation |
 | --- | --- | --- |
-| Windows x64 | [Download the WorkDSH installer or portable archive](https://github.com/techflag/workdsh/releases/tag/desktop-v2.0.5-alpha.1) | Run `WorkDSH-2.0.5-x64-Setup.exe`, or extract the Portable archive |
-| macOS Universal | [Download the WorkDSH DMG](https://github.com/techflag/workdsh/releases/tag/desktop-v2.0.5-alpha.1) | Open `WorkDSH-2.0.5-universal.dmg` and drag WorkDSH into Applications |
+| Windows x64 | [Browse Desktop Releases](https://github.com/techflag/workdsh/releases) | Download the Windows Setup or Portable file for that release; run the installer or extract the portable archive |
+| macOS Universal | [Browse Desktop Releases](https://github.com/techflag/workdsh/releases) | Download the macOS DMG for that release and drag WorkDSH into Applications |
 
 > This is an Alpha preview. Projects, Library, and cross-plugin composition remain under active validation; back up your workspace and profile before upgrading.
 
@@ -111,12 +111,12 @@ Ordinary users can start with the [user guide](docs/user-guide.en.md); the devel
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <h3><a href="dsh-community-market/README.md">Plugin Marketplace</a> <img src="https://img.shields.io/badge/BUILT_IN-2EA44F?style=flat-square" alt="Built in"></h3>
-      <p>DSH Community Market is complete and built in, with plugin discovery, details, installation, and management. The market openly connects to a wide range of plugin data sources: anyone can provide, integrate, and use a source that follows the public schemas, while existing APIs can join as cooperating sources through a reviewed adapter.</p>
+      <h3>SSH / SFTP Plugin</h3>
+      <p>The standalone <a href="dsh-plugin-ssh/README.md">SSH / SFTP + AI plugin</a> adds remote-work capabilities. It can be installed separately from the desktop application.</p>
     </td>
     <td width="50%" valign="top">
       <h3>Co-build the Plugin Ecosystem</h3>
-      <p>The DSH plugin ecosystem is built by the community. Upstream plugins, WorkDSH plugins, and other community plugins follow shared conventions and can work together through the same composition mechanism. Join us — read the <a href="docs/plugin-ecosystem.en.md">DSH plugin ecosystem manifesto</a>.</p>
+      <p>WorkDSH composes capabilities through the Harness plugin mechanism. The shared plugin contract and community marketplace are still in design; see the <a href="docs/plugin-ecosystem.en.md">plugin ecosystem manifesto</a> and <a href="dsh-community-market/README.md">marketplace design draft</a>.</p>
     </td>
   </tr>
 </table>

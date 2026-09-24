@@ -1,5 +1,3 @@
-> **WorkDSH SSH 插件**：本仓库中的独立 SSH / SFTP + AI 插件见 [使用说明](dsh-plugin-ssh/README.md)，市场收录准备见 [提交材料](dsh-plugin-ssh/MARKET-SUBMISSION.md)。下方为 Desktop 原有说明。
-
 <p align="center">
   <a href="https://dshdesktop.cn"><img src="assets/desktop-hero-zh.png" alt="WorkDSH：基于 DeepSeek Harness 构建的开源桌面客户端" width="100%"></a>
 </p>
@@ -23,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/techflag/workdsh/releases/latest"><img src="https://img.shields.io/github/v/release/techflag/workdsh?style=flat&amp;label=release&amp;color=4D6BFE" alt="Latest release"></a>
+  <a href="https://github.com/techflag/workdsh/releases"><img src="https://img.shields.io/github/v/release/techflag/workdsh?include_prereleases&amp;style=flat&amp;label=release&amp;color=4D6BFE" alt="Latest release"></a>
   <a href="https://github.com/techflag/workdsh/releases"><img src="https://img.shields.io/github/downloads/techflag/workdsh/total?style=flat&amp;label=downloads&amp;color=4D6BFE" alt="Total downloads"></a>
   <a href="https://github.com/techflag/workdsh"><img src="https://img.shields.io/github/stars/techflag/workdsh?style=flat&amp;label=%E2%98%85&amp;color=08C" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2EA44F?style=flat" alt="MIT License"></a>
@@ -37,12 +35,12 @@ WorkDSH 将 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 
 
 ## 下载与安装
 
-当前 Alpha 桌面预览支持 Windows x64 和 macOS Universal。安装包由原生 Windows、Intel Mac 和 Apple Silicon 构建链验证；无需额外安装 Node.js。
+桌面版处于 Alpha 测试阶段，目标平台为 Windows x64 和 macOS Universal。请在 [Releases](https://github.com/techflag/workdsh/releases) 中选择**包含实际安装文件**的最新 Desktop 版本；只有源码压缩包的条目不代表桌面安装包已发布。
 
 | 平台 | 下载 | 安装方式 |
 | --- | --- | --- |
-| Windows x64 | [下载 WorkDSH 安装版或便携版](https://github.com/techflag/workdsh/releases/tag/desktop-v2.0.5-alpha.1) | 运行 `WorkDSH-2.0.5-x64-Setup.exe`，或解压 Portable 包 |
-| macOS Universal | [下载 WorkDSH DMG](https://github.com/techflag/workdsh/releases/tag/desktop-v2.0.5-alpha.1) | 打开 `WorkDSH-2.0.5-universal.dmg`，拖入 Applications |
+| Windows x64 | [查看 Desktop Releases](https://github.com/techflag/workdsh/releases) | 下载该版本的 Windows Setup 或 Portable 文件；安装版直接运行，便携版解压后运行 |
+| macOS Universal | [查看 Desktop Releases](https://github.com/techflag/workdsh/releases) | 下载该版本的 macOS DMG，打开后将 WorkDSH 拖入 Applications |
 
 > 当前为 Alpha 预览版。项目、资料库及跨插件组合仍在持续验收；升级前请保留工作目录和 Profile 备份。
 
@@ -113,12 +111,12 @@ WorkDSH 将 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <h3><a href="dsh-community-market/README.zh.md">插件市场</a> <img src="https://img.shields.io/badge/%E5%B7%B2%E5%86%85%E7%BD%AE-2EA44F?style=flat-square" alt="已内置"></h3>
-      <p>DSH Community Market 已完成并内置，提供插件发现、详情、安装与管理。市场以开放方式连接各种插件数据源：任何人都可以提供、接入和使用符合公开 Schema 的来源，已有 API 也可以通过受审 adapter 加入合作数据源。</p>
+      <h3>SSH / SFTP 插件</h3>
+      <p>独立的 <a href="dsh-plugin-ssh/README.md">SSH / SFTP + AI 插件</a>提供远程工作能力；可以按需安装，与桌面主程序分开维护。</p>
     </td>
     <td width="50%" valign="top">
       <h3>共建插件生态</h3>
-      <p>DSH 的插件生态由社区共同建设。上游插件、WorkDSH 插件和其他社区插件遵循统一的约定，可以通过相同的组合机制共同工作；欢迎加入共建，详见 <a href="docs/plugin-ecosystem.md">DSH 插件生态倡议书</a>。</p>
+      <p>WorkDSH 基于 Harness 的插件机制组合能力。统一插件协议与社区市场仍在设计中，见 <a href="docs/plugin-ecosystem.md">DSH 插件生态倡议书</a>与 <a href="dsh-community-market/README.zh.md">市场设计草案</a>。</p>
     </td>
   </tr>
 </table>
