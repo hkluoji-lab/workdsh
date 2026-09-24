@@ -23,6 +23,7 @@ function baseOptions(
   return {
     env,
     platform: 'darwin',
+    arch: 'arm64',
     desktopRoot: '/repo/dsh-plugin-desktop',
     outputDir: '/repo/dsh-plugin-desktop/dist/mac-release',
     resetOutput: () => undefined,

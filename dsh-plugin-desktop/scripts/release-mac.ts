@@ -17,6 +17,8 @@ export interface MacReleaseOptions {
   readonly env: NodeJS.ProcessEnv
   /** Platform executing the release. */
   readonly platform: NodeJS.Platform
+  /** Node architecture executing the release. */
+  readonly arch: string
   /** Desktop package root containing package.json. */
   readonly desktopRoot: string
   /** Dedicated signed-release output directory, isolated from historical artifacts. */
@@ -64,6 +66,7 @@ function defaultReleaseOptions(): MacReleaseOptions {
   return {
     env: process.env,
     platform: process.platform,
+    arch: process.arch,
     desktopRoot,
     outputDir,
     resetOutput: () => rmSync(outputDir, { recursive: true, force: true }),
@@ -93,7 +96,7 @@ export function releaseMac(options: MacReleaseOptions = defaultReleaseOptions())
   // The workspace check includes the package build and repository-layout gate. Signing
   // material is withheld from every build, test, Loader smoke, and layout subprocess.
   options.run('yarn', ['run', 'check'], resolve(options.desktopRoot, '..'), buildEnvironment)
-  const targetArch = options.env.WORKDSH_MAC_ARCH ?? process.arch
+  const targetArch = options.env.WORKDSH_MAC_ARCH ?? options.arch
   if (targetArch !== 'x64' && targetArch !== 'arm64') {
     throw new Error(`unsupported macOS target architecture: ${targetArch}`)
   }
