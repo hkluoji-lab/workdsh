@@ -64,7 +64,7 @@ function defaultOptions(): MacSmokePackageOptions {
   const desktopRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
   const workspaceRoot = resolve(desktopRoot, '..')
   const require = createRequire(import.meta.url)
-  const outputDir = resolve(desktopRoot, 'dist', 'mac-smoke')
+  const outputDir = resolve(desktopRoot, 'dist', 'mac-smoke', process.env.WORKDSH_MAC_ARCH ?? process.arch)
   return {
     env: process.env,
     platform: process.platform,
@@ -92,8 +92,7 @@ function defaultOptions(): MacSmokePackageOptions {
  *
  * The signed and notarized release stays a manual step on a credentialed
  * machine; this smoke exists so macOS packaging regressions fail in CI before
- * a manual release. The universal target exercises both Intel and Apple
- * Silicon packaging in one artifact.
+ * a manual release. The selected architecture is packaged independently.
  * @param options - Injectable process and command boundaries.
  */
 export function packageMacSmoke(options: MacSmokePackageOptions = defaultOptions()): void {
@@ -112,6 +111,10 @@ export function packageMacSmoke(options: MacSmokePackageOptions = defaultOptions
     )
   }
 
+  const targetArch = options.env.WORKDSH_MAC_ARCH ?? options.arch
+  if (targetArch !== 'x64' && targetArch !== 'arm64') {
+    throw new Error(`unsupported macOS target architecture: ${targetArch}`)
+  }
   const cleanEnvironment = withoutMacReleaseSecrets(options.env)
   options.log('Building an unsigned macOS DMG smoke; signing and notarization are release-only steps.')
   if (options.env.DSH_PACKAGE_CHECK_ALREADY_RAN !== '1') {
@@ -132,7 +135,7 @@ export function packageMacSmoke(options: MacSmokePackageOptions = defaultOptions
       options.builderCli,
       '--mac',
       'dmg',
-      '--universal',
+      `--${targetArch}`,
       '--publish',
       'never',
       '--config.mac.notarize=false',
@@ -147,7 +150,7 @@ export function packageMacSmoke(options: MacSmokePackageOptions = defaultOptions
   )
   options.run(
     options.nodeExecutable,
-    [options.verifier, options.outputDir],
+    [options.verifier, options.outputDir, targetArch],
     options.desktopRoot,
     cleanEnvironment,
   )

@@ -143,7 +143,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # macOS-only universal packaging smoke on a real macOS runner: the signed
+  # Per-architecture macOS packaging smoke on a real macOS runner: the signed
   # release is built manually on a credentialed machine, so an unsigned DMG
   # here catches Intel and Apple Silicon packaging regressions before a manual
   # release. No signing secrets ever reach this job.
@@ -156,6 +156,7 @@ jobs:
       fail-fast: false
       matrix:
         workspace: [dsh-plugin-desktop, dsh-plugin-desktop-beta]
+        arch: [x64, arm64]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -178,14 +179,15 @@ jobs:
       - name: Build macOS smoke artifact
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
+          WORKDSH_MAC_ARCH: ${{ matrix.arch }}
         run: yarn workspace ${{ matrix.workspace }} dist:mac-smoke
-      - name: Upload macOS universal DMG
+      - name: Upload macOS architecture DMG
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.workspace }}-macos-universal
+          name: ${{ matrix.workspace }}-macos-${{ matrix.arch }}
           path: |
-            ${{ matrix.workspace }}/dist/mac-smoke/*.dmg
-            ${{ matrix.workspace }}/dist/mac-smoke/*.dmg.blockmap
+            ${{ matrix.workspace }}/dist/mac-smoke/${{ matrix.arch }}/*.dmg
+            ${{ matrix.workspace }}/dist/mac-smoke/${{ matrix.arch }}/*.dmg.blockmap
           if-no-files-found: error
           retention-days: 14
 
@@ -239,14 +241,14 @@ jobs:
         run: |
           VERSION="${TAG#desktop-v}"
           cat > release-notes.md <<'EOF'
-          WorkDSH Desktop 提供 Windows x64 安装版、便携版和 macOS Universal DMG，同时提供稳定与 Beta 桌面变体。
+          WorkDSH Desktop 提供 Windows x64 安装版、便携版和 macOS Intel x64 与 Apple Silicon arm64 独立 DMG，同时提供稳定与 Beta 桌面变体。
 
           - 桌面产品名称统一为 WorkDSH
           - 安装包内置完整 WorkDSH 运行时，启动后可直接使用项目、资料库、专家、技能和连接器
           - 应用、Dock、托盘和安装包图标统一为 WorkDSH 蓝色 W 标识
           - README 包含项目、资料库和桌面端下载说明
           - Windows 包在原生 Windows Runner 构建和验证
-          - macOS 包为 Intel/Apple Silicon Universal 未签名预览包
+          - macOS 分别提供 Intel x64 和 Apple Silicon arm64 未签名预览包
 
           这是 Alpha 预发布。请在升级前备份本地配置和数据；未签名包可能触发系统安全提示。所有文件的 SHA-256 见 `SHA256SUMS`。
           EOF

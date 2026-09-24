@@ -99,14 +99,24 @@ async function prepareNodeExecutable(path) {
     if (process.platform !== 'win32') chmodSync(path, 0o755)
     return
   }
-  const otherArch = process.arch === 'arm64' ? 'x64' : 'arm64'
+  const targetArch = process.env.WORKDSH_MAC_ARCH
+  if (targetArch !== undefined && targetArch !== 'x64' && targetArch !== 'arm64') {
+    throw new Error(`unsupported macOS target architecture: ${targetArch}`)
+  }
+  if (targetArch === process.arch) {
+    cpSync(process.execPath, path)
+    chmodSync(path, 0o755)
+    return
+  }
+  const downloadArch = targetArch ?? (process.arch === 'arm64' ? 'x64' : 'arm64')
   const cache = join(desktopRoot, 'build', '.workdsh-node')
-  const archive = join(cache, `node-v${process.versions.node}-darwin-${otherArch}.tar.gz`)
-  const extracted = join(cache, `node-v${process.versions.node}-darwin-${otherArch}`, 'bin', 'node')
+  const archive = join(cache, `node-v${process.versions.node}-darwin-${downloadArch}.tar.gz`)
+  const extracted = join(cache, `node-v${process.versions.node}-darwin-${downloadArch}`, 'bin', 'node')
   mkdirSync(cache, { recursive: true })
-  await download(`https://nodejs.org/dist/v${process.versions.node}/node-v${process.versions.node}-darwin-${otherArch}.tar.gz`, archive)
+  await download(`https://nodejs.org/dist/v${process.versions.node}/node-v${process.versions.node}-darwin-${downloadArch}.tar.gz`, archive)
   if (!existsSync(extracted)) run('/usr/bin/tar', ['-xzf', archive, '-C', cache])
-  run('/usr/bin/lipo', ['-create', process.execPath, extracted, '-output', path])
+  if (targetArch === undefined) run('/usr/bin/lipo', ['-create', process.execPath, extracted, '-output', path])
+  else cpSync(extracted, path)
   chmodSync(path, 0o755)
 }
 

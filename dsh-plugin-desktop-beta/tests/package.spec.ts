@@ -996,6 +996,8 @@ describe('published package surface', () => {
     expect(windowsJob).toContain('DSH_PACKAGE_CHECK_ALREADY_RAN: \'1\'')
     expect(macosJob).not.toContain('- run: yarn check')
     expect(macosJob).toContain('workspace: [dsh-plugin-desktop, dsh-plugin-desktop-beta]')
+    expect(macosJob).toContain('arch: [x64, arm64]')
+    expect(macosJob).toContain('WORKDSH_MAC_ARCH: ${{ matrix.arch }}')
     expect(macosJob).toContain('- run: yarn workspace ${{ matrix.workspace }} check:mac-package')
     expect(macosJob).toContain('run: yarn workspace ${{ matrix.workspace }} dist:mac-smoke')
     expect(macosJob).toContain('DSH_PACKAGE_CHECK_ALREADY_RAN: \'1\'')

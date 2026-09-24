@@ -11,6 +11,8 @@ import { MACOS_UNIVERSAL_NATIVE_ENTRIES } from './mac-universal.ts'
 export interface MacSmokeVerificationOptions {
   /** Directory containing exactly one smoke DMG. */
   readonly distDir: string
+  /** Architecture expected in this DMG. */
+  readonly targetArch: 'x64' | 'arm64'
   /** Installed application name inside the mounted image. */
   readonly productName: string
   /** Return regular DMG files in the distribution directory. */
@@ -52,6 +54,7 @@ function defaultOptions(): MacSmokeVerificationOptions {
     distDir: process.argv[2] === undefined
       ? join(packageRoot, 'dist', 'mac-smoke')
       : resolve(process.argv[2]),
+    targetArch: process.argv[3] === 'x64' ? 'x64' : 'arm64',
     productName: 'WorkDSH Beta',
     listDmgs,
     makeMountPoint: () => mkdtempSync(join(tmpdir(), 'dsh-desktop-dmg-smoke-')),
@@ -75,6 +78,9 @@ function defaultOptions(): MacSmokeVerificationOptions {
 export function verifyMacSmoke(
   options: MacSmokeVerificationOptions = defaultOptions(),
 ): { readonly appPath: string; readonly dmgPath: string } {
+  if (options.targetArch !== 'x64' && options.targetArch !== 'arm64') {
+    throw new Error(`unsupported macOS target architecture: ${options.targetArch}`)
+  }
   const dmgs = options.listDmgs(options.distDir)
   if (dmgs.length !== 1) {
     throw new Error(
@@ -114,8 +120,8 @@ export function verifyMacSmoke(
     ) {
       throw new Error(`packaged application has an invalid main executable: ${executablePath}`)
     }
-    options.run('lipo', [executablePath, '-verify_arch', 'x86_64'])
-    options.run('lipo', [executablePath, '-verify_arch', 'arm64'])
+    const binaryArch = options.targetArch === 'x64' ? 'x86_64' : 'arm64'
+    options.run('lipo', [executablePath, '-verify_arch', binaryArch])
 
     const appAsarPath = join(appPath, 'Contents', 'Resources', 'app.asar')
     if (!options.exists(appAsarPath)) {
@@ -127,17 +133,17 @@ export function verifyMacSmoke(
     }
 
     const unpackedRoot = `${appAsarPath}.unpacked`
-    for (const entry of MACOS_UNIVERSAL_NATIVE_ENTRIES) {
+    for (const entry of MACOS_UNIVERSAL_NATIVE_ENTRIES.filter(entry => entry.arch === binaryArch)) {
       const nativePath = join(unpackedRoot, entry.path)
       if (!options.exists(nativePath)) {
-        throw new Error(`universal application is missing ${nativePath}`)
+        throw new Error(`macOS application is missing ${nativePath}`)
       }
       const nativeStat = options.stat(nativePath)
       if (!nativeStat.isFile || nativeStat.size === 0) {
-        throw new Error(`universal application has an invalid native file: ${nativePath}`)
+        throw new Error(`macOS application has an invalid native file: ${nativePath}`)
       }
       if (entry.path.endsWith('/spawn-helper') && (nativeStat.mode & 0o111) === 0) {
-        throw new Error(`universal application has a non-executable node-pty helper: ${nativePath}`)
+        throw new Error(`macOS application has a non-executable node-pty helper: ${nativePath}`)
       }
       options.run('lipo', [nativePath, '-verify_arch', entry.arch])
     }

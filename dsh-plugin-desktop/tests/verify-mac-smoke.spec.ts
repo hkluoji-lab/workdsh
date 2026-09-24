@@ -55,8 +55,9 @@ function options(
   const removeMountPoint = vi.fn()
   const value: MacSmokeVerificationOptions = {
     distDir: '/release/dist',
+    targetArch: 'arm64',
     productName: 'WorkDSH',
-    listDmgs: () => ['/release/dist/WorkDSH-2.0.1.dmg'],
+    listDmgs: () => ['/release/dist/WorkDSH-2.0.1-arm64.dmg'],
     makeMountPoint: () => '/private/tmp/dsh-desktop-dmg-smoke-test',
     run: (command, args) => { calls.push({ command, args: [...args] }) },
     removeMountPoint,
@@ -102,30 +103,38 @@ describe('macOS DMG smoke artifact verification', () => {
 
     expect(verifyMacSmoke(harness.value)).toEqual({
       appPath,
-      dmgPath: '/release/dist/WorkDSH-2.0.1.dmg',
+      dmgPath: '/release/dist/WorkDSH-2.0.1-arm64.dmg',
     })
 
     expect(harness.calls).toEqual([
       {
         command: 'hdiutil',
         args: [
-          'attach', '/release/dist/WorkDSH-2.0.1.dmg',
+          'attach', '/release/dist/WorkDSH-2.0.1-arm64.dmg',
           '-mountpoint', value.root, '-nobrowse', '-readonly',
         ],
       },
       { command: 'plutil', args: ['-lint', value.infoPlist] },
       {
         command: 'lipo',
-        args: [value.executable, '-verify_arch', 'x86_64'],
+        args: [value.executable, '-verify_arch', 'arm64'],
       },
-      { command: 'lipo', args: [value.executable, '-verify_arch', 'arm64'] },
-      ...MACOS_UNIVERSAL_NATIVE_ENTRIES.map(entry => ({
+      ...MACOS_UNIVERSAL_NATIVE_ENTRIES.filter(entry => entry.arch === 'arm64').map(entry => ({
         command: 'lipo',
         args: [join(`${value.appAsar}.unpacked`, entry.path), '-verify_arch', entry.arch],
       })),
       { command: 'hdiutil', args: ['detach', value.root] },
     ])
     expect(harness.removeMountPoint).toHaveBeenCalledWith(value.root)
+  })
+
+  it('checks only the Intel executable and native modules for an x64 DMG', () => {
+    const value = fixture()
+    const harness = options({ targetArch: 'x64', makeMountPoint: () => value.root }, value.modeOverrides)
+    verifyMacSmoke(harness.value)
+    const lipoCalls = harness.calls.filter(call => call.command === 'lipo')
+    expect(lipoCalls[0]?.args).toEqual([value.executable, '-verify_arch', 'x86_64'])
+    expect(lipoCalls.every(call => call.args.at(-1) === 'x86_64')).toBe(true)
   })
 
   it('rejects the mount when no DMG is present', () => {
@@ -145,7 +154,7 @@ describe('macOS DMG smoke artifact verification', () => {
     expect(harness.calls).toEqual([
       {
         command: 'hdiutil',
-        args: ['attach', '/release/dist/WorkDSH-2.0.1.dmg', '-mountpoint', value.root, '-nobrowse', '-readonly'],
+        args: ['attach', '/release/dist/WorkDSH-2.0.1-arm64.dmg', '-mountpoint', value.root, '-nobrowse', '-readonly'],
       },
       { command: 'hdiutil', args: ['detach', value.root] },
     ])

@@ -60,7 +60,7 @@ function run(command: string, args: readonly string[], cwd: string, env: NodeJS.
 
 function defaultReleaseOptions(): MacReleaseOptions {
   const desktopRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-  const outputDir = resolve(desktopRoot, 'dist', 'mac-release')
+  const outputDir = resolve(desktopRoot, 'dist', 'mac-release', process.env.WORKDSH_MAC_ARCH ?? process.arch)
   return {
     env: process.env,
     platform: process.platform,
@@ -93,17 +93,21 @@ export function releaseMac(options: MacReleaseOptions = defaultReleaseOptions())
   // The workspace check includes the package build and repository-layout gate. Signing
   // material is withheld from every build, test, Loader smoke, and layout subprocess.
   options.run('yarn', ['run', 'check'], resolve(options.desktopRoot, '..'), buildEnvironment)
+  const targetArch = options.env.WORKDSH_MAC_ARCH ?? process.arch
+  if (targetArch !== 'x64' && targetArch !== 'arm64') {
+    throw new Error(`unsupported macOS target architecture: ${targetArch}`)
+  }
   options.resetOutput()
   options.prepareRuntime()
   options.run('yarn', [
-    'exec', 'electron-builder', '--mac', 'dmg', '--universal',
+    'exec', 'electron-builder', '--mac', 'dmg', `--${targetArch}`,
     '--config.forceCodeSigning=true', '--config.mac.notarize=true',
     '--config.npmRebuild=false',
     `--config.directories.output=${options.outputDir}`,
   ], options.desktopRoot, releaseEnvironment)
   options.run(
     process.execPath,
-    ['scripts/verify-mac-release.ts', options.outputDir],
+    ['scripts/verify-mac-release.ts', options.outputDir, targetArch],
     options.desktopRoot,
     buildEnvironment,
   )

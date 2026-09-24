@@ -72,7 +72,7 @@ describe('macOS release command boundary', () => {
     expect(calls[1]).toEqual({
       command: 'yarn',
       args: [
-        'exec', 'electron-builder', '--mac', 'dmg', '--universal',
+        'exec', 'electron-builder', '--mac', 'dmg', '--arm64',
         '--config.forceCodeSigning=true', '--config.mac.notarize=true',
         '--config.npmRebuild=false',
         '--config.directories.output=/repo/dsh-plugin-desktop/dist/mac-release',
@@ -92,6 +92,7 @@ describe('macOS release command boundary', () => {
       args: [
         'scripts/verify-mac-release.ts',
         '/repo/dsh-plugin-desktop/dist/mac-release',
+        'arm64',
       ],
       cwd: '/repo/dsh-plugin-desktop',
       env: { PATH: '/usr/bin', SAFE_BUILD_VALUE: 'kept' },

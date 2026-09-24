@@ -66,7 +66,7 @@ describe('macOS DMG smoke packaging', () => {
         '/repo/node_modules/electron-builder/cli.js',
         '--mac',
         'dmg',
-        '--universal',
+        '--arm64',
         '--publish',
         'never',
         '--config.mac.notarize=false',
@@ -85,6 +85,7 @@ describe('macOS DMG smoke packaging', () => {
       args: [
         '/repo/dsh-plugin-desktop/scripts/verify-mac-smoke.ts',
         '/repo/dsh-plugin-desktop/dist/mac-smoke',
+        'arm64',
       ],
       cwd: '/repo/dsh-plugin-desktop',
       env: { PATH: '/usr/bin:/bin', SAFE_VALUE: 'kept' },
@@ -92,6 +93,18 @@ describe('macOS DMG smoke packaging', () => {
     expect(logs).toEqual([
       'Building an unsigned macOS DMG smoke; signing and notarization are release-only steps.',
     ])
+  })
+
+  it('builds and verifies Intel independently when selected by CI', () => {
+    const calls: CommandCall[] = []
+    const base = options(calls)
+    packageMacSmoke({
+      ...base,
+      env: { ...base.env, WORKDSH_MAC_ARCH: 'x64' },
+    })
+    expect(calls[1]?.args).toContain('--x64')
+    expect(calls[1]?.args).not.toContain('--universal')
+    expect(calls[2]?.args.at(-1)).toBe('x64')
   })
 
   it('reuses a completed CI package gate when explicitly requested', () => {
@@ -112,7 +125,7 @@ describe('macOS DMG smoke packaging', () => {
       '/repo/node_modules/electron-builder/cli.js',
       '--mac',
       'dmg',
-      '--universal',
+      '--arm64',
       '--publish',
       'never',
       '--config.mac.notarize=false',

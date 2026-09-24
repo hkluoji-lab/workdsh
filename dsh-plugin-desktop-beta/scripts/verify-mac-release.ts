@@ -11,6 +11,8 @@ import { MACOS_UNIVERSAL_NATIVE_ENTRIES } from './mac-universal.ts'
 export interface MacReleaseVerificationOptions {
   /** Directory containing exactly one release DMG. */
   readonly distDir: string
+  /** Architecture expected in this DMG. */
+  readonly targetArch: 'x64' | 'arm64'
   /** Installed application name inside the mounted image. */
   readonly productName: string
   /** Return regular DMG files in the distribution directory. */
@@ -44,6 +46,7 @@ function defaultOptions(): MacReleaseVerificationOptions {
     distDir: process.argv[2] === undefined
       ? join(packageRoot, 'dist', 'mac-release')
       : resolve(process.argv[2]),
+    targetArch: process.argv[3] === 'x64' ? 'x64' : 'arm64',
     productName: 'WorkDSH Beta',
     listDmgs,
     makeMountPoint: () => mkdtempSync(join(tmpdir(), 'dsh-desktop-dmg-')),
@@ -60,6 +63,9 @@ function defaultOptions(): MacReleaseVerificationOptions {
 export function verifyMacRelease(
   options: MacReleaseVerificationOptions = defaultOptions(),
 ): { readonly appPath: string; readonly dmgPath: string } {
+  if (options.targetArch !== 'x64' && options.targetArch !== 'arm64') {
+    throw new Error(`unsupported macOS target architecture: ${options.targetArch}`)
+  }
   const dmgs = options.listDmgs(options.distDir)
   if (dmgs.length !== 1) {
     throw new Error(
@@ -77,10 +83,10 @@ export function verifyMacRelease(
     options.run('hdiutil', ['attach', dmgPath, '-mountpoint', mountPoint, '-nobrowse', '-readonly'])
     mounted = true
     const executablePath = join(appPath, 'Contents', 'MacOS', options.productName)
-    options.run('lipo', [executablePath, '-verify_arch', 'x86_64'])
-    options.run('lipo', [executablePath, '-verify_arch', 'arm64'])
+    const binaryArch = options.targetArch === 'x64' ? 'x86_64' : 'arm64'
+    options.run('lipo', [executablePath, '-verify_arch', binaryArch])
     const unpackedRoot = join(appPath, 'Contents', 'Resources', 'app.asar.unpacked')
-    for (const entry of MACOS_UNIVERSAL_NATIVE_ENTRIES) {
+    for (const entry of MACOS_UNIVERSAL_NATIVE_ENTRIES.filter(entry => entry.arch === binaryArch)) {
       options.run('lipo', [join(unpackedRoot, entry.path), '-verify_arch', entry.arch])
     }
     options.run('codesign', ['--verify', '--deep', '--strict', '--verbose=2', appPath])

@@ -359,6 +359,7 @@
       "!node_modules/node-pty/build/**"
     ],
     "mac": {
+      "artifactName": "WorkDSH-${version}-${arch}.${ext}",
       "asarUnpack": [
         "build/app-icon-mac.png",
         "build/tray-iconTemplate.png",

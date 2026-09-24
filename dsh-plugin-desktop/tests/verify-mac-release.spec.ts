@@ -11,8 +11,9 @@ function options(overrides: Partial<MacReleaseVerificationOptions> = {}) {
   const removeMountPoint = vi.fn()
   const value: MacReleaseVerificationOptions = {
     distDir: '/release/dist',
+    targetArch: 'arm64',
     productName: 'WorkDSH',
-    listDmgs: () => ['/release/dist/WorkDSH-2.0.0-universal.dmg'],
+    listDmgs: () => ['/release/dist/WorkDSH-2.0.0-arm64.dmg'],
     makeMountPoint: () => '/private/tmp/dsh-desktop-dmg-test',
     run: (command, args) => { calls.push({ command, args: [...args] }) },
     removeMountPoint,
@@ -28,26 +29,22 @@ describe('macOS release artifact verification', () => {
 
     expect(verifyMacRelease(harness.value)).toEqual({
       appPath,
-      dmgPath: '/release/dist/WorkDSH-2.0.0-universal.dmg',
+      dmgPath: '/release/dist/WorkDSH-2.0.0-arm64.dmg',
     })
 
     expect(harness.calls).toEqual([
       {
         command: 'hdiutil',
         args: [
-          'attach', '/release/dist/WorkDSH-2.0.0-universal.dmg',
+          'attach', '/release/dist/WorkDSH-2.0.0-arm64.dmg',
           '-mountpoint', '/private/tmp/dsh-desktop-dmg-test', '-nobrowse', '-readonly',
         ],
       },
       {
         command: 'lipo',
-        args: [join(appPath, 'Contents', 'MacOS', 'WorkDSH'), '-verify_arch', 'x86_64'],
-      },
-      {
-        command: 'lipo',
         args: [join(appPath, 'Contents', 'MacOS', 'WorkDSH'), '-verify_arch', 'arm64'],
       },
-      ...MACOS_UNIVERSAL_NATIVE_ENTRIES.map(entry => ({
+      ...MACOS_UNIVERSAL_NATIVE_ENTRIES.filter(entry => entry.arch === 'arm64').map(entry => ({
         command: 'lipo',
         args: [
           join(appPath, 'Contents', 'Resources', 'app.asar.unpacked', entry.path),
