@@ -101,10 +101,6 @@ jobs:
     needs: changes
     if: needs.changes.outputs.product == 'true'
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        workspace: [dsh-plugin-desktop, dsh-plugin-desktop-beta]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -123,23 +119,23 @@ jobs:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
       - run: yarn install --immutable
-      - run: yarn workspace ${{ matrix.workspace }} check:win-package
+      - run: yarn workspace dsh-plugin-desktop check:win-package
       - name: Build Windows installer
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
-        run: yarn workspace ${{ matrix.workspace }} dist:win
+        run: yarn workspace dsh-plugin-desktop dist:win
       - name: Build Windows portable archive
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
-        run: yarn workspace ${{ matrix.workspace }} dist:win-portable
+        run: yarn workspace dsh-plugin-desktop dist:win-portable
       - name: Upload Windows installer and portable archive
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.workspace }}-windows-x64
+          name: dsh-plugin-desktop-windows-x64
           path: |
-            ${{ matrix.workspace }}/dist/*.exe
-            ${{ matrix.workspace }}/dist/*.zip
-            ${{ matrix.workspace }}/dist/*.blockmap
+            dsh-plugin-desktop/dist/*.exe
+            dsh-plugin-desktop/dist/*.zip
+            dsh-plugin-desktop/dist/*.blockmap
           if-no-files-found: error
           retention-days: 14
 
@@ -155,7 +151,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        workspace: [dsh-plugin-desktop, dsh-plugin-desktop-beta]
         arch: [x64, arm64]
     steps:
       - uses: actions/checkout@v6
@@ -175,19 +170,19 @@ jobs:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
       - run: yarn install --immutable
-      - run: yarn workspace ${{ matrix.workspace }} check:mac-package
+      - run: yarn workspace dsh-plugin-desktop check:mac-package
       - name: Build macOS smoke artifact
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
           WORKDSH_MAC_ARCH: ${{ matrix.arch }}
-        run: yarn workspace ${{ matrix.workspace }} dist:mac-smoke
+        run: yarn workspace dsh-plugin-desktop dist:mac-smoke
       - name: Upload macOS architecture DMG
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.workspace }}-macos-${{ matrix.arch }}
+          name: dsh-plugin-desktop-macos-${{ matrix.arch }}
           path: |
-            ${{ matrix.workspace }}/dist/mac-smoke/${{ matrix.arch }}/*.dmg
-            ${{ matrix.workspace }}/dist/mac-smoke/${{ matrix.arch }}/*.dmg.blockmap
+            dsh-plugin-desktop/dist/mac-smoke/${{ matrix.arch }}/*.dmg
+            dsh-plugin-desktop/dist/mac-smoke/${{ matrix.arch }}/*.dmg.blockmap
           if-no-files-found: error
           retention-days: 14
 
@@ -241,7 +236,7 @@ jobs:
         run: |
           VERSION="${TAG#desktop-v}"
           cat > release-notes.md <<'EOF'
-          WorkDSH Desktop 提供 Windows x64 安装版、便携版和 macOS Intel x64 与 Apple Silicon arm64 独立 DMG，同时提供稳定与 Beta 桌面变体。
+          WorkDSH Desktop 提供 Windows x64 安装版、便携版和 macOS Intel x64 与 Apple Silicon arm64 独立 DMG。
 
           - 桌面产品名称统一为 WorkDSH
           - 安装包内置完整 WorkDSH 运行时，启动后可直接使用项目、资料库、专家、技能和连接器
