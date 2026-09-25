@@ -1,6 +1,6 @@
-## 2026-09-25（续二十）：DSH `0.1.7-alpha.2` 仓库升级批次（**未提交、未推送、线上未动**）
+## 2026-09-25（续二十）：DSH `0.1.7-alpha.2` 仓库升级批次（**已提交 `c8a05e10a3` 并推送 `fork/main`；线上未动**）
 
-按用户 2026-09-25 裁决执行「先仓库升级批次」：把基线从 `0.1.7-alpha.1` 锁到 `0.1.7-alpha.2`（含 Cordis `4.0.4`）+ 跑全门禁 + 写升级证据，**线上 `dsh.10ge.cn` 暂不动**；改动与 alpha.1 未提交批次**合并提交**（本轮仍不提交）。完整证据见 [DSH 0.1.7-alpha.2 升级证据](evidence/dsh-0.1.7-alpha.2-upgrade.md)。
+按用户 2026-09-25 裁决执行「先仓库升级批次」：把基线从 `0.1.7-alpha.1` 锁到 `0.1.7-alpha.2`（含 Cordis `4.0.4`）+ 跑全门禁 + 写升级证据，**线上 `dsh.10ge.cn` 暂不动**；改动与 alpha.1 未提交批次**合并提交**为 `c8a05e10a3`（1263 文件 / +1687541 −5657）并推送 `fork/main`。完整证据见 [DSH 0.1.7-alpha.2 升级证据](evidence/dsh-0.1.7-alpha.2-upgrade.md)。
 
 批次性质：同族小版本递进，与上一批不同——上游全树 **0 文件删除**，仓库侧 **0 行业务代码改动**。
 
@@ -42,7 +42,9 @@
 ### 版本裁决与边界
 
 - **本批不 bump 任何模块**：仓库侧 0 行业务代码，改动折叠进 alpha.1 批次已登记的同一未发布增量。已记入 [MODULE-VERSIONS](MODULE-VERSIONS.md) 2026-09-25 更新（三）。
-- **未执行**：线上 `dsh.10ge.cn` 切换（用户裁决本批不动，线上仍 `0.1.7-alpha.1`）；37 个内容有变的镜像文件逐文件复审；其余探针与 `test:office:*` / `test:library` / `test:projects` / `test:assistant` / `test:remote:*` / `portal` 未在本批复跑；真实模型验收未跑；提交与推送未执行。
+- **提交与推送（已执行）**：`c8a05e10a3`（父提交 `9b8215a070`）一次性合并 alpha.1 + alpha.2 两批；`git push fork main` → `9b8215a070..c8a05e10a3`，`main` 与 `fork/main` 同步，本地/远端 tag 各 36 条无漂移。GitHub PR [#4](https://github.com/techflag/workdsh/pull/4) 的 head 自动跟随到 `c8a05e10a3`（仍 `mergeable_state = dirty`，为既有冲突，非本批引入）。
+- **`.gitignore` 第 15 行 `/docs/` 的影响与处置**：`docs/` 下新建文件默认不入库。本批按用户裁决 `git add -f` 强加了 4 项——两份升级证据（`dsh-0.1.7-alpha.1-upgrade.md`、`dsh-0.1.7-alpha.2-upgrade.md`）与两份官方文档镜像（`docs/dsh-v0.1.7-alpha.1/`、`docs/dsh-v0.1.7-alpha.2/`）。加 alpha.1 镜像的理由：19 个**已跟踪** docs 文件（26 处引用）指向它，不加入会让本次提交自身产生悬空引用；`docs/dsh-v0.1.6-alpha.2/`（543 文件）本就在库，惯例一致。代价为仓库约 +48MB。
+- **未执行**：线上 `dsh.10ge.cn` 切换（用户裁决本批不动，线上仍 `0.1.7-alpha.1`）；37 个内容有变的镜像文件逐文件复审；其余探针与 `test:office:*` / `test:library` / `test:projects` / `test:assistant` / `test:remote:*` / `portal` 未在本批复跑；真实模型验收未跑。
 
 ## 2026-09-22（续四）：D04 收尾与 AT-01～27 逐项签收（结论：不签收）
 
