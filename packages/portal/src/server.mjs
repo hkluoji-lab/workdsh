@@ -30,7 +30,7 @@ const accountsConfigured = accounts.size > 0;
 
 // 缓存策略与安全头分离。此前 no-store 被合并进每一个响应，连图片一起，导致每次访问都要重下门户全部素材。
 const CACHE_HTML = 'no-cache'; // 可复用但每次必须回源校验：配合 ETag 拿 304，且绝不陈旧。
-const CACHE_CODE = 'public, max-age=3600'; // 站内 CSS/JS 文件名无内容指纹，用 1 小时窗口换取安全。
+const CACHE_CODE = 'no-cache'; // 站内 CSS/JS 文件名无内容指纹，禁用盲缓存：一律回源校验，命中即 304。
 const CACHE_ASSET = 'public, max-age=604800'; // 图片素材文件名固定、内容极少变动，给 7 天。
 
 const SITE_FILES = new Map([

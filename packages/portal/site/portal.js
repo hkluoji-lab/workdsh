@@ -14,14 +14,46 @@ if (reveal && password) {
   });
 }
 
+// 提交期防重复提交 + 失败自愈。只禁用不复位会留下死路：这一次提交若没能跳转（网络中断、
+// 边缘 502、或页面被 bfcache 恢复），按钮会永久停在禁用态，之后怎么点都不发请求、不跳转、
+// 也不报错——现场表现就是「输入账号密码点了完全没反应」。
 const form = document.querySelector('.auth-form');
 if (form) {
-  form.addEventListener('submit', () => {
-    const submit = form.querySelector('button[type="submit"]');
-    if (submit) {
-      submit.disabled = true;
-      submit.textContent = '登录中…';
+  const submit = form.querySelector('button[type="submit"]');
+  const label = submit ? submit.textContent : '';
+  let watchdog;
+
+  const resetSubmit = (note) => {
+    clearTimeout(watchdog);
+    if (!submit) return;
+    submit.disabled = false;
+    submit.textContent = label;
+    if (!note) return;
+    // 服务端注入的 .form-error 是 form 的兄弟节点（login.html 的 {{ERROR}} 在 form 之前），
+    // 所以按父级范围查找，避免同页出现两条错误提示。
+    const scope = form.parentElement ?? form;
+    let alert = scope.querySelector('.form-error');
+    if (!alert) {
+      alert = document.createElement('p');
+      alert.className = 'form-error';
+      alert.setAttribute('role', 'alert');
+      form.insertAdjacentElement('beforebegin', alert);
     }
+    alert.textContent = note;
+  };
+
+  form.addEventListener('submit', () => {
+    if (!submit) return;
+    submit.disabled = true;
+    submit.textContent = '登录中…';
+    // 12 秒仍未跳转即视为本次提交已失败，复位并给出可见提示，让用户能直接重试。
+    clearTimeout(watchdog);
+    watchdog = setTimeout(() => resetSubmit('网络无响应，请重试。'), 12000);
+  });
+
+  // 从 bfcache 恢复旧页面时按钮会带着「登录中…」的禁用态回来，同样复位。
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) resetSubmit();
   });
 }
 
