@@ -1,3 +1,63 @@
+## 2026-09-25（续二十四）：手机端「登录无反应 / 登录后仍回首页」根因修复 —— 边缘 http→https 升级（**已上线并复验，5/5 PASS**）
+
+按用户报障「手机端浏览器登录输入账号密码后无反应。有时显示登录中，之后还是首页状态。安卓自带/Chrome」执行。用户裁决修复位置为**源站 Caddy**。**根因：站点没有把 http 入口升级到 https，而会话 Cookie 带 `Secure`，浏览器在 http 页面上直接拒绝保存它——登录其实成功，会话却存不下来。** 已在边缘修好。
+
+### 一、定位（先证伪「前端/服务端有责」）
+
+| 探测面 | 结果 |
+| --- | --- |
+| 服务端日志 | `07:36:27Z`、`07:37:14Z` 两条 `login.succeeded`（IP `240e:3bb:2ea0:c60:f268:fa8a:cff1:f122`，与 `07:21:05Z` 同 IP，属另一台终端，非探针）⇒ **登录本身成功**，失败发生在登录之后 |
+| 移动端前端 | `mobile-login-probe.mjs`（安卓 Chrome UA + 412×915 触摸视口）**11/11 PASS**：无横向溢出、按钮在视口内且 `elementFromPoint` 命中按钮本体、触摸 tap 能触发提交、12s 后复位并提示、输入框 16px、按钮 ≥44px |
+| CF 缓存 | `/`、`/portal`、`/login` 全部 `cf-cache-status: DYNAMIC`，`/` 带 `cache-control: no-store` ⇒ 排除「边缘缓存了旧登录页」 |
+| 经 CF 完整链路 | `POST → 303 location: /`、带会话 `/` → 200、`/api/portal/auth` → 204 ⇒ 服务端无责 |
+| 会话 Cookie 属性 | `Path=/; HttpOnly; SameSite=Lax; Max-Age=43200; Secure`（host-only、12 小时） |
+
+**决定性对照**（同一账号、同一条链路，只换协议）：
+
+| 步骤 | 走 `http://` | 走 `https://` |
+| --- | --- | --- |
+| 登录 POST | 303 成功、下发 `Set-Cookie …; Secure` | 同样成功 |
+| 浏览器保存 Cookie | **被拒绝** | 保存 ✓ |
+| 登录后访问 `/` | **302 → `http://dsh.10ge.cn/portal`（首页）** | **200（工作台）** |
+
+两条入口都没拦住它：CF 未开 Always Use HTTPS；源站 Caddy 全局块 `auto_https disable_redirects` 明确关闭自动跳转。手机端更易撞上——安卓自带浏览器与 Chrome 在地址栏输入裸域名默认补 `http://`，桌面端补 `https://`。
+
+### 二、修复（线上 Caddyfile 追加一条规则 + 一个诊断端点）
+
+在 `$T/Caddyfile` 站点块内、兜底 `route {}` 之前插入（不带断言脚本，改用「锚点唯一性断言 + 插入后 `caddy validate`」双重把关）：
+
+```
+@insecure_scheme {
+	not path /__portal_scheme_probe
+	header_regexp xfp X-Forwarded-Proto `(?i)^http$`
+}
+redir @insecure_scheme https://{$CADDY_ACCESS_HOST}{uri} 301
+
+route /__portal_scheme_probe {
+	respond "xfp={http.request.header.X-Forwarded-Proto}|cfv={http.request.header.CF-Visitor}" 200
+}
+```
+
+只有 CF 明确透传 `http` 时才 301；头缺失或非 http 一律不跳（安全失败，不误伤 https）。
+
+### 三、预演（容器内 8444 临时实例，零中断，7/7 PASS）
+
+8444 不经宿主映射，只能用容器内 `node` 探针访问（容器内无 curl）；容器内 **Caddy 的 `header` matcher 区分大小写**（`HTTP` 不匹配）故改用 `header_regexp … (?i)^http$`；**`route` 优先级高于顶层 `respond`**，诊断端点必须自身写成 `route` 并置于兜底 `route` 之前，否则回显兜底内容。用例矩阵：`http`→301 / `https`→200 / 无头→200 / `HTTP`→301 / `Http`→301 / `https, http`（多值）→200 / 探针+`http`→回显。
+
+### 四、上线与验收
+
+- **备份**：`$T/Caddyfile.bak.httpsupgrade.20260925074142`（改前 2554 bytes / md5 `1c5f6b50f08697b03e598c5c2608ad0f` → 改后 2804 bytes / md5 `7601a8781b2bce0b8814bd95a84244cc`）。
+- **生效方式**：全局块含 `admin off`，**无法热加载** ⇒ `caddy validate`（`Valid configuration`）后 `docker restart dsh`，**约 6 秒中断**，`Restarts=0`、`health=healthy`。
+- **线上验收 6 项**：`http://dsh.10ge.cn/` → **301 → `https://`**；带 query 升级保留 query；探针回显 `xfp=http|cfv={"scheme":"http"}` 与 `xfp=https|cfv={"scheme":"https"}`（**铁证 CF 确实透传原始协议**）；`/login` 200、`/portal` 200、`/api/portal/auth` 401 无回归。
+- **真实安卓 Chrome 端到端 5/5 PASS**（`mobile-http-entry.mjs`）：从 `http://` 进入 → 导航链 `301 → 302 → 200 /portal`；登录页 `POST /api/portal/login` **确实离开浏览器并到达服务端**，303 回 `/login?error=credentials&next=%2F` 并显示「用户名或密码不正确。」；提交后仍停在 https。
+- **探针副作用如实登记**：本轮消耗 1 次失败限流（`user=__entry_probe__`），产生 1 条 `login.failed`。
+
+### 五、文档与边界
+
+- 仓库改动：`packages/portal/README.md` 新增「2.1 边缘协议升级与协议诊断端点」、在「登录提交的失败自愈」一节补齐**第二个独立成因**的判据分流、回滚/已知限制/未验证范围同步。
+- **判据分流（重要）**：**POST 没离开浏览器** ⇒ 前端按钮自愈/网络（续二十三）；**服务端有 `login.succeeded` 但会话不保持** ⇒ 边缘协议升级（本条）。两者症状相似，排查时先看服务端日志有无登录成功记录。
+- **未验证**：iOS Safari 与桌面 Firefox 的移动 UA 行为；非 Cloudflare 直连路径下 `X-Forwarded-Proto` 的取值。（本轮仓库文档改动**未提交**。）
+
 ## 2026-09-25（续二十三）：登录按钮失败自愈 + 静态资源缓存口径收紧（**已上线并复验**）
 
 按用户 2026-09-25 报障「现在服务器无法进入输入账号密码无反应」执行。用户补充的关键信息：现象「点了完全没反应」、地址 `https://dsh.10ge.cn`、电脑浏览器、**无痕窗口能登进去**、DevTools Network **压根没有 `/api/portal/login` 这条请求**。**根因在前端：登录按钮只有禁用、没有复位，一次未完成的提交会让按钮永久停在禁用态。** 已修复并复验。
@@ -45,7 +105,7 @@
 
 - **CDN 路径的 ETag 被改写**：经 CF 返回的 ETag 为 `W/"…-gzip"`，浏览器回发的弱 ETag 与源 ETag 不一致，CDN 路径上会退化为 200 而非 304——只损失字节效率，**不改变「不再留 1 小时盲缓存窗口」的结论**（`no-cache` 由源站下发）。未做 CDN 层逐字节核对，也未调 CF 缓存规则。
 - **未取得用户现场浏览器的确切卡死时刻证据**：容器每次 `--force-recreate` 会丢弃旧实例日志，用户更早的尝试已无迹可查；本次结论依赖「无痕可进 + 普通窗口无 POST + 服务端 0 条 `login.failed`」三者互证。
-- **未执行**：未做长时间（>10 分钟）稳定性观察；未跑真实模型验收（门户不涉及模型）；未对 `survey` / office 等其他面复测。（本轮仓库改动 4 个文件随修复批次提交，**未推送**。）
+- **未执行**：未做长时间（>10 分钟）稳定性观察；未跑真实模型验收（门户不涉及模型）；未对 `survey` / office 等其他面复测。（本轮仓库改动 4 个文件随修复批次提交 `47fa7fd9ff`，**已推送 `fork/main`**；详见续二十四——用户报障的同批现场还有**第二个独立成因**。）
 - **已知残留**：运行期门户崩溃后看护循环 3 秒重启窗口内的请求仍会 502（续二十二已登记），本次未处理。
 
 ## 2026-09-25（续二十二）：线上「500 错误」排查与启动次序门禁修复（**已修复并复验**）

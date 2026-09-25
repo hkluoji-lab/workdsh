@@ -64,6 +64,8 @@
 
 `site/portal.js` 现有两条复位：提交后 12 秒仍未跳转即复位按钮并显示「网络无响应，请重试。」；从 bfcache 恢复页面时同样复位。同一批次把 `styles.css`、`portal.js` 由 `public, max-age=3600` 收紧为 `no-cache`（见上表）：脚本无内容指纹时，盲缓存会让改版后的新旧行为并存最长 1 小时。
 
+同一现场还有**第二个独立成因**：从 http 入口访问时会话 Cookie（带 `Secure`）被浏览器拒绝保存，表现为「登录成功却永远落回门户首页」。它不由前端负责，修在边缘（http → https 301），见「部署」2.1。两者症状相似但判据不同：**POST 没离开浏览器** ⇒ 按钮自愈/网络；**服务端有 `login.succeeded` 但会话不保持** ⇒ 协议升级。
+
 ## 路由契约
 
 | 路径 | 行为 |
@@ -280,6 +282,55 @@ cd $A && sudo docker compose config | grep -A1 DSH_AUTH_PASSWORD   # 确认 dote
 
 `route @survey` **刻意不加门禁**：`/survey/` 是文档标注「可公开」的问卷填写入口，纳入门禁会使其失效。若后续要保护问卷，单独裁决。
 
+#### 2.1 边缘协议升级与协议诊断端点（2026-09-25，现场故障修复）
+
+**故障判据**：会话 Cookie 带 `Secure`，浏览器**在 http 页面上会拒绝保存**。若站点没有把 http 入口升级到 https，从 `http://dsh.10ge.cn` 进入的用户会经历「登录其实成功（服务端有 `login.succeeded`）→ Cookie 未保存 → 之后 `/` 判为未登录 → 302 回 `/portal`」——现场观感就是「输入账号密码无反应 / 显示登录中 / 登录后还是首页」。手机端更易撞上：安卓自带浏览器与 Chrome 在地址栏输入裸域名默认补 `http://`，而桌面端补 `https://`。
+
+两条入口都没拦住它：CF 未开 Always Use HTTPS；源站 Caddy 全局块有 `auto_https disable_redirects`，自动跳转被明确关闭。
+
+**规则**（插在站点块内、兜底 `route {}` **之前**；`@unexpected_origin` 锚点前为实际落位点）：
+
+```
+	# 边缘协议升级（2026-09-25）：Cloudflare 未开启 Always Use HTTPS，手机浏览器地址栏默认补
+	# http://，而会话 Cookie 带 Secure，在 http 下会被浏览器直接拒绝保存——现场表现为
+	# 「账号密码正确、登录也成功，却永远落回门户首页」。按 CF 透传的原始协议判定：
+	# 只有明确为 http 时才 301 到 https；头缺失或非 http 一律不跳（安全失败，不误伤 https）。
+	@insecure_scheme {
+		not path /__portal_scheme_probe
+		header_regexp xfp X-Forwarded-Proto `(?i)^http$`
+	}
+	redir @insecure_scheme https://{$CADDY_ACCESS_HOST}{uri} 301
+
+	# 协议诊断端点：回显 CF 透传的原始协议头，供「登录后回首页」类问题取证（无敏感信息）。
+	route /__portal_scheme_probe {
+		respond "xfp={http.request.header.X-Forwarded-Proto}|cfv={http.request.header.CF-Visitor}" 200
+	}
+```
+
+**三个实测坑**（预演时逐个踩到，改这条规则必须遵守）：
+
+| 坑 | 现象 | 正确写法 |
+| --- | --- | --- |
+| `header` matcher 区分大小写 | `header X-Forwarded-Proto http` 不匹配 `HTTP` | 用 `header_regexp … \`(?i)^http$\`` |
+| `route` 优先级高于顶层 `respond` | 兜底 `route {}` 抢在 `respond /path` 之前，诊断端点回显的是兜底内容 | 诊断端点必须写成 `route /path { respond … }` 且置于兜底 `route` 之前 |
+| 多值头 | 担心 `X-Forwarded-Proto: https, http` 被误判成 http | 正则 `^http$` 天然不匹配，无需额外处理 |
+
+头缺失（如直连源站不带该头）时 `not path` + `header_regexp` 整体不匹配 ⇒ 不跳转，属安全失败。
+
+**预演与落位**：改动只追加规则、不动派生成对文件，因此走「备份 → 容器内临时端口预演 → `caddy validate` → `docker restart dsh` → 验收」的精简流程（不是第 4 节的完整派生成对流程）。预演实例起在容器内 `8444`（**该端口不经宿主映射，只能在容器内探针访问**；容器内无 curl，用 `node` 直连），7 用例（`http`/`https`/无头/`HTTP`/`Http`/多值/探针回显）全绿后才落位。
+
+**验收实测**（2026-09-25）：
+
+| 探针 | 结果 |
+| --- | --- |
+| `http://dsh.10ge.cn/` | `301 → https://dsh.10ge.cn/`，带 query 时 query 保留 |
+| `https://dsh.10ge.cn/` 匿名 | `302 → /portal` |
+| 诊断端点走 http / https | `xfp=http\|cfv={"scheme":"http"}` / `xfp=https\|cfv={"scheme":"https"}`（证明 CF 确实透传原始协议） |
+| 门禁面回归 | `/login` 200、`/portal` 200、`/api/portal/auth` 401 |
+| 真实安卓 Chrome（UA `Pixel 8 / Chrome 128`，412×915 触摸） | 从 `http://` 进入 → `301 → 302 → 200 /portal`；登录页 POST 到达服务端并返回「用户名或密码不正确。」；5/5 PASS |
+
+**备份与回滚**：备份为 `Caddyfile.bak.httpsupgrade.20260925074142`（改前 2554 bytes / md5 `1c5f6b50f08697b03e598c5c2608ad0f`；改后 2804 bytes / md5 `7601a8781b2bce0b8814bd95a84244cc`）。回退 = 覆盖回该备份 + `docker restart dsh`（约 6 秒中断；此规范片段只改 Caddyfile，**不需要** `--force-recreate`）。注意 Caddyfile 全局块含 `admin off`，**无法热加载**，改后必须重启容器。
+
 ### 3. 派生 docker-entrypoint.sh 增量
 
 在 `unset HTTPS_ACCESS_HOST DSH_AUTH_USERNAME DSH_AUTH_PASSWORD auth_password` 之前插入一行保留口令（门户需要它派生签名密钥）：
@@ -376,10 +427,11 @@ docker compose up -d --force-recreate
 
 回滚后网站恢复为「匿名直达工作台」，`/portal`、`/login` 因门户进程不再被拉起而不可达。DSH 后端、Cloudflare 隧道与容器镜像始终不受影响。
 
-最近一次已执行的备份时间戳：**`20260922232318`**（`.env`、`Caddyfile`、`docker-entrypoint.sh` 各一份）；启动次序门禁批次的入口脚本备份为 `docker-entrypoint.sh.bak.pre-portguard`（2026-09-25，改前 5521 bytes / md5 `08e0a3f6fe7e68507781278a096e490a`，回退 = 覆盖回该文件 + `docker compose up -d --force-recreate`）。
+最近一次已执行的备份时间戳：**`20260922232318`**（`.env`、`Caddyfile`、`docker-entrypoint.sh` 各一份）；启动次序门禁批次的入口脚本备份为 `docker-entrypoint.sh.bak.pre-portguard`（2026-09-25，改前 5521 bytes / md5 `08e0a3f6fe7e68507781278a096e490a`，回退 = 覆盖回该文件 + `docker compose up -d --force-recreate`）；边缘协议升级批次的 `Caddyfile` 备份为 `Caddyfile.bak.httpsupgrade.20260925074142`（2026-09-25，回退 = 覆盖回该文件 + `docker restart dsh`，见 2.1）。
 
 ### 已知限制
 
+- 站点**现在会把 http 入口 301 升级到 https**（2026-09-25，见 2.1）。诊断端点 `/__portal_scheme_probe` 是公开的、只回显协议头（无敏感信息）；若不希望保留该端点，删掉对应 `route` 并重启容器即可。
 - `forward_auth` 的失败跳转只带**路径**（`{http.request.uri.path}`），不带查询串：匿名访问 `/session/x?y=1` 登录后回到 `/session/x`。
 - 未登录访问 `/` 会经一次 302 落到 `/portal`（门户首页），与 ADR-0034「`/` 未登录时给门户首页」一致。
 - 门户服务不可用会让 `forward_auth` 失败、整站不可达（见 ADR-0034 失败边界），因此启动块带自愈循环，且必须先验证 `caddy validate`。**启动期**的窗口已由 2026-09-25 的启动次序门禁关闭（Caddy 等 3083 就绪再启动）；但门户**运行中**崩溃、其看护循环 3 秒内重启的那段窗口仍会返回 502——这是已知残留，需要时按同一判据复测。
@@ -390,6 +442,7 @@ docker compose up -d --force-recreate
 
 - **已执行 2026-09-23**：线上路由切换与 `forward_auth` 的实际行为已实测（15 项探针 + 浏览器级回归），见「验收条件」第 4 条。凭据同步为用户指定的 12 位口令（原 11 位补一位以满足官方 `>= 12` 硬约束）——明文不写进文档，见 `.env` 的 `DSH_AUTH_PASSWORD`。
 - **已执行 2026-09-24（凭据轮换）**：主账号口令按要求换为 12 位新口令（官方约束达标，无需改动官方一组 env 的结构），账号表额外交付成员账号。落位前先复核 `.env` 解析（`docker compose config` 实测口令解析长度 12、尾部含 `#`，确认 dotenv 未把 `#` 当注释），容器内 3098 预演 12 项全绿后才 `--force-recreate`（普通 `up -d` 不重建，已实测）。重建后 `Up (healthy)`、`listening … accounts:2`；公网复验 14 项全绿：两个账号新口令均 `auth=204` 且 `GET /` 200，两套旧口令均 401，全角 `＃`/尾随空格仍 204，匿名门禁 6 项无回归。
+- **已执行 2026-09-25（边缘协议升级 + 登录按钮自愈）**：http 入口 301 升级规则先在容器内 8444 临时实例预演 7 用例全绿，落位后 `caddy validate` 通过、`docker restart dsh`（约 6 秒中断、`restarts=0`、`healthy`），线上验收 6 项 + 真实安卓 Chrome 端到端 5/5 PASS（见 2.1）。登录按钮自愈与静态资源 `no-cache` 为同批次改动，移动端前端探针 11/11 PASS。**未验证**：iOS Safari 与桌面 Firefox 的移动 UA 行为；`X-Forwarded-Proto` 在非 Cloudflare 直连路径下的取值（当前按「头缺失即不跳转」安全失败处理）。
 - **未验证**：α.4 未构造 10 次失败以在线触发 `error=throttled`（判定其行为仍由单测覆盖）；未在第二台真实外网电脑上复现原始故障现场（原始失败请求未带输入形态日志，故"当时那一台到底多了/换了哪个字节"无法事后取证，只能以服务端吸收差异 + 日志补形态收口）。
 - **已验证**：Cloudflare 对 302 不缓存（`cf-cache-status: DYNAMIC` + `cache-control: no-store`）。
 - 未验证：Safari/Firefox、多副本部署下的限流一致性、长时会话过期后的前端表现。
