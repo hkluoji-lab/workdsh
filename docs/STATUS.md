@@ -1,4 +1,32 @@
-## 2026-09-25（续二十）：DSH `0.1.7-alpha.2` 仓库升级批次（**已提交 `c8a05e10a3` 并推送 `fork/main`；线上未动**）
+## 2026-09-25（续二十一）：线上 `dsh.10ge.cn` 切换到 `0.1.7-alpha.2`（**已上线，d3→d7 全绿**）
+
+按用户 2026-09-25 指令「执行上线部署」，把线上 `dsh.10ge.cn`（`luoji@192.168.11.205` 的 1Panel 应用 `deepseek-harness`，容器 `dsh`）从 `0.1.7-alpha.1` 切到 `0.1.7-alpha.2`（Cordis `4.0.4`）。沿用 alpha.1 批次 P8-5「换树」范式，因 alpha.2 把 caret 收紧为 tilde 且伴生包在 standalone 树与 profile 树两侧均有实装。**线上现役版本 = `0.1.7-alpha.2`。** 完整证据见 [DSH 0.1.7-alpha.2 升级证据](evidence/dsh-0.1.7-alpha.2-upgrade.md)「线上切换与复验」。
+
+### 换树执行链（服务器脚本 `/home/luoji/stage-a2-*.sh`，本机同源 `.artifacts/deploy-018/`）
+
+| 步 | 脚本 | 退出标记 | 关键证据 |
+| --- | --- | --- | --- |
+| d3b | — | 12/12 `sha256sum -c` OK | 12 件 tgz → `$D/data/workspace/wd-upload-018/`；`/home/luoji/_a4-package.json` sha256 `7c42fe7b…66f`（本机/服务器一致），`overrides=279` |
+| d3 | `stage-a2-0-backup.sh` | `A2_BACKUP_OK BK=/home/luoji/dsh-backup-a2-20260925010038` | 5 份配置 + `profile-config.tgz` 120K / `sessions.tgz` 11M / `storages.tgz` 3.3M + 整树副本 `web.bak.a2.20260925010038`（1.4G）+ `SHA256SUMS.txt` 13 行 |
+| d4 | `stage-a2-1-tree.sh` | `A2_TREE_OK ST=$D/data/dsh/global-dsh/_a4-standalone` | `overrides=279`、`Packages: +508`、闭包 156 条、512M；硬门禁 A `RESOLUTION_ALL_OK`（81 packages / 72 dsh）、B `0.1.7-alpha.2`、C `ANCHOR_OK`；`TREE_VERSION_OK`（`"0.1.7-alpha.2": 266`） |
+| d5 | `stage-a2-2-prep.sh` | `PHASE1_OK BK=/home/luoji/dsh-backup-a2-switch-20260925010207` | `official_bumped=4 tgz_retargeted=12`、`RETARGET_OK`；279 条 overrides 写入 `pnpm-workspace.yaml`（297 行）；旧 `node_modules` → `node_modules.pre-a2.20260925010207`；`PNPM_RC=0`、`Packages: +961`；`INSTALLED_VERSIONS_OK`（12 件 + `dist=true`） |
+| d6 | `stage-a2-3-swap.sh` | `PHASE2_OK OLD_TREE=$G/standalone.a2.old.20260925010221` | `mv` 原子换树（新旧各 512M）；auth-bypass 双份 `PATCHED`（standalone 树 + profile 树 `dsh-client-connection/lib/index.js`）；一次性容器硬门禁 A/B/C 全绿；`docker compose up -d --force-recreate` → 10s 内 `(healthy)` |
+| d7 | `stage-a2-4-verify.sh` | `PHASE3_OK R=/home/luoji/dsh-verify-a2-20260925010243` | `cli_version=0.1.7-alpha.2`、`path_dsh_version=0.1.7-alpha.2`、`restarts=0`、`state_non1000=0`；`SESSIONS_UNCHANGED_SINCE_SWAP_OK`（37 / v3 18 / v4 1 / locks 18）、`STORAGES_UNCHANGED_OK`、`projects_state_sha256` 与基线逐字符相等；启动错误模式 6 项全 0 |
+
+### 复验结果
+
+- **只读 API 10 项 `P8_6_READONLY_ALL_OK`**：experts 12 / projects 0 / templates 15 / library space 1 / library list 3 / skills 34 / catalog 1 / connectors 3 / assistant 0 —— **逐项与 P8-6、P9-R 基线相等**（升级未动业务数据）。
+- **浏览器面 `P8_6_BROWSER_CLEAN_OK`**：`title=DeepSeek Harness`、主导航 7 项（新建任务 / 项目 / 助理 / 专家 · 技能 · 连接器 / 定时任务（待开放）/ 资料库 / 更多（待开放））、`pageErrors []` / `consoleErrors []` / `httpFailures []`、`goto status=200`。
+- **域名面**：`dsh.10ge.cn/` = 302 → `/portal`；`/login` 200；`/portal` 200；`server: cloudflare`，无 `WWW-Authenticate`。
+- **运行面**：cordis 家族 `4.0.4 / 1.0.4 / 1.0.9 / 1.0.5 / 1.1.6`；`inner_3080=200`、`host_3080=200`、`domain=302`；`ONLINE_INSTALLED_OK`（12 件线上实装版本）；属主门禁 `非 1000 = 0`。
+
+### 边界与回退
+
+- **边界：换树后 1 次 SIGSEGV（已隔离，非阻断）**。新容器 `StartedAt=2026-09-25T01:02:24Z`，约 30s 后 `docker-entrypoint.sh: line 173: 30 Segmentation fault`，`RestartCount=1`、`ExitCode=0`、`OOMKilled=false`，容器自愈并稳定 `healthy`。该次发生在**并发 SSH 隧道 + 回环代理 + 浏览器探针 + API 探针负载期间**。受控复现（`docker restart` + 180s 每 15s 采样，无并发负载）segv 计数恒为 1（旧日志残留）、`Restarts=0`；再施加同型探针负载 + 90s 观察**仍无新崩溃**。最终 `StartedAt=2026-09-25T01:05:07Z`、`Up (healthy)`、`Restarts=0`。判定为**上游已知 V8 SIGSEGV、负载相关、非本次升级回归**（已立档 [v8-gc-sigsegv-repro.md](evidence/v8-gc-sigsegv-repro.md)，并在本文件「续十八」的常规待办中持续登记），登记为边界，不回退。
+- **回退锚点（就地保留）**：`$D/data/dsh/global-dsh/standalone.a2.old.20260925010221`（alpha.1 树，512M）、`$D/data/dsh/profiles/web/node_modules.pre-a2.20260925010207`（1.2G）、`$D/data/dsh/profiles/web.bak.a2.20260925010038`（1.4G）、`/home/luoji/dsh-backup-a2-20260925010038/`（sessions / storages / profile-config + SHA256SUMS）。回退须 `docker compose up -d --force-recreate`（bind mount 创建时解析路径，`restart` 无效）。
+- **未执行**：升级后未跑真实模型验收；未做长时间（>10 分钟）稳定性观察；SIGSEGV 未取得上游 issue 级归因证据（判定依据为本地两轮复现不出 + 既有登记，非上游结论）。
+
+## 2026-09-25（续二十）：DSH `0.1.7-alpha.2` 仓库升级批次（**已提交 `c8a05e10a3` 并推送 `fork/main`；线上切换见续二十一**）
 
 按用户 2026-09-25 裁决执行「先仓库升级批次」：把基线从 `0.1.7-alpha.1` 锁到 `0.1.7-alpha.2`（含 Cordis `4.0.4`）+ 跑全门禁 + 写升级证据，**线上 `dsh.10ge.cn` 暂不动**；改动与 alpha.1 未提交批次**合并提交**为 `c8a05e10a3`（1263 文件 / +1687541 −5657）并推送 `fork/main`。完整证据见 [DSH 0.1.7-alpha.2 升级证据](evidence/dsh-0.1.7-alpha.2-upgrade.md)。
 
@@ -44,7 +72,7 @@
 - **本批不 bump 任何模块**：仓库侧 0 行业务代码，改动折叠进 alpha.1 批次已登记的同一未发布增量。已记入 [MODULE-VERSIONS](MODULE-VERSIONS.md) 2026-09-25 更新（三）。
 - **提交与推送（已执行）**：`c8a05e10a3`（父提交 `9b8215a070`）一次性合并 alpha.1 + alpha.2 两批；`git push fork main` → `9b8215a070..c8a05e10a3`，`main` 与 `fork/main` 同步，本地/远端 tag 各 36 条无漂移。GitHub PR [#4](https://github.com/techflag/workdsh/pull/4) 的 head 自动跟随到 `c8a05e10a3`（仍 `mergeable_state = dirty`，为既有冲突，非本批引入）。
 - **`.gitignore` 第 15 行 `/docs/` 的影响与处置**：`docs/` 下新建文件默认不入库。本批按用户裁决 `git add -f` 强加了 4 项——两份升级证据（`dsh-0.1.7-alpha.1-upgrade.md`、`dsh-0.1.7-alpha.2-upgrade.md`）与两份官方文档镜像（`docs/dsh-v0.1.7-alpha.1/`、`docs/dsh-v0.1.7-alpha.2/`）。加 alpha.1 镜像的理由：19 个**已跟踪** docs 文件（26 处引用）指向它，不加入会让本次提交自身产生悬空引用；`docs/dsh-v0.1.6-alpha.2/`（543 文件）本就在库，惯例一致。代价为仓库约 +48MB。
-- **未执行**：线上 `dsh.10ge.cn` 切换（用户裁决本批不动，线上仍 `0.1.7-alpha.1`）；37 个内容有变的镜像文件逐文件复审；其余探针与 `test:office:*` / `test:library` / `test:projects` / `test:assistant` / `test:remote:*` / `portal` 未在本批复跑；真实模型验收未跑。
+- **未执行**：~~线上 `dsh.10ge.cn` 切换~~（该项已由本文件「续二十一」于同日执行完成）；37 个内容有变的镜像文件逐文件复审；其余探针与 `test:office:*` / `test:library` / `test:projects` / `test:assistant` / `test:remote:*` / `portal` 未在本批复跑；真实模型验收未跑。
 
 ## 2026-09-22（续四）：D04 收尾与 AT-01～27 逐项签收（结论：不签收）
 
