@@ -20,7 +20,7 @@ flowchart LR
 
 ## 官方能力复用记录
 
-任务 PPT-02；Harness 文档为 docs/dsh-v0.1.6-alpha.2 的 tools/Connection/Client sidebar 公开说明，既有 U1 pending/ACK 与 workdsh-office-live Tab 已验证。CreatPPT 发布包公开 exports 仅根领域入口、./dsh、./package.json；根入口提供原生语义和布局，发布包 dist/client 提供原生 Vue 编辑与浏览器导出。19091 为 CLI 独立体验，不能作为集成验收。
+任务 PPT-02；Harness 文档为 docs/dsh-v0.1.7-alpha.2 的 tools/Connection/Client sidebar 公开说明，既有 U1 pending/ACK 与 workdsh-office-live Tab 已验证。CreatPPT 发布包公开 exports 仅根领域入口、./dsh、./package.json；根入口提供原生语义和布局，发布包 dist/client 提供原生 Vue 编辑与浏览器导出。19091 为 CLI 独立体验，不能作为集成验收。
 
 不加载 ./dsh：它的 create_presentation/CLI/server 持久化流程与既有 ContentService 重叠。正式插件不启动第二个 HTTP 服务，不建立新 Agent loop、存储或 MCP 传输。使用已有六工具、官方 Connection 与会话定向展示。
 

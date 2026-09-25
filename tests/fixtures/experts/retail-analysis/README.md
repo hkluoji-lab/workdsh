@@ -16,4 +16,4 @@ corepack pnpm probe:experts:professional incomplete
 corepack pnpm probe:experts:professional dirty
 ```
 
-持久日志核对使用系统 `zstd`，只解码官方 v3 格式、不改日志。模型任务已结束而浏览器断言失败时，可执行 `node scripts/recheck-expert-professional.mjs <制品目录> <场景>`，独立复查完成事件、固定技能回执、真实文件与数值，再冷启动核对绑定；不会再次发送模型任务。报告中的 `professionalReview` 保持 required，人工专业签收单独记录。
+持久日志核对使用系统 `zstd`，只解码官方 v4 格式、不改日志。模型任务已结束而浏览器断言失败时，可执行 `node scripts/recheck-expert-professional.mjs <制品目录> <场景>`，独立复查完成事件、固定技能回执、真实文件与数值，再冷启动核对绑定；不会再次发送模型任务。报告中的 `professionalReview` 保持 required，人工专业签收单独记录。

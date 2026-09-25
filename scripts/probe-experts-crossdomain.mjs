@@ -131,7 +131,7 @@ try {
     await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();return creation.sessionId;
   }
   await page.route('**/api/workdsh-experts',async route=>{const b=route.request().postDataJSON();if(b.endpoint==='prepare-execution'){b.payload={...b.payload,workspaceRef:workspace,workspaceId};return route.continue({postData:JSON.stringify(b)})}return route.continue()});
-  async function eventsFor(sid){const rel=(await readdir(join(home,'sessions'),{recursive:true})).find(x=>x.endsWith(`${sid}/session.v3.jsonl.zstd`));if(!rel)return[];const {stdout}=await exec('zstd',['-dc',join(home,'sessions',rel)],{maxBuffer:32*1024*1024});return stdout.trim().split('\n').map(JSON.parse)}
+  async function eventsFor(sid){const rel=(await readdir(join(home,'sessions'),{recursive:true})).find(x=>x.endsWith(`${sid}/session.v4.jsonl.zstd`));if(!rel)return[];const {stdout}=await exec('zstd',['-dc',join(home,'sessions',rel)],{maxBuffer:32*1024*1024});return stdout.trim().split('\n').map(JSON.parse)}
   async function runTurn(sid,prompt,label){
     const editor=page.locator('[contenteditable="true"]').first();await editor.fill(prompt);await editor.press('Enter');
     const deadline=Date.now()+300000;let rows=[];

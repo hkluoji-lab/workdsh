@@ -8,12 +8,12 @@ import { pathToFileURL } from 'node:url';
 import { checkExpertResults } from './check-expert-results.mjs';
 
 const exec = promisify(execFile);
-/** Read-only verification of the documented native v3 log, with a system zstd decoder. */
+/** Read-only verification of the documented native v4 log, with a system zstd decoder. */
 export async function checkProfessionalSession(artifacts, scenario = 'normal') {
   assert.ok(['normal', 'incomplete', 'dirty'].includes(scenario));
   const metadata = JSON.parse(await readFile(join(artifacts, 'running.json'), 'utf8'));
   const { home, workspace, sessionId, inputHash } = metadata;
-  const relative = (await readdir(join(home, 'sessions'), { recursive: true })).find(p => p.endsWith(`${sessionId}/session.v3.jsonl.zstd`));
+  const relative = (await readdir(join(home, 'sessions'), { recursive: true })).find(p => p.endsWith(`${sessionId}/session.v4.jsonl.zstd`));
   assert.ok(relative, 'Native persistent session artifact required');
   const { stdout } = await exec('zstd', ['-dc', join(home, 'sessions', relative)], { maxBuffer: 32 * 1024 * 1024 });
   const events = stdout.trim().split('\n').map(JSON.parse);
@@ -26,7 +26,7 @@ export async function checkProfessionalSession(artifacts, scenario = 'normal') {
   const loaded = calls.find(row => row.name === 'skill' && JSON.parse(row.arguments).name === 'retail-analysis-acceptance');
   assert.ok(loaded, 'Actual Skill tool call required');
   const results = events.filter(row => row.type === 'tool/result').map(row => row.data.message);
-  const skillResult = results.find(message => message.source.callId === loaded.callId);
+  const skillResult = results.find(message => message.toolCallId === loaded.callId);
   assert.ok(skillResult && JSON.stringify(skillResult).includes('<skill_content') && JSON.stringify(skillResult).includes('retail-analysis-acceptance'), 'Successful Skill receipt required');
   assert.ok(JSON.stringify(skillResult).includes('/retained-revisions/'), 'Task must read the published retained Skill revision');
   assert.ok(calls.some(row => row.name === 'read' && row.arguments.includes('input.csv')), 'Actual CSV read required');

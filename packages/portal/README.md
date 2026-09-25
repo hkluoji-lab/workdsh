@@ -125,8 +125,8 @@ PORTAL_COOKIE_SECURE=0 DSH_AUTH_USERNAME=admin DSH_AUTH_PASSWORD=local-only \
 | 项 | 内容 |
 | --- | --- |
 | 任务 ID | `P1-13`（D17） |
-| 官方文档路径 | [HARNESS-OFFICIAL-DEVELOPMENT](../../docs/HARNESS-OFFICIAL-DEVELOPMENT.md)；`docs/dsh-v0.1.6-alpha.2/architecture.md`、`capability-seams.md` |
-| 锁定发布包 / 公开入口 | 基线 `@deepseek-ai/dsh@0.1.6-alpha.2`。官方 Web 侧公开扩展面为 Slots / Client model / Remote / 会话投影，**均要求在应用与 Loader 启动之后生效** |
+| 官方文档路径 | [HARNESS-OFFICIAL-DEVELOPMENT](../../docs/HARNESS-OFFICIAL-DEVELOPMENT.md)；`docs/dsh-v0.1.7-alpha.2/architecture.md`、`capability-seams.md` |
+| 锁定发布包 / 公开入口 | 基线 `@deepseek-ai/dsh@0.1.7-alpha.2`。官方 Web 侧公开扩展面为 Slots / Client model / Remote / 会话投影，**均要求在应用与 Loader 启动之后生效** |
 | 已有探针 | 官方未提供"应用加载前"的鉴权扩展点。部署侧实测：线上容器 Caddy **v2.11.4**，`forward_auth` 为 2.7+ 标准指令（已核对官方文档「Expanded form」：默认以 **GET** 访问 `uri`），`http.handlers.reverse_proxy` 已加载；容器内 **3083 空闲**；宿主 `…/data/dsh` 已整体 rw 挂载为容器 `/data/dsh`，门户**无需新增挂载** |
 | 直接复用 | 无需改造即可复用的部分：官方口令以环境变量形式提供，门户把它作为主账号读取，不另建凭据管理；`forward_auth` 由既有容器内 Caddy 承担，不新增反向代理实现。**α.4 的额外账号**是官方侧没有落点的能力（官方只提供一组口令），按"仅实现官方不拥有的领域"补在部署层，不是第二套身份体系 |
 | WorkDSH 需补的业务差异 | 官方只提供宿主层基础认证能力，不提供服务端渲染的登录页、登录页宣传、会话 Cookie、退出登录、失败限流、登录后回跳与多成员账号。这些必须由门户实现 |

@@ -40,7 +40,8 @@ test('official persistence survives process restart and retires removed skill', 
     assert.deepEqual(catalogs.at(-1).data.source.entries, []);
     // Catalog retirement is an appended event; historical messages are retained.
     assert.equal(catalogs.at(-1).surfaceOp, 'append');
-    const result = resumed.requests[1].flatMap(message => message.content).find(block => block.type === 'tool-result' && block.toolCallId === 'skill-resume');
+    // Session format V4 exposes the result as a first-class tool-role request message.
+    const result = resumed.requests[1].find(message => message.role === 'tool' && message.toolCallId === 'skill-resume');
     assert.ok(result);
     assert.equal(result.isError, true);
     assert.doesNotMatch(JSON.stringify(result), /COLD_BODY_SENTINEL/);

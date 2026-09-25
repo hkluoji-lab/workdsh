@@ -1,25 +1,65 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, expect } from '@playwright/test';
-import {
-  SHIPPED_PRESET_ROOT,
-  copyComposition,
-  discoverPresets,
-} from '@deepseek-ai/dsh-agent-presets';
 
+const require = createRequire(import.meta.url);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 mkdirSync(resolve(root, '.test-runtime'), { recursive: true });
 mkdirSync(resolve(root, '.artifacts'), { recursive: true });
 const dshHome = mkdtempSync(resolve(root, '.test-runtime/presets-'));
-const userRoot = resolve(dshHome, '.agent-presets');
-const presetRoots = [
-  { path: SHIPPED_PRESET_ROOT, trust: 'system' },
-  { path: userRoot, trust: 'user' },
-];
+// 0.1.7 declares presets as `@deepseek-ai/dsh-agent-preset` rows in the patch layers,
+// replacing the removed 0.1.6 `.agent-presets/*/agent.cordis.yml` discovery. The home
+// layer applies after every bundle layer, so a probe-authored row is a user preset
+// with the same roster, session lock and skill catalog the shipped ones get.
+const homePatch = resolve(dshHome, 'cordis.patch.yml');
+const presetModule = '@deepseek-ai/dsh-agent-preset';
+
+/** Child plugin rows of one shipped preset, copied verbatim from its patch file. */
+function shippedPlugins(preset) {
+  const file = require.resolve(`@deepseek-ai/dsh-web-app/presets/${preset}.patch.yml`);
+  const lines = readFileSync(file, 'utf8').split('\n');
+  const start = lines.findIndex(line => line === '        plugins:');
+  assert.ok(start >= 0, `shipped ${preset} preset declares its child plugins`);
+  return lines.slice(start).join('\n').trimEnd();
+}
+
+const shipped = { cordis: shippedPlugins('cordis'), minimal: shippedPlugins('minimal') };
+const userPresets = {
+  skills: { id: 'workdsh-skills', name: 'WorkDSH Skills', order: 10 },
+  minimal: { id: 'workdsh-minimal', name: 'WorkDSH Minimal', order: 11 },
+};
+
+/**
+ * Write the user presets into the home patch layer. The row shape is exactly the one
+ * a shipped preset publishes, so `name` is user-owned copy the roster never translates.
+ * @param plugins - `skills` rows, `minimal` rows, or null to omit that preset entirely.
+ */
+function writePresets(plugins = { skills: shipped.cordis, minimal: shipped.minimal }) {
+  const rows = Object.entries(userPresets).flatMap(([key, preset]) => plugins[key] == null ? [] : [
+    `    - id: preset-${preset.id}`,
+    `      name: '${presetModule}'`,
+    '      config:',
+    `        id: ${preset.id}`,
+    `        name: ${JSON.stringify(preset.name)}`,
+    `        order: ${preset.order}`,
+    plugins[key],
+  ]);
+  writeFileSync(homePatch, [
+    '# Probe-authored user presets. Each row is the official declarative',
+    '# `@deepseek-ai/dsh-agent-preset` declaration a shipped preset also uses; the home',
+    '# layer applies after the bundle layers, so the roster, the session lock and the',
+    '# skill catalog treat these exactly like a shipped preset.',
+    '- insert:',
+    ...rows,
+    '',
+  ].join('\n'));
+}
+
 const env = {
   ...process.env,
   DSH_HOME: dshHome,
@@ -110,12 +150,7 @@ async function listSkills(address, cookie, sessionId) {
   return body;
 }
 
-const rows = await discoverPresets(presetRoots, import.meta.url);
-const cordis = rows.find(row => row.id === 'cordis');
-const minimal = rows.find(row => row.id === 'minimal');
-assert.ok(cordis && minimal, 'published package supplies cordis and minimal presets');
-await copyComposition(presetRoots, cordis, 'workdsh-skills', 'WorkDSH Skills');
-await copyComposition(presetRoots, minimal, 'workdsh-minimal', 'WorkDSH Minimal');
+writePresets();
 
 try {
   const { address, cookie } = await startHost(true);
@@ -285,22 +320,16 @@ try {
 
   await stopServer();
   server = undefined;
-  copyFileSync(
-    resolve(userRoot, 'workdsh-minimal/agent.cordis.yml'),
-    resolve(userRoot, 'workdsh-skills/agent.cordis.yml'),
-  );
+  writePresets({ skills: shipped.minimal });
   const { address: mutatedAddress, cookie: mutatedCookie } = await startHost();
   const mutatedBody = await listSkills(mutatedAddress, mutatedCookie, activeAgentId);
   const mutatedNames = mutatedBody?.result?.value?.skills?.map(skill => skill.name) ?? [];
   assert.equal(mutatedNames.length, 0);
-  console.log('PASS: after a preset file mutation and Host restart, the historical Session resolved the new composition for the same preset id');
+  console.log('PASS: after a preset patch mutation and Host restart, the historical Session resolved the new composition for the same preset id');
 
   await stopServer();
   server = undefined;
-  copyFileSync(
-    resolve(SHIPPED_PRESET_ROOT, 'cordis/agent.cordis.yml'),
-    resolve(userRoot, 'workdsh-skills/agent.cordis.yml'),
-  );
+  writePresets();
   const { address: restoredAddress, cookie: restoredCookie } = await startHost();
   const restoredBody = await listSkills(restoredAddress, restoredCookie, activeAgentId);
   const restoredNames = restoredBody?.result?.value?.skills?.map(skill => skill.name) ?? [];
@@ -309,7 +338,7 @@ try {
 
   await stopServer();
   server = undefined;
-  rmSync(resolve(userRoot, 'workdsh-skills'), { recursive: true, force: true });
+  writePresets({ skills: null });
   const { address: deletedAddress, cookie: deletedCookie } = await startHost();
   const deletedBody = await listSkills(deletedAddress, deletedCookie, activeAgentId);
   assert.equal(deletedBody?.result?.ok, true);

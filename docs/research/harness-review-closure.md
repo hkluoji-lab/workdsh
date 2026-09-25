@@ -2,6 +2,8 @@
 
 日期：2026-09-10。DOC-06 文档审查完成；D01 运行准入仍未完成。
 
+（2026-09-24 补记：仓库镜像已在 DSH `0.1.7-alpha.1` 升级批次中整批换为 `docs/dsh-v0.1.7-alpha.1/` 快照。与本文所用 0.1.6 语料相比为 **0 删除、19 新增、157 个共有文件内容有变**（会话 V4、流式/二进制 Remote、账号与设置页、语音输入、产品遥测、样式 token、开发工作流等）。本文及下表结论**全部基于 0.1.6 语料得出，未按新语料复审**，正文中的镜像链接保留原 0.1.6 锚点以如实反映其来源；按新语料的复审另行安排。台账 [deepseek-harness-review.json](deepseek-harness-review.json) 的 `corpusRoot` 已改指 0.1.7，`audit:harness-docs` 报 `127/176 canonical documents reviewed; 49 pending`。）
+
 127 份规范文档的覆盖见 [逐文件台账](deepseek-harness-review.json)。这是用户提供镜像的语义审查，不表示其中每个 API 都已在锁定的 `0.1.5-rc.1` 发布包中验证。只依赖发布包公开入口，不追随镜像中的源码路径或内部构建命令。
 
 ## H08 开发与国际化收尾

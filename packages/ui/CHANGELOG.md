@@ -1,5 +1,6 @@
 # 0.1.0-alpha.6 — 2026-09-15
 
+- 适配 DeepSeek Harness `0.1.7-alpha.1`（2026-09-25，并入本未发布增量，不单独 bump）：`styles/tokens.ts` 的 7 个别名收敛为裸 `var(--dsw-*)`，`modal.ts` / `navigation.ts` 清除硬编码 fallback。口径：名字须属 0.1.7 官方词表（361 名）**且**在官方 light 基态有声明，全树 fallback-free，由新增门禁 `probe:theme` 双向断言。
 - 统一共享 Modal 的紧凑层级、关闭按钮、滚动区、底部操作栏和窄屏边界。
 
 # 0.1.0-alpha.5

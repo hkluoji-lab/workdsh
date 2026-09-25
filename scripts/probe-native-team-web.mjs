@@ -83,7 +83,7 @@ try {
     tarballs.push(join(artifacts, `${manifest.name}-${manifest.version}.tgz`));
   }
   const fixture = join(home, 'fixture'); await mkdir(fixture);
-  await writeFile(join(fixture, 'package.json'), JSON.stringify({ name: 'workdsh-native-team-probe', version: '0.0.0', type: 'module', exports: { '.': './index.mjs', './client': './client.js' }, peerDependencies: { '@deepseek-ai/dsh-llm': '0.1.6-alpha.2' }, dsh: { bundle: { patch: './patch.yml' }, client: { platform: 'web', inject: ['@deepseek-ai/dsh-api-session-controller', '@deepseek-ai/dsh-client-ui-workspace'] } } }));
+  await writeFile(join(fixture, 'package.json'), JSON.stringify({ name: 'workdsh-native-team-probe', version: '0.0.0', type: 'module', exports: { '.': './index.mjs', './client': './client.js' }, peerDependencies: { '@deepseek-ai/dsh-llm': '0.1.7-alpha.2' }, dsh: { bundle: { patch: './patch.yml' }, client: { platform: 'web', inject: ['@deepseek-ai/dsh-api-session-controller', '@deepseek-ai/dsh-client-ui-workspace'] } } }));
   await copyFile(join(root, 'tests/fixtures/native-team-web/index.mjs'), join(fixture, 'index.mjs'));
   await writeFile(join(fixture, 'patch.yml'), '- insert:\n    - id: native-team-probe\n      name: workdsh-native-team-probe\n');
   await writeFile(join(fixture, 'client.js'), `window.__ModuleLoader__.load({id:'workdsh-native-team-probe',factory:function(){return {inject:['sessions','uiWorkspace'],apply:function(ctx){ctx.effect(function(){window.nativeTeamProbe={open:async function(id){await ctx.sessions.refresh();ctx.uiWorkspace.openSession(id)}};return function(){delete window.nativeTeamProbe}})}}}});`);
@@ -104,13 +104,12 @@ try {
   await expect(page.locator('.wd-activity')).toHaveAttribute('data-team', 'true');
   await page.screenshot({ path: join(artifacts, 'official-team.png'), fullPage: true });
   pass('official-roster-and-task-board-render-with-workdsh-activity-strip');
-  await panel.getByRole('button', { name: /^(New task|新建任务)$/ }).click();
-  await panel.getByRole('textbox', { name: /^(Task subject|任务标题)$/ }).fill('浏览器创建的官方任务');
-  await panel.getByRole('textbox', { name: /^(Task description|任务描述)$/ }).fill('真实 Remote 写入，随后冷重启核对。');
-  await panel.getByRole('button', { name: /^(Save|保存)$/ }).click();
-  await expect(panel).toContainText('浏览器创建的官方任务');
-  assert.ok((await api(host, { action: 'view', sessionId: created.sessionId })).tasks.some(t => t.subject === '浏览器创建的官方任务'));
-  pass('official-web-task-mutation-reaches-native-team-service');
+  // 0.1.7 replaced the Team action's task form with a read-only panel: the official
+  // Remote exposes `view` only, so shared tasks change through the Team tools while the
+  // browser observes the same service state.
+  await expect(panel.getByRole('button', { name: /^(New task|新建任务|Save|保存)$/ })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: /^(Refresh Team|刷新 Team)$/ })).toBeVisible();
+  pass('official-web-team-panel-is-read-only-over-native-team-state');
   await panel.getByRole('button').filter({ hasText: 'analyst' }).click();
   await expect(page.getByText('analyst：官方 Team 隔离验证完成。', { exact: true })).toBeVisible();
   await page.screenshot({ path: join(artifacts, 'official-member.png'), fullPage: true });
@@ -118,7 +117,7 @@ try {
   await stop(); host = await start();
   const resumed = await api(host, { action: 'view', sessionId: created.sessionId });
   assert.deepEqual(resumed.members.map(m => m.id), created.view.members.map(m => m.id));
-  assert.ok(resumed.tasks.some(t => t.subject === '浏览器创建的官方任务'));
+  assert.ok(resumed.tasks.some(t => t.subject === '核对测试数据'));
   const resumedAnalyst = resumed.members.find(member => member.name === 'analyst');
   assert.ok(resumedAnalyst);
   const longTaskStartedAt = Date.now();
@@ -250,9 +249,9 @@ try {
     };
     pass('real-model-lead-and-members-complete-two-stage-official-task-handoff');
   }
-  await open(host, created.sessionId); await expect(page.getByRole('dialog')).toContainText('浏览器创建的官方任务');
+  await open(host, created.sessionId); await expect(page.getByRole('dialog')).toContainText('长任务与重连验收');
   await page.screenshot({ path: join(artifacts, 'official-team-cold.png'), fullPage: true });
-  pass('cold-web-restart-keeps-member-identities-and-ui-created-task');
+  pass('cold-web-restart-keeps-member-identities-and-official-task-state');
   assert.deepEqual(report.browserErrors, []); pass('no-browser-page-errors'); report.status = 'passed';
 } catch (error) { report.status = 'failed'; report.error = error.stack; console.error(error); process.exitCode = 1; if (page) await page.screenshot({ path: join(artifacts, 'failure.png'), fullPage: true }).catch(() => {}); }
 finally { await browser?.close(); await stop(); await unlink(join(home, '.credentials.yaml')).catch(() => {}); await writeFile(join(artifacts, 'host.log'), log.replaceAll(credential || '\0', '[redacted]').replace(/token=[^\s]+/g, 'token=[redacted]')); await writeFile(join(artifacts, 'result.json'), JSON.stringify(report, null, 2)); }

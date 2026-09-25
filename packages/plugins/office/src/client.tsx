@@ -78,11 +78,17 @@ export function apply(ctx: Context): void {
     return DeferredOfficeComponent as OfficeSlotComponent;
   };
   ctx.inject(["workdshLibraryPreview"], scope => scope.effect(() => scope.workdshLibraryPreview.register(["docx", "pptx"], async (target, input) => (await runtime()).mountOriginalPreview(target, input))));
+  // The registry ranks `extension` (default) above `builtin` and keeps every
+  // matching implementation as a candidate. Declaring `builtin` leaves the
+  // official native preview (sidebar-right's Office and Excel renderers) as the
+  // default for the suffixes they already own, while this editor stays
+  // reachable through the viewer menu.
   ctx.effect(() =>
     ctx.documentPreviews.register({
       id: "workdsh-office",
       extensions: wordOnlyRelease ? ["docx"] : ["xlsx", "docx", "pptx"],
       title: () => "Office 浏览器编辑",
+      priority: "builtin",
       loading: "bytes-complete",
     }),
   );
@@ -98,6 +104,10 @@ export function apply(ctx: Context): void {
         id: "workdsh-office-csv",
         extensions: ["csv"],
         title: () => "CSV 表格",
+        // Same yield as the Office registration: the official Excel renderer is
+        // the default CSV viewer; this table stays a candidate for its
+        // GB18030/UTF-16 sniffing and truncation reporting.
+        priority: "builtin",
         loading: "bytes-complete",
         wrap: true,
       }),

@@ -1,13 +1,13 @@
 # Harness 官方开发规范
 
-状态：强制执行。适用基线：DeepSeek Harness `0.1.6-alpha.2`。
+状态：强制执行。适用基线：DeepSeek Harness `0.1.7-alpha.2`。
 
 本文把官方文档转成 WorkDSH 的开发准入规则。它不复制 Harness 上游仓库的内部构建流程；外部插件只使用发布包的公开 exports、类型、服务、Remote、Resource 和 Slot。
 
 ## 1. 依据优先级
 
 1. 锁定版本发布包的 `exports`、类型声明和运行探针。
-2. 仓库内版本化镜像 `docs/dsh-v0.1.6-alpha.2/`。
+2. 仓库内版本化镜像 `docs/dsh-v0.1.7-alpha.2/`。
 3. 官方网站当前文档，用于发现新说明和交叉核对。
 
 网站与锁定包不一致时记录差异并做最小探针，不读取私有实现、不修改 Harness、不静默升级。官方文档中的上游 workspace 路径、聚合 tsconfig、源码生成器和内部发布门禁只适用于 Harness 仓库；WorkDSH 采用其公开包职责、依赖、生命周期和验证原则。
@@ -78,16 +78,16 @@
 3. Host/Client 依赖、`inject`、bundle manifest 和 README 一致；无跨插件内部实现导入。
 4. 所有注册可卸载，缺依赖为 PENDING、启动错误为 FAILED、正常运行才是 ACTIVE。
 5. typecheck、build、相关无密钥行为测试和打包安装通过；视觉变更另按 `UI-DESIGN.md` 验证真实 Host。
-6. 官网与 `0.1.6-alpha.2` 有差异时，把差异和探针结果写入 `COMPATIBILITY.md`，不能用文档截图代替运行证据。
+6. 官网与 `0.1.7-alpha.2` 有差异时，把差异和探针结果写入 `COMPATIBILITY.md`，不能用文档截图代替运行证据。
 
 ## 官方来源
 
-- [Web Client Slots（本地镜像）](dsh-v0.1.6-alpha.2/subsystems/slots.zh.md)
-- [右侧 Sidebar（本地镜像）](dsh-v0.1.6-alpha.2/subsystems/sidebar-right.zh.md)
-- [添加 workspace 包（本地镜像）](dsh-v0.1.6-alpha.2/cookbook/adding-a-package.zh.md)
-- [技能（本地镜像）](dsh-v0.1.6-alpha.2/subsystems/skills.zh.md)
-- [会话输入（本地镜像）](dsh-v0.1.6-alpha.2/subsystems/conversation.zh.md)
-- [Cordis 入门（本地镜像）](dsh-v0.1.6-alpha.2/cordis-primer.zh.md)
+- [Web Client Slots（本地镜像）](dsh-v0.1.7-alpha.2/subsystems/slots.zh.md)
+- [右侧 Sidebar（本地镜像）](dsh-v0.1.7-alpha.2/subsystems/sidebar-right.zh.md)
+- [添加 workspace 包（本地镜像）](dsh-v0.1.7-alpha.2/cookbook/adding-a-package.zh.md)
+- [技能（本地镜像）](dsh-v0.1.7-alpha.2/subsystems/skills.zh.md)
+- [会话输入（本地镜像）](dsh-v0.1.7-alpha.2/subsystems/conversation.zh.md)
+- [Cordis 入门（本地镜像）](dsh-v0.1.7-alpha.2/cordis-primer.zh.md)
 - [官方右侧 Sidebar](https://deepseek-harness.github.io/deepseek-harness/reference/subsystems/sidebar-right)
 - [官方添加 Package](https://deepseek-harness.github.io/deepseek-harness/reference/cookbook/adding-a-package)
 - [官方 Skills](https://deepseek-harness.github.io/deepseek-harness/reference/subsystems/skills)

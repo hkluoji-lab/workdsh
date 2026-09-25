@@ -8,7 +8,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { Context } from '@deepseek-ai/cordis';
 import { LlmAdapter, createMessage } from '@deepseek-ai/dsh-llm';
-import { COMPOSITION_FILE } from '@deepseek-ai/dsh-agent-presets';
 import { ExpertsManager } from '../packages/plugins/experts/dist/index.js';
 import { registerExpertExecutionGuard } from '../packages/plugins/experts/dist/runtime/execution-guard.js';
 import { registerExpertManagementTools } from '../packages/plugins/experts/dist/tools/management-tools.js';
@@ -30,7 +29,7 @@ const requireExperts = createRequire(join(root, 'packages/plugins/experts/packag
 const baseUrl = pathToFileURL(dirname(requireRoot.resolve('@deepseek-ai/dsh/package.json')) + '/').href;
 const ctx = new Context();
 const actor = { principalId: 'probe-owner', organizationId: 'probe-org', resolvedBy: 'probe-identity', requestId: 'probe' };
-const report = { home, version: '0.1.6-alpha.2', mode: cold ? 'cold-resume' : 'production-adapter', checks: [], requests: [], notRun: ['real paid model', 'professional content acceptance', 'user preview deployment'] };
+const report = { home, version: '0.1.7-alpha.2', mode: cold ? 'cold-resume' : 'production-adapter', checks: [], requests: [], notRun: ['real paid model', 'professional content acceptance', 'user preview deployment'] };
 const pass = (name, detail) => { report.checks.push({ name, detail }); console.log(`PASS ${name}`); };
 const blocks = text => [{ type: 'text', text }];
 const handles = [];
@@ -96,6 +95,10 @@ const definition = name => ({ name, description: `${name} fixture expert.`, role
 try {
   const { default: Loader } = await import(pathToFileURL(requireDsh.resolve('@deepseek-ai/cordis-plugin-loader')).href);
   await ctx.plugin(Loader, { baseUrl });
+  // A Profile composition gives every row's context the Loader's resolution base; this
+  // in-process composition must expose the same base because an agent preset resolves its
+  // declared rows relative to the context that registered it.
+  ctx.baseUrl = baseUrl;
   for (const name of ['dsh-session', 'dsh-session-projection', 'dsh-system-prompt', 'dsh-tools', 'dsh-llm', 'dsh-agent', 'dsh-agent-loop', 'dsh-subagent', 'dsh-invariants']) await load(`@deepseek-ai/${name}`);
   await load('@deepseek-ai/dsh-session-persistence-jsonl', { root: join(home, 'sessions'), compression: 'none' });
   await load('@deepseek-ai/dsh-session-query-sqlite', { path: join(home, 'session-query.sqlite'), openAt: 'never' });
@@ -104,17 +107,14 @@ try {
   await load('@deepseek-ai/dsh-experimental-agent-team', { maxMembers: 16, disposalTimeoutMs: 4000 });
   await load('@deepseek-ai/dsh-experimental-tool-agent-team');
   ctx.llm.registerAdapter(['fixture'], new Model());
-  const presetRoot = join(home, 'presets');
   if (!cold) {
-    await mkdir(join(presetRoot, 'standard'), { recursive: true });
-    await writeFile(join(presetRoot, 'standard', COMPOSITION_FILE), '- name: "@deepseek-ai/dsh-persona"\n  config:\n    prefix: BASE\n- name: "@deepseek-ai/dsh-skill-filesystem"\n  config:\n    includeDefaultRoots: false\n    watch: false\n- name: "@deepseek-ai/dsh-tool-skill"\n');
     for (const name of roleNames) {
       const dir = join(process.env.DSH_AGENTS_HOME, 'skills', `method-${name}`);
       await mkdir(dir, { recursive: true });
       await writeFile(join(dir, 'SKILL.md'), `---\nname: method-${name}\ndescription: Fixture ${name} method\n---\nMETHOD_${name.toUpperCase()}\n`);
     }
   }
-  for (const [name, config] of [['dsh-storage'], ['dsh-storage-json', { root: join(home, 'storage') }], ['dsh-storage-domain', { backend: 'json' }], ['dsh-skill'], ['dsh-skill-filesystem', { watch: false }], ['dsh-agent-presets', { default: 'standard', roots: [{ path: presetRoot, trust: 'user' }], includeShippedRoot: false, includeUserRoot: false }]]) await load(`@deepseek-ai/${name}`, config);
+  for (const [name, config] of [['dsh-storage'], ['dsh-storage-json', { root: join(home, 'storage') }], ['dsh-storage-domain', { backend: 'json' }], ['dsh-skill'], ['dsh-skill-filesystem', { watch: false }], ['dsh-agent-preset-registry', { default: 'standard' }], ['dsh-agent-preset', { id: 'standard', plugins: [{ name: '@deepseek-ai/dsh-persona', config: { prefix: 'BASE' } }, { name: '@deepseek-ai/dsh-skill-filesystem', config: { includeDefaultRoots: false, watch: false } }, { name: '@deepseek-ai/dsh-tool-skill' }] }]]) await load(`@deepseek-ai/${name}`, config);
   ctx.provide('workdshIdentity', { id: actor.resolvedBy, async resolve() { return actor; }, membership(org, principal) { return org === actor.organizationId && principal === actor.principalId ? { organizationId: org, principalId: principal, principalKind: 'human', role: 'owner', state: 'active', revision: 'fixture-v1' } : undefined; } });
   for (const plugin of [AuditJournal, AccessManager]) await ctx.plugin(plugin);
   await ctx.plugin({ name: 'fixture-skills-host', inject: ['skills'], apply(scope) { new SkillManager(scope); } });

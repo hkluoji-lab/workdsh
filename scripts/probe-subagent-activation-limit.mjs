@@ -14,7 +14,7 @@ import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const artifacts = join(root, '.artifacts/dsh-0.1.6-alpha.2-upgrade/p5-activation-limit');
+const artifacts = join(root, '.artifacts/dsh-0.1.7-alpha.2-upgrade/p5-activation-limit');
 const home = await realpath(await mkdtemp(join(tmpdir(), 'workdsh-activation-limit-')));
 const cwd = join(home, 'workspace'), workspaceId = randomUUID();
 await mkdir(artifacts, { recursive: true }); await mkdir(cwd); await mkdir(join(home, 'storages'));
@@ -53,7 +53,7 @@ const start = async () => {
 
 try {
   const fixture = join(home, 'fixture'); await mkdir(fixture);
-  await writeFile(join(fixture, 'package.json'), JSON.stringify({ name: 'workdsh-activation-limit-probe', version: '0.0.0', type: 'module', exports: { '.': './index.mjs' }, peerDependencies: { '@deepseek-ai/dsh-llm': '0.1.6-alpha.2' }, dsh: { bundle: { patch: './patch.yml' } } }));
+  await writeFile(join(fixture, 'package.json'), JSON.stringify({ name: 'workdsh-activation-limit-probe', version: '0.0.0', type: 'module', exports: { '.': './index.mjs' }, peerDependencies: { '@deepseek-ai/dsh-llm': '0.1.7-alpha.2' }, dsh: { bundle: { patch: './patch.yml' } } }));
   await copyFile(join(root, 'tests/fixtures/subagent-activation-limit/index.mjs'), join(fixture, 'index.mjs'));
   await writeFile(join(fixture, 'patch.yml'), '- insert:\n    - id: activation-limit-probe\n      name: workdsh-activation-limit-probe\n');
   await command(pnpm, ['pack', '--pack-destination', artifacts], fixture);

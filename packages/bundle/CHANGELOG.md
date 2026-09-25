@@ -1,5 +1,7 @@
 # 0.1.0-alpha.54 — 2026-09-24
 
+- 搭载 DeepSeek Harness `0.1.7-alpha.1` 基线（2026-09-25，并入本未发布增量，不单独 bump）：根 `devDependencies`（21 条）与 `pnpm.overrides`（284 条）精确锁定 `0.1.7-alpha.1`；`@deepseek-ai/dsh-agent-presets` 按官方改名移除，改由 `@deepseek-ai/dsh-agent-preset` + `@deepseek-ai/dsh-agent-preset-registry` 承载；组合包自身代码未变。
+- 线上 `dsh.10ge.cn` 于 2026-09-24 切换到 `0.1.7-alpha.1`（Session 仍为 V3、未触发写路径）。该次部署的 12 个 tgz 是本增量的**重定版前**构建（activity α.4 / connectors α.2 / identity-local α.5），源码相同、仅版本字段不同；重打包与重新部署未执行。
 - 搭载 `workdsh-plugin-workbench@0.1.0-alpha.16`：工作台不再为「助理」登记 `businessPanels` 占位与侧栏行，「助理」页面与同名侧栏行改由 `workdsh-plugin-assistant@0.1.0-alpha.1` 自持（`main` + `sidebar.panellist`，`order: 10`）。组合包自身代码未变，本版只为携带客户端制品。
 - 需与 `workdsh-plugin-workbench@0.1.0-alpha.16`、`workdsh-plugin-assistant@0.1.0-alpha.1` 同批安装：只升组合包而不装助理会让「助理」入口消失（工作台占位已移除）。
 - 本版是 α.53「收敛注入」的首个上线制品（α.53 未上线），线上不再挂载 `browser-use` / `browser-use-playwright-mcp`；随本版上线的其余自有 client 插件同批重发压缩制品（P1-2，模块源码未变）。

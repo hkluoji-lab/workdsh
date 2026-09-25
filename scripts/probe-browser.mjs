@@ -69,13 +69,15 @@ export async function probeBrowser(address, sessionCookie, screenshotPath, { ins
     const newSession = page.getByText(/新会话|New Session/, { exact: true }).first();
     await expect(newSession).toBeVisible();
     // A row is only ever contributed by the plugin that owns its `main` panel, so
-    // this profile (bundle + Skill layer, no library, no projects) must show the
-    // three not-yet-implemented entries and the capability centre, and must NOT
-    // show 资料库/项目 rows:官方 Sidebar 的行按钮直接调用 selectPanel，无页面时点击会抛错。
-    for (const label of ['助理（待开放）', '专家 · 技能 · 连接器', '定时任务（待开放）', '更多（待开放）']) {
+    // this profile (bundle + Skill layer, no library, no projects, no assistant)
+    // must show the two remaining not-yet-implemented entries and the capability
+    // centre, and must NOT show 资料库/项目/助理 rows:官方 Sidebar 的行按钮直接
+    // 调用 selectPanel，无页面时点击会抛错。「助理」自 96c4ea911f 起由
+    // workdsh-plugin-assistant 自持，不再属于 workbench 的待开放项，故本档不注册该行。
+    for (const label of ['专家 · 技能 · 连接器', '定时任务（待开放）', '更多（待开放）']) {
       await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
     }
-    for (const label of ['资料库', '项目']) {
+    for (const label of ['资料库', '项目', '助理']) {
       await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0);
     }
     await expect(nav).toBeVisible();
@@ -264,8 +266,8 @@ export async function probeProductWithoutSkills(address, sessionCookie) {
     const graph = await page.evaluate(() => window.__DSH_BOOT__.entries.map(row => row.id));
     expect(graph).toContain('workdsh-bundle');
     expect(graph).not.toContain('workdsh-plugin-skills');
-    await page.getByRole('button', { name: '助理（待开放）', exact: true }).click();
-    await expect(page.getByRole('heading', { name: '助理', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '定时任务（待开放）', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '定时任务', exact: true })).toBeVisible();
     await page.getByText(/新会话|New Session/, { exact: true }).first().click();
     await expect(page.getByText(/探索未至之境|Into the Unknown/, { exact: true }).first()).toBeVisible();
     expect(errors).toEqual([]);

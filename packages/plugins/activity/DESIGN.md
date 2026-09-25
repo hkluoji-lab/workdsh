@@ -50,3 +50,10 @@ ActivityPresentation通过Cordis effect托管可选身份/技能标签resolver�
 官方复用记录：锁定Harness0.1.6-alpha.1；原conversation.session.header.utilities Slot和useSession/useSessions/eventSource保持。跨插件仅给workdsh-contracts/activity的ActivityIdentity添加可选teamName/members展示字段，专家提供绑定修订的只读身份，不改变执行/授权/存储。原生正文、文件卡及展开详情所有权保持。公开Slot证据来自既有隔离官方Profile浏览器探针；新增56px布局验证，不把CSS探针冒充真实多人运行验收。
 
 2026-09-14 子任务动态刷新修复：官方ISessions.refreshSubagents公开入口读取catalog中的Agent driver采样状态。活动栏只读缓存会漏掉任务进行中的状态变化；组件首次/终态刷新一次，父任务运行时每3秒刷新官方目录，卸载/切换清理计时器，失败保留官方错误状态。不使用setSubagentCatalogOpen共享菜单开关，避免影响原生菜单生命周期，不另造执行状态。
+
+## 2026-09-24 Harness 0.1.7-alpha.1
+
+0.1.7移除了ISessions/SessionListState的per-parent字段（subagentsByParent、refreshSubagents）与Session格式V3。同一采样语义改由公开Session projection的subagentCatalog承载：children从`list.projectionsBySession[rootSessionId].values.subagentCatalog`读取（已是父目录顺序的直接子会话，不再需要kind过滤），刷新仍只有一处，改用`sessions.refreshProjections(rootSessionId)`的3秒/终态策略，其余刷新边界不变。
+
+`tool/result`按Session格式V4改写为一等tool角色消息：工具回执的调用身份读`message.toolCallId`、失败读`message.isError`，原来的`message.content`内`tool-result`包装块已从官方ContentBlockMap移除。技能名、ask_user_question等待态与tool推进时间的事件来源不变。
+

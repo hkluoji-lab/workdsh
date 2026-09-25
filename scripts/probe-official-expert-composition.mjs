@@ -12,7 +12,6 @@ import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Context } from '@deepseek-ai/cordis';
 import { LlmAdapter, createMessage } from '@deepseek-ai/dsh-llm';
-import { COMPOSITION_FILE } from '@deepseek-ai/dsh-agent-presets';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const artifacts = join(root, '.artifacts/dsh-0.1.6-upgrade/official-expert-composition');
@@ -20,7 +19,7 @@ await mkdir(artifacts, { recursive: true });
 await mkdir(join(root, '.test-runtime'), { recursive: true });
 const resumeHome = process.argv.includes('--resume') ? process.argv[process.argv.indexOf('--resume') + 1] : undefined;
 const home = resumeHome ?? await mkdtemp(join(root, '.test-runtime/official-expert-'));
-const version = '0.1.6-alpha.2';
+const version = '0.1.7-alpha.2';
 process.env.DSH_HOME = join(home, 'dsh');
 process.env.DSH_AGENTS_HOME = join(home, 'agents');
 const requireRoot = createRequire(import.meta.url);
@@ -168,17 +167,15 @@ try {
   ctx.llm.registerAdapter(['fixture'], new FixtureModel());
   await load(teamModule, { maxMembers: 16, disposalTimeoutMs: 4000 });
   await load(toolModule);
-  const presetRoot = join(home, 'presets');
   if (!resumeHome) {
-    await mkdir(join(presetRoot, 'standard'), { recursive: true });
-    await writeFile(join(presetRoot, 'standard', COMPOSITION_FILE), '- name: "@deepseek-ai/dsh-persona"\n  config:\n    prefix: "ROLE_LEAD_V1"\n- name: "@deepseek-ai/dsh-tool-skill"\n');
     for (const [name, role] of Object.entries(roles)) {
       const dir = join(home, 'pinned-roles', name, role.skill);
       await mkdir(dir, { recursive: true });
       await writeFile(join(dir, 'SKILL.md'), `---\nname: ${role.skill}\ndescription: ${name} fixture method\n---\n${role.resource}\n`);
     }
   }
-  await load('@deepseek-ai/dsh-agent-presets', { default: 'standard', roots: [{ path: presetRoot, trust: 'user' }], includeShippedRoot: false, includeUserRoot: false });
+  await load('@deepseek-ai/dsh-agent-preset-registry', { default: 'standard' });
+  await load('@deepseek-ai/dsh-agent-preset', { id: 'standard', plugins: [{ name: '@deepseek-ai/dsh-persona', config: { prefix: 'ROLE_LEAD_V1' } }, { name: '@deepseek-ai/dsh-tool-skill' }] });
 
   // Composition-only extension: no child creation, message pumping or ownership.
   const composition = ctx.plugin({ name: 'fixture-member-composition', inject: ['agentTeams', 'agents', 'loader', 'skills', 'systemPrompt'], apply(scope) {

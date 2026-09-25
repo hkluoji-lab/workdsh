@@ -1,3 +1,49 @@
+## 2026-09-25（续二十）：DSH `0.1.7-alpha.2` 仓库升级批次（**未提交、未推送、线上未动**）
+
+按用户 2026-09-25 裁决执行「先仓库升级批次」：把基线从 `0.1.7-alpha.1` 锁到 `0.1.7-alpha.2`（含 Cordis `4.0.4`）+ 跑全门禁 + 写升级证据，**线上 `dsh.10ge.cn` 暂不动**；改动与 alpha.1 未提交批次**合并提交**（本轮仍不提交）。完整证据见 [DSH 0.1.7-alpha.2 升级证据](evidence/dsh-0.1.7-alpha.2-upgrade.md)。
+
+批次性质：同族小版本递进，与上一批不同——上游全树 **0 文件删除**，仓库侧 **0 行业务代码改动**。
+
+### 官方变化面取证
+
+| 项 | 结果 |
+| --- | --- |
+| tag commit | alpha.1 = `c36a83ff6bb95e3f82cf79f9be7c724270a8aa61`；alpha.2 = `00102833dfaee1da9f48a3a8eae9d34005a75218` |
+| 上游全树 compare | 13146 → 13244 文件；**98 新增 / 0 删除 / 771 变化**（0 删除 ⇒ 无移除型破坏性变化） |
+| docs 子树 | 562 → 562 文件；**0 新增 / 0 删除 / 37 内容变化**（文件集合完全一致） |
+| 依赖闭包 | `@deepseek-ai/dsh@0.1.7-alpha.2` 依赖 80 条（与 alpha.1 零增删），72 条精确 alpha.2，8 条非精确范围全部核实已发布 |
+| 伴生包收紧 | 官方把 caret 改 tilde：`group@1.0.4` peer `cordis ~4.0.4` + `loader ~1.0.5`；`loader@1.0.5` peer `cordis ~4.0.4` ⇒ 单独升 Cordis 必冲突，须同批升 5 个伴生包 |
+| 13 条行为变化裁定 | spill 默认值 `maxInlineBytes 50000`→`maxInlineTokens 12500`；`ToolDefinition.projectContent` 新扩展点；`ctx.pluginRegistryProbe` 新服务；`client-ui-plugin-manager` 新 Config；`maxConsecutiveWakes` 缺省语义；`desktopPlatform` 注释；模型协议改落 `cordis.patch.yml`；`workspace:^`→`workspace:*`；`spill-policy` 依赖扩张；3 处文档行号平移；`capability-seams` 新节点；`rescope` range 段落 → **全部 0 处硬冲突、0 处需改代码** |
+
+### 本轮实测的自动化层（全绿，数字为本轮实测）
+
+| 检查 | 结果 |
+| --- | --- |
+| `corepack pnpm install --no-frozen-lockfile` | EXIT 0（`Packages: +277 -277`） |
+| `corepack pnpm check:versions` | PASS：**539 条 DSH 锁定 `0.1.7-alpha.2`；Cordis 4.0.4 only** |
+| `corepack pnpm typecheck` | 退出码 0（13 个 filter） |
+| `corepack pnpm build` | 退出码 0 |
+| `corepack pnpm test:integration` | **111 / 111 pass**（`duration_ms 16039.49`） |
+| `corepack pnpm test:activity` | **14 / 14 pass** |
+| `corepack pnpm test:planning` | **2 / 2 pass** |
+| `node scripts/check-plan.mjs` | PASS（31 modules; 50 documents） |
+| `corepack pnpm audit:harness-docs` | EXIT 0：`127/176 canonical documents reviewed; 49 pending`（与 alpha.1 批次逐字相等） |
+| `corepack pnpm preview:install` | EXIT 0：`Pinned official CLI 0.1.7-alpha.2 from the Profile dependency graph` |
+| 探针 7 项 | `probe:theme` / `probe:settings` / `probe:activity` / `probe:install` / `probe:skills` / `probe:experts` / `probe:office:native` **全部 EXIT 0**，无 pageerror |
+
+### 版本承载文件与文档
+
+- 全量替换为 `0.1.7-alpha.2`：根 `package.json`（`devDependencies` 内 23 条 dsh + `pnpm.overrides` 271 条 dsh）+ **13 个模块** `package.json`（`bundle` + 11 个 `plugins/*` + `providers/identity-local`）；Cordis `4.0.3→4.0.4`、5 个伴生包逐条 override、模块 `peerDependencies` caret 同步 `^4.0.4`。
+- 门禁脚本与测试常量：`check-published-versions.mjs`、`pack-*-release.mjs`、`probe-official-expert-composition.mjs`、`probe-native-expert-team.mjs`、`probe-native-team-web.mjs`、`probe-subagent-activation-limit.mjs`、`tests/integration/project-installer.test.mjs`。
+- 新增官方文档镜像 `docs/dsh-v0.1.7-alpha.2/`（562 文件 / 347 md / 8 子目录）；旧镜像 `docs/dsh-v0.1.7-alpha.1/`、`docs/dsh-v0.1.6-alpha.2/` 保留。
+- 引用重锚：镜像路径 token 22 文件 60 处（`docs/design/**` 17、`docs/adr/**` 4、`packages/portal/README.md` 1）另加 `AGENTS.md` 2 处；抽 36 个唯一镜像相对路径校验，35 命中 / 1 假阳性（既有中文连词拼接写法）。
+- 基线表述：`AGENTS.md` 第 2 条、`docs/HARNESS-OFFICIAL-DEVELOPMENT.md`、`docs/MODULE-VERSIONS.md`、`deepseek-harness-review.json` 的 `corpusRoot`、6 个包 README（顺带把 experts README 的候选版本号 `α.8 → α.9` 与 MODULE-VERSIONS 对齐）。历史记录（`docs/evidence/**`、STATUS 历史节、`development-order.json` 第 86 行快照、research 复审正文、CHANGELOG）按口径不改。
+
+### 版本裁决与边界
+
+- **本批不 bump 任何模块**：仓库侧 0 行业务代码，改动折叠进 alpha.1 批次已登记的同一未发布增量。已记入 [MODULE-VERSIONS](MODULE-VERSIONS.md) 2026-09-25 更新（三）。
+- **未执行**：线上 `dsh.10ge.cn` 切换（用户裁决本批不动，线上仍 `0.1.7-alpha.1`）；37 个内容有变的镜像文件逐文件复审；其余探针与 `test:office:*` / `test:library` / `test:projects` / `test:assistant` / `test:remote:*` / `portal` 未在本批复跑；真实模型验收未跑；提交与推送未执行。
+
 ## 2026-09-22（续四）：D04 收尾与 AT-01～27 逐项签收（结论：不签收）
 
 按用户指令「收尾 D04 并执行 AT-01～27」执行。逐项裁定与证据已重写进 [D04 EP-07 验证与 AT-01～AT-27 证据矩阵](evidence/d04-experts-ep07-verification.md)（该文件前一版只到 AT-23 且为 26 模块/`0.1.5-rc.1` 口径，本轮整篇更新到 30 模块/`0.1.6-alpha.2`）。
@@ -888,6 +934,134 @@ net.core.rmem_max = 16777216
 **仓库改动**：`packages/plugins/projects/src/services/project-manager.ts`、`packages/plugins/projects/package.json`、`packages/plugins/projects/CHANGELOG.md`、`packages/plugins/projects/README.md`、`docs/STATUS.md`。
 
 **下一步**：①提交推送本轮改动；②新模板的真实任务链路抽查；③D16 助理收口、P3-2 等既有待办不变。
+
+## 2026-09-24（续十七）：DSH `0.1.7-alpha.1` 独立升级 P0–P7 完成（未提交、未推送、未部署）
+
+按用户选定的 `0.1.7-alpha.1` 锁定版本执行独立升级专项，详细记录见 [DSH 0.1.7-alpha.1 升级计划](DSH-0.1.7-alpha.1-UPGRADE-PLAN.md) 第 7 节。截至本轮，**P0–P7 完成，P8–P9 未开始**。
+
+### 本轮完成（P0–P7，证据均为本轮实测）
+
+| 阶段 | 结论 |
+| --- | --- |
+| P6 静态 | `build` / `typecheck` / `check:plan`（`31 modules; 50 documents`）/ `check:versions`（`539 DSH lock entries pinned to 0.1.7-alpha.1; Cordis 4.0.3 only`）/ `test:planning` 退出码全 0；`check:acceptance P1` 退出 1 属相位门禁预期（`P1 gate: 42 unfinished cases`，该脚本必须带相位参数） |
+| P6 单测 | **185 / 185 pass / 0 fail**（integration 110、activity 14、office:content 21、office:csv 2、skill-quality 3、remote:lifecycle 4、library 5、projects 10、assistant 4、portal 12） |
+| P6 预览安装 | `preview:install` 退出 0；八层官方 Profile 独立安装，launcher 与 settings 共用同一 `dsh-app-boot` |
+| P6 浏览器探针 | 批 A + 批 B1/B2 + 两处缺陷修复后复跑，**全部退出 0、0 pageerror**：theme / settings / activity / office:native / office:word-only / install / browser / skills / experts(+official/professional) / experts:team(+web/resilience/real) / office / office:live / library / headless（`dshVersion 0.1.7-alpha.1`）/ mcp:resources / computer-use:native / subagent:activation-limit / connectors / presets |
+| §2.3 公开面复核 | 七项逐一在 0.1.7 发布包 types 中确证（`selectPanel`、`uiWorkspace.openSession`、`PropsRuntime`、`slots.inject`、`sessions.retain/ready/release`、`ctx.effect/ctx.on`、`conversation.session.header.actions`） |
+| P7 文档镜像 | `docs/dsh-v0.1.7-alpha.1/` 落盘 **562 文件 / 347 md**（GitHub tag `dsh-v0.1.7-alpha.1`、commit `c36a83ff`，取仓库根 `docs/` 子树、排除 `native/system/docs/`）；与 0.1.6 镜像逐文件比对：**0 删除、19 新增、157 个共有文件内容有变**；旧镜像保留为历史语料 |
+| P7 引用重锚 | 镜像路径 token **41 文件 78 处**改指 0.1.7；按「路径即事实」口径保留 **29 处 / 7 文件**（两个 0.1.6 批次文档、两篇审查记录、`STATUS` 历史条目、本次计划的「旧镜像保留」条）；d07 证据 5 处行号重锚（`slots.md:25-41→27-43`、`:150→158`、`persistence-catalog.md:473-477→475-479`、`tool-catalog.md:624-630→629-635`、`tool-catalog.md:25` 不变）；93 个镜像相对路径可达性复核 **0 missing** |
+| P7 文档门禁 | 台账 `corpusRoot` → `docs/dsh-v0.1.7-alpha.1`；`corepack pnpm audit:harness-docs` **退出 0** → `127/176 canonical documents reviewed; 49 pending`（canonical 171→176，+5 为 0.1.7 新增规范对象；pending 44→49 属脚本既定语义，非失败）；证据 `.artifacts/dsh-0.1.7-alpha.1-upgrade/p7-doc-mirror-audit.log` |
+
+### 本轮修复的既有缺陷（均定性为非 0.1.7 回归）
+
+- `scripts/probe-browser.mjs` 断言 `助理（待开放）` 过期：assistant 自 `96c4ea911f`（2026-09-24）已自持侧栏行；改为断言现存三条待开放项 + 三条缺席行。修后 8 PASS。
+- `scripts/probe-office-live.mjs`：fixture 调用了 `ISessions` 契约中 0.1.6/0.1.7 均不存在的 `ctx.sessions.open()`，改用官方 `ctx.uiWorkspace.openSession(sid)`；另加 `switchToWorkdshEditor()` 适配 P4a「官方 DOCX 预览占默认位」契约。修后 16 PASS、`browserErrors: []`。
+
+### 阻塞项与未执行
+
+- **阻塞**：`probe:office:live --real-model` 在本机被环境前置阻断（探针需从用户全局技能目录取 `~/.agents/skills/officecli`，本机未安装），非升级回归；该路径的唯一 `switchToWorkdshEditor()` 调用点因此未实测。
+- **未执行**：P8 线上升级 `dsh.10ge.cn` 与 Session V3→V4 迁移；P9 收口（`docs/evidence/dsh-0.1.7-alpha.1-upgrade.md`、STATUS 最终章节、AGENTS.md 与 `HARNESS-OFFICIAL-DEVELOPMENT.md` 的基线版本号、模块版本与门禁）。
+- **P7 未执行项（已登记，不得写成已完成）**：① 0.1.7 语料中 **157 个内容有变的共有文件未逐文件复审**——本阶段只做「语料重新定界 + 台账重锚 + 门禁」，`docs/research/harness-review-closure.md` 的 H01–H09 结论仍以 0.1.6 语料为准（两篇审查文档已加 2026-09-24 补记并保留原 0.1.6 锚点）；② 裸版本号 `0.1.6-alpha.2`（`AGENTS.md` 第 2/3 段、`docs/HARNESS-OFFICIAL-DEVELOPMENT.md:3,81`、`packages/portal/README.md:129`、各包 README/CHANGELOG、根 `README.md`、`docs/MODULE-VERSIONS.md`、`docs/development-order.json`）留 P9 统一处理；③ P7 后已复跑门禁：`check:plan` PASS（`31 modules; 50 documents`）、`check:versions` PASS（`539 DSH lock entries pinned to 0.1.7-alpha.1; Cordis 4.0.3 only`）、`audit:harness-docs` PASS（`127/176 canonical documents reviewed; 49 pending`），三者退出码均 0。
+- 遗留（前序登记，未处置）：`activity/src/projection.ts` 的 `kind === 'cancelled'` 启发式；`scripts/probe-activity.mjs` 两处写死 `profiles/preview`；`packages/plugins/office/CHANGELOG.md` 两处 CSV 措辞。
+
+**下一步**：用户确认后执行 P8（先备份线上 Profile 与 Session 数据、先在副本上验证 V3→V4 迁移），再执行 P9 收口。
+
+**边界**：按用户既有要求，本轮及前序 P0–P7 **未提交、未推送、未部署**；工作区保留全部改动待用户指令。
+
+## 2026-09-25（续十八）：DSH `0.1.7-alpha.1` 线上升级 P8 完成 + P9 收口 + P9-R 重定版重打包与线上重新部署（`dsh.10ge.cn` 已切换，含 Session V3→V4 迁移与复验；未提交、未推送）
+
+按用户授权「执行 P8 线上升级」执行，随后完成 P9 收口，并按「先处理重打包与线上部署」完成 P9-R。详细记录见 [DSH 0.1.7-alpha.1 升级计划](DSH-0.1.7-alpha.1-UPGRADE-PLAN.md) 第 5、7 节与 [证据文档](evidence/dsh-0.1.7-alpha.1-upgrade.md)。**P0–P9-R 全部完成，本专项无剩余步骤。**
+
+### 线上切换（P8-1～P8-5）
+
+| 步骤 | 结论 |
+| --- | --- |
+| P8-1 升级前备份 | 宿主 `/home/luoji/dsh-backup-017-20260924225010/` 5 文件；基线 `cli_version=0.1.6-alpha.2`、`sessions_v3=18 / v4=0`、`session_dirs=18`、7 项 `workdsh_*` storages 计数、`profile_deps=16 / bundles=14` |
+| P8-2 适配制品 | 本地 pack **12 包**（`workdsh-bundle` + 10 插件 + `workdsh-provider-identity-local`），与切换后 profile 内依赖逐条对应 |
+| P8-3 暂存 CLI | 容器内 uid 1000 装 `0.1.7-alpha.1` → 物化 `_a3-standalone`；两处实测修正（overrides 必须写 `pnpm-workspace.yaml`；不可关 `autoInstallPeers`，否则 `cordis-plugin-group` 缺席直接 `ERR_MODULE_NOT_FOUND`）；硬门禁 PASS |
+| P8-4 副本 V3→V4 | 只用官方 `sessionFormatCatalog`（不驱动写路径）：`summary{total:18, migrated:18, failed:0}`、`problems:[]`、逐条 `roundTripOk=true`；同一探针只读线上 sessions 同结论且目录字节不变 |
+| P8-5 线上切换 | Phase 1 备份 + profile 重装（4 官方依赖 → `0.1.7-alpha.1`、12 tgz 重指、根 overrides 投影）→ `PHASE1_OK`；Phase 2 `mv` 换树 + 双份 auth-bypass 补丁 + 一次性容器硬门禁 + `docker compose up -d --force-recreate` → `PHASE2_OK` |
+
+### 升级后只读复验（P8-6，回执 `.artifacts/deploy-017/p8-6-receipt.json` + 7 张截图）
+
+| 面 | 结果 |
+| --- | --- |
+| 运行面 | `healthy`、`Restarts=0`、`StartedAt` 仍为换树时刻 `2026-09-24T23:16:18Z`；监听仅 3080/3081/3082/3083 四个 loopback；属主门禁 `! -user 1000` = **0**；6 项错误模式计数 **0** |
+| 域名面 | `https://dsh.10ge.cn/` → **302 → `/portal`**（200）、`/login` 200、`server: cloudflare` |
+| 会话面 | `files=36 / v3=18 / v4=0 / locks=18`；与切换基线 `sessions-after.txt` `cmp` 一致 → **`SESSIONS_UNCHANGED_SINCE_SWAP_OK`**（升级后未触碰任何 Session 日志） |
+| 数据面 | storages 顶层条目与备份完全一致、7 项计数与基线逐项相等；文件 32341 → 32365 **全为新增**（audit / projcache / runtime binding），**无删除无改写**；`workdsh_projects` 状态文件 sha256 与备份**逐字节相等** |
+| 功能面 | 只读 API 10 项 **`P8_6_READONLY_ALL_OK`**（experts 12 / templates 15 / library 3 / skills 34 / connectors 3 / assistant 0 / projects 0 空集）；浏览器 `P8_6_BROWSER_CLEAN_OK` + `P8_6_PAGES_CLEAN_OK` + `P8_6_TABS_CLEAN_OK`，三份 totals 全空（pageerror / console error / HTTP≥400 均为 0） |
+
+### 已定性的观察（非本次回归）
+
+- **4 个 0.1.6 时代发布的专家 `readiness=broken`（UI 徽标「专家 preset 异常」）**：根因为官方预设注册表换主（计划 §2.1 B1），旧制品留在 `/data/dsh/.agent-presets/wd-exp-*/`、0.1.7 新路径 `$DSH_AGENTS_HOME/.workdsh-state/experts/presets/<id>/preset.json` 下无对应文件 → `experts/preset-broken`。属 **§6 风险表第 1 行已登记的预期破坏性变化**，**数据无损**（4 个 revision 定义与 4 个旧 preset 目录原样保留）。当时处置记为「用户重新发布」——**该口径已于 2026-09-25 由 P10 作废并收口**（3 个内置默认专家不可发布，改为 experts `α.9` 服务侧自愈；1 个个人专家按设计流程重新发布；4 个专家现均为 `ready`，见「2026-09-25（续十九）」）。
+- 连接器「企查查（工商信息）」（远端 `streamable-http`）`连接异常 0 个工具`——升级前既有运行态。
+
+### 回退与临时态
+
+- 回退锚点（6 类）与五步回退流程已登记进计划 §5：旧 CLI 树 `/data/dsh/global-dsh/standalone.017.old.20260924231611`（实测 `0.1.6-alpha.2`）、`profiles/web.bak.017.20260924231414`、`node_modules.pre017.20260924231414`、宿主三份 `dsh-backup-017-*` 目录。
+- 复验用的只读回环代理进程与容器 / 宿主临时文件**已全部清理**；清理后属主门禁复跑仍为 **0**、容器无重启。
+
+### P9 收口（2026-09-25）
+
+- **证据文档**：新建 `docs/evidence/dsh-0.1.7-alpha.1-upgrade.md`（章节沿用 0.1.6 批次模板：依赖面／兼容迁移面／编译与运行面／文档镜像 delta／线上切换与复验／版本与收口／未覆盖项与边界／回退）。
+- **模块版本裁决（两次用户问答裁决）**：① 本批 0.1.7 适配**不整体 bump**，实际改码的 9 个模块（experts `α.8`、office `α.8`、projects `α.4`、library `α.3`、skills `α.32`、assistant `α.1`、workbench `α.16`、ui `α.6`、bundle `α.54`）折叠进现有未发布增量，版本号不变；② 复核发现 activity `α.4`、connectors `α.2`、identity-local `α.5` 三者的当前版本号**已是公开发行制品**，沿用构成「同版本号不同内容」的撞号，裁决**只 bump 这 3 个** → activity `α.5`、connectors `α.3`、identity-local `α.6`。依据为 P1–P5 全程未改任何 `package.json` 的 `version` 行（`git diff` 对 version 行零命中）。
+- 落点：3 个 `package.json` 版本字段 + **12 个 CHANGELOG** 补 0.1.7 条目 + `docs/MODULE-VERSIONS.md`（三行版本表 + `2026-09-25 更新` 段）。
+- **代价（已于 2026-09-25 消除）**：线上 `dsh.10ge.cn` 原部署的 12 个 tgz 曾是这三个模块**重定版之前**的构建（源码相同、仅版本字段不同）；该项**已于 2026-09-25 由 P9-R 完成重打包并重新部署**（见下节），线上现为 activity `α.5` / connectors `α.3` / identity-local `α.6`。
+- **基线表述更新**：`AGENTS.md` L8（基线 + 证据链接）/L37（官方 Agent Teams 版本）、`docs/HARNESS-OFFICIAL-DEVELOPMENT.md` L3/L81、6 个包 README 共 8 处（bundle / skills / experts / connectors / office / portal）。保留清单（已发布事实与设计时快照不改写：根 README、website、RELEASES、releases/**、CHANGELOG 历史条目、STATUS 历史条目、`development-order.json:86` 当日快照、activity `DESIGN.md`、office `README.md:130`）见计划 §7 P9 条。
+- **门禁复跑（退出码均 0）**：`check:plan` → `PASS: 31 modules; 50 documents`；`check:versions` → `PASS: 539 DSH lock entries pinned to 0.1.7-alpha.1; Cordis 4.0.3 only`；`audit:harness-docs` → `127/176 canonical documents reviewed; 49 pending`；`typecheck` EXIT=0；`build` EXIT=0。过程中一次 `check:plan EXIT=1` 系「先写链接、证据文档未落盘」（`Broken link in docs/MODULE-VERSIONS.md` / `Broken link in AGENTS.md`），落盘后即 PASS，**非缺陷**。
+
+### P9-R 重定版重打包与线上重新部署（2026-09-25）
+
+按用户指令「先处理重打包与线上部署」执行 P9 收口登记为「未执行」的第 ① 项（即上节「代价」）。全程**不改锁版本**（仍 `@deepseek-ai/dsh@0.1.7-alpha.1`、Cordis `4.0.3`），**不换树、不动 standalone**——与 P8-5 的 `mv` 换树 + `--force-recreate` 相比，本次只改线上 profile 的 3 个 `file:` 指针 + 容器内 `pnpm install` + `restart`，风险面更小。回执 `.artifacts/deploy-017/p9r-receipt.json`，原始输出 `.artifacts/deploy-017/p9r-verify/`。
+
+| 模块 | 版本变化 | bytes | sha256 |
+| --- | --- | --- | --- |
+| `workdsh-plugin-activity` | `α.4 → α.5` | 28183 | `94fd3509ace2e993ef9a341048234199d06f4791a5a21e70337b897a2dfabb1b` |
+| `workdsh-plugin-connectors` | `α.2 → α.3` | 35026 | `cd832042c86bc5b061900178d1f6643d5f255c44126660918ab50f4d1aef369b` |
+| `workdsh-provider-identity-local` | `α.5 → α.6` | 6869 | `efeb69cf9757c5e844180309dc240e4af5bf8555ddc2037ea8341984601be3cc` |
+
+- **制品比对**：解包后 `diff -r` 证明差异**仅** `package.json` 的 `version` 字段 + 新增 `CHANGELOG` 条目；`connectors` 另含 `README.md:22` 的 `dsh-mcp-client@0.1.6-alpha.2`→`0.1.7-alpha.1`（P9 基线表述修正）。`dist/` 全部**逐字节相同**、文件清单零增删 → **不引入行为变化**。
+- **Phase 1 安装**（`stage-018-reversion.sh`）→ `PHASE1_OK`：备份 `/home/luoji/dsh-backup-018-reversion-20260924235141`（`package.json` / `pnpm-lock.yaml` / `pnpm-workspace.yaml` + 前后 Session 指纹）；3 个 tgz 上传 `wd-upload-017` 后 `sha256sum -c` **3/3 OK**（旧 tgz 保留供回退）；`changed=3 file_deps=12 stale=0`；容器内 `pnpm install`（uid `1000:1000`、`npmmirror`）`PNPM_RC=0`、`Packages: +3 -91`；实装版本复核一致（均 `dist=true`），另 9 个 workdsh 包版本未变，`pnpm-lock.yaml` 内旧版本引用数 **0**；`SESSIONS_UNTOUCHED_OK`；属主门禁 0。
+- **闭包解析门禁**（`p9r-check-tree.mjs`）→ `TREE_RESOLUTION_ALL_OK`：自 profile 16 条依赖逐包展开 resolved **893** 包（其中 `@deepseek-ai/dsh*` **220** 个），`dsh versions: ["0.1.7-alpha.1"]`，12 个 workdsh 包版本全对，`missingRequired=0`；peer 缺口 157 条、可选/平台件缺席 88 条均为**非致命**（非 linux-x64 平台件本就该缺席；客户端 peer 由 Host standalone 树满足）。
+- **两处口径澄清**：① `Packages: +3 -91` 的 `-91` 是 store 陈旧条目清理，非本次删除依赖（闭包门禁 893 包全解析、dsh 版本唯一、12 个 workdsh 版本全对可证）；② 早期外壳核对出现的 `MISS @deepseek-ai/libreoffice-kit-linux-x64` 属**误判**：该包不存在，`libreoffice-kit@0.0.1` 只声明 `-darwin-x64 / -darwin-arm64 / -win32-arm64 / -win32-x64 / -wasm` 五个可选件，linux 平台件是 `libreoffice-kit-wasm`（在位）。
+- **Phase 2 重启**（`stage-018b-restart.sh`）→ `PHASE2_OK`：`docker compose restart`（**未换树**），**11s** 到 `running/healthy`，`Restarts=0`，`StartedAt=2026-09-24T23:54:57.85073513Z`；`dsh --version` = `0.1.7-alpha.1`；启动窗口 `duplicate loader entry` / `plugin tree failed to load` / `ERR_MODULE_NOT_FOUND` / `exited during startup` / `Error:` 计数**全 0**；3 个重定版包实装版本复核一致；`SESSIONS_UNTOUCHED_OK`；属主门禁 0。
+- **Phase 3 只读复验**（`stage-018c-verify.sh` → `/home/luoji/p9r-verify/`）→ `PHASE3_OK`：4 个监听服务俱在（`127.0.0.1:3080` dsh web / `3081` sse-keepalive / `3082` survey / `3083` portal，`accounts=2`）；会话面 `files=36 / v3=18 / v4=0 / locks=18` 与换树快照 `cmp` 一致（`SESSIONS_UNCHANGED_SINCE_SWAP_OK`）；数据面 `fileCount=32366`，`workdsh_projects/states/local-personal_local-user.json` sha256 `68e2ee76966b9fe3df2b96addd5a898d1c9b09a20c4aca595d258a17f9bec4b5` 与基线**逐字节相等**；属主门禁 0；启动错误模式 6 项全 0。
+- **域名 / 功能 / 浏览器面**（与 P8-6 基线一致）：`https://dsh.10ge.cn/` = **302 → `/portal`**、`/login` 200、`/portal` 200、`server: cloudflare`、无 `WWW-Authenticate`；10 项只读 API 复跑 **`P8_6_READONLY_ALL_OK`**（experts 12 / projects 0 / templates 15 / library space 1 / library list 3 / skills 34 / catalog 1 / connectors 3 / assistant 0），**逐项与 P8-6 相等**；浏览器三脚本（经容器内只读回环代理 + SSH 本地转发 13080）`P8_6_BROWSER_CLEAN_OK` / `P8_6_PAGES_CLEAN_OK` / `P8_6_TABS_CLEAN_OK`，三份 totals 全空，4 业务页 + 2 页签零新增错误；截图 7 张存 `.artifacts/deploy-017/p9r-verify/`。
+- **清理**：回环代理进程已杀、容器 `tmp` 内 3 个临时文件与宿主 2 个临时脚本已删、SSH 转发已停；清理后属主门禁 0、`Restarts=0`，容器内仅剩 4 个 loopback 服务。
+- **新增回退锚点**：宿主 `/home/luoji/dsh-backup-018-restart-20260924235457`（重启前后状态与 Session 指纹）；`wd-upload-017` 内旧 tgz（`α.4` / `α.2` / `α.5`）保留，**改回 3 个 `file:` 指针 + 重装即可回退**（最小回退，不换树）。
+- **未执行**：Session V4 后继文件的线上写路径实证、提交与推送。（4 个 broken 专家由 P10 处置，见下节。）
+
+### 未执行与下一步
+
+- **未执行**：① Session V4 后继文件的**线上实证**（需走官方写路径；本次按 §4 只读约束未触发，故线上仍为 18 个 `session.v3.jsonl.zstd` + 18 个 `session.lock`，`v4=0`）；② ~~4 个 broken 专家的重新发布（用户侧决策）~~ → **已于 2026-09-25 由 P10 完成**（3 个内置默认专家不可发布、走服务侧自愈，1 个个人专家走完整发布流程，见下节）；③ ~~3 个重定版模块的重打包与线上重新部署~~ **已于 2026-09-25 由 P9-R 完成**（见上节）；④ P7 遗留 **157 个内容有变的镜像文件未逐文件复审**（`docs/research/harness-review-closure.md` 的 H01–H09 仍以 0.1.6 语料为准）；⑤ `audit:harness-docs` 的 **49 条 pending**（5 条属 0.1.7 新增 + 44 条 0.1.6 既有待审；pending 非空是脚本既定语义）；⑥ 提交、推送与 GitHub 同步（未获用户授权）。
+- **阻塞**：`probe:office:live --real-model` 在本机被环境前置阻断（需 `~/.agents/skills/officecli`，本机未安装），非升级回归，未计入本批证据。
+- 遗留（前序登记，未处置）：`activity/src/projection.ts` 的 `kind === 'cancelled'` 启发式；`scripts/probe-activity.mjs` 两处写死 `profiles/preview`；`packages/plugins/office/CHANGELOG.md` 两处 CSV 措辞。
+- **下一步**：① ~~用户裁决是否重打包 3 个重定版模块并重新部署线上~~ 已按用户指令「先处理重打包与线上部署」于 2026-09-25 完成（P9-R，线上现为 activity `α.5` / connectors `α.3` / identity-local `α.6`）；② ~~用户裁决 4 个 broken 专家是否重新发布~~ 已裁决并完成（P10：默认专家自愈 + 个人专家重新发布，4 个专家现均为 `ready`）；③ 是否提交推送本批 0.1.7 升级改动；④ 回归常规待办：D04 专家收尾（AT-13/19/23/27）、D16 助理收口、P3-2、上游 V8 SIGSEGV。
+
+**边界**：按用户既有要求，本轮**未提交、未推送**；线上 `dsh.10ge.cn` 已切换至 `0.1.7-alpha.1`（含 P9-R 三个重定版模块的重新部署与 P10 的 experts `α.9`）并保持可用。
+
+## 2026-09-25（续十九）：4 个 `readiness=broken` 专家处置（experts `α.8→α.9` 自愈 + 个人专家重新发布，P10；未提交、未推送）
+
+承接 P8-6 F1 / P9-R 遗留的 4 个 0.1.6 时代专家 `readiness=broken`（UI 徽标「专家 preset 异常」）。复核发现它们并非同一类：**3 个是内置默认专家**（需求分析顾问 / 文档评审顾问 / 工作复盘顾问），`publish()` 对 `origin === 'default'` 抛 `experts/forbidden`（`reason: 'default-immutable'`）——**代码禁止重新发布**，故 P8-6 原处置「用户重新发布后即可用」对它们不成立；**1 个是可发布个人专家**（大客户经营顾问，4 技能 + 2 包资源）。用户 2026-09-25 两次裁决：前者走**泛化过期修订重编译**（服务侧自愈），后者由用户驱动**完整发布流程**。
+
+路径与 P9-R 同构：**不改锁版本**（仍 `@deepseek-ai/dsh@0.1.7-alpha.1`、Cordis `4.0.3`），**不换树、不动 standalone**，只改线上 profile 的 1 个 `file:` 指针 + 容器内 `pnpm install`（uid `1000:1000`）+ `docker compose restart`。回执 `.artifacts/deploy-017/p10-receipt.json`，脚本与原始输出 `.artifacts/deploy-017/p10-expert-repub/`。
+
+| 项 | 结果 |
+| --- | --- |
+| W1 个人专家重新发布 | 认证用户路由 `validate → request-publish-confirmation → confirm-publish → publish` → **`P10_PUBLISH_OK`**；`rev-6e415f237e39 → rev-1c818f86c7c3`，preset `wd-exp-expert-24abaea2f5e5-3bca3a312bfb`，readiness `missing-dependency → ready` |
+| W2 自愈代码（experts `α.9`） | `ensureCurrentExecutionRevision` 守卫由「仅团队修订」泛化为任意 **compilerVersion 过期**的已发布修订；新增 `ensureCompilerCurrent()` 在 `[Service.init]` 与 `list()`／`get()` 读取前扫描重编译；旧修订行按 ADR-0010 **只读不改写**，结果写派生修订并前移 `publishedRevisionRef`（审计码 `experts/compiler-migration-succeeded` / `-failed`，逐专家 best-effort）；`experts/preset-broken` 收窄为「迁移未成功」 |
+| 制品与 Phase 1 | `workdsh-plugin-experts-0.1.0-alpha.9.tgz`（183343 B，`sha256=a1bddfa3…394c4e`）上传 `wd-upload-017` 校验 OK → `PHASE1_OK`：`changed=1 file_deps=12 stale=0`、12 包 `dist` 齐备、`SESSIONS_UNTOUCHED_OK`、属主门禁 0 |
+| Phase 2 重启 | `PHASE2_OK`：**未换树**，6s 到 `healthy`、`Restarts=0`、CLI `0.1.7-alpha.1`；启动窗口 26 行日志 7 项错误模式（含 `compiler-migration-failed`、`preset-broken`）**全为 0**；派生修订 **5 → 8**、新格式预设 **1 → 4**、旧 `data/dsh/.agent-presets/wd-exp-*` 4 个目录**原样保留** |
+| 只读复验 | `byReadiness = {ready: 4, unknown: 8}`；4 个目标专家详情权威 `readiness=ready / canUse=true`；8 个 `unknown` 与 P8-6 基线比对**部署前即为 `unknown`**（从未发布，UI「未发布」），非本次回归 |
+| 浏览器复验 | `P10_BROWSER_OK`：页头「共 12 个专家」、4 张卡片全含「可用」徽标、`brokenCards=[]`、`expectedReadyMissing=[]`；详情召唤可用、无 broken 提示；`pageErrors/consoleErrors/httpFailures` 全空 |
+| 门禁 | `typecheck` / `build` EXIT=0；`expert-manager` **20/20**（新增 self-heal 测试）；相邻 4 个专家测试 **14/14**；`check:plan` PASS（31 modules / 50 documents）；`check:versions` PASS（539 条锁 `0.1.7-alpha.1`）；`audit:harness-docs` 127/176 |
+
+- **口径推翻（三处旧表述已作废）**：「旧修订不静默重编、用户重新发布后即可用」→ 现为「过期修订由专家服务启动／读取时自动重编译为派生修订并前移发布指针，旧行只读保留（ADR-0010）」。落点：`docs/DSH-0.1.7-alpha.1-UPGRADE-PLAN.md` §6 风险表第 1 行（含 §5 P10 锚点、§7 P10 条）、`docs/evidence/dsh-0.1.7-alpha.1-upgrade.md`（P8 节 + 新增「4 个 `readiness=broken` 专家处置（P10）」节 + 未覆盖项表第 4 行 + 回退节）、`.artifacts/deploy-017/p8-6-receipt.json` `findings[F1].dispositionSupersededBy`、`packages/plugins/experts/CHANGELOG.md`（α.9 段）、`docs/MODULE-VERSIONS.md`。
+- **新增回退锚点（最小回退，不换树）**：`/home/luoji/dsh-backup-p10-experts-20260925001601`（换指针前配置 3 文件 + Session 指纹）、`/home/luoji/dsh-backup-p10-restart-20260925001658`（重启前后状态与目录指纹）；`wd-upload-017` 内 `experts α.8` 旧 tgz 保留。**回退会重新出现 4 个 broken**（自愈能力随 α.8 消失）。
+- **清理**：SSH 转发已停、容器内回环代理进程已杀、宿主 `data/workspace/.p10-probe/` 已删；清理后 `healthy`、`Restarts=0`、属主门禁 0、启动错误模式 0、仅剩 4 个 loopback 服务（3080/3081/3082/3083）。
+- **未执行**：Session V4 后继文件的线上写路径实证、提交与推送（未获用户授权）。
+
 
 ## 2026-09-22（续三）：B1 线上缺陷治理第一轮（三项我方缺陷修复 → 构建 → 本地预览 → 部署 `dsh.10ge.cn` → 线上复验）
 

@@ -1,3 +1,10 @@
+## 0.1.0-alpha.6 — 2026-09-25
+
+- 适配 DeepSeek Harness 0.1.7-alpha.1：Schemastery 3.18.3 给 `Schema.object` 加上 `NoInfer` 后，`: Schema<Config>` 显式注解不再接受带默认值的字段（推断出的对象类型要求 `providerId` 必填）。改为让 schema 自行推断类型，手写 `Config` 接口继续作为文档化的输入形状，与官方 0.1.7 包同款写法。
+- 官方依赖精确锁定同步至 `0.1.7-alpha.1`；身份、组织与 owner 成员关系的存储语义与首次启动/后续启动一致性校验未变。
+- 版本号重定：`0.1.0-alpha.5` 已作为公开发行制品发布（2026-09-15 专家发行附件），本批代码变化按本项目「撞号必须重新定版」规则递增为 `alpha.6`。
+- 退出证据：全仓 `typecheck` 退出码 0；线上 `dsh.10ge.cn` 升级后本地身份插件随 Profile 正常加载。
+
 ## 0.1.0-alpha.5 — 2026-09-15
 
 - 将本地身份存储依赖升级至 DeepSeek Harness 0.1.6-alpha.1。

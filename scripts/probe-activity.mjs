@@ -1,25 +1,38 @@
 import {zstdCompressSync} from 'node:zlib';
 import {spawn} from 'node:child_process';
-import {mkdir,writeFile,readFile,rm} from 'node:fs/promises';
-import {resolve,join} from 'node:path';
+import {access,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
+import {dirname,resolve,join} from 'node:path';
 import assert from 'node:assert/strict';
 import {chromium} from '@playwright/test';
 const root=resolve(import.meta.dirname,'..'), home=join(root,'.test-runtime/activity-probe'), cwd=join(home,'workspace'), id='session-activity-fixture', workspaceId='activity-fixture';
+const dsh=join(root,'node_modules/@deepseek-ai/dsh/lib/bin.js'), pnpm=join(root,'node_modules/pnpm/bin/pnpm.cjs'), artifacts=join(root,'.artifacts'), profile='preview';
+const env={...process.env,DSH_HOME:home,DSH_AGENTS_HOME:join(home,'agents'),PATH:`${join(root,'node_modules/.bin')}:${dirname(process.execPath)}:${process.env.PATH}`};
+const run=(bin,args)=>new Promise((done,failed)=>{const child=spawn(process.execPath,[bin,...args],{cwd:root,env,stdio:['ignore','pipe','pipe']});let output='';child.stdout.on('data',bytes=>{output+=bytes;});child.stderr.on('data',bytes=>{output+=bytes;});const timer=setTimeout(()=>child.kill('SIGTERM'),180000);child.on('error',failed);child.on('close',code=>{clearTimeout(timer);code===0?done(output):failed(new Error(`${args.slice(0,3).join(' ')} failed (${code}): ${output.replace(/token=\S+/g,'token=[redacted]').slice(-2000)}`));});});
 const credentialLock=join(home,'.credentials.yaml.lock');
 try {const pid=Number(await readFile(credentialLock,'utf8'));if(Number.isSafeInteger(pid)&&pid>0){try{process.kill(pid,0);throw Error('Isolated activity probe is already in use');}catch(error){if(error.code!=='ESRCH')throw error;}}await rm(credentialLock,{force:true});}catch(error){if(error.code!=='ENOENT')throw error;}
 await mkdir(cwd,{recursive:true});await mkdir(join(home,'storages'),{recursive:true});
+// The isolated Profile is composed by the official CLI — the shipped web template plus this
+// plugin as its own bundle layer — so the probe never depends on a pre-seeded profile.
+let initialized=false;try {await access(join(home,`profiles/${profile}/package.json`));initialized=true;} catch(error){if(error.code!=='ENOENT')throw error;}
+if(!initialized){await rm(join(home,`profiles/${profile}`),{recursive:true,force:true});await run(dsh,['--profile',profile,'--from-default-profile','web','--dump-config']);}
+const activity=JSON.parse(await readFile(join(root,'packages/plugins/activity/package.json'),'utf8'));
+await run(pnpm,['--filter','workdsh-plugin-activity','pack','--pack-destination',artifacts]);
+await run(dsh,['plugin','--profile',profile,'add',join(artifacts,`${activity.name}-${activity.version}.tgz`)]);
 await writeFile(join(home,'storages/workspace.json'),JSON.stringify({unit:{name:'workspace',version:2},global:{initialized:true,workspaceIds:[workspaceId],archivedSessionIds:[]},tables:{workspaces:{[workspaceId]:{path:cwd,title:'Activity fixture',sessionIds:[id],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}}}));
 const dir=join(home,'sessions','--'+cwd.replaceAll('/','-').replace(/^-+/, '')+'--',id);await mkdir(dir,{recursive:true});
 const disabled=process.argv.includes('--disabled');
 await writeFile(join(home,'profiles/preview/cordis.patch.yml'),disabled ? '- id: workdsh-activity\n  disabled: true\n' : '[]\n');
-const now=Date.now();const rows=[{type:'session',version:3,id,createdAt:now,cwd,isSeeded:false,delegationDepth:0,agentPreset:'dsh-base'},
+const now=Date.now();const rows=[{type:'session',version:4,id,createdAt:now,cwd,isSeeded:false,delegationDepth:0,agentPreset:'dsh-base'},
 {type:'turn/start',seq:0,time:now,data:{turn:1}},
 {type:'user/message',seq:1,time:now,data:{role:'user',id:'fixture-user',source:{kind:'user'},content:[{type:'text',text:'Activity plugin verification'}]},surfaceOp:'append'},
-{type:'assistant/message',seq:2,time:now+1,data:{turn:1,step:1,stream:[],message:{role:'assistant',id:'fixture-assistant',source:{kind:'model',provider:'fixture',model:'fixture'},content:[{type:'text',text:'Native conversation body is retained.'}]}},surfaceOp:'append'},
-{type:'turn/end',seq:3,time:now+2,data:{turn:1,reason:{kind:'completed'}}}];
+// V4 admits assistant output only inside an open turn *and* step.
+{type:'step/start',seq:2,time:now,data:{turn:1,step:1}},
+{type:'assistant/message',seq:3,time:now+1,data:{turn:1,step:1,stream:[],message:{role:'assistant',id:'fixture-assistant',source:{kind:'model',provider:'fixture',model:'fixture'},content:[{type:'text',text:'Native conversation body is retained.'}]}},surfaceOp:'append'},
+{type:'step/end',seq:4,time:now+1,data:{turn:1,step:1}},
+{type:'turn/end',seq:5,time:now+2,data:{turn:1,reason:{kind:'completed'}}}];
 await rm(join(home,'sessions'),{recursive:true,force:true});await mkdir(dir,{recursive:true});
-await writeFile(join(dir,'session.v3.jsonl.zstd'),Buffer.concat(rows.map(row=>zstdCompressSync(Buffer.from(JSON.stringify(row)+'\n')))));
-let log='';const server=spawn(process.execPath,[join(root,'node_modules/@deepseek-ai/dsh/lib/bin.js'),'--profile','preview','--host','127.0.0.1','--port','18990','--no-open'],{cwd:root,env:{...process.env,DSH_HOME:home,DSH_AGENTS_HOME:join(home,'agents')},stdio:['ignore','pipe','pipe']});server.stdout.on('data',v=>{log+=v;void writeFile('/tmp/workdsh-activity-probe-host.log',log);});server.stderr.on('data',v=>{log+=v;void writeFile('/tmp/workdsh-activity-probe-host.log',log);});
+await writeFile(join(dir,'session.v4.jsonl.zstd'),Buffer.concat(rows.map(row=>zstdCompressSync(Buffer.from(JSON.stringify(row)+'\n')))));
+let log='';const server=spawn(process.execPath,[dsh,'--profile',profile,'--host','127.0.0.1','--port','18990','--no-open'],{cwd:root,env,stdio:['ignore','pipe','pipe']});server.stdout.on('data',v=>{log+=v;void writeFile('/tmp/workdsh-activity-probe-host.log',log);});server.stderr.on('data',v=>{log+=v;void writeFile('/tmp/workdsh-activity-probe-host.log',log);});
 let browser;try {
 const deadline=Date.now()+60000;while(!/http:\/\/127\.0\.0\.1:\d+\/\?token=[\w-]+/.test(log)){if(server.exitCode!==null||Date.now()>deadline)throw Error('Host failed '+log.replace(/token=\S+/g,'token=[redacted]'));await new Promise(r=>setTimeout(r,100));}
 const url=log.match(/http:\/\/127\.0\.0\.1:\d+\/\?token=[\w-]+/)[0];

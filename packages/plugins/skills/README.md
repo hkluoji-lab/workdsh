@@ -1,6 +1,6 @@
 # 技能管理插件
 
-> GitHub 模块制品与兼容矩阵：[发布说明](../../../docs/RELEASES.md)。当前验证 Harness **0.1.6-alpha.2 Web**；内置 **0.1.2-rc.1** 的旧桌面入口缺失尚未修复，本包不包含该兼容修复。
+> GitHub 模块制品与兼容矩阵：[发布说明](../../../docs/RELEASES.md)。当前验证 Harness **0.1.7-alpha.2 Web**；内置 **0.1.2-rc.1** 的旧桌面入口缺失尚未修复，本包不包含该兼容修复。
 
 状态：**Skill 0.1 本地面向用户的技能市场与独立安装交付完成**。当前候选制品 `workdsh-plugin-skills@0.1.0-alpha.32`，尚未发布 npm。一个插件管理多个 Skill 业务对象；用户制作技能不需要发布 npm 包。
 
@@ -12,7 +12,7 @@
 
 ## 安装和组合
 
-兼容基线：Node 22.19+、Harness `0.1.6-alpha.2`、Cordis `4.0.2`、React `19.2.4`。从已配置这些依赖的官方 Web Profile 安装本地 tgz；将以下路径替换为实际制品绝对路径：
+兼容基线：Node 22.19+、Harness `0.1.7-alpha.2`、Cordis `4.0.4`、React `19.2.4`。从已配置这些依赖的官方 Web Profile 安装本地 tgz；将以下路径替换为实际制品绝对路径：
 
 ```sh
 dsh plugin --profile <你的 Web Profile> add /absolute/path/workdsh-plugin-skills-0.1.0-alpha.32.tgz

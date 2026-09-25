@@ -1,6 +1,6 @@
 # P1-01：公共外壳复用记录
 
-- 官方依据：[Slots](../dsh-v0.1.6-alpha.2/subsystems/slots.zh.md)、[Web Client](../dsh-v0.1.6-alpha.2/subsystems/web-client.zh.md)、[右侧 Sidebar](../dsh-v0.1.6-alpha.2/subsystems/sidebar-right.zh.md) 与 [Harness 官方开发规范](../HARNESS-OFFICIAL-DEVELOPMENT.md)。
+- 官方依据：[Slots](../dsh-v0.1.7-alpha.1/subsystems/slots.zh.md)、[Web Client](../dsh-v0.1.7-alpha.1/subsystems/web-client.zh.md)、[右侧 Sidebar](../dsh-v0.1.7-alpha.1/subsystems/sidebar-right.zh.md) 与 [Harness 官方开发规范](../HARNESS-OFFICIAL-DEVELOPMENT.md)。
 - 锁定发布包：dsh-client-ui-layout/sidebar/session/renderer、dsh-api-session-controller，均 0.1.5-rc.1；公开 /client 类型入口。
 - 复用：官方 sidebar owner 继续提供 Workspace、Session、新会话、搜索、菜单与设置；WorkDSH 仅用 `sidebar.brand.*` 和 `sidebar.panellist` 增量贡献品牌与业务入口，并以同 key `main` entry 配对；`layout.selectPanel(null)` 返回原生 Conversation。
 - 自有差异：业务入口标签、图标和对应全局管理页；ui 纯组件，无 Host、账户或存储。业务项目/权限不在本切片实现。
@@ -20,7 +20,7 @@
 | 字段 | 内容 |
 | --- | --- |
 | 任务与范围 | P1-01 增量（D02 已完成步骤内的功能补充，不改变 D05/D06/D07 步骤状态）。可验收行为：点击侧栏「新建任务」显示创建器面板；选定运行位置/项目/专家/连接器后确认，写入绑定并进入原生空会话；任务描述仅作为草稿预填，不自动发送。 |
-| 官方能力 | [Slots](../dsh-v0.1.6-alpha.2/subsystems/slots.zh.md)、[Web Client](../dsh-v0.1.6-alpha.2/subsystems/web-client.zh.md)；锁定 `0.1.6-alpha.2` 的 `dsh-client-ui-slots`、`dsh-client-ui-layout`、`dsh-client-ui-sidebar`、`dsh-client-ui-workspace`、`dsh-client-ui-conversation`、`dsh-api-session-controller`、`dsh-api-workspace-controller` 公开 `/client` 入口。原生所有者仍是官方：`sidebar.panellist` 行、`main.conversation`、`conversation.input.overlay`、Session Controller、Workspace Controller。 |
+| 官方能力 | [Slots](../dsh-v0.1.7-alpha.1/subsystems/slots.zh.md)、[Web Client](../dsh-v0.1.7-alpha.1/subsystems/web-client.zh.md)；锁定 `0.1.6-alpha.2` 的 `dsh-client-ui-slots`、`dsh-client-ui-layout`、`dsh-client-ui-sidebar`、`dsh-client-ui-workspace`、`dsh-client-ui-conversation`、`dsh-api-session-controller`、`dsh-api-workspace-controller` 公开 `/client` 入口。原生所有者仍是官方：`sidebar.panellist` 行、`main.conversation`、`conversation.input.overlay`、Session Controller、Workspace Controller。 |
 | 复用选择 | 直接复用 + 公开扩展。会话创建、打开、草稿回填、布局返回全部走官方公开入口；项目/专家/连接器只走各领域已发布的 `/api/workdsh-*` 公开 HTTP 契约（与 `ProjectsPanel.tsx` 调用 `/api/workdsh-library`、`/api/workdsh-connectors` 的既有先例一致），不横向导入其他功能插件实现。 |
 | 自有边界 | 仅新增：创建器面板的字段与校验、绑定写入顺序、待开放项标注。仍归官方/各领域的事实：Session 与执行日志、消息发送、权限与模型、专家编译 preset 与 `ExecutionBinding`、项目配置快照与 `ProjectTaskLink`、连接器选择真源。workbench 不复述也不缓存这些事实。 |
 | 证据与差异 | 已有探针：`projects` `startTask`（`sessions.create` → `set-task-selection`/`set-selection` → `linkTask` → `conversation.send`）、`experts` `summon`（`prepare-execution` → `create-execution` → `openSession` → `consume-handoff` → `seedDraft`）、`skills` `startSkillTask`（sessionStorage + overlay + `setDraft`）。差异：workbench 侧新增对 `/api/workdsh-projects` `link-task` 与 `/api/workdsh-connectors` `set-selection` 的调用。 |

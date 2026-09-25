@@ -1,5 +1,17 @@
+## 0.1.0-alpha.9 — Unreleased（2026-09-25）
+
+- 过期编译器修订改为**自动迁移，不再要求用户重新发布**：`experts-manager.ts` 的 `ensureCurrentExecutionRevision` 由「仅团队修订」泛化为任意 `compilerVersion` 过期的已发布修订，并新增 `ensureCompilerCurrent()` 在 `[Service.init]` 启动时与 `list()`／`get()` 读取前扫描并重编译。旧修订行按 [ADR-0010](../../../docs/adr/0010-immutable-preset-revisions.md) 保持只读不改写，结果写成派生修订并前移 `publishedRevisionRef`，审计码 `experts/compiler-migration-succeeded`（失败记 `experts/compiler-migration-failed`）。
+- 逐专家 best-effort：单个修订迁移失败只审计并跳过，不阻断启动与列表，下次读取或召唤执行会重试；不可重建的修订（例如技能快照已消失）仍以显式诊断呈现，不回退成默认组合。
+- 覆盖内置默认专家：默认专家的 `publish()` 被 `default-immutable` 拒绝，此前无法靠重新发布恢复；现在与个人专家走同一自愈路径。
+- `readExpertPreset` 仍是**永不重编译、永不改写声明**的读取器；仍收到 `experts/preset-broken` 即表示该修订迁移未成功，错误文案已同步说明「历史任务不会自动换用新组合」。
+- 退出证据：`expert-manager` 20/20（新增 `published revisions of an older compiler self-heal at boot and on catalog reads`，覆盖单专家、默认专家冷启动与不可重建修订的最尽力语义）、`expert-native-presets` + `expert-results` + `expert-package-authoring` + `expert-authoring-skill` 14/14；`typecheck`、`build`、`check:plan`、`check:versions` 通过。
+
 ## 0.1.0-alpha.8 — Unreleased（2026-09-24）
 
+- 适配 DeepSeek Harness `0.1.7-alpha.1`（2026-09-25，并入本未发布增量，不单独 bump）：专家预设注册表换主——`preset-compiler.ts` 改经官方 `AgentPresetRegistry.register` 注册并由 `ctx.effect` 释放，基线预设从 Loader 条目 + 官方 `@deepseek-ai/dsh-agent-preset` 解析；`experts-manager.ts` 的 `resolve('standard')` / `list()` 改读官方注册表；`index.ts` 把 `agentPresets` 纳入必需注入；`@deepseek-ai/dsh-agent-presets` 按官方改名移除。
+- 0.1.6 时代发布的专家修订其 `presetRevisionRef` 仍指向旧 `wd-exp-*`，0.1.7 新路径下无对应 `preset.json`，本版对其显式抛 `experts/preset-broken`、UI 显示「专家 preset 异常」，旧数据保留只读（线上 `dsh.10ge.cn` 实测 12 个专家中 4 个 broken，revision 与旧预设目录原样保留、数据无损）。**该口径已被 α.9 取代**：过期修订现在由专家服务在启动与读取时自动重编译，不再要求用户重新发布，也不再对内置默认专家给出无法完成的动作要求。
+- 客户端样式改用 0.1.7 语义 token 词表：清除 `var(--dsw-*)` 硬编码 fallback，词表外旧名字替换为官方 `--dsw-alias-*`。
+- 退出证据：`expert-manager` + `expert-native-presets` + `expert-results` 25/25 pass；`probe:experts` 13/13、`probe:experts:official`、`probe:experts:professional`、`probe:presets` 6 PASS + 1 OBSERVED、`probe:theme` 全 PASS。
 - 作者信息改由 Host 投影：client 不再 `import { parseDocument } from 'yaml'`，专家列表、详情与制作流程统一读取 `ExpertDetail.draftDisplay` / `revisionDisplay`（契约见 `workdsh-contracts@0.1.0-alpha.10`）。front matter 只在 Host 侧解析一次，投影为派生只读值，不回写授权文件。
 - 效果：专家 client 包不再携带 YAML 解析器，`dist/client.browser.js` 为 raw 115,250 B ／ gzip 30,155 B（P1-2 首包体积）。
 - 未改变专家授权文件的格式与语义，也未改变已有公开方法签名。

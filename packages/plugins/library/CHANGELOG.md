@@ -1,5 +1,6 @@
 # 0.1.0-alpha.3
 
+- 适配 DeepSeek Harness `0.1.7-alpha.1`（2026-09-25，并入本未发布增量，不单独 bump）：清除 `var(--dsw-*)` 硬编码 fallback 并改用官方语义变量（`LibraryPicker`、`LibrarySelectionChips` 与 `styles.ts`）。
 - 合并上游 `0.1.6-alpha.2` 线：适配 DeepSeek Harness 0.1.6-alpha.2——当前会话改由 `SessionSummary.retainedBy.mainView` 推导；打开会话与资料引用跳转改用官方 `uiWorkspace.openSession`；右栏资料预览继续以官方 `sidebar.right.pane.tab` 注册。
 - 版本号撞号修复：本线与上游线都发布过 `0.1.0-alpha.2`（内容不同），合并后重新定版为 `0.1.0-alpha.3`，下方两条 `alpha.2` 记录即合并前的两条线。
 - 与 `workdsh-bundle@0.1.0-alpha.50` 需同批安装：组合包自 `0.1.0-alpha.48` 起不再登记「资料库」侧栏行。

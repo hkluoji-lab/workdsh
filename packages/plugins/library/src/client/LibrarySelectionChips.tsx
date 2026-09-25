@@ -11,12 +11,12 @@ const css = `
 [data-composer-card]:has(.wd-library-selection-chips){padding-top:50px}
 .wd-library-selection-chips{box-sizing:border-box;position:absolute;z-index:2;top:9px;left:12px;right:12px;height:34px;display:flex;align-items:center;gap:7px;overflow-x:auto;scrollbar-width:none;pointer-events:auto}
 .wd-library-selection-chips::-webkit-scrollbar{display:none}.wd-library-selection-chips button{font:inherit}
-.wd-library-selection-source,.wd-library-selection-chip{flex:none;height:30px;border:0;border-radius:10px;display:flex;align-items:center;gap:7px;color:var(--dsw-alias-label-primary,#eee);background:var(--dsw-specific-selector,#303030)}
-.wd-library-selection-source{padding:0 11px;cursor:pointer}.wd-library-selection-source:hover{background:var(--dsw-alias-interactive-bg-hover-solid,#3a3a3a)}
+.wd-library-selection-source,.wd-library-selection-chip{flex:none;height:30px;border:0;border-radius:10px;display:flex;align-items:center;gap:7px;color:var(--dsw-alias-label-primary);background:var(--dsw-specific-selector)}
+.wd-library-selection-source{padding:0 11px;cursor:pointer}.wd-library-selection-source:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}
 .wd-library-selection-source b{font-size:17px;font-weight:500}.wd-library-selection-chip{max-width:240px;padding:0 5px 0 8px}
 .wd-library-selection-kind{display:grid;place-items:center;min-width:22px;height:20px;padding:0 3px;border-radius:5px;background:#2869c9;color:#fff;font-size:10px;font-weight:700}
 .wd-library-selection-chip[data-kind=pptx] .wd-library-selection-kind{background:#d76a24}.wd-library-selection-chip[data-kind=pdf] .wd-library-selection-kind{background:#c84848}.wd-library-selection-chip[data-kind=html] .wd-library-selection-kind{background:#7659ca}.wd-library-selection-chip[data-kind=text] .wd-library-selection-kind{background:#64748b}
-.wd-library-selection-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wd-library-selection-remove{width:22px;height:22px;display:grid;place-items:center;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-caption,#999);cursor:pointer}.wd-library-selection-remove:hover{background:#ffffff16;color:inherit}
+.wd-library-selection-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wd-library-selection-remove{width:22px;height:22px;display:grid;place-items:center;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-caption);cursor:pointer}.wd-library-selection-remove:hover{background:#ffffff16;color:inherit}
 `;
 
 export function LibrarySelectionChips({ management, sessionId }: Props) {

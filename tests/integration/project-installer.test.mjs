@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 
 const root = resolve(import.meta.dirname, '../..');
 const installer = join(root, 'scripts/install-project-release.mjs');
-const harnessVersion = '0.1.6-alpha.2';
+const harnessVersion = '0.1.7-alpha.2';
 const packageNames = [
   'workdsh-provider-identity-local', 'workdsh-plugin-audit', 'workdsh-plugin-access',
   'workdsh-plugin-skills', 'workdsh-plugin-experts', 'workdsh-plugin-connectors',

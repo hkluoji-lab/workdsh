@@ -54,8 +54,11 @@ export function apply(ctx: Context): void {
     const [labels, setLabels] = React.useState<ReadonlyMap<string,string>>(new Map());
     const address = session.subagent?.address;
     const rootSessionId = address?.parentSessionId ?? props.sessionId;
-    const catalog = list.subagentsByParent[rootSessionId];
-    const children = catalog?.entries.filter(row => row.kind === 'child').slice(-20) ?? [];
+    // 0.1.7: the per-parent subagent catalog moved from a dedicated list field to the
+    // session projection (`subagentCatalog` is already the direct children in parent
+    // catalog order, so no `kind === 'child'` filter is needed).
+    const catalog = list.projectionsBySession[rootSessionId]?.values.subagentCatalog;
+    const children = catalog?.slice(-20) ?? [];
     const ids = children.map(row => row.id).join('|');
     React.useEffect(() => {
       const cancel = new AbortController();
@@ -69,7 +72,7 @@ export function apply(ctx: Context): void {
     // The catalog is a sampled driver state, not a continuously running child feed.
     React.useEffect(() => {
       let disposed = false;
-      const refresh = () => { if (!disposed) void sessions.refreshSubagents(rootSessionId).catch(() => { /* native catalog carries its error; retry while running */ }); };
+      const refresh = () => { if (!disposed) void sessions.refreshProjections(rootSessionId).catch(() => { /* native catalog carries its error; retry while running */ }); };
       refresh();
       const timer = session.running ? windowGlobal.setInterval(refresh, 3000) : undefined;
       return () => { disposed = true; if (timer !== undefined) windowGlobal.clearInterval(timer); };

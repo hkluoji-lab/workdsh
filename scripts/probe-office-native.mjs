@@ -93,9 +93,14 @@ try {
   await writeFile(join(fixture, 'package.json'), JSON.stringify({ name: 'workdsh-office-native-probe', version: '0.0.0', type: 'module', exports: { '.': './index.js', './client': './client.js' }, dsh: { bundle: { patch: './patch.yml' }, client: { platform: 'web', inject: ['@deepseek-ai/dsh-client-ui-sidebar-right', '@deepseek-ai/dsh-client-ui-sidebar-documentpreview'] } } }));
   await writeFile(join(fixture, 'patch.yml'), '- insert:\n    - id: office-native-probe\n      name: workdsh-office-native-probe\n');
   await writeFile(join(fixture, 'index.js'), 'export function apply() {}');
-  await writeFile(join(fixture, 'client.js'), `window.__ModuleLoader__.load({id:'workdsh-office-native-probe',factory:function(){return {inject:['sidebarRight','documentPreviews'],apply:function(ctx){ctx.effect(function(){window.officeNativeProbe={files:function(sid){ctx.sidebarRight.openTabIn(sid,'files')},registered:function(){return ctx.documentPreviews.getSnapshot().map(d=>d.id)}};return function(){delete window.officeNativeProbe}})}}}});`);
+  await writeFile(join(fixture, 'client.js'), `window.__ModuleLoader__.load({id:'workdsh-office-native-probe',factory:function(){return {inject:['sidebarRight','documentPreviews'],apply:function(ctx){ctx.effect(function(){window.officeNativeProbe={files:function(sid){ctx.sidebarRight.openTabIn(sid,'files')},registered:function(){return ctx.documentPreviews.getSnapshot().map(d=>d.id)},candidates:function(path){return ctx.documentPreviews.candidates(path).map(d=>({id:d.id,title:d.title()}))}};return function(){delete window.officeNativeProbe}})}}}});`);
   await command(pnpm, ['pack', '--pack-destination', artifacts], fixture); tarballs.push(join(artifacts, 'workdsh-office-native-probe-0.0.0.tgz'));
-  for (const kind of ['docx','pptx','xlsx']) await writeFile(join(workspace, 'input.'+kind), await readFile(join(root, '.artifacts/office-integration/input.'+kind)));
+  // The four binary formats come from committed fixtures; the two text formats
+  // are written inline. .artifacts is build output, so the probe no longer
+  // depends on probe:office having run first.
+  const fixtures = join(root, 'tests/fixtures/office-native');
+  for (const kind of ['docx','pptx','xlsx','xls']) await writeFile(join(workspace, 'input.'+kind), await readFile(join(fixtures, 'input.'+kind)));
+  await writeFile(join(workspace, 'input.tsv'), '名称\t数量\nTSV_ACCEPTANCE\t42\n');
   await writeFile(join(workspace, 'input.csv'), [
     '单号,供应商,物料编码,物料名称,数量,单价,金额,交货日期,备注',
     'CG2026091701,深圳市华强电子科技集团股份有限公司宝安分公司采购中心,MAT-001,"贴片电容 0402, 100nF",500,0.12,60.00,2026-09-20,常规采购',
@@ -143,7 +148,8 @@ try {
   await page.locator('[contenteditable="true"]').first().waitFor({ timeout: 20_000 }).catch(() => {});
   await page.waitForTimeout(800);
   await page.waitForFunction(() => window.officeNativeProbe);
-  assert.ok((await page.evaluate(() => window.officeNativeProbe.registered())).includes('workdsh-office'));
+  const registered = await page.evaluate(() => window.officeNativeProbe.registered());
+  for (const id of ['workdsh-office', 'workdsh-office-csv']) assert.ok(registered.includes(id), `Client registry lost ${id}: ${JSON.stringify(registered)}`);
   // Fresh-load UI race insurance (T10): a pointer click can hang without
   // dispatching anything; a DOM click still runs the real handler.
   const clickWithFallback = async (locator, timeout) => {
@@ -174,7 +180,32 @@ try {
   }
   assert.ok(await docxEntry.isVisible().catch(() => false), 'Files tab never listed input.docx after the sidebar prologue');
   await page.screenshot({path:join(artifacts,'files.png')});
-  for (const kind of ['docx','pptx','xlsx','csv']) {
+  // Six suffixes split by the official builtin owner: docx/pptx convert to PDF
+  // through the Host's dsh-office-to-pdf Remote, xlsx/xls/csv/tsv render in the
+  // browser parser. WorkDSH registers the same suffixes as builtin candidates,
+  // so the native preview owns the default view and the editor stays one menu
+  // entry away.
+  const officialOffice = '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/office';
+  const officialExcel = '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/excel';
+  const formats = {
+    docx: { viewer: officialOffice, editors: ['workdsh-office'] },
+    pptx: { viewer: officialOffice, editors: ['workdsh-office'] },
+    xlsx: { viewer: officialExcel, editors: ['workdsh-office'] },
+    xls: { viewer: officialExcel, editors: [] },
+    csv: { viewer: officialExcel, editors: ['workdsh-office-csv'] },
+    tsv: { viewer: officialExcel, editors: [] },
+  };
+  // Inactive document tabs stay mounted, so viewer assertions read only the
+  // visible containers instead of the first match in document order.
+  const visibleViewers = () => page.evaluate(() => [...document.querySelectorAll('[data-document-preview]')].filter(node => node.offsetParent !== null).map(node => node.getAttribute('data-document-preview')));
+  const waitForViewer = async id => {
+    const deadline = Date.now() + 90_000;
+    while (!(await visibleViewers()).includes(id)) {
+      if (Date.now() > deadline) throw new Error(`viewer ${id} never became visible; visible=${JSON.stringify(await visibleViewers())}`);
+      await page.waitForTimeout(250);
+    }
+  };
+  for (const [kind, expected] of Object.entries(formats)) {
     const entry = page.getByText('input.'+kind, {exact:true}).first();
     if (!(await entry.isVisible().catch(() => false))) {
       // The previous kind leaves its editor tab active; bring the Files tab
@@ -188,25 +219,50 @@ try {
       }
     }
     await clickWithFallback(entry, 30000);
+    const candidates = await page.evaluate(kind => window.officeNativeProbe.candidates('input.'+kind), kind);
+    const ids = candidates.map(row => row.id);
+    assert.ok(ids.length > 0, `input.${kind}: no preview implementation registered`);
+    for (const editor of expected.editors) assert.ok(ids.includes(editor), `input.${kind}: WorkDSH candidate ${editor} missing from ${JSON.stringify(ids)}`);
+    assert.equal(candidates[0].id, expected.viewer, `input.${kind}: default viewer is not the official preview: ${JSON.stringify(candidates)}`);
+    await waitForViewer(expected.viewer);
+    if (kind === 'docx' || kind === 'pptx') {
+      await page.locator('[data-pdf-preview]:visible').first().waitFor({timeout: 90_000});
+      assert.ok(await page.locator('[data-pdf-preview] canvas').count(), `input.${kind}: converted PDF rendered no page canvas`);
+    } else {
+      await page.locator('[data-excel-preview]:visible').first().waitFor({timeout: 60_000});
+    }
+    const viewerText = await page.locator(`[data-document-preview="${expected.viewer}"]:visible`).first().innerText();
+    assert.doesNotMatch(viewerText, /File not found|文件不存在|Unable to preview|Failed to load|无法显示 PDF|无法打开此表格/i);
+    await writeFile(join(artifacts,kind+'-candidates.json'), JSON.stringify(candidates,null,2));
+    await writeFile(join(artifacts,kind+'-viewer.txt'), viewerText);
+    await page.screenshot({path:join(artifacts,'native-'+kind+'.png')});
+    pass('Official builtin preview owns input.'+kind+' by default: '+expected.viewer);
+    if (!expected.editors.length) continue;
+    // The registry keeps every match, so the viewer menu must still reach the
+    // WorkDSH editor for the suffix it shares with the official builtin.
+    const editor = expected.editors[0];
+    const label = editor === 'workdsh-office-csv' ? 'CSV 表格' : 'Office 浏览器编辑';
+    await clickWithFallback(page.locator('[data-document-viewer-menu]:visible').first(), 15_000);
+    await clickWithFallback(page.getByText(label, {exact:true}).first(), 15_000);
+    await waitForViewer(editor);
     if (kind === 'docx') {
-      await page.getByRole('region', {name: 'DOCX文档编辑', exact: true}).waitFor({timeout: 30000});
-      await page.getByRole('button', {name: '下载 Word', exact: true}).waitFor({timeout: 30000});
+      await page.getByRole('region', {name: 'DOCX文档编辑', exact: true}).waitFor({timeout: 30_000});
+      await page.getByRole('button', {name: '下载 Word', exact: true}).waitFor({timeout: 30_000});
     } else if (kind === 'pptx') {
-      const editor = page.getByRole('region', {name: 'PPTX 编辑', exact: true});
-      await editor.waitFor({timeout: 30000});
-      await editor.getByRole('tab', {name: '开始', exact: true}).waitFor({timeout: 30000});
+      const pptEditor = page.getByRole('region', {name: 'PPTX 编辑', exact: true});
+      await pptEditor.waitFor({timeout: 30_000});
+      await pptEditor.getByRole('tab', {name: '开始', exact: true}).waitFor({timeout: 30_000});
     } else if (kind === 'xlsx') {
       const child = page.frameLocator('iframe[title="Office 文档编辑"]').last();
-      await child.locator('#status').filter({hasText: 'Excel 支持'}).waitFor({timeout:30000});
+      await child.locator('#status').filter({hasText: 'Excel 支持'}).waitFor({timeout:30_000});
     } else {
       const csv = page.getByRole('region', {name: 'CSV 表格预览', exact: true});
-      await csv.waitFor({timeout: 30000});
-      await csv.getByRole('columnheader', {name: '单号', exact: true}).waitFor({timeout: 30000});
-      await csv.getByRole('cell', {name: '贴片电阻 0603 10kΩ', exact: true}).waitFor({timeout: 30000});
-      await csv.getByRole('cell', {name: '含"加急"备注', exact: true}).waitFor({timeout: 30000});
+      await csv.waitFor({timeout: 30_000});
+      await csv.getByRole('columnheader', {name: '单号', exact: true}).waitFor({timeout: 30_000});
+      await csv.getByRole('cell', {name: '贴片电阻 0603 10kΩ', exact: true}).waitFor({timeout: 30_000});
     }
-    await page.screenshot({path:join(artifacts,'native-'+kind+'.png')});
-    pass('Official resource read and native Office Tab: '+kind);
+    await page.screenshot({path:join(artifacts,'editor-'+kind+'.png')});
+    pass('Viewer menu still opens the WorkDSH editor for input.'+kind+': '+editor);
   }
   // UI summon canary (T10 finding #3), deliberately tolerant: the page is
   // open, so the Web client has already consumed the first activation slot and

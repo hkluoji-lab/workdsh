@@ -9,3 +9,4 @@
 - 新增 `/api/workdsh-assistant` Connection 端点与 `workdsh_assistant_*` Agent 工具，页面与工具共用同一服务。
 - 新增自持的 `main` + `sidebar.panellist`（`workdsh-assistant`）页面与列表／详情编辑分离的 UI。
 - 边界：不拥有执行、会话、凭据与数据权限；触发方式只作为修订字段记录，不注册调度器，不建立入站端点。
+- 适配 DeepSeek Harness `0.1.7-alpha.1`（2026-09-25，并入本未发布增量，不单独 bump）：官方依赖精确锁定同步至 `0.1.7-alpha.1`；客户端样式清除 `var(--dsw-*)` 硬编码 fallback 并改用官方语义变量。线上 `dsh.10ge.cn` 升级后「助理」入口与页面正常，只读复验 `assistant/list` 返回空集非故障。

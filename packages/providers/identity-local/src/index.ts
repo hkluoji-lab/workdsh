@@ -101,7 +101,12 @@ export interface Config extends LocalIdentityConfig {
   readonly organizationName: string;
 }
 
-export const Config: Schema<Config> = Schema.object({
+// 0.1.7 Schemastery 3.18.3 adds `NoInfer` to `Schema.object`, so an explicit
+// `: Schema<Config>` annotation no longer accepts a defaulted field: the inferred
+// object type has a required `providerId` while the interface keeps it optional.
+// Official 0.1.7 packages let the schema infer its own type and keep the
+// hand-written interface as the documented input shape; follow that here.
+export const Config = Schema.object({
   principalId: Schema.string().required(),
   organizationId: Schema.string().required(),
   organizationName: Schema.string().required(),

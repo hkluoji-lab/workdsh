@@ -1,5 +1,6 @@
 # 0.1.0-alpha.16 — 2026-09-24
 
+- 适配 DeepSeek Harness `0.1.7-alpha.1`（2026-09-25，并入本未发布增量，不单独 bump）：官方依赖精确锁定同步至 `0.1.7-alpha.1`；客户端样式与 `TaskExecutionNotice` 清除 `var(--dsw-*)` 硬编码 fallback 并改用官方语义变量。
 - 「助理」入口交还 `workdsh-plugin-assistant`：助理页面已实现，由该插件自持 `main`（`key: workdsh-assistant`）与同名的 `sidebar.panellist` 行（`order: 10`），工作台不再为它登记待开放占位。
 - `businessPanels` 现为「定时任务」「更多」两项。类注释补上助理这一例，继续说明「已有真实页面的入口由页面所属插件注册 `main` + 同名行」，避免插件缺席时留下点击即抛 `layout.selectPanel: main panel "…" is not registered` 的入口。
 - 组合包需与 `workdsh-plugin-assistant@0.1.0-alpha.1` 同批安装：只升工作台会让「助理」入口消失。

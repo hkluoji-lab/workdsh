@@ -4,6 +4,8 @@
 基线：仓库内 `docs/dsh-v0.1.6-alpha.2`，2026-09-10 取得
 精确进度：[审查台账](deepseek-harness-review.json)
 
+（2026-09-24 补记：镜像已整批换为 `docs/dsh-v0.1.7-alpha.1/` 快照（562 文件 / 347 md / 规范对象 176），台账 `corpusRoot` 随之改指 0.1.7，`audit:harness-docs` 报 `127/176 reviewed; 49 pending`。本文标题的 127/127 是**对 0.1.6 语料的审查完成度**；0.1.7 相对 0.1.6 为 0 删除、19 新增、157 个共有文件内容有变，本文与 [审查收尾](harness-review-closure.md) 的结论**未按新语料复审**，路径引用保留 0.1.6 锚点以如实反映来源。）
+
 ## 目的与完成标准
 
 本审查用于决定 WorkDSH 如何通过 DeepSeek Harness 公开能力实现 WorkBuddy 类工作平台，避免重复实现已有运行时，也避免把截图表现误认成公开接口。审查完成前不进入 D02 业务插件实现。

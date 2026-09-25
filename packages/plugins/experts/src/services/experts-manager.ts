@@ -6,7 +6,6 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain';
 import type { SessionCreateRequest, SessionCreateValue } from '@deepseek-ai/dsh-api-session-controller';
-import { writableRoot } from '@deepseek-ai/dsh-agent-presets';
 import {
   EXPERT_LIMITS,
   ExpertsError,
@@ -54,7 +53,7 @@ import type {
 } from 'workdsh-contracts';
 import type { SkillManagementService } from 'workdsh-contracts/skills';
 import { expertsDomainSpec, keys } from '../storage/domain.js';
-import { COMPILER_VERSION, compileExpertPreset, presetIdFor, verifyPackageFiles } from '../runtime/preset-compiler.js';
+import { COMPILER_VERSION, compileExpertPreset, expertPresetDir, presetIdFor, readExpertPreset, registerExpertPreset, verifyPackageFiles } from '../runtime/preset-compiler.js';
 import { ConfirmationStore } from '../runtime/confirmation.js';
 import { TtlStore } from '../runtime/plans.js';
 import { definitionDigest, normalizeDefinition, validateDefinition, teamDefinitionSchema } from '../domain/definition.js';
@@ -199,7 +198,7 @@ function sanitizeFileName(fileName: string): string {
 
 export class ExpertsManager extends Service implements ExpertsService {
   static inject = [
-    'storageDomain', 'agentPresets', 'sessionController',
+    'loader', 'storageDomain', 'agentPresets', 'sessionController',
     'workdshIdentity', 'workdshAccess', 'workdshAudit', 'workdshSessionAccess', 'workdshSkills',
   ];
 
@@ -235,6 +234,15 @@ export class ExpertsManager extends Service implements ExpertsService {
     this.bindings = domain.table('bindings');
     this.preferences = domain.table('preferences');
     this.operations = domain.table('operations');
+    // Registrations are process-local state: re-declare every current revision on boot so
+    // existing Sessions and cold resumption keep resolving their frozen composition.
+    for (const [, revision] of this.revisions.entries()) {
+      if (revision.compilerVersion === COMPILER_VERSION) await registerExpertPreset(this.ctx, revision.presetRevisionRef, revision.compositionDigest);
+    }
+    // A compiler upgrade changes the preset format, so revisions published by an older
+    // compiler have no declaration here: self-heal them before the first read instead of
+    // asking the user to republish (the shipped default experts cannot be republished).
+    await this.ensureCompilerCurrent();
     // Staged uploads are transient; best-effort cleanup when the plugin unloads.
     this.ctx.effect(() => () => { void rm(this.stagingRoot, { recursive: true, force: true }); }, 'workdshExperts.stagingCleanup');
   }
@@ -419,13 +427,50 @@ export class ExpertsManager extends Service implements ExpertsService {
   }
 
   /**
-   * Recompile an older published team for the current runtime without mutating its
-   * immutable revision. Existing Sessions keep their old binding; only future
-   * executions move to the derived revision. This is intentionally done on use so
-   * installations upgraded from an earlier WorkDSH release need no manual republish.
+   * Recompile every published revision left behind by an older compiler.
+   *
+   * A compiler upgrade changes the preset directory format, and registrations are
+   * process-local, so an upgraded installation would otherwise report `broken` for
+   * revisions it cannot republish at all (the shipped default experts reject `publish`
+   * as `default-immutable`). Runs on boot and before catalog reads, is best-effort per
+   * expert — one failing revision is audited and skipped so it can never block startup
+   * or a read, and the next read or summoned execution retries it.
+   */
+  private async ensureCompilerCurrent(): Promise<void> {
+    for (const [, expert] of this.expertsTable().entries()) {
+      // A team member is migrated together with its parent, which owns the member refs.
+      if (expert.teamParentId) continue;
+      const ref = expert.publishedRevisionRef;
+      if (!ref) continue;
+      const revision = this.revisionsTable().get(keys.revision(ref.expertId, ref.revisionId));
+      if (!revision || revision.compilerVersion === COMPILER_VERSION) continue;
+      // The migration is WorkDSH's own upkeep, not a user action: it is attributed to the
+      // owning principal and organization so the audit trail stays organization-scoped,
+      // with `resolvedBy` naming the service that ran it.
+      const actor: ActorContext = {
+        principalId: expert.owner.ownerPrincipalId,
+        organizationId: expert.owner.organizationId,
+        requestId: `experts-compiler-migration-${randomUUID()}`,
+        resolvedBy: 'workdsh-experts/compiler-migration',
+      };
+      try {
+        await this.ensureCurrentExecutionRevision(actor, revision);
+      } catch (error) {
+        await this.audit(actor, 'experts.prepare-execution', expert.id, 'failed', errorCode(error, 'experts/compiler-migration-failed'));
+      }
+    }
+  }
+
+  /**
+   * Recompile a revision published by an older compiler for the current runtime without
+   * mutating its immutable revision. Existing Sessions keep their old binding; only future
+   * executions move to the derived revision. Team members are migrated with their parent so
+   * a team keeps one consistent composition. This runs at boot and before catalog reads
+   * (`ensureCompilerCurrent`) as well as on use, so installations upgraded from an earlier
+   * WorkDSH release need no manual republish.
    */
   private async ensureCurrentExecutionRevision(actor: ActorContext, revision: ExpertRevision, signal?: AbortSignal): Promise<ExpertRevision> {
-    if (!revision.definition.team || revision.compilerVersion === COMPILER_VERSION) return revision;
+    if (revision.compilerVersion === COMPILER_VERSION) return revision;
     return this.enqueue(async () => {
       // Another concurrent prepare may already have advanced the published pointer.
       const owner = this.loadExpert(revision.expertId);
@@ -436,6 +481,9 @@ export class ExpertsManager extends Service implements ExpertsService {
       }
 
       const basePresetId = await this.resolveBasePreset(signal);
+      // Only a revision that carries member refs declares a team composition; a single
+      // expert must not inherit the team lead persona.
+      const isTeamRevision = revision.teamMembers !== undefined;
       const upgradedMembers: Record<string, ExpertRevisionRef> = {};
       for (const [memberName, ref] of Object.entries(revision.teamMembers ?? {})) {
         signal?.throwIfAborted();
@@ -482,13 +530,13 @@ export class ExpertsManager extends Service implements ExpertsService {
         definition: revision.definition,
         snapshotDirs,
         basePresetId,
-        teamMembers: upgradedMembers,
+        ...(isTeamRevision ? { teamMembers: upgradedMembers } : {}),
       });
       const revisionId = revisionIdFor(revision.definitionDigest, revision.dependencyLockDigest, compiled.presetId);
       const upgraded: ExpertRevision = {
         ...revision,
         revisionId,
-        teamMembers: upgradedMembers,
+        ...(isTeamRevision ? { teamMembers: upgradedMembers } : {}),
         presetRevisionRef: compiled.presetId,
         compilerVersion: COMPILER_VERSION,
         compositionDigest: compiled.compositionDigest,
@@ -566,7 +614,7 @@ export class ExpertsManager extends Service implements ExpertsService {
   private async computeReadiness(revision: ExpertRevision | undefined, actor: ActorContext, signal?: AbortSignal): Promise<ExpertReadiness> {
     if (!revision) return 'unknown';
     if (revision.definition.packageDocuments) {
-      try { await verifyPackageFiles(join(writableRoot(this.ctx.agentPresets.roots, revision.presetRevisionRef), revision.presetRevisionRef), revision.definition.packageDocuments, revision.definition.packageAssets); }
+      try { await verifyPackageFiles(expertPresetDir(revision.presetRevisionRef), revision.definition.packageDocuments, revision.definition.packageAssets); }
       catch { return 'missing-dependency'; }
     }
     for (const ref of Object.values(revision.teamMembers ?? {})) {
@@ -683,6 +731,8 @@ export class ExpertsManager extends Service implements ExpertsService {
     }
     await this.ensureSeeded(actor, signal);
     signal?.throwIfAborted();
+    await this.ensureCompilerCurrent();
+    signal?.throwIfAborted();
 
     const search = query.search?.trim().toLowerCase();
     const rows: { expert: Expert; draft: ExpertDraft; preference?: ExpertPreference }[] = [];
@@ -733,6 +783,7 @@ export class ExpertsManager extends Service implements ExpertsService {
     signal?.throwIfAborted();
     assertActorContext(actor);
     await this.ensureSeeded(actor, signal);
+    await this.ensureCompilerCurrent();
     const expert = this.loadExpert(expertId);
     if (!this.isVisible(actor, expert)) throw new ExpertsError('experts/not-found', '未找到该专家。');
     await this.authorize(actor, 'experts.get', expert, signal);
@@ -1587,8 +1638,8 @@ export class ExpertsManager extends Service implements ExpertsService {
   }
 
   private async verifyRevision(actor: ActorContext, revision: ExpertRevision, signal?: AbortSignal): Promise<void> {
-    if (revision.definition.packageDocuments) await verifyPackageFiles(join(writableRoot(this.ctx.agentPresets.roots, revision.presetRevisionRef), revision.presetRevisionRef), revision.definition.packageDocuments, revision.definition.packageAssets);
-    if (sha256(await this.ctx.agentPresets.read(revision.presetRevisionRef)) !== revision.compositionDigest) {
+    if (revision.definition.packageDocuments) await verifyPackageFiles(expertPresetDir(revision.presetRevisionRef), revision.definition.packageDocuments, revision.definition.packageAssets);
+    if (sha256(await readExpertPreset(revision.presetRevisionRef)) !== revision.compositionDigest) {
       throw new ExpertsError('experts/conflict', '已发布专家 preset 已漂移。');
     }
     for (const ref of revision.dependencyLock) {

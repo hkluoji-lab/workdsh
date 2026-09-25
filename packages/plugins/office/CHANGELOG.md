@@ -1,5 +1,8 @@
 ## 0.1.0-alpha.8
 
+- 适配 DeepSeek Harness `0.1.7-alpha.1`（2026-09-25，并入本未发布增量，不单独 bump）：官方原生预览已支持 XLSX/XLS/CSV/TSV，两处 `documentPreviews.register`（`workdsh-office`、`workdsh-office-csv`）声明 `priority: "builtin"` 退到 builtin 备选位，官方原生预览恒为 `candidates[0]`，WorkDSH 编辑器保留为「打开方式」下拉备选（编辑入口未丢）。
+- 客户端样式改用 0.1.7 语义 token 词表：清除 `var(--dsw-*)` 硬编码 fallback；`live/style.ts` 的文档纸色（`.wd-office-paper` 及其正文、表格、图表、图片手柄）保留固定色值——`.docx` 在两种主题下都是白纸，不接语义 token。
+- 退出证据：`probe:office:native` 14 条断言全 PASS、`probe:office:word-only` 4 PASS、`probe:office:live` 16 PASS、`test:office:content` 21/21、`test:office:csv` 2/2。
 - 合并上游 `0.1.6-alpha.2` 线：适配 DeepSeek Harness 0.1.6-alpha.2，当前会话改为按 `SessionSummary.retainedBy.mainView` 推导。
 - CSV 预览并入本线的按需产物：`CsvDocument` 从启动壳移入 `dist/office-runtime.js`，`sidebar.right.tab.document` 的 CSV 槽位改用统一的 `deferred` 包装按需取得组件，启动包继续只保留注册壳。
 - `--word-only` 精简制品不注册 CSV 表格预览与对应侧栏 Tab，客户端注册范围与 `release-scope.json` 的 `docx` 声明一致；完整制品不受影响。

@@ -2,6 +2,8 @@
 
 ## 0.1.0-alpha.4 — 2026-09-24
 
+- 适配 DeepSeek Harness `0.1.7-alpha.1`（2026-09-25，并入本未发布增量，不单独 bump）：清除 `var(--dsw-*)` 硬编码 fallback，词表外旧名字替换为官方语义变量；`ProjectLineageChip.tsx` 另删除官方自身也写错的 `--dsw-alias-fill-tsp-secondary` 引用（该名字官方 theme 包从未声明），改为 `background: transparent`。
+- 会话绑定复核：`deliverable-attribution.ts` 只读 `event.data.files` 与 `session.header.cwd`，Session 格式 V4 下无破坏点。
 - 项目模板由 5 个扩充到 15 个：新增内容营销与社媒运营、客户跟进与商机管理、数据分析与经营报表、活动策划与执行、招投标与解决方案、招聘与人才选拔、培训与课程开发、财务预算与成本核算、品牌与视觉设计、网站建设与 SEO 增长。
 - 模板仍是纯预填数据：选中模板只预填项目名称、场景描述与初始指令，创建后可编辑，不自动执行、不预先绑定专家或技能，也不改变项目权限语义。
 

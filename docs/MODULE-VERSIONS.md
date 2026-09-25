@@ -33,17 +33,23 @@
 | 企业门户与登录门禁 | 0.1 | `workdsh-portal@0.1.0-alpha.2` | in_progress |
 | 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.54` | in_progress |
 | 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.16` | implemented |
-| 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.8` | in_progress |
+| 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.9` | in_progress |
 | 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.32` | implemented |
-| 连接器管理 | 0.1 | `workdsh-plugin-connectors@0.1.0-alpha.2` | in_progress |
+| 连接器管理 | 0.1 | `workdsh-plugin-connectors@0.1.0-alpha.3` | in_progress |
 | 资源授权 | 0.1 | `workdsh-plugin-access@0.1.0-alpha.5` | implemented |
 | 审计 | 0.1 | `workdsh-plugin-audit@0.1.0-alpha.4` | implemented |
-| 本地身份提供方 | 0.1 | `workdsh-provider-identity-local@0.1.0-alpha.5` | implemented |
+| 本地身份提供方 | 0.1 | `workdsh-provider-identity-local@0.1.0-alpha.6` | implemented |
 | Office 浏览器编辑插件 | 0.1 | `workdsh-plugin-office@0.1.0-alpha.8` | in_progress |
-| 协作与活动展示 | 0.1 | `workdsh-plugin-activity@0.1.0-alpha.4` | in_progress |
+| 协作与活动展示 | 0.1 | `workdsh-plugin-activity@0.1.0-alpha.5` | in_progress |
 | 项目管理 | 0.1 | `workdsh-plugin-projects@0.1.0-alpha.4` | in_progress |
 | 资料库 | 0.1 | `workdsh-plugin-library@0.1.0-alpha.3` | implemented |
 | 助理 | 0.1 | `workdsh-plugin-assistant@0.1.0-alpha.1` | in_progress |
+
+2026-09-25 更新（三）：DSH 基线 `0.1.7-alpha.1` → `0.1.7-alpha.2`（Unreleased，**本批不 bump 任何模块**；证据见 [dsh-0.1.7-alpha.2-upgrade](evidence/dsh-0.1.7-alpha.2-upgrade.md)）。同族小版本递进：上游全树 0 文件删除、仓库侧 **0 行业务代码改动**，改动面为 `package.json`（根 + 13 个模块）、`pnpm-lock.yaml`、脚本常量与基线文档。版本族外实质变化是 Cordis `4.0.3 → 4.0.4` 及 5 个伴生包（`group 1.0.4` / `loader 1.0.5` / `include 1.0.9` / `timer 1.1.6` / `schemastery 3.18.4`）——官方把 caret 收紧为 tilde，单独升 Cordis 会 peer 冲突，故必须同批升。官方变化面 13 条逐项裁定为「0 处需改代码」（spill 默认值 `maxInlineBytes`→`maxInlineTokens`、`ToolDefinition.projectContent` 新扩展点、`ctx.pluginRegistryProbe` 新服务、`maxConsecutiveWakes` 缺省语义、模型协议改落 `cordis.patch.yml` 等）。`check:versions` PASS 539 条锁 alpha.2 / Cordis 4.0.4 only；`typecheck`/`build` 退出码 0；单测 127/127；7 项探针门禁全绿（`probe:theme` 观测到官方主题词表由 361 → **367** 个 `--dsw-*` 名字，仓库 887 条引用全部落在新词表内）。**线上 `dsh.10ge.cn` 未动（仍为 0.1.7-alpha.1），未提交、未推送**；按用户裁决本批改动与 alpha.1 批次合并提交。
+
+2026-09-25 更新（二）：experts α.8→**α.9**（Unreleased）——P8-6 复验遗留的 4 个 `readiness=broken` 专家的处置（用户 2026-09-25 裁决「泛化过期修订重编译」）。0.1.7 换主后，0.1.6 时代发布的修订在新预设路径下没有 `preset.json`，`readExpertPreset` 只能显式报错；其中 3 个是**内置默认专家**，其 `publish()` 被 `default-immutable` 拒绝，原先「提示用户重新发布」的处置对它们不可执行。本版把既有的团队专用 `ensureCurrentExecutionRevision` 泛化为**所有** `compilerVersion` 过期的已发布修订，并新增 `ensureCompilerCurrent()` 在启动（`[Service.init]`）与列表/详情读取前扫描重编译：旧修订行按 ADR-0010 保持只读不改写，结果落为派生修订并前移 `publishedRevisionRef`，逐专家 best-effort、失败只审计不阻断。`readExpertPreset` 仍是永不重编译的读取器，`experts/preset-broken` 语义收窄为「迁移未成功」。同批 1 个可发布的个人专家（大客户经营顾问）按设计流程重新发布，不依赖本自愈路径。详见 [STATUS](STATUS.md) 2026-09-25（续二）与 [0.1.7 升级证据](evidence/dsh-0.1.7-alpha.1-upgrade.md)。公开 prerelease 仍以上次发行回执为准，本版待下次发行携带。
+
+2026-09-25 更新：DSH 基线 `0.1.6-alpha.2` → `0.1.7-alpha.1` 收口（独立升级专项，证据见 [dsh-0.1.7-alpha.1-upgrade](evidence/dsh-0.1.7-alpha.1-upgrade.md)）。按用户 2026-09-25 裁决本批**不整体 bump**：实际改码的 experts、office、projects、library、skills、assistant、workbench、ui、bundle 九个模块的当前版本号本就高于其公开发行版本，0.1.7 适配**折叠进各自现有未发布增量**（CHANGELOG 已加条目，不新增版本号）。仅三个模块**重定版**：activity α.4→**α.5**、connectors α.2→**α.3**、identity-local α.5→**α.6**——它们的原版本号已是公开发行制品（`v0.1.0-alpha.7` 批次 / 2026-09-15 专家发行附件），沿用会把不同内容挂在同一版本号上（本项目按「撞号必须重新定版」处理）。线上 `dsh.10ge.cn` 已于 2026-09-24 切到 `0.1.7-alpha.1`；该次部署的 12 个 tgz 曾是这三个模块重定版**之前**的构建（源码相同、仅版本字段不同），**已于 2026-09-25 重打包并重新部署**（不再换树，只改 3 个 `file:` 指针 + `pnpm install` + 重启；线上现为 activity α.5 / connectors α.3 / identity-local α.6，`dist/` 与重定版前逐字节相同）。`ui` 与 `contracts` 不属可安装模块，随载体包内联。
 
 2026-09-18 更新：bundle、experts、skills、office、activity、projects、library 跟随 DSH 0.1.6-alpha.2 升级 bump；contracts 补 bump α.9（补记 2026-09-17 项目任务上下文只读契约 `ProjectTaskContext`/`taskContext`，属兼容补全）；experts/office/activity 同时携带其未发布批次；公开发行仍以上次 prerelease 为准。
 

@@ -298,7 +298,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
   );
   await writeFile(
     join(fixture, "client.js"),
-    `window.__ModuleLoader__.load({id:'workdsh-office-live-probe',factory:function(){return {inject:['sidebarRight','sessions','documentPreviews','sidebarRightTabs'],apply:function(ctx){ctx.effect(function(){window.officeLiveProbe={uninstallOffice:async function(){let found=false;for(const [plugin,runtime] of ctx.registry.entries()){if(runtime.name==='workdsh-office-client'){await Promise.all([...runtime.fibers].map(f=>f.dispose()));found=true;break}}if(!found)throw Error('Office Client not found');return {preview:ctx.documentPreviews.getSnapshot().some(d=>d.id==='workdsh-office'),tab:!!ctx.sidebarRightTabs.get('workdsh-office-live')}},open:async function(sid){await ctx.sessions.refresh();ctx.sessions.open(sid)},file:function(sid,address){ctx.sidebarRight.openResourceIn(sid,address)},collapse:function(){if(ctx.sidebarRight.isExpanded())ctx.sidebarRight.toggleExpanded()},tab:function(sid,id){ctx.sidebarRight.openTabIn(sid,'workdsh-office-live',{params:{documentId:id}})}};return function(){delete window.officeLiveProbe}})}}}});`,
+    `window.__ModuleLoader__.load({id:'workdsh-office-live-probe',factory:function(){return {inject:['sidebarRight','sessions','uiWorkspace','documentPreviews','sidebarRightTabs'],apply:function(ctx){ctx.effect(function(){window.officeLiveProbe={uninstallOffice:async function(){let found=false;for(const [plugin,runtime] of ctx.registry.entries()){if(runtime.name==='workdsh-office-client'){await Promise.all([...runtime.fibers].map(f=>f.dispose()));found=true;break}}if(!found)throw Error('Office Client not found');return {preview:ctx.documentPreviews.getSnapshot().some(d=>d.id==='workdsh-office'),tab:!!ctx.sidebarRightTabs.get('workdsh-office-live')}},open:async function(sid){await ctx.sessions.refresh();ctx.uiWorkspace.openSession(sid)},file:function(sid,address){ctx.sidebarRight.openResourceIn(sid,address)},collapse:function(){if(ctx.sidebarRight.isExpanded())ctx.sidebarRight.toggleExpanded()},tab:function(sid,id){ctx.sidebarRight.openTabIn(sid,'workdsh-office-live',{params:{documentId:id}})}};return function(){delete window.officeLiveProbe}})}}}});`,
   );
   await command(pnpm, ["pack", "--pack-destination", artifacts], fixture);
   tarballs.push(join(artifacts, "workdsh-office-live-probe-0.0.0.tgz"));
@@ -938,7 +938,21 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
   await writeFile(join(workspace,fileDelivery.path), await readFile(join(artifacts,"live-document.docx")));
   const {fileAddressFor} = createRequire(officeRequire.resolve("@deepseek-ai/dsh-client-ui-sidebar-right"))("@deepseek-ai/dsh-util-workspace-path");
   const fileAddress = fileAddressFor(sid,workspace,fileDelivery.path);
+  // P4a contract: the official builtin DOCX preview owns the default view, so every
+  // case that opens a workspace DOCX through the official right sidebar must switch
+  // to the WorkDSH editor through the viewer menu before asserting its region.
+  // Inactive document tabs stay mounted, so a stale WorkDSH tab would not satisfy
+  // toBeVisible and the assertion has to follow the active tab.
+  const switchToWorkdshEditor = async () => {
+    const clickOrDom = async locator => {
+      const failed = await locator.click({timeout:15000}).then(() => false).catch(() => true);
+      if (failed) await locator.evaluate(el => el.click()).catch(() => {});
+    };
+    await clickOrDom(page.locator('[data-document-viewer-menu]:visible').first());
+    await clickOrDom(page.getByText('Office 浏览器编辑', {exact:true}).first());
+  };
   await page.evaluate(({sid,address}) => window.officeLiveProbe.file(sid,address), {sid,address:fileAddress});
+  await switchToWorkdshEditor();
   const fileEditor = page.getByRole("region", {name:"DOCX文档编辑", exact:true});
   await expect(fileEditor.getByLabel("文档编辑工具")).toBeVisible({timeout:20000});
   assert.ok((await fileEditor.getByLabel("文档编辑工具").boundingBox()).height <= 45,"Imported DOCX toolbar remains one compact row");
@@ -973,6 +987,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
   await page.reload();
   await page.getByRole("button", {name:"Configure later", exact:true}).click({timeout:4000}).catch(() => {});
   await page.evaluate(({sid,address}) => window.officeLiveProbe.file(sid,address), {sid,address:fileAddress});
+  await switchToWorkdshEditor();
   await expect(page.getByRole("region", {name:"DOCX文档编辑"}).getByLabel("文档正文")).toContainText("DOCX导入后直接编辑",{timeout:20000});
   await page.screenshot({path:join(artifacts,"docx-import-toolbar.png")});
   pass("DOCX file preview opens the same Tiptap Toolbar; human edits persist and export; original bytes and original preview remain available");
@@ -1082,6 +1097,7 @@ export function apply(ctx){ctx.effect(()=>ctx.connection.fetch.register({path:'/
     await expect(page.getByTestId("office-deliverables")).toHaveCount(0);
     await page.screenshot({ path: join(artifacts, "native-deliverable.png") });
     await page.getByRole("button", {name: `Preview ${delivery.path} in sidebar`, exact: true}).click();
+    await switchToWorkdshEditor();
     await expect(page.getByRole("region",{name:"DOCX文档编辑"}).getByLabel("文档编辑工具")).toBeVisible({timeout:20000});
     await page.getByRole("button",{name:"查看原始排版",exact:true}).click();
     const exportedFrame = page.frameLocator('iframe[title="Office 文档编辑"]');

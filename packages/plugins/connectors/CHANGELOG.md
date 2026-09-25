@@ -1,3 +1,10 @@
+# 0.1.0-alpha.3 — 2026-09-25
+
+- 适配 DeepSeek Harness 0.1.7-alpha.1：官方依赖精确锁定同步至 `0.1.7-alpha.1`（含 `@deepseek-ai/dsh-mcp-client`）；随包示例与远程连接器仍复用同一个官方 MCP Client，连接、工具发现与资源读取行为未变。
+- 客户端样式改用 0.1.7 语义 token 词表：`ConnectorPicker` 与设置面板清除 `var(--dsw-*)` 硬编码 fallback，词表外旧名字替换为官方 `--dsw-alias-*`。
+- 版本号重定：`0.1.0-alpha.2` 已作为公开发行制品发布（`v0.1.0-alpha.7` 批次），本批代码变化按本项目「撞号必须重新定版」规则递增为 `alpha.3`。
+- 退出证据：`probe:connectors`（工具/资源/禁用还原/多实例/会话选择隔离）与 `probe:theme` 均 PASS。
+
 # 0.1.0-alpha.2 — Unreleased（2026-09-20）
 
 - 按用户决定删除能力中心「行业应用」标签入口（行业应用暂时用不到，暂无领域实现）；能力页工具栏保留专家/技能/连接器三个标签。

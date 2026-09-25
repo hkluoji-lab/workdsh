@@ -6,8 +6,15 @@ import { Icon } from 'workdsh-ui';
 import type { ProjectTaskContext } from 'workdsh-contracts/projects';
 import type { ProjectClient } from '../../management.js';
 
-/** Visually matches the official title-adjacent chip (22px, 6px radius, 12px text). */
-const chipCss = '.wd-pl-chip{display:inline-flex;align-items:center;gap:4px;height:22px;max-width:180px;padding:0 8px 0 6px;border:0;border-radius:6px;background:var(--dsw-alias-fill-tsp-secondary);color:var(--dsw-alias-label-secondary);font-size:12px;line-height:22px;cursor:pointer;overflow:hidden}'
+/**
+ * Visually matches the official title-adjacent chip (22px, 6px radius, 12px text).
+ * That chip paints its background with the custom property
+ * `--dsw-alias-fill-tsp-secondary`, a name the theme package never defines in 0.1.6
+ * or 0.1.7 (verified across the whole lockfile), so the official label renders
+ * transparent. Stay transparent at rest instead of inventing a fill the
+ * neighbouring official chip does not have; hover supplies the affordance.
+ */
+const chipCss = '.wd-pl-chip{display:inline-flex;align-items:center;gap:4px;height:22px;max-width:180px;padding:0 8px 0 6px;border:0;border-radius:6px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:22px;cursor:pointer;overflow:hidden}'
   + '.wd-pl-chip:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}'
   + '.wd-pl-chip svg{flex:none;opacity:.7}'
   + '.wd-pl-chip-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}';

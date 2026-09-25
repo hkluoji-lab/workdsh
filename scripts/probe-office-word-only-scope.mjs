@@ -1,8 +1,10 @@
 // Office release-scope probe: builds both the normal and the --word-only Client
 // bundle and loads each one against a mock Cordis context. The word-only artifact
 // must register the DOCX preview/tab only (dist/release-scope.json: ["docx"]);
-// the normal artifact must additionally register the CSV preview/tab. The normal
-// build runs last so dist/ ends in the standard state.
+// the normal artifact must additionally register the CSV preview/tab. Both
+// registrations declare priority "builtin" so the official native previews keep
+// the default viewer. The normal build runs last so dist/ ends in the standard
+// state.
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -62,7 +64,7 @@ async function smoke(label) {
     },
     documentPreviews: {
       register: definition => {
-        previews.push({ id: definition.id, extensions: [...definition.extensions], wrap: definition.wrap ?? false });
+        previews.push({ id: definition.id, extensions: [...definition.extensions], wrap: definition.wrap ?? false, priority: definition.priority ?? "extension" });
         return () => {};
       },
     },
@@ -125,6 +127,9 @@ function verify(wordOnly, result) {
     else if (JSON.stringify(csvPreview.extensions) !== JSON.stringify(["csv"]) || csvPreview.wrap !== true) failures.push(`${result.label}: CSV preview definition drifted ${JSON.stringify(csvPreview)}`);
     if (!result.slots.includes("workdsh-office-csv")) failures.push(`${result.label}: CSV tab slot missing`);
   }
+  // Both registrations must yield the default viewer to the official builtin
+  // previews while staying reachable as candidates.
+  for (const row of [officePreview, csvPreview]) if (row && row.priority !== "builtin") failures.push(`${result.label}: ${row.id} declares priority ${row.priority}, so it would win the default viewer over the official preview`);
   return failures;
 }
 

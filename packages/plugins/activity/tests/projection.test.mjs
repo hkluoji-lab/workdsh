@@ -38,7 +38,7 @@ test('optional adapter errors isolate other adapters, cancellation and disposal 
 
 test('skill identity requires a successful native tool result',()=>{
  const call=e('tool/call',{name:'skill',callId:'s',arguments:'{"name":"writing"}'});
- const result=isError=>e('tool/result',{message:{source:{kind:'tool',callId:'s'},content:[{type:'tool-result',isError}]}});
+ const result=isError=>e('tool/result',{message:{role:'tool',toolCallId:'s',isError,content:[]}});
  assert.equal(projectActivity([e('turn/start'),call],true).skill,undefined);
  assert.equal(projectActivity([e('turn/start'),call,result(true)],true).skill,undefined);
  assert.equal(projectActivity([e('turn/start'),call,result(false)],true).skill,'writing');
@@ -46,7 +46,7 @@ test('skill identity requires a successful native tool result',()=>{
 test('confirmation pauses activity until the matching result arrives',()=>{
  const events=[e('turn/start'),e('tool/call',{name:'ask_user_question',callId:'q'})];
  assert.equal(projectActivity(events,true).phase,'waiting');
- assert.equal(projectActivity([...events,e('tool/result',{message:{source:{callId:'q'}}})],true).phase,'working');
+ assert.equal(projectActivity([...events,e('tool/result',{message:{role:'tool',toolCallId:'q',content:[]}})],true).phase,'working');
 });
 test('official Team view identifies the running expert and assigned task',()=>{
  const view={members:[
