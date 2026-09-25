@@ -1,3 +1,48 @@
+## 2026-09-25（续二十二）：线上「500 错误」排查与启动次序门禁修复（**已修复并复验**）
+
+按用户 2026-09-25 指令「请检查并修复线上 500 错误」执行。**排查结论：线上不存在可复现的业务 500**；唯一真实缺陷是**启动次序竞态**——它产出的是 502（不是 500），表现与用户描述一致（「刚重启/换版后首次访问偶发、刷新即恢复」，用户已确认）。已修复并复验。
+
+### 一、只读排查（未改动任何线上对象）
+
+| 探测面 | 结果 |
+| --- | --- |
+| 全量日志（`docker logs dsh`，含 Caddy JSON 行） | 5xx 仅 **1 条**：`ts=1790298311.53` `msg="dial tcp 127.0.0.1:3083: connect: connection refused"` `request=POST /api/workdsh-office` `status=502` `err_trace=reverseproxy.statusError`。Referer = `https://dsh.10ge.cn/?workdsh-view=projects`（**真实浏览器**），时间正落在换树后 6 秒 |
+| 应用层错误关键词 | `Internal Server Error` / `"statusCode":500` / `HTTP 500` / `unhandled` / `TypeError` / `stack` / `exit during startup` **全 0** |
+| 7 个业务 API 前缀（skills / experts / library / connectors / projects / assistant / office） | 带会话复测全 200；`POST /api/workdsh-office` 6/6 = 200（非稳定复现） |
+| 首页 11 个引用资源 | 全 200。此前探测出的 3 条 `/plugins/??…` 404 经复核为**探针假阳性**（未做 HTML 实体解码，`&amp;` 被原样请求）；解码后均 200 |
+| 真实浏览器全旅程（Chromium） | 首页加载 + 4 个导航面板（项目/助理/专家·技能·连接器/资料库）+ 3 个会话打开 + 新建任务 + 项目视图：**零 4xx/5xx、零 pageerror、零 console error** |
+| 会话真开验证 | 成功（URL → `?workdsh-view=conversation`，编辑器与模型目录加载正常），期间 8 个 API 全 200（含 `POST /api/workdsh-office` = 200） |
+| 门禁/其他面 | `/` = 302 → `/portal`、`/portal` 200、`/login` 200、`/api/portal/auth` 401/204、`/survey` 200、`/plugins/events` 200（SSE） |
+| 容器与门禁 | `running/healthy`、`Restarts=0`、`OOMKilled=false`、属主门禁 `非 1000 = 0`、宿主磁盘 40% |
+| 死路径判定 | `/dsh-deployment.js`、`/dsh-market/status`、`/modlens/config` 经会话访问为 404，但**前端 `dist/assets/*` 未引用**任一者（grep 命中 0），属无人请求的历史路径，**非缺陷**；派生 Caddyfile 与镜像官方原文 diff 只含**故意**的门禁改造，无陈旧路由 |
+
+> 说明：`docker logs` 中 Caddy **只记 error 级**，上游真实返回的 500 不会落盘（启动期那条 502 之所以可见，是因为它是 Caddy 自身的 `reverseproxy.statusError`）。因此「日志无 500」不能单独作为结论，本次结论同时依赖上面的全路径带会话探测与真实浏览器巡检。
+
+### 二、根因
+
+`docker-entrypoint.sh` 中门户（3083）、sse-keepalive（3081）、survey（3082）与 Caddy **并行后台拉起**，Caddy 不等待后端就绪。Caddy 一旦绑定 8443 就开始对外服务，此刻受门禁路径（除 `/portal`、`/login`、`/logout`、`/api/portal/*`）的 `forward_auth` 探测 3083 得到 `connection refused`，Caddy 直接判为 **502**。dsh web（3080）不受影响——entrypoint 已在前面用 curl 等它就绪。既有「层 4 启动期重试」只覆盖 dsh 自身启动崩溃，**未覆盖这条 Caddy↔门户 的次序竞态**。
+
+### 三、修复
+
+在 `data/dsh/tmp/docker-entrypoint.sh` 的 `pids+=("$portal_pid")` 之后、`gosu caddy env \` 之前插入 `wait_for_port()` 与三行调用（`portal 3083 90` / `sse-keepalive 3081 30` / `survey 3082 30`）；探测用 `node -e` + `node:net`（容器无 `ss`/`nc`/`pgrep`，node 一定在）；**超时非致命**，等不到只打 warning 再启动 Caddy，不让坏后端永久阻塞整站。
+
+- 固化脚本：`…/data/dsh/tmp/add-portguard-entrypoint.py <in> <out>`（与既有 `add-portal-*.py` 同约定，带断言 + `bash -n`）：从改前备份重放**逐字节相同**，对现役文件复跑输出 `UNCHANGED`（幂等）。
+- 改前备份：`docker-entrypoint.sh.bak.pre-portguard`（5521 bytes / md5 `08e0a3f6fe7e68507781278a096e490a`，已 `chmod 755` 可直接回退覆盖）。
+- 生效方式：`docker compose up -d --force-recreate`（**只改 bind mount 文件内容不会自动重建**）。容器 20s 内 `healthy`，`Restarts=0`。
+- 文档同步：运维手册 `dsh-10ge-ops` 新增「层 5 启动次序门禁」；[portal/README.md](file:///Users/apple/Documents/AI-luoji/workdsh/packages/portal/README.md) 第 3 节补该增量、第 4 节补脚本行、回滚节补备份锚点、已知限制补残留窗口。
+
+### 四、复验（可复现）
+
+- **启动窗口打压**（决定性）：`--force-recreate` 全程以 5 req·s⁻¹ 直连 Caddy（`curl -sk --resolve dsh.10ge.cn:3080:127.0.0.1 'https://dsh.10ge.cn:3080/?workdsh-view=projects'`）打受门禁路径 150s → **661×302 + 25×000 + 0×5xx**（`000` = Caddy 尚未绑定，connection refused，非 502）。启动日志 5xx 计数 **0**。
+- **次序证据**：`portal is listening on 127.0.0.1:3083 (after 1s).` / `sse-keepalive …3081 (after 0s).` / `survey …3082 (after 0s).` 均出现在 `DeepSeek Harness is available at https://…:8443` **之前**；容器内 3080/3081/3082/3083 四服务 `LISTEN`。
+- **门禁面**：`/` 302、`/portal` 200、`/login` 200、`/api/portal/auth` 401；属主门禁 `0`；`restarts=0`、`healthy`。
+- **回归**：浏览器全旅程重跑一遍，仍 `bad=0 / pageErrors=0 / consoleErrors=0`。
+
+### 五、边界与未执行
+
+- **残留窗口（已知，非本次引入）**：门户在**运行中**崩溃后，其看护循环 3 秒重启期间的请求仍会 502。本次只关闭了**启动期**窗口；运行期窗口若需消除，应改造门户看护（例如先起新实例再停旧实例），需单独裁决。
+- **未执行**：未捕获取用户侧的原始报错截图/响应体（用户凭印象确认为「刚重启后首次访问偶发」，与根因一致）；未做长时间（>10 分钟）稳定性观察；未跑真实模型验收；本轮线上改动全在服务器侧，**未产生仓库代码变更**（`docker-entrypoint.sh` 属宿主派生文件，不入库），故无提交。
+
 ## 2026-09-25（续二十一）：线上 `dsh.10ge.cn` 切换到 `0.1.7-alpha.2`（**已上线，d3→d7 全绿**）
 
 按用户 2026-09-25 指令「执行上线部署」，把线上 `dsh.10ge.cn`（`luoji@192.168.11.205` 的 1Panel 应用 `deepseek-harness`，容器 `dsh`）从 `0.1.7-alpha.1` 切到 `0.1.7-alpha.2`（Cordis `4.0.4`）。沿用 alpha.1 批次 P8-5「换树」范式，因 alpha.2 把 caret 收紧为 tilde 且伴生包在 standalone 树与 profile 树两侧均有实装。**线上现役版本 = `0.1.7-alpha.2`。** 完整证据见 [DSH 0.1.7-alpha.2 升级证据](evidence/dsh-0.1.7-alpha.2-upgrade.md)「线上切换与复验」。

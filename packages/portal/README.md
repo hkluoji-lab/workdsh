@@ -309,21 +309,34 @@ pids+=("$portal_pid")
 
 `PORTAL_COOKIE_SECURE` 保持默认开启（线上经 Cloudflare 为 HTTPS），**不要**设成 `0`。
 
-### 4. 执行顺序（2026-09-23 已按此在线上执行一次，2026-09-24 按 α.2 再执行一次，下含实测坑）
+**启动次序门禁（2026-09-25 增量，α.2 线上出现过 502 后补）**：门户与 Caddy 是并行拉起的，Caddy 不等待后端就绪。Caddy 先绑定 8443 时，受门禁路径的 `forward_auth` 会拿到 `dial tcp 127.0.0.1:3083: connect: connection refused`，Caddy 直接判为 **502**——表现为「重启/换版后首次访问偶发失败，刷新即恢复」。因此在 `pids+=("$portal_pid")` 之后、`gosu caddy env \` 之前插入 `wait_for_port()` 与三行调用（探测用 `node -e` + `node:net`：容器无 `ss`/`nc`/`pgrep`，node 一定在）：
+
+```
+wait_for_port portal 3083 90      # 关键：门禁后端
+wait_for_port sse-keepalive 3081 30
+wait_for_port survey 3082 30
+```
+
+超时**非致命**——等不到也只打印 warning 再启动 Caddy，不让一个坏后端把整站永久阻塞。dsh web（3080）不受此竞态影响：entrypoint 已在前面用 curl 等它就绪。
+
+判据（可复现）：一边 `docker compose up -d --force-recreate`，一边以 200ms 间隔直连 Caddy 打压受门禁路径（`curl -sk --resolve dsh.10ge.cn:3080:127.0.0.1 'https://dsh.10ge.cn:3080/?workdsh-view=projects'`），全程只应出现 `302`（已就绪）与 `000`（Caddy 尚未绑定），**不得出现任何 5xx**。2026-09-25 实测 150s / 5 req·s⁻¹ 跨一次完整重建 = 661×302 + 25×000 + **0×5xx**，`docker logs` 5xx 计数 0。
+
+### 4. 执行顺序（2026-09-23 已按此在线上执行一次，2026-09-24 按 α.2 再执行一次，2026-09-25 补启动次序门禁，下含实测坑）
 
 **α.2 增量（缓存分档 + WebP 落位）**：`site/index.html`、`site/styles.css` 落位即生效，无需重启；`assets/` 只需新增 10 个 `-<width>.webp`，原 PNG 保留；**`src/server.mjs` 改动必须重启门户进程**才生效。重启方式为 `kill` 门户 `node` 进程，由 entrypoint 看护 `while true` 循环在 3 秒内拉起新代码——看护是子 shell，其 PID 不退，因此 `wait -n` 不触发整容器重启（实测 `RestartCount` 不变）。落位前先在容器内**备用端口**（如 3098）用同一份 `server.mjs` 预演一遍公开面，确认后再切换生产。静态页与素材可在切换前后任意时刻落位。
 
-宿主机 `…/data/dsh/tmp/` 下已有两个带断言的派生脚本，可直接复跑（幂等）：
+宿主机 `…/data/dsh/tmp/` 下已有三个带断言的派生脚本，可直接复跑（幂等）：
 
 | 脚本 | 作用 | 实测 |
 | --- | --- | --- |
 | `add-portal-caddy.py <in> <out>` | 加 2 个 snippet + 2 条 route + 3 处 `import portal_gate` | 1479 → 2554 bytes |
 | `add-portal-entrypoint.py <in> <out>` | 加口令保留行 + 门户启动块 + `wait -n` 追加 `portal_pid` | 4828 → 5521 bytes |
+| `add-portguard-entrypoint.py <in> <out>` | 在 Caddy 启动前加 `wait_for_port()` + 3 行调用 | 5317 → 6397 bytes（从改前备份重放逐字节相同；对现役文件复跑输出 `UNCHANGED`） |
 
 1. 备份 `Caddyfile`、`docker-entrypoint.sh` 与 `.env`（带时间戳后缀；`.env` 属 root，需 `sudo`）；
 2. 拷门户文件与素材，落地后 `md5sum` 与仓库逐个比对；
 3. 改 `.env` 凭据后**先本地预校验**再落盘：用户名须匹配 `^[A-Za-z0-9._-]+$`，口令长度须 `>= 12`（违反任一条容器会崩溃循环）；
-4. 依次跑两个派生脚本改 `docker-entrypoint.sh` 与 `Caddyfile`，再 `bash -n` 校验脚本；
+4. 依次跑三个派生脚本改 `docker-entrypoint.sh` 与 `Caddyfile`，再 `bash -n` 校验脚本；
 5. 语法校验（**两个前置环境变量缺一即失败**）：
 
    ```sh
@@ -357,13 +370,13 @@ docker compose up -d --force-recreate
 
 回滚后网站恢复为「匿名直达工作台」，`/portal`、`/login` 因门户进程不再被拉起而不可达。DSH 后端、Cloudflare 隧道与容器镜像始终不受影响。
 
-最近一次已执行的备份时间戳：**`20260922232318`**（`.env`、`Caddyfile`、`docker-entrypoint.sh` 各一份）。
+最近一次已执行的备份时间戳：**`20260922232318`**（`.env`、`Caddyfile`、`docker-entrypoint.sh` 各一份）；启动次序门禁批次的入口脚本备份为 `docker-entrypoint.sh.bak.pre-portguard`（2026-09-25，改前 5521 bytes / md5 `08e0a3f6fe7e68507781278a096e490a`，回退 = 覆盖回该文件 + `docker compose up -d --force-recreate`）。
 
 ### 已知限制
 
 - `forward_auth` 的失败跳转只带**路径**（`{http.request.uri.path}`），不带查询串：匿名访问 `/session/x?y=1` 登录后回到 `/session/x`。
 - 未登录访问 `/` 会经一次 302 落到 `/portal`（门户首页），与 ADR-0034「`/` 未登录时给门户首页」一致。
-- 门户服务不可用会让 `forward_auth` 失败、整站不可达（见 ADR-0034 失败边界），因此启动块带自愈循环，且必须先验证 `caddy validate`。
+- 门户服务不可用会让 `forward_auth` 失败、整站不可达（见 ADR-0034 失败边界），因此启动块带自愈循环，且必须先验证 `caddy validate`。**启动期**的窗口已由 2026-09-25 的启动次序门禁关闭（Caddy 等 3083 就绪再启动）；但门户**运行中**崩溃、其看护循环 3 秒内重启的那段窗口仍会返回 502——这是已知残留，需要时按同一判据复测。
 - 多副本部署下限流计数不共享；当前为单实例。限流按客户端 IP 分桶，且**只在有 `cf-connecting-ip`（Clients-Connecting-IP）时才是真实终端 IP**：线上经 Cloudflare 隧道时 Caddy 的 `X-Forwarded-For` 恒为隧道主机地址，门户优先取 `cf-connecting-ip`，缺失时才回退转发头与套接字地址。
 - 产品页路由已在 α.2 回填仓库（此前线上先于仓库存在，属未登记漂移）。回填时**未收录**当时线上 `tools/patch-products-route.sh`：它是一次性插入补丁，锚点已被 α.2 的函数签名改动取代，路由本身也已进 `src/server.mjs`，保留只会误导；产品页的日常更新走 `tools/publish-products.sh`（纯拷文件，不需要重启）。
 
