@@ -1,3 +1,39 @@
+## 2026-09-29（续二十九）：提交并推送 rc.2 基线随升与 automations 在建骨架（**两个提交已推 `fork/main`**）
+
+按用户裁决「两个提交分开推」执行提交与推送：提交 1 = rc.2 基线随升；提交 2 = automations 在建骨架（WIP，注明未完成）。历史清晰，automations 不混进版本切换提交。
+
+### 一、提交结果（实测）
+
+| 序 | 提交 | 内容 | 文件数 |
+| --- | --- | --- | --- |
+| 1 | `1fb8e18bb2` `chore: 仓库基线随升 0.1.7-rc.2（版本承载/peer caret/镜像重锚）` | 根/14 模块 `package.json` rc.2 承载 + 5 条新 override、8 插件 peer caret 75 条、rc.2 镜像 569 文件、rc.2 批 docs 与 8 脚本 1 测试、证据与台账；含 alpha.1 遗留计划补入 | 627 |
+| 2 | `c440cfe639` `feat(automations): 在建骨架 WIP——契约子路径/领域与调度/探针与设计包（未完成）` | contracts `./automations` 子路径（alpha.10→alpha.11）、automations 领域/调度骨架、探针与设计包、modules.json 登记 | 32 |
+
+推送：`e87c4a04ec..c440cfe639 main -> main`（`fork/main`，fast-forward，未 force）；远端 `refs/heads/main` = `c440cfe639`。
+
+### 二、跨批文件拆分（三个文件按内容归属拆分）
+
+| 文件 | rc.2 批（提交 1） | automations 批（提交 2） |
+| --- | --- | --- |
+| `package.json` | `devDependencies` + `pnpm.overrides` rc.2 改写 | 仅 `+ "probe:automations"` 一行 |
+| `docs/STATUS.md` | 续二十七/续二十八两节（行 1–98） | 续二十六/续二十五两节（行 99–174） |
+| `pnpm-lock.yaml` | rc.2 全量重解析（550 条） | automations importer 块（82 行） |
+
+拆分方式：写入 rc.2-only 中间版 → `git add` → 提交 1 → 还原 full 版 → 提交 2；提交前逐文件校验 staged 快照 `grep automations` 无非归属命中。
+
+### 三、门禁复跑（在提交 1 快照上实测）
+
+| 检查 | 结果 |
+| --- | --- |
+| `node scripts/check-plan.mjs` | PASS（31 modules; 50 documents） |
+| `node scripts/check-published-versions.mjs` | **PASS：550 条 DSH 锁定 `0.1.7-rc.2`；Cordis 4.0.4 only** |
+
+### 四、未执行与待裁决
+
+- **automations 未完成**：D12 在 `development-order.json` 仍 `todo`、`currentStep` 仍 D04；模块未接入 `build`/`typecheck` 的 filter；未声明 `dsh.bundle`、未提供可加载 exports。提交 2 已在信息中明确 WIP 口径。
+- **alpha.1 遗留计划归属**：用户裁决**并入提交 1 文档收口**；`docs/DSH-0.1.7-alpha.1-UPGRADE-PLAN.md`（此前从未入库、被 `.gitignore` 忽略，HEAD 版 STATUS 已引用 6 处）随提交 1 入库。
+- 本批未复跑 `test:integration`/`test:activity`/`test:planning`/`probe:*`；未与 `0.2.0-rc` 通道交叉验证；npm 发布面仍不做（保留制品形态）。
+
 ## 2026-09-28（续二十八）：仓库基线随升 `0.1.7-rc.2` + rc.2 镜像重锚 + 8 插件 peer caret（**仓库侧收敛，制品已出，npm 发布面裁决不做**）
 
 按用户 2026-09-28 追加三项裁决执行，收敛 [续二十七] 遗留的「仓库基线 alpha.2 / 线上 rc.2」分叉。证据见 [dsh-0.1.7-rc.2-upgrade](evidence/dsh-0.1.7-rc.2-upgrade.md)「八、仓库基线随升（第二阶段）」。
@@ -38,7 +74,7 @@
 - **8 插件重打包 tgz 已执行**（制品面）：`.artifacts/rc2-release/` 产出 8 个 `.tgz` + `SHA256SUMS` + `release-manifest.json`（`harness: "0.1.7-rc.2"`）；逐包解包核对 dsh peer 全为 caret、非 caret 计数 0。**本批未做隔离 Profile 安装冷启动复验**（沿用各模块既有安装证据）。
 - 本批**不 bump 任何模块**（仓库侧 0 行业务代码）；已记入 [MODULE-VERSIONS](MODULE-VERSIONS.md) 2026-09-28 条目。
 - `test:integration` / `test:activity` / `test:planning` / `probe:*` 本批未复跑；未与 `0.2.0-rc` 通道交叉验证。
-- **未提交、未推送**（待用户确认）；`docs/` 受 `.gitignore` 第 15 行影响，rc.2 镜像（569 文件）、证据文档与台账已按用户裁决 `git add -f docs` **暂存未提交**。
+- **已提交、已推送**（见 [续二十九]）：`docs/` 受 `.gitignore` 第 15 行影响，rc.2 镜像（569 文件）、证据文档与台账经 `git add -f` 入库，随提交 `1fb8e18bb2` 推送 `fork/main`。
 
 ## 2026-09-28（续二十七）：线上 `dsh.10ge.cn` 升级到 `0.1.7-rc.2`（**仅线上运行面；仓库基线随升见 [续二十八]**）
 
