@@ -264,7 +264,7 @@
     "title": "自动化",
     "phase": "P2",
     "task": "P2-03",
-    "status": "planned",
+    "status": "in_progress",
     "directories": [
       "src/domain",
       "src/services",
@@ -274,7 +274,9 @@
       "src/client/components",
       "src/harness",
       "tests"
-    ]
+    ],
+    "moduleVersion": "0.1",
+    "acceptanceNote": "开发顺序步骤 D12 仍为 todo（依赖 D11，D11 依赖 D10），与 D05/D06/D07/D16「模块已实现、步骤未验收」同一口径；模块实现不等于步骤签收。设计与官方能力复用记录见 docs/design/automations/README.md，底座探针证据见 docs/evidence/automations-bases-probe.md，验收矩阵见 docs/design/automations/ACCEPTANCE.md。"
   },
   {
     "path": "packages/plugins/identity",

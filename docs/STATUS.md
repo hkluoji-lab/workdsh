@@ -96,6 +96,83 @@ https://dsh.10ge.cn/ → 302
 - **47.6GB core 未清理**：磁盘 `/dev/nvme0n1p2` 457G / 已用 217G / 可用 217G(50%)；处置需用户同意。
 - 未与 `0.2.0-rc` 通道交叉验证；未跑仓库侧 `typecheck`/`build`/`test:*`/`probe:*`（仓库依赖面未改）；未跑浏览器面 Playwright（仅 HTTP 面与只读 API）；`projects_state_sha256` 基线无值可比（跳过比对，不等于已证明未变）。
 
+## 2026-09-25（续二十六）：定时任务底座探针 P-AU-1～P-AU-4 执行完毕（**探针证据，未开工，未改排期**）
+
+按用户裁决「先补四项探针」，执行 [设计包](design/automations/ACCEPTANCE.md) 第 3 节登记的四个待验证假设。
+
+### 一、执行方式与产物
+
+| 项 | 内容 |
+| --- | --- |
+| 命令 | `corepack pnpm probe:automations`（= `node scripts/probe-automation-bases.mjs`，新增脚本与 package.json 脚本项） |
+| 解析基准 | 从已安装的 `.test-runtime/preview/profiles/preview` 解析官方包，使所有插件共用同一 cordis 模块实例，与产品组合一致 |
+| 证据 | [evidence/automations-bases-probe.md](evidence/automations-bases-probe.md)；原始 JSON 落 `.artifacts/automations-bases-probe.json`（不入库） |
+| 回填 | [复用记录](design/automations/README.md) 六字段「证据与差异」、[ACCEPTANCE](design/automations/ACCEPTANCE.md) 第 3/4/5 节 |
+
+### 二、四项结论
+
+| 探针 | 结论 |
+| --- | --- |
+| P-AU-1 定时唤醒 | 通过。`preview` 恰好组合一条 `@deepseek-ai/cordis-plugin-timer@1.1.6`（`id: timer`）；`ctx.timer`/`interval`/`setInterval` 在声明 `inject: ['timer']` 的插件内可用；显式 disposer 与 fiber 撤销都停表，活动 `Timeout` 句柄无残留 |
+| P-AU-2 Webhook | 部分通过。`preview` **未组合** `@deepseek-ai/dsh-webhook@0.1.7-alpha.2`；补齐六个 `inject` 后 `ctx.webhookRuntime` 的 `register`/`dispatch` 可用，`dispatch` 为 fire-and-forget（20ms 后回调仍未结算），**同一 `deliveryId` 连续投递会调用规则两次**（运行时不去重）；`receivedAt: -1` 同步抛错；disposer 生效后规则不再收到投递 |
+| P-AU-3 单调度所有者 | 通过（原语层）。`ctx.jobs` 为进程内注册表（新进程为空，无跨进程运行表）；`@deepseek-ai/node-addon-system/flock` 的 `tryLockExclusive` 排他可用、争用报 `EAGAIN`、持有者被 `SIGKILL` 后父进程即可取得；官方 `dsh-session-persistence-jsonl` 对每个 Session 用同一 flock 锁 `session.lock`，争用映射 `SessionAlreadyOwnedError` 且**刻意无过期** |
+| P-AU-4 无人值守 Session | 通过（创建与审批）。隔离 home 的 `--profile headless --json` 创建并落盘真实 Session（`session.v4.jsonl.zstd` 首行 `type: session`、`cwd` = 启动目录，同目录含 `session.lock`），无浏览器无用户参与，也**无假成功**（无凭据时停 `MISSING_CREDENTIAL`、exit 1）；审批 `ask`、沙箱 `workspace-write` 未被绕过。初始消息落盘未观察到（需真实模型凭据，未执行） |
+
+### 三、由证据确定的三处实现硬约束
+
+- 定时唤醒必须经 `inject: ['timer']` 取用并由 `ctx.effect()`/fiber 拥有，禁止裸 `setInterval`。
+- 调度所有者走 flock 排他（无过期、进程死亡即释放），因此「租约过期重领」不成立：去重与错过合并必须由持久 occurrence 承担，不能只靠租约。
+- 每次触发的权限 preset 与沙箱模式显式固定；无人应答的 `ask` 不能当作放行依据。
+
+### 四、边界与未执行
+
+- 探针只覆盖官方底座能力，**未验证 automations 自身的调度、去重、恢复与页面**；仍未编写任何业务代码。
+- 未改动 [PLAN.md](PLAN.md)、[development-order.json](development-order.json) 与 D12 依赖；D12 仍 `todo`，`currentStep` 仍为 D04；`packages/plugins/automations` 仍只有 README 与占位。
+- 未修改 [ACCEPTANCE.md](ACCEPTANCE.md) 与 `acceptance.json`；未 bump 模块版本；未发布制品；线上未动。
+- 未执行：真实模型凭据下的初始消息落盘复验、真实双 Host 进程的所有者冲突端到端验证、webhook 路由在独立 WebServer 的挂载验签（首期范围外）。
+
+## 2026-09-25（续二十五）：定时任务设计包落盘（**设计文档，未开工，未改排期**）
+
+按用户报障「网站还有定时任务功能无法使用」执行调研与规划，并按用户裁决「先落盘设计文档」交付。
+
+### 一、定位结论：不是故障，是尚未实现
+
+| 事实 | 证据 |
+| --- | --- |
+| 侧栏「定时任务」是工作台登记的待开放占位入口 | `id: workdsh-automation`、标签追加「（待开放）」、配对面板只说明未实现原因 |
+| 业务模块只有骨架 | `packages/plugins/automations` 除 README 与 `.gitkeep` 外无实现；[modules.json](modules.json) 为 phase P2 / task P2-03 / status `planned` |
+| 台账未推进 | [development-order.json](development-order.json) D12 `dependsOn ["D11"]`、status `todo`、无 evidence；`currentStep` 仍为 D04 |
+| 契约未导出 | `packages/contracts` 未导出 automations 子路径；[CONTRACTS.md](CONTRACTS.md) 的 automations 行是意图级草案 |
+| 与官方能力的关系 | 官方 Schedule 无 cron、仅 `session-local`；`ctx.jobs` 是进程内活跃表；`ctx.webhookRuntime` 是 fire-and-forget，三者都不是工作台级调度器 |
+
+### 二、落盘产物
+
+在 `docs/design/automations/` 新建设计包（此前该目录**不存在**）：
+
+| 文件 | 内容 |
+| --- | --- |
+| [README.md](design/automations/README.md) | 交接入口、交付范围、六字段官方能力复用记录、开发工具接手说明 |
+| [PRD.md](design/automations/PRD.md) | 用户目标、首期/后置/不做三档范围、AU-R-01～15 稳定需求编号、7 家市场对标与 7 条共识、成功指标、排期事实 |
+| [UX.md](design/automations/UX.md) | 入口与所有权（实现后由 automations 自持 `main` 与同名 `sidebar.panellist` 行）、列表/详情/运行历史骨架、状态覆盖、明确不做的控件 |
+| [CONTRACTS.md](design/automations/CONTRACTS.md) | 四个领域对象字段、12 项接口语义、13 个稳定错误码、幂等与并发、与官方底座边界 |
+| [ACCEPTANCE.md](design/automations/ACCEPTANCE.md) | AU01～AU18 用例、对既有 A18/UI09/EC06/B01/B05/J10-P2 的复用、四项待补探针、前置产物清单 |
+
+同批把 [automations README](../packages/plugins/automations/README.md) 的「开发前阅读」接上设计包入口。
+
+### 三、方案要点
+
+- 首期只做**定时 cron + 立即运行 + 运行历史 + 未来运行预览**；Webhook 入站后置（官方 runtime 无队列/重试/去重/状态，且「重复交付可能创建重复 Session」）。
+- 每次触发 = 创建一次**真实官方 Session**；不新建执行器、不缓存会话执行状态。
+- 自持部分只有四个官方没有的概念：`AutomationRule`、`ScheduleOccurrence`、`AutomationRun`、`WebhookDelivery`，负责持久调度、幂等去重、同任务不重叠、错过合并、跨重启恢复与运行历史。
+- 与市场多数产品相比更严的三处（持久 occurrence、真实幂等键、跨重启恢复与错过合并）是既有仓库口径，不因对标下调。
+
+### 四、边界与未执行
+
+- 未编写任何 automations 业务代码；未执行任何探针；四项待验证假设（Cordis timer 是否加载、`ctx.webhookRuntime` 可用性与挂载、单 Host 调度所有者唯一性、无人在场的 Session 创建入口）全部保持未验证。
+- 未改动 [PLAN.md](PLAN.md)、[development-order.json](development-order.json) 与 D12 依赖；D12 仍 `todo`，`currentStep` 仍为 D04。
+- 未修改 [ACCEPTANCE.md](ACCEPTANCE.md) 与 `acceptance.json`；未 bump 任何模块版本；未发布制品；线上未动。
+- 排期上的可选解耦点（D12 的最小可用只需 D04+D10，专家团为增量而非前置）已在 [PRD 第 6 节](design/automations/PRD.md) 记录，需用户裁决后再改顺序。
+
 ## 2026-09-25（续二十四）：手机端「登录无反应 / 登录后仍回首页」根因修复 —— 边缘 http→https 升级（**已上线并复验，5/5 PASS**）
 
 按用户报障「手机端浏览器登录输入账号密码后无反应。有时显示登录中，之后还是首页状态。安卓自带/Chrome」执行。用户裁决修复位置为**源站 Caddy**。**根因：站点没有把 http 入口升级到 https，而会话 Cookie 带 `Secure`，浏览器在 http 页面上直接拒绝保存它——登录其实成功，会话却存不下来。** 已在边缘修好。

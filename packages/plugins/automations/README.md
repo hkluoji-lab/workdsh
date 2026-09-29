@@ -9,7 +9,9 @@
 
 ## 开发前阅读
 
-[规则](../../../AGENTS.md)、[状态](../../../docs/STATUS.md)、[契约](../../../docs/CONTRACTS.md)、[团队设计](../../../docs/TEAM-DESIGN.md)。
+设计包入口：[定时任务开发交接文档](../../../docs/design/automations/README.md)（PRD、UX、领域契约草案、验收矩阵与官方能力复用记录）。它定义首期只做定时 cron、立即运行与运行历史，Webhook 入站后置；本目录尚未开始实现，设计包不等于功能交付。
+
+[规则](../../../AGENTS.md)、[状态](../../../docs/STATUS.md)、[契约](../../../docs/CONTRACTS.md)、[团队设计](../../../docs/TEAM-DESIGN.md)、[UI 规范](../../../docs/UI-DESIGN.md)。
 
 所有业务操作遵守服务端主体和组织上下文；页面与 Agent 工具调用相同领域服务。可选功能接入通过公开契约与生命周期注入。
 

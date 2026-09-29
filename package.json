@@ -53,6 +53,7 @@
     "probe:mcp:resources": "node scripts/probe-mcp-resources.mjs",
     "probe:connectors": "node scripts/probe-connectors.mjs",
     "probe:headless": "node scripts/probe-headless-interface.mjs",
+    "probe:automations": "node scripts/probe-automation-bases.mjs",
     "probe:subagent:activation-limit": "node scripts/probe-subagent-activation-limit.mjs",
     "test:library": "corepack pnpm --filter workdsh-plugin-library test",
     "probe:library": "node scripts/probe-library-release.mjs",

@@ -1,3 +1,9 @@
+# 0.1.0-alpha.11 — 2026-09-25
+
+- 新增 `automations` 子路径契约（`workdsh-contracts/automations`）：自动化四对象（`AutomationRule`、`ScheduleOccurrence`、`AutomationRun`、`WebhookDelivery`）的类型、稳定错误码、作者输入 `AutomationRuleInput`、运行历史过滤 `AutomationRunQuery`，以及 `AutomationsService`（含只读 `AutomationCatalog`）。纯新增，既有导出与签名不变。
+- `AutomationCatalog.listRules` 接收 Host 解析的 `ActorContext` 而非裸 `organizationId`/`ownerPrincipalId`，避免调用方扩权；供项目等消费者读取本人可见规则摘要（UI09 数量与列表一致）。
+- 同时从根 barrel 导出。
+
 # 0.1.0-alpha.10 — 2026-09-24
 
 - 新增 `ExpertAuthoredDisplay` 与 `ExpertDisplayProjection`：专家作者信息的**只读展示投影**（显示名、职业、英文名、头像路径），由 Host 从授权文件的 front matter 派生，不回写文件。
