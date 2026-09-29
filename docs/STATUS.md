@@ -1,3 +1,71 @@
+## 2026-09-30（续三十）：0.2.x 适配首批——仓库基线随升 `0.2.0-rc.2` + 8 插件制品重出 + 派生镜像自建（**未部署，未发布**）
+
+按用户裁决「按方案 (b) 执行 0.2.x 适配，先重出插件制品并自建派生镜像」执行。三项前置裁决：① `@deepseek-ai/dsh-typert-generator` 保留 `0.2.0-rc.1` 单条例外；② 派生镜像 base = `1panel/deepseek-harness:0.1.7-rc.2`；③ 官方文档镜像 `docs/dsh-v0.2.0-rc.2/` 本批不落盘。证据见 [dsh-0.2.0-rc.2-upgrade](evidence/dsh-0.2.0-rc.2-upgrade.md)。
+
+### 一、渠道核对（实测）
+
+| 渠道 | 结果 |
+| --- | --- |
+| npm registry | `dist-tags` = `{alpha: 0.1.7-alpha.2, latest: 0.2.0-rc.2, next: 0.2.0-rc.2}`，`total_versions=29`，`modified=2026-09-29T14:01:52Z` |
+| 1Panel 应用商店 | 本地缓存 `/opt/1panel/resource/apps/remote/deepseek-harness/` **仅 `0.1.5-rc.1`**，无 0.1.7/0.2.0 |
+| Docker 镜像 | 服务器 `docker pull` 不可用作证据（Docker Hub 出口 TLS 全阻断，对照 `0.1.7-rc.2` 同样 timeout） |
+
+结论：0.2.x 在 1Panel 渠道缺失 ⇒ 派生镜像须自建。
+
+### 二、仓库基线随升（t1–t6，已完成）
+
+| 项 | 实测 |
+| --- | --- |
+| 变更文件 | 17 个 M（根 + 14 模块 `package.json`、`pnpm-lock.yaml`、`scripts/check-published-versions.mjs`），`git diff --stat` 4518 / 4339 |
+| `pnpm.overrides` | 289 条 = 281 dsh（280 rc.2 + 1 例外 typert-generator `0.2.0-rc.1`）+ 8 非 dsh |
+| `devDependencies` | 32 条（23 dsh，仅 typert-generator 例外） |
+| 12 manifest dsh peer | 96 条全为 caret `^0.2.0-rc.2`，nonCaret=0 |
+| `pnpm-lock.yaml` | `0.2.0-rc.2` 3284 行，`0.1.7-rc.2` 0 行 |
+| 门禁 | `check:versions` PASS（559 条锁定 0.2.0-rc.2；Cordis 4.0.4 only）；`check:plan` PASS（31 modules; 50 documents） |
+
+依赖闭包实测 `dsh@0.2.0-rc.2`：dependencies 82 = dsh 74（全精确 `0.2.0-rc.2`）+ cordis 家族 5 + 非 scope 3；`peerDependencies` 与 `peerDependenciesMeta` 均 undefined。伴生包 6 条不随 dsh 升版（cordis 4.0.4 / cordis-plugin-group 1.0.4 / include 1.0.9 / loader 1.0.5 / timer 1.1.6 / schemastery 3.18.4）。
+
+### 三、插件制品重出（t7）
+
+`.artifacts/0.2.0-rc.2-release/`：8 tgz + `release-manifest.json` + `SHA256SUMS`，`shasum -a 256 -c` **8/8 OK**。activity α.5 / assistant α.1 / connectors α.3 / experts α.9 / library α.3 / office α.8 / projects α.4 / skills α.32。`channel=local-artifact`，未发布 npm。
+
+### 四、派生镜像自建与 401 根因定界（t8）
+
+| 镜像 | 结果 |
+| --- | --- |
+| `1panel/deepseek-harness:0.2.0-rc.2-localbuild`（`d3638b69fdb5`） | 真实入口下 **崩溃**：`t=66s exited / Exit=1 / inner3080=401` |
+| `1panel/deepseek-harness:0.2.0-rc.2-localbuild-patched`（`2840936a34b5`） | **healthy / inner3080=200 / Exit=0 / Restarts=0**，caddy 正常起并获 local 证书 |
+
+**401 根因**：1Panel 在 base `0.1.7-rc.2` 镜像内自行打了 auth-proxy 补丁，位于 `dsh-client-connection/lib/index.js` 的 `isAuthenticated()` 首行：
+```js
+if (process.env.ONEPANEL_DSH_AUTH_PROXY === "1") return true;
+```
+`npm install -g @deepseek-ai/dsh@0.2.0-rc.2` 替换整棵 `node_modules` 后补丁丢失 ⇒ `127.0.0.1:3080` 恒 401 ⇒ entrypoint 的 `curl -fsS` 就绪探针 60s 超时 ⇒ `exit 1`。派生镜像第 3 步等价重放同一行补丁（含锚点唯一性与幂等校验）后恢复；补丁文件 md5 与 base 逐字一致 `69f8b3ef85e03eed4f0e8ac4295c61c5`。
+
+生产容器 `dsh | 1panel/deepseek-harness:0.1.5-rc.1 | Up 7 hours (healthy)` **全程未动**。
+
+### 五、附属同步（t9–t10）
+
+- 新增 [docs/evidence/dsh-0.2.0-rc.2-upgrade.md](evidence/dsh-0.2.0-rc.2-upgrade.md)（九节）。
+- `AGENTS.md`：基线行改 `0.2.0-rc.2` + 追加第 4 段证据链；Agent Teams 行改 `0.2.0-rc.2`；**第 41 行文档镜像路径保留 `0.1.7-rc.2` 并追加括注**（`docs/dsh-v0.2.0-rc.2/` 本批未落盘，改路径会 404）。
+- 7 脚本 10 处 + 6 README 9 处 + 1 测试 1 处硬编码版本同步为 `0.2.0-rc.2`。
+- **有意不改**：`packages/portal/README.md:136` 文档镜像路径、`tests/integration/project-installer.test.mjs:89` `fixture('0.1.5-rc.1')`（该用例语义为「拒绝不兼容 Harness」）、`scripts/desktop/*`。
+
+### 六、门禁复跑（本批快照实测）
+
+| 检查 | 结果 |
+| --- | --- |
+| `node scripts/check-published-versions.mjs` | PASS：559 条 DSH 锁定 `0.2.0-rc.2`；Cordis 4.0.4 only（EXIT=0） |
+| `node scripts/check-plan.mjs` | PASS：31 modules; 50 documents（EXIT=0） |
+
+### 七、未执行与边界
+
+- **线上升级部署、core 清理、npm 发布、git 提交/推送均未授权，未执行**。
+- 本批未复跑 `pnpm install --no-frozen-lockfile` / `typecheck` / `build`（沿用早前记录 EXIT 0）；未复跑 `test:integration` / `test:activity` / `test:planning` / `probe:*`。
+- `docs/dsh-v0.2.0-rc.2/` 官方文档镜像未落盘；相关路径暂留 `0.1.7-rc.2`，待镜像落盘后统一重锚。
+- 派生 patched 镜像仅在服务器本地构建与验证，未推送 registry、未接入任何 compose/1Panel 编排。
+- `development-order.json` 本批不推进步骤：`currentStep` 仍 `D04`，本批属基线适配而非业务步骤。
+
 ## 2026-09-29（续二十九）：提交并推送 rc.2 基线随升与 automations 在建骨架（**两个提交已推 `fork/main`**）
 
 按用户裁决「两个提交分开推」执行提交与推送：提交 1 = rc.2 基线随升；提交 2 = automations 在建骨架（WIP，注明未完成）。历史清晰，automations 不混进版本切换提交。
