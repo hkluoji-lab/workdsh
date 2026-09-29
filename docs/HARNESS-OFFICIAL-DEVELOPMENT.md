@@ -7,7 +7,7 @@
 ## 1. 依据优先级
 
 1. 锁定版本发布包的 `exports`、类型声明和运行探针。
-2. 仓库内版本化镜像 `docs/dsh-v0.1.7-alpha.2/`。
+2. 仓库内版本化镜像 `docs/dsh-v0.1.7-rc.2/`。
 3. 官方网站当前文档，用于发现新说明和交叉核对。
 
 网站与锁定包不一致时记录差异并做最小探针，不读取私有实现、不修改 Harness、不静默升级。官方文档中的上游 workspace 路径、聚合 tsconfig、源码生成器和内部发布门禁只适用于 Harness 仓库；WorkDSH 采用其公开包职责、依赖、生命周期和验证原则。
@@ -82,12 +82,12 @@
 
 ## 官方来源
 
-- [Web Client Slots（本地镜像）](dsh-v0.1.7-alpha.2/subsystems/slots.zh.md)
-- [右侧 Sidebar（本地镜像）](dsh-v0.1.7-alpha.2/subsystems/sidebar-right.zh.md)
-- [添加 workspace 包（本地镜像）](dsh-v0.1.7-alpha.2/cookbook/adding-a-package.zh.md)
-- [技能（本地镜像）](dsh-v0.1.7-alpha.2/subsystems/skills.zh.md)
-- [会话输入（本地镜像）](dsh-v0.1.7-alpha.2/subsystems/conversation.zh.md)
-- [Cordis 入门（本地镜像）](dsh-v0.1.7-alpha.2/cordis-primer.zh.md)
+- [Web Client Slots（本地镜像）](dsh-v0.1.7-rc.2/subsystems/slots.zh.md)
+- [右侧 Sidebar（本地镜像）](dsh-v0.1.7-rc.2/subsystems/sidebar-right.zh.md)
+- [添加 workspace 包（本地镜像）](dsh-v0.1.7-rc.2/cookbook/adding-a-package.zh.md)
+- [技能（本地镜像）](dsh-v0.1.7-rc.2/subsystems/skills.zh.md)
+- [会话输入（本地镜像）](dsh-v0.1.7-rc.2/subsystems/conversation.zh.md)
+- [Cordis 入门（本地镜像）](dsh-v0.1.7-rc.2/cordis-primer.zh.md)
 - [官方右侧 Sidebar](https://deepseek-harness.github.io/deepseek-harness/reference/subsystems/sidebar-right)
 - [官方添加 Package](https://deepseek-harness.github.io/deepseek-harness/reference/cookbook/adding-a-package)
 - [官方 Skills](https://deepseek-harness.github.io/deepseek-harness/reference/subsystems/skills)

@@ -1,3 +1,101 @@
+## 2026-09-28（续二十八）：仓库基线随升 `0.1.7-rc.2` + rc.2 镜像重锚 + 8 插件 peer caret（**仓库侧收敛，制品已出，npm 发布面裁决不做**）
+
+按用户 2026-09-28 追加三项裁决执行，收敛 [续二十七] 遗留的「仓库基线 alpha.2 / 线上 rc.2」分叉。证据见 [dsh-0.1.7-rc.2-upgrade](evidence/dsh-0.1.7-rc.2-upgrade.md)「八、仓库基线随升（第二阶段）」。
+
+用户三项裁决：
+1. **清理** = 删除服务器 47.6GB core dump（**已执行**）。
+2. **仓库基线随升** = 仓库版本承载文件全量切 `0.1.7-rc.2`（**已执行**）。
+3. **8 插件 peer 重指** = 8 个已部署插件 dsh peer 精确值 → **caret `^0.1.7-rc.2`**（**已执行**）。
+   附带裁决：制品范围 = **「改仓库并发布 npm」**（用户 2026-09-29 追加裁决：**暂不发布 npm，保留制品形态**）；文档镜像 = **同步下载 rc.2 镜像**。
+
+### 一、执行内容（本批实测）
+
+| 面 | 实测 |
+| --- | --- |
+| 版本承载文件 | 根 `package.json`（`devDependencies` 23 条 + `pnpm.overrides`）与 15 个模块 `package.json` 全量切 rc.2；**补入 rc.2 新增 5 包**精确 override（`dsh-client-shortcuts` / `dsh-client-ui-shortcuts` / `dsh-llm-deepseek-account` / `dsh-llm-deepseek-api-key` / `dsh-util-code-language`）——缺条会被 `check:versions` 第 ② 重断言拦截 |
+| `pnpm-lock.yaml` | 全量重解析 rc.2，alpha.2 残余 0；5 个新包 lock 条目落盘 |
+| 门禁脚本常量 | `check-published-versions.mjs` 期望值 `0.1.7-rc.2`；`install-preview.mjs` 等 8 脚本 + 1 集成测试同步 |
+| 基线文档 | `AGENTS.md` 第 2/37/41 行；第 2 条证据链修正为**三段完整链**（alpha.1 / alpha.2 / rc.2，retarget 曾误并丢 alpha.2 链接） |
+| rc.2 文档镜像 | 由 GitHub tag `dsh-v0.1.7-rc.2` 下载 `docs/` 子树 → `docs/dsh-v0.1.7-rc.2/`：**569 文件 / 24MB / 8 子目录**（无 `native/`）；vs alpha.2 delta = +7 新增 / 0 删除 / 61 内容变化 |
+| 引用重锚 | `dsh-v0.1.7-alpha.2` → `dsh-v0.1.7-rc.2` **24 文件 71 处**（design 20 / adr 4 / HARNESS-OFFICIAL-DEVELOPMENT 7 / research JSON `corpusRoot` 1 等）；校验 **73 个唯一引用（35 链接 + 38 纯文本）全命中，0 miss**。历史文件（`dsh-0.1.7-alpha.2-upgrade.md` 9 处、STATUS 历史节 2 处）**不改** |
+| 8 插件 peer | 精确 → caret `^0.1.7-rc.2`，计 **75 条**（activity 6 / assistant 7 / connectors 11 / experts 10 / library 16 / office 7 / projects 15 / skills 3）；四重校验（peer key 集合 / 非 dsh peer 值 / `devDependencies` 逐字 / JSON 合法）全通过。`automations`（未部署，15 精确）与 `workbench`/`bundle`（无 dsh peer）**不在裁决范围，未改** |
+| 伴生包 | rc.2 与 alpha.2 逐字相同（`cordis 4.0.4` / `group 1.0.4` / `include 1.0.9` / `loader 1.0.5` / `timer 1.1.6` / `schemastery 3.18.4`），**未动** |
+| core dump | 47.6GB（28.3GB + 19.3GB）已清理 |
+
+### 二、门禁复跑（全绿，数字为本轮实测）
+
+| 检查 | 结果 |
+| --- | --- |
+| `corepack pnpm install --no-frozen-lockfile` | EXIT 0（`Already up to date`，2.1s） |
+| `corepack pnpm check:versions` | **PASS：550 条 DSH 锁定 `0.1.7-rc.2`；Cordis 4.0.4 only** |
+| `node scripts/check-plan.mjs` | PASS（31 modules; 50 documents） |
+| `corepack pnpm typecheck` | 退出码 0（13 个 filter） |
+| `corepack pnpm build` | 退出码 0（13 个包） |
+
+### 三、未执行与待裁决
+
+- **npm 注册表发布：用户裁决不做（非阻塞遗留）**。发布探测三重受阻 —— `npm whoami` = `ENEEDAUTH`（本机未登录），`registry = https://registry.npmmirror.com/`，仓库无 `.npmrc`；`workdsh-plugin-activity` / `workdsh-plugin-experts` / `workdsh-bundle` 在 registry 上均 `E404`（从未发布；`npm view` 落 `registry.npmjs.org` 亦 404）；`npm publish --dry-run` 预检提示预发布必须带 `--tag`（`0.1.0-alpha.N`），正式发布须 `--tag alpha`。用户 2026-09-29 裁决**暂不发布 npm、保留制品形态**，与 `docs/RELEASES.md` 既有发布形态（GitHub alpha 附件 + tgz，从未发布 npm）一致。仓库面与制品面已执行，注册表发布**本批不做**。
+- **8 插件重打包 tgz 已执行**（制品面）：`.artifacts/rc2-release/` 产出 8 个 `.tgz` + `SHA256SUMS` + `release-manifest.json`（`harness: "0.1.7-rc.2"`）；逐包解包核对 dsh peer 全为 caret、非 caret 计数 0。**本批未做隔离 Profile 安装冷启动复验**（沿用各模块既有安装证据）。
+- 本批**不 bump 任何模块**（仓库侧 0 行业务代码）；已记入 [MODULE-VERSIONS](MODULE-VERSIONS.md) 2026-09-28 条目。
+- `test:integration` / `test:activity` / `test:planning` / `probe:*` 本批未复跑；未与 `0.2.0-rc` 通道交叉验证。
+- **未提交、未推送**（待用户确认）；`docs/` 受 `.gitignore` 第 15 行影响，rc.2 镜像（569 文件）、证据文档与台账已按用户裁决 `git add -f docs` **暂存未提交**。
+
+## 2026-09-28（续二十七）：线上 `dsh.10ge.cn` 升级到 `0.1.7-rc.2`（**仅线上运行面；仓库基线随升见 [续二十八]**）
+
+按用户指令「现在 deepseek harness 官网版本是多少，本网站 dsh.10ge.cn 是多少版本，能否同步升级最新版。请分析并执行」执行。证据见 [dsh-0.1.7-rc.2-upgrade](evidence/dsh-0.1.7-rc.2-upgrade.md)。
+
+### 一、版本定位与三项用户裁决
+
+| 项 | 事实 |
+| --- | --- |
+| 官方版本（npmmirror `dist-tags`） | `alpha 0.1.7-alpha.2` / **`latest 0.1.7-rc.2`** / `next 0.2.0-rc.1` |
+| 升级前线上 | CLI `0.1.7-alpha.2`，镜像 `1panel/deepseek-harness:0.1.5-rc.1` |
+| 用户裁决 1 目标版本 | **`0.1.7-rc.2`**（未取 `next` 的 `0.2.0-rc.1`，未选「暂不升级」） |
+| 用户裁决 2 镜像 tag | **保持 `0.1.5-rc.1` 不动** |
+| 用户裁决 3 8 插件 skip 修复路径 | **官方豁免 `allow-version`**（未选「重指 peer 并重打包」，未选「回退 alpha.2」） |
+
+**关键技术前提**：compose 中 `data/dsh/global-dsh/standalone:/usr/local/lib/node_modules/@deepseek-ai/dsh` 是 **bind mount，覆盖镜像内 dsh**。线上 dsh 版本由**宿主 standalone 树**决定，**镜像 tag 与实际版本解耦**——故「改 tag」无效，「换树」才生效，这正是裁决 2 成立的技术依据。
+
+### 二、执行链与门禁（P0 → Phase1 → Phase2 → 豁免 → Phase3）
+
+| 阶段 | 结果 | 关键证据 |
+| --- | --- | --- |
+| P0 基线 | `cli_version=0.1.7-alpha.2`、`restarts=0`、sessions 56 目录（v3 18 / v4 39 / locks 56）、storages 53074 文件 | `/home/luoji/dsh-backup-rc2-20260928224220/baseline.txt`；备份 profile-config-full 289MB / sessions 43MB / storages 6.6MB + `SHA256SUMS.txt` |
+| Phase 1 profile 重装 | `VERSION_DISTRIBUTION_OK`（`{"0.1.7-rc.2": 224}`）、`RETARGET_OK`（`FILE_DEPS=12`）、官方 4 包升 rc.2 | `-rc2-switch-20260928230332/`；旧树移开为 `node_modules.pre-rc2.20260928230332` |
+| Phase 2 换树 | `RESOLUTION_ALL_OK`（`resolved 82 packages (73 @deepseek-ai/dsh)`）、`TREE_VERSION_OK`（树内 `{"0.1.7-rc.2": 272}`）、`restarts=0`、health inner 200 / host3080 200 / domain 302、双补丁 `ALREADY_PATCHED`/`PATCHED` | `-rc2-swap-20260928230721/`；旧树 `standalone.rc2.old.20260928230721` |
+| 豁免步骤 | 8 条 `allow-version` 落盘，`exemptions_count=8`，**profile `package.json` sha256 未变** | `-rc2-exempt-20260928231621/`；`$P/compatibility.json` |
+| Phase 3 全量复验 | `PHASE3_RC2_OK`：cli/path 均 `0.1.7-rc.2`、running/healthy、`state_non1000=0`、启动错误模式 6 项全 0、`skip_count=0`、12 个 workdsh 包版本在线 | `/home/luoji/dsh-verify-rc2-20260928233021/phase3.log` |
+
+**8 插件 peer 门禁回归根因**：仓库 8 个插件 `peerDependencies` 对 dsh 使用**精确值** `"0.1.7-alpha.2"`，rc.2 不匹配 → 官方报 `Plugin X is incompatible with dsh 0.1.7-rc.2` 并 **skip 该 bundle**（caret `^0.1.7-alpha.2` 则 `rc.2 > alpha.2` 满足范围、正常加载）。按裁决 3 用官方 `dsh plugin --profile web allow-version … --dsh-version 0.1.7-rc.2 --accept-risk` 落盘 8 条到**独立文件** `$P/compatibility.json`（不动 profile `package.json`，不重打包、不发布 npm）。
+
+### 三、终态复核（本批收口时实测）
+
+```
+docker exec dsh dsh --version → 0.1.7-rc.2
+docker ps → 1panel/deepseek-harness:0.1.5-rc.1 | Up (healthy)
+docker inspect → Restarts=0 ExitCode=0 OOM=false StartedAt=2026-09-28T23:17:13Z
+docker logs dsh | grep -c "Segmentation fault" → 0
+https://dsh.10ge.cn/ → 302
+```
+
+### 四、边界归因
+
+| 项 | 归因 |
+| --- | --- |
+| `host_3080=400` | **预期**：宿主 3080 → 容器 8443 Caddy TLS，明文 HTTP 打 TLS 端口必返 400；域名面 302 正常 |
+| `skills/list=46` | 口径正确：37 文件系统 + 9 插件技能；非丢失 |
+| `library/list=0` | 正确隔离：`local-user` space 有 nodes=12/assets=8，`portal:18938845688` space 空 |
+| `sessions_files=114` | 统计口径差（文件数 vs 目录数）；`locks=56` 与基线一致 ⇒ 会话未增删 |
+| `experts/list=0`（早期） | **探针假阳性**：未带 `X-Portal-*` 头回落兜底身份。带真实门户 HMAC 头重测 `17 total=17`（`.artifacts/rc2-identity-probe.mjs`「无头=0 / 带头=17」，`bridge.accepted=154`）；已闭环 |
+| 2 个 core（28.3GB + 19.3GB，共 47.6GB） | **非 rc.2 回归**。当前容器 `Segmentation fault` 命中 **0**、`Restarts=0`；两 core 时间（23:07 / 23:17）正落在 Phase2 与豁免步骤的 `--force-recreate` 窗口内 ⇒ 容器更替期同型 SIGSEGV；对齐立档 [v8-gc-sigsegv-repro](evidence/v8-gc-sigsegv-repro.md) 与「续十八」口径（上游已知 V8 并发标记 GC SIGSEGV、负载相关、非阻断、自愈） |
+
+### 五、未执行与待裁决
+
+- **仓库基线未随升**：仓库 14 个版本承载 `package.json`、`pnpm.overrides` 279 条、`scripts/check-published-versions.mjs` 仍为 `0.1.7-alpha.2`，与线上 `rc.2` **存在版本分叉**；本批为线上运行面单独升级，未做仓库批次（AGENTS.md 第 2 条要求仓库基线变更单独记录兼容证据）。
+- **8 插件 peer 重指**：未执行（改走官方豁免）。`packages/plugins/*/package.json` peer 仍精确锁 alpha.2；重指为 rc.2 或 caret 并重打包/发布**需用户另行授权**。
+- **47.6GB core 未清理**：磁盘 `/dev/nvme0n1p2` 457G / 已用 217G / 可用 217G(50%)；处置需用户同意。
+- 未与 `0.2.0-rc` 通道交叉验证；未跑仓库侧 `typecheck`/`build`/`test:*`/`probe:*`（仓库依赖面未改）；未跑浏览器面 Playwright（仅 HTTP 面与只读 API）；`projects_state_sha256` 基线无值可比（跳过比对，不等于已证明未变）。
+
 ## 2026-09-25（续二十四）：手机端「登录无反应 / 登录后仍回首页」根因修复 —— 边缘 http→https 升级（**已上线并复验，5/5 PASS**）
 
 按用户报障「手机端浏览器登录输入账号密码后无反应。有时显示登录中，之后还是首页状态。安卓自带/Chrome」执行。用户裁决修复位置为**源站 Caddy**。**根因：站点没有把 http 入口升级到 https，而会话 Cookie 带 `Secure`，浏览器在 http 页面上直接拒绝保存它——登录其实成功，会话却存不下来。** 已在边缘修好。
