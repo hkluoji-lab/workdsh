@@ -36,7 +36,8 @@
   - **浏览器真人复测未执行** —— 未打开 `https://dsh.10ge.cn/` 截图确认弹窗消失与导航出现，仅以 HTTP RPC + 首页 HTML + 模块字节证据闭环。
   - **全局侧三包未打补丁** —— `dsh-config-editor` / `dsh-plugin-manager` / `dsh-hmr` 仍解析到未打补丁的全局 `dsh-app-boot` 副本，同源风险未根除。
   - **兜底脚本未纳入仓库** —— `workdsh-fix-profile-reload.sh` 属服务器本地改动，交付面未登记，镜像重建/树替换会丢失。
-- **未提交、未推送**：本轮仅有 `docs/STATUS.md` 与 `docs/evidence/dsh-0.2.0-rc.2-upgrade.md` 两处工作区变更。
+- **提交与推送**：`a293cdb64b`（父 `1e368c2faf`），2 文件 +215/-9。`git push fork main`（GitHub hkluoji-lab）**失败**，`Could not resolve host: github.com`；同批实测 `curl https://github.com/` = `(28) Resolving timed out`、`curl https://gitee.com/` = `200 t=1.49s`，判定为当前网络出口对 github.com 的 DNS/TLS 阻断，非仓库配置问题。改推可达远程 `mygitee main`（Gitee szluoji）**成功**：`e0a9ee95bd..a293cdb64b`，且推送前核对 `mygitee/main` 为本地 `main` 的祖先（0 ahead / 13 behind，纯快进，无分支线分叉）。
+- **未执行**：`fork/main` 推送（GitHub 网络阻断，待恢复后重试）；`origin` / `github` 推送（`pushurl = no_push`，本机无写权限）。
 
 ## 2026-09-30（续三十二）：core 清理已执行 + npm 发布因无凭据未完成
 
