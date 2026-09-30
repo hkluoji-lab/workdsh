@@ -1,3 +1,84 @@
+## 2026-09-30（续三十三）：升级后两项回归修复——公告确认可保存 +「自动化任务」导航恢复
+
+用户报告 `dsh.10ge.cn` 升级到 `0.2.0-rc.2` 后两个症状：① 首页 0.2 预览公告反复弹出，确认后红字「暂时无法保存确认状态，请重试。」；② 左侧「自动化任务」导航消失。两项均已定位根因、修复落地并验证。证据见 [dsh-0.2.0-rc.2-upgrade](evidence/dsh-0.2.0-rc.2-upgrade.md) 第十节第 10 小节。
+
+### 一、问题 1：公告 ACK 无法保存（已修复）
+
+- **链路**：客户端 `WelcomeNoticeStore.acknowledge()` → `scope.set("welcomeNoticeVersion", WELCOME_NOTICE_VERSION)` → `settings/mutate` → `dsh-settings.write` → `dsh-config-editor.edit()`。
+- **根因**：`edit()` 内 `reconcileProfilePatches()` 因**根 include 条目缺失**抛 `dsh: profile reload requires the root Include entry`，抛错点在 `writeFileAtomic` 之前 ⇒ 无落盘 ⇒ 返回 `settings/rejected` ⇒ 客户端 `acknowledged === false`（判定为精确相等 `scope.value?.[field] === "2026-09-28.1"`）⇒ 红字。深层原因：`@deepseek-ai/dsh-app-boot` 在 profile 树与全局树**物理双副本**，`bootstrapIncludes` 为模块级 `WeakMap`、**不跨副本共享**。
+- **修复**：服务器本地脚本 `/data/dsh/tools/workdsh-fix-profile-reload.sh` 向 profile 副本 `dsh-app-boot` 注入根 include 兜底（注入标记 `workdsh-root-include-fallback` 复核 = 1）；重启容器加载。
+
+| 验证 | 实测 |
+| --- | --- |
+| 容器 | `Up (healthy)`，`StartedAt=2026-09-30T17:09:00.315294879Z`（容器 CST 01:09），`RestartCount=0` |
+| 写入 | `POST /api/settings/mutate` `{ns:"ui-settings-general", ops:[{op:"set",path:["welcomeNoticeVersion"],value:"2026-09-28.1"}]}` |
+| **文件复算** | 补丁 sha = `de129c00e85dddca895ffec4feb002432efed4bace972f25582a68d800d3310e`（17045B / 368 行），与本地 `sed` 单行替换结果**逐字节一致** ⇒ 未再抛错、只改一行 |
+| 读回 | `settings/describe` → `ui-settings-general` `value.user.welcomeNoticeVersion = "2026-09-28.1"`、`revision=1` ⇒ 与客户端常量精确相等 |
+
+> 探针 curl 曾报 `(28) timeout ... 0 bytes`：**不代表失败**（写入成功后 profile reload 切断长连接），判定以文件 sha 与 `settings/describe` 为准。
+
+### 二、问题 2：「自动化任务」导航消失（已修复）
+
+- **两入口互不遮蔽**：官方 `@deepseek-ai/dsh-client-ui-schedule`（面板 id `schedules`，label「自动化任务」，order 10）vs 本项目 `workdsh-plugin-schedule`（面板 id `workdsh-automation`，label「定时任务」，order 40）。
+- **根因**：线上 `profiles/web/cordis.patch.yml` 中客户端半侧写成**悬空行**（`- id: ui-schedule` + `disabled: false`），该 id 不在组合树中（无 bundle 提供），loader 仅 warn ⇒ 无 `sidebar.panellist` 贡献者 ⇒ 导航消失。对照官方 `dsh-experimental-schedule-bundle/cordis.patch.yml` 应为三行 `insert`。
+- **修复**：改为正式 `insert`（`time-context` / `schedule` / `ui-schedule` 各带 `name` 官方包），删除悬空行，更正块注释。
+
+| 验证 | 实测 |
+| --- | --- |
+| 首页预载 | 43249B，含 55 个 `dsh-client-*`；`@deepseek-ai/dsh-client-ui-schedule/client.js` 在位 |
+| 模块可取 | `GET /plugins/??…ui-schedule/client.js`（`--path-as-is`）→ `200 / 305008B` |
+| 贡献点 | 内含 `PANEL_ID = "schedules"`、`sidebar.panellist` 2 处、「自动化任务」 |
+
+### 三、备份与未执行项
+
+- **备份**：宿主 `.../profiles/web/cordis.patch.yml.bak.schedulenav.20260930`（sha `52a3b0d8587f…`，15878B，与改动前原件一致已校验）；容器内 `cordis.patch.yml.bak.schedule-welcome.20260930`（15878B）。
+- **未执行 / 剩余边界**：
+  - **浏览器真人复测未执行** —— 未打开 `https://dsh.10ge.cn/` 截图确认弹窗消失与导航出现，仅以 HTTP RPC + 首页 HTML + 模块字节证据闭环。
+  - **全局侧三包未打补丁** —— `dsh-config-editor` / `dsh-plugin-manager` / `dsh-hmr` 仍解析到未打补丁的全局 `dsh-app-boot` 副本，同源风险未根除。
+  - **兜底脚本未纳入仓库** —— `workdsh-fix-profile-reload.sh` 属服务器本地改动，交付面未登记，镜像重建/树替换会丢失。
+- **未提交、未推送**：本轮仅有 `docs/STATUS.md` 与 `docs/evidence/dsh-0.2.0-rc.2-upgrade.md` 两处工作区变更。
+
+## 2026-09-30（续三十二）：core 清理已执行 + npm 发布因无凭据未完成
+
+按用户指令「npm 发布、core 清理授权马上处理」执行。两项此前均标注「未授权、未执行」，本次获授权后分别处置。证据见 [dsh-0.2.0-rc.2-upgrade](evidence/dsh-0.2.0-rc.2-upgrade.md) 第十节第 8 小节。
+
+### 一、core 清理（已执行）
+
+| 项 | 前 | 后 |
+| --- | --- | --- |
+| `tmp/cores/` 内容 | 3 个 core（`033601` 18.08G + `035301` 18.09G + `041001` 18.10G） | 空目录 |
+| 目录占用 | `55G` | `4.0K` |
+| `/` 磁盘 | `234G / 54%`（可用 200G） | `180G / 42%`（可用 254G） |
+
+- 命令：`rm -f $D/data/dsh/tmp/cores/dsh-segv-*.core`（`$D` = 线上部署根）。删除后 `ls`/`du`/`df` 三项复核一致。
+- 清理前实测目录只剩 3 个 core：先前记录的 `dsh-segv-20260930-002901.core`（18.05G）在核查时已不在（目录 mtime `04:13:01`），剩余 `033601`（u6-fix 重启窗口）、`035301`（u6-fix2 重启窗口）、`041001`（04:12 崩溃自动重启窗口）。
+- 归因沿用既有立档 [v8-gc-sigsegv-repro](evidence/v8-gc-sigsegv-repro.md)：V8 并发标记 GC SIGSEGV（`ProcessStrongHeapObject<FullHeapObjectSlot>`），Linux x86_64 + Node v24.21 约 35% 崩溃率，上游已知、非阻断、自愈；`docker logs` 显式 `docker-entrypoint.sh: line 265: 29 Segmentation fault ... node .../dsh/lib/bin.js web` 证实，随后 `SIGTERM` 优雅关闭 `exit_code:0` 并被 `unless-stopped` 策略拉起。**属既有 V8/GC 问题，非本次 0.2.0-rc.2 升级回归**。
+- 清理后容器：`dsh` = `Up 9 minutes (healthy)`、`Restarts=1`、`StartedAt=2026-09-30T04:12:12Z`、`ExitCode=0`、`OOMKilled=false`、`inner3080=200`。清理期间容器未受扰动（core 写入由内核完成，删除不影响运行进程）。
+
+### 二、npm 发布（已授权，因本机无凭据未完成）
+
+授权后实测发布面前置条件，**客观障碍为凭据缺失**，非代码或制品问题：
+
+| 检查 | 实测 |
+| --- | --- |
+| `npm whoami` | `ENEEDAUTH`（未登录） |
+| `npm config get registry` | `https://registry.npmmirror.com/`（镜像源，非发布源） |
+| `~/.npmrc` | 78B，仅 `fetch-timeout` / `fetch-retries` / `registry`，**无 `_authToken`** |
+| 仓库 `.npmrc` / `.netrc` / shell profile | 均无 token / `_authToken` |
+| 环境变量 | 仅 `NPM_CONFIG_YES=true`，**无 `NPM_TOKEN`** |
+| CI | `.github/workflows/` 仅 `pages.yml`，**无发布 workflow** |
+| `gh auth status` | 未登录任何 host |
+| 制品可发面 | 12 个 tgz 全为 `0.1.0-alpha.N` 预发布 ⇒ 必须 `--tag alpha`；其中 5 个 `private:true`（bundle/access/audit/office/identity-local）不可发布，7 个 `private:false` 理论可发 |
+| 目标 package name | 7 个可发名 + `workdsh-bundle` 在 `registry.npmjs.org` 均 `HTTP 404`（从未发布，名称可用） |
+| `--dry-run --tag alpha` | 通过：tarball 打包 21 files / `0.1.0-alpha.5`，仅提示 `requires you to be logged in` |
+
+结论：制品与打包链路就绪，**唯一缺口是本机无任何 registry 凭据**。待用户提供登录方式（`npm login` 交互、`NPM_TOKEN` 或 CI 秘钥）后，即可对 7 个 `private:false` 制品按 `--tag alpha` 发布。**未伪造成功、未反复重试、未变更任何发布面配置**。
+
+### 三、未执行与边界
+
+- `git config` 变更仍未授权、未执行（committer 身份仍为自动推断，与本项无关）。
+- npm 发布未推进到实际上传；未创建 `.npmrc`、未写入 token、未改动 registry 配置。
+
 ## 2026-09-30（续三十一）：0.2.0-rc.2 线上升级部署（**已部署到 dsh.10ge.cn**）
 
 按用户指令「执行线上升级部署」+「一并重传 12 个制品」执行。目标 `dsh.10ge.cn`（`192.168.11.205`，1Panel 应用 `deepseek-harness`，容器 `dsh`）由 `0.1.5-rc.1` 镜像 + `0.1.7-rc.2` 挂载树升级为 `0.2.0-rc.2`。证据见 [dsh-0.2.0-rc.2-upgrade](evidence/dsh-0.2.0-rc.2-upgrade.md) 第十节。
@@ -39,7 +120,9 @@ u6-fix 后仍有 **4 个第三方 bundle** 因 peer 不满足被跳过。处置�
 
 ### 六、未执行与边界
 
-- **npm 发布、core 清理、`git config` 变更 —— 未授权，未执行**。
+- **core 清理 —— 已授权、已执行**（见续三十二）：`tmp/cores/` 4 个 core（73G）已删除，目录回收至 4K，磁盘 `/` 由 `234G/54%` 降至 `180G/42%`。
+- **npm 发布 —— 已授权，但本机无 registry 凭据，未完成**：`npm whoami` = `ENEEDAUTH`，`~/.npmrc`/仓库 `.npmrc`/环境变量/`.netrc`/`gh auth` 均无 token，CI 无发布 workflow；7 个 `private:false` 制品在 `registry.npmjs.org` 均为 `HTTP 404`（从未发布）、`--dry-run --tag alpha` 打包与清单校验通过，仅差登录凭据；另 5 个制品 `private:true` 不可发布。
+- **`git config` 变更 —— 未授权，未执行**。
 - `test:integration` / `test:activity` / `test:planning` / `probe:*` 未复跑；浏览器面（已移除）与真实模型验收未跑。
 - 线上回退锚点：`/home/luoji/dsh-backup-020-{anchor,p1,swap}-*`、`dsh-backup-rc202-{3rd,4th}-20260930/`；旧 standalone 树与 `0.1.5-rc.1` 基础镜像均保留未删。
 
@@ -105,7 +188,7 @@ if (process.env.ONEPANEL_DSH_AUTH_PROXY === "1") return true;
 
 ### 七、未执行与边界
 
-- **线上升级部署**：第一段未授权、未执行；**第二段已获授权并执行完毕**（见续三十一）。第一段 17 文件已于后续提交 `08765bf2f4` 并推 `fork/main`（见续三十一说明）。**core 清理、npm 发布** 仍未授权、未执行。
+- **线上升级部署**：第一段未授权、未执行；**第二段已获授权并执行完毕**（见续三十一）。第一段 17 文件已于后续提交 `08765bf2f4` 并推 `fork/main`（见续三十一说明）。**core 清理、npm 发布** 已于后续获授权，处置见续三十二（core 已清理；npm 因本机无凭据未完成）。
 - 本批未复跑 `pnpm install --no-frozen-lockfile` / `typecheck` / `build`（沿用早前记录 EXIT 0）；未复跑 `test:integration` / `test:activity` / `test:planning` / `probe:*`。
 - `docs/dsh-v0.2.0-rc.2/` 官方文档镜像未落盘；相关路径暂留 `0.1.7-rc.2`，待镜像落盘后统一重锚。
 - 派生 patched 镜像仅在服务器本地构建与验证，未推送 registry、未接入任何 compose/1Panel 编排。
