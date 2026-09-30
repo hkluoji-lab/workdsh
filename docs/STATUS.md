@@ -1,3 +1,53 @@
+## 2026-10-01（续三十四）：侧栏品牌文案收敛为「企业AI工作台」（bundle α.55 → α.57，**已上线 dsh.10ge.cn**）
+
+用户三轮指令同一条链路：①「LOGO 处 `10ge dsh job ai` 改为 `10GE DSH 企业AI工作台`」（α.55）→ ②「改为 `DSH 企业AI工作台`，与左侧 `10ge` 字标形成视觉对比」（α.56）→ ③「变更为 `企业AI工作台`，去掉文字 dsh」（α.57）。改动点始终只有公开 Slot `sidebar.brand.name` 一处。
+
+### 一、α.55 / α.56 缺陷与收敛
+
+- α.55 `10GE DSH 企业AI工作台` 在官方默认 18px 下自然宽约 **201.8px** > 官方名称席位（约 **127px**，行高 24px）⇒ 折 2 行，被官方 `.brand{overflow:hidden}` 裁切（实测 spanH 34/38 vs 24）。
+- α.56 改为 `DSH 企业AI工作台` 并压到 14px/700，实测自然宽 **121px ≤ 121px** 席位、单行、overflow 0——可容纳但偏离官方排版，且需靠缩小字号换行数。
+- α.57 去掉 `DSH` 前缀后 `企业AI工作台` 18px 自然宽 **112px**，**回归官方默认 `18px / 600 / line-height 24px / letter-spacing 0`** 即单行容纳，层次改为「24px 高的 10GE 字标 vs 18px 文本」，与官方排版完全一致。
+
+### 二、实现（α.57）
+
+| 项 | 值 |
+| --- | --- |
+| 文案 | `企业AI工作台`（无 `DSH`、无多余空格、无嵌套 `span`） |
+| 样式 | `font-size:18px`、`font-weight:600`、`line-height:24px`、`letter-spacing:0`、`color:var(--dsw-alias-label-primary, currentColor)` |
+| 防裁切 | 显式 `white-space:nowrap` + `text-overflow:ellipsis` + `max-width:100%`（官方 owner `.brandName` **无** nowrap） |
+| 未改 | 席位、owner props（`SidebarBrandMarkOwnerProps`）、`priority:-10`、`GeWordmark`（尺寸/几何/配色）、官方 Sidebar owner |
+| 文件 | [Brand.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/src/client/components/Brand.tsx)、[package.json](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/package.json)、[CHANGELOG.md](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/CHANGELOG.md)、[probe-browser.mjs](file:///Users/apple/Documents/AI-luoji/workdsh/scripts/probe-browser.mjs)（65/263 行）、`.artifacts/logo-019/verify-live-logo.mjs` |
+
+### 三、线上部署与验证（实测）
+
+| 检查 | 实测 |
+| --- | --- |
+| 制品 | `workdsh-bundle-0.1.0-alpha.57.tgz` 30015B，md5 `217c0c52773b145979012730e3f0b032`；容器内 `dist/client.js` md5 `494b3bc8af7f896036d07a8509d612a9`，与本地构建逐字节一致 |
+| 容器内落地 | `node_modules/workdsh-bundle/package.json` = `0.1.0-alpha.57`；`dist/client.js` 含 `fontSize:18,lineHeight:"24px",fontWeight:600`；品牌文案转义序列命中 1 处 |
+| `DSH` 残留 | `dist/client.js` 内 5 处 `DSH` **全部**来自 `WORKDSH`/`WorkDSH` 诊断标签与 `WorkDSH 接入验证`，无品牌文案残留 |
+| 容器 | `restarts=0`、`started=2026-09-30T19:14:47Z`、`health=healthy`；重启后 30s 复检仍 `healthy / restarts=0` |
+| HTTP | `https://dsh.10ge.cn/` = **302**、`/login` = **200** |
+| **品牌实渲染**（Playwright 1440×1000 真实登录） | `brandText = "企业AI工作台"`；`lines=1`、`spanHeight=24`、`clientWidth=112`、`scrollWidth=112`、`overflowPx=0`、`fontSize=18px`、`fontWeight=600`、`whiteSpace=nowrap`、`nestedSpanCount=0`；旧文案 `DSH 企业AI工作台`/`10GE DSH 企业AI工作台`/`10ge dsh 企业AI工作台` 命中均为 **0** |
+| 字标 | `markTag=svg`、`viewBox="0 15 235 70"`、`plainImgMarkCount=0`（仍为 10GE 字标 SVG，未退化为图片） |
+| 排版对比 | mark 盒 `x=16 y=24 80.6×24`；品牌盒 `x=104.6 y=24 111.8×24`；行内间隙 `8px`（官方 `brandIdentity` gap）；截图 `.artifacts/logo-019/live-brand-row.png`、`live-brand-full.png` |
+| 非本次 console 噪声 | 唯一 4xx 为 `https://dsh.10ge.cn/modlens/config 403`（第三方 `@liustack/modlens`，与本轮无关，前序各轮均存在） |
+
+### 四、部署踩坑与硬约束（**重要，后续必读**）
+
+- **线上 `pnpm install` 会剥离认证补丁**：profile 下 `@deepseek-ai/dsh-client-connection/lib/index.js` 出厂态无 `ONEPANEL_DSH_AUTH_PROXY` 分支，未打补丁时 `/` 恒 401 ⇒ entrypoint 就绪探针（`curl -fsS --max-time 2 http://127.0.0.1:3080/`）240s 失败 ⇒ `exit 1` ⇒ 重启循环 ⇒ Caddy（容器 8443）从未拉起 ⇒ 全站 502。α.56 部署时曾触发该故障。
+- **本轮实测未被剥离**：install 完成后 profile 副本 md5 仍为 `69f8b3ef85e03eed4f0e8ac4295c61c5`，`ONEPANEL_DSH_AUTH_PROXY` 命中 1（global 副本同 md5）。**部署前后均须校验该 md5**，不等或缺失时执行 `node /data/dsh/global-dsh/patch-auth-bypass.mjs <index.js>`。
+- 备份：`profiles/web/package.json.bak.logo057.20260930190253` 与 `pnpm-lock.yaml.bak.logo057.20260930190253`（α.56 态）；α.55/α.56/α.57 三个 tgz 并存于容器内 `/workspace/wd-upload-019/`。
+- 部署后需 `chown -R 1000:1000 /data/dsh/profiles/web/node_modules` 再 `docker restart dsh`。
+- 容器 rootfs 只读，诊断脚本不能 `docker cp` 进容器；改投宿主 `.../data/dsh/tmp/` 后再 `docker exec dsh sh /data/dsh/tmp/<x>.sh`。
+
+### 五、未执行与边界
+
+- **`probe-browser.mjs` 全量回归未执行** —— 断言已同步为 `企业AI工作台`，但未在临时 Agents home 下跑完整自动化探针；本轮证据为线上真实登录渲染 + 制品字节校验。
+- **「谁在何时重新应用 auth 补丁」仍未确证** —— 已定位补丁脚本 `.../data/dsh/global-dsh/patch-auth-bypass.mjs` 与 root cron（`*/2 * * * * /usr/local/bin/dsh-watchdog.sh`、`7 * * * * /usr/local/bin/dsh-sse-watch.sh`），但 watchdog 仅做 `docker restart`、entrypoint 内无补丁逻辑，重新打补丁的触发者未落在任一已知脚本中；每次线上 install 后须手工校验 md5。
+- **浏览器折叠态未单独复测** —— 侧栏折叠时官方只渲染 mark、不渲染品牌名，本轮未单独取图。
+- **`docs/modules.json` 是否遗漏 `workdsh-bundle` 未核查**；全局侧三包（`dsh-config-editor`/`dsh-plugin-manager`/`dsh-hmr`）解析到未打补丁的全局 `dsh-app-boot` 副本问题仍未根除；`workdsh-fix-profile-reload.sh` 仍未纳管。
+- **未提交、未推送、未发布 npm**。
+
 ## 2026-09-30（续三十三）：升级后两项回归修复——公告确认可保存 +「自动化任务」导航恢复
 
 用户报告 `dsh.10ge.cn` 升级到 `0.2.0-rc.2` 后两个症状：① 首页 0.2 预览公告反复弹出，确认后红字「暂时无法保存确认状态，请重试。」；② 左侧「自动化任务」导航消失。两项均已定位根因、修复落地并验证。证据见 [dsh-0.2.0-rc.2-upgrade](evidence/dsh-0.2.0-rc.2-upgrade.md) 第十节第 10 小节。

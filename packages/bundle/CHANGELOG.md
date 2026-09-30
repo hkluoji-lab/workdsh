@@ -1,3 +1,25 @@
+# 0.1.0-alpha.57 — 2026-10-01
+
+- 侧栏品牌名称（`sidebar.brand.name`）由 `DSH 企业AI工作台` 改为 `企业AI工作台`，去掉 `DSH` 前缀（2026-10-01 用户要求）。
+- 文案缩短后回归官方默认排版：`font-size:18px`、`font-weight:600`、`letter-spacing:0`、`line-height:24px`。`企业AI工作台` 18px 自然宽约 112px，单行容纳于官方名称席位（约 127px，行高 24px），不再需要 α.56 的 14px 收缩。
+- 仍显式保留 `white-space:nowrap`、`text-overflow:ellipsis`、`max-width:100%`：官方 `.brandName` 无 nowrap，换行会被官方 `.brand{overflow:hidden}` 裁切。
+- 名称改回单层官方语义 token `--dsw-alias-label-primary`（带 `currentColor` 回退），未引入硬编码色板、Tailwind 或第二套主题（UI-DESIGN 第 236 行）。
+- 席位、owner props、`priority`（-10）、`GeWordmark`（尺寸/几何/配色）与官方 Sidebar owner 均未改动，仍由公开 Slot 贡献。
+- 组合包自身其余代码未变；同批安装其余模块版本不变。
+
+# 0.1.0-alpha.56 — 2026-10-01
+
+- 侧栏品牌名称（`sidebar.brand.name`）由 `10GE DSH 企业AI工作台` 改为 `DSH 企业AI工作台`（2026-10-01 用户要求）。α.55 的 18px 长文案在官方名称席位（约 127px）内换行成 2 行，被官方 `.brand{overflow:hidden}` 裁切；新文案在 14px 下自然宽约 121px，单行容纳。
+- 名称自身呈现改为：`font-size:14px`、`font-weight:700`、`letter-spacing:0`、`white-space:nowrap`、`line-height:24px`、`text-overflow:ellipsis`，与左侧 24px 高的 10GE 字标形成字号与明度两级对比。
+- 层次用官方语义 token：`DSH` 取 `--dsw-alias-label-primary`，`企业AI工作台` 取 `--dsw-alias-label-secondary`（均带 `currentColor` 回退），未引入硬编码色板、Tailwind 或第二套主题（UI-DESIGN 第 236 行）。
+- 席位、owner props、`priority`（-10）、`GeWordmark`（尺寸/几何/配色）与官方 Sidebar owner 均未改动，仍由公开 Slot 贡献。
+- 组合包自身其余代码未变；同批安装其余模块版本不变。
+
+# 0.1.0-alpha.55 — 2026-10-01
+
+- 侧栏品牌名称（`sidebar.brand.name`）由 `DSH JOB AI` 改为 `10GE DSH 企业AI工作台`（2026-10-01 用户要求，线上 `dsh.10ge.cn` 左侧导航顶部 LOGO 文案）。席位、owner props、`priority`（-10）与 mark 均未改动，仍由公开 Slot 贡献，未触碰官方 Sidebar owner。
+- 组合包自身其余代码未变；同批安装其余模块版本不变。
+
 # 0.1.0-alpha.54 — 2026-09-24
 
 - 搭载 DeepSeek Harness `0.1.7-alpha.1` 基线（2026-09-25，并入本未发布增量，不单独 bump）：根 `devDependencies`（21 条）与 `pnpm.overrides`（284 条）精确锁定 `0.1.7-alpha.1`；`@deepseek-ai/dsh-agent-presets` 按官方改名移除，改由 `@deepseek-ai/dsh-agent-preset` + `@deepseek-ai/dsh-agent-preset-registry` 承载；组合包自身代码未变。

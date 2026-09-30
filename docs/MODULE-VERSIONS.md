@@ -31,7 +31,7 @@
 | 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.10` | implemented |
 | 共享展示组件 | 0.1 | `workdsh-ui@0.1.0-alpha.6` | implemented |
 | 企业门户与登录门禁 | 0.1 | `workdsh-portal@0.1.0-alpha.2` | in_progress |
-| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.54` | in_progress |
+| 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.57` | in_progress |
 | 工作台 | 0.1 | `workdsh-plugin-workbench@0.1.0-alpha.16` | implemented |
 | 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.9` | in_progress |
 | 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.32` | implemented |
@@ -83,9 +83,11 @@
 
 2026-09-24 更新（五）：projects α.3→**α.4**（Unreleased）——按用户要求把「从模板创建」的内置模板由 5 个扩充到 **15** 个（新增内容营销与社媒运营、客户跟进与商机管理、数据分析与经营报表、活动策划与执行、招投标与解决方案、招聘与人才选拔、培训与课程开发、财务预算与成本核算、品牌与视觉设计、网站建设与 SEO 增长）。模板仍是纯预填数据（只预填名称、一句场景描述与初始指令，不自动执行、不预绑专家或技能、不改变权限语义），公开契约与其余模块均未变。该版本已于同日增量部署到 `dsh.10ge.cn` 并完成浏览器级复验（面板 15 张卡片、新建弹框模板下拉 16 项），详见 [STATUS](STATUS.md) 2026-09-24（续十六）。
 
-以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
+2026-10-01 更新：bundle α.54→**α.55**（Unreleased）——按用户要求把线上 `dsh.10ge.cn` 左侧导航栏顶部 LOGO 名称由 `DSH JOB AI` 改为 **`10GE DSH 企业AI工作台`**（用户原话为「10ge dsh job ai」，与仓库实际字符串 `DSH JOB AI` 对应）。改动仅为 [Brand.tsx](file:///Users/apple/Documents/AI-luoji/workdsh/packages/bundle/src/client/components/Brand.tsx) 中 `BrandName` 的文本内容：仍由公开 Slot `sidebar.brand.name` 贡献（`priority: -10`），未改动席位、owner props、`sidebar.brand.mark`（10GE 字标 `GeWordmark`）与其它插件，未触碰官方 Sidebar owner。probe 断言 `scripts/probe-browser.mjs`（第 65、263 行）随文案同步。同批线上操作还包括插件市场 6 个插件全量升级与 `dsh-prompt-enhance` 启用（不属于 bundle 版本变化，详见 [STATUS](STATUS.md) 2026-10-01）。
 
 ## 历史版本线快照（被2026-09-14表覆盖）
+
+以下旧快照仅供追溯，旧“专家planned”不覆盖当前实现。
 
 | 模块 | 模块版本线 | 当前开发制品 | 说明 |
 | --- | --- | --- | --- |
