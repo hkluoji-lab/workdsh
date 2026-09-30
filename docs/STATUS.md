@@ -36,8 +36,8 @@
   - **浏览器真人复测未执行** —— 未打开 `https://dsh.10ge.cn/` 截图确认弹窗消失与导航出现，仅以 HTTP RPC + 首页 HTML + 模块字节证据闭环。
   - **全局侧三包未打补丁** —— `dsh-config-editor` / `dsh-plugin-manager` / `dsh-hmr` 仍解析到未打补丁的全局 `dsh-app-boot` 副本，同源风险未根除。
   - **兜底脚本未纳入仓库** —— `workdsh-fix-profile-reload.sh` 属服务器本地改动，交付面未登记，镜像重建/树替换会丢失。
-- **提交与推送**：`a293cdb64b`（父 `1e368c2faf`），2 文件 +215/-9。`git push fork main`（GitHub hkluoji-lab）**失败**，`Could not resolve host: github.com`；同批实测 `curl https://github.com/` = `(28) Resolving timed out`、`curl https://gitee.com/` = `200 t=1.49s`，判定为当前网络出口对 github.com 的 DNS/TLS 阻断，非仓库配置问题。改推可达远程 `mygitee main`（Gitee szluoji）**成功**：`e0a9ee95bd..a293cdb64b`，且推送前核对 `mygitee/main` 为本地 `main` 的祖先（0 ahead / 13 behind，纯快进，无分支线分叉）。
-- **未执行**：`fork/main` 推送（GitHub 网络阻断，待恢复后重试）；`origin` / `github` 推送（`pushurl = no_push`，本机无写权限）。
+- **提交与推送**：`a293cdb64b`（父 `1e368c2faf`，2 文件 +215/-9）与 `451726b466`（提交/推送结果登记，2 文件 +3/-2）。推送 `fork main`（GitHub hkluoji-lab）**首次失败后已补推成功**：失败时 `Could not resolve host: github.com`（`curl https://github.com/` = `(28) Resolving timed out`，同期 `curl https://gitee.com/` = `200`），判定为网络出口 DNS/TLS 阻断、非仓库配置；期间改推可达远程 `mygitee main`（Gitee szluoji）成功 `e0a9ee95bd..451726b466`（推送前核对 `mygitee/main` 为本地 `main` 祖先，纯快进）。**网络恢复后重试 `git push fork main` 成功：`1e368c2faf..451726b466`**，两端 `main` 均等于本地 `451726b466`。
+- **未执行**：`origin` / `github` 推送（`pushurl = no_push`，本机无写权限）；浏览器真人复测仍未执行。
 
 ## 2026-09-30（续三十二）：core 清理已执行 + npm 发布因无凭据未完成
 

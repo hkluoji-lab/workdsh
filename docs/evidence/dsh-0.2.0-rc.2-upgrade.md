@@ -281,7 +281,7 @@ dsh | 1panel/deepseek-harness:0.1.5-rc.1 | Up 7 hours (healthy)
 
 ## 八、回退锚点
 
-**仓库侧**：第一段的 17 个文件变更已提交为 `08765bf2f4`（`chore: 仓库基线随升 0.2.0-rc.2…`）并推送 `fork/main`。第二段的文档收口（本文件第十节与 `docs/STATUS.md` 续三十一节）已提交为 `1e368c2faf` 并推送 `fork/main`。**升级后回归修复**的文档回填（本文件第十节第 10 小节 + `docs/STATUS.md` 续三十三节）已提交为 `a293cdb64b`（父 `1e368c2faf`，2 文件 +215/-9）：`git push fork main`（GitHub hkluoji-lab）**失败**（`Could not resolve host: github.com`；同批 `curl https://github.com/` = `(28) Resolving timed out`、`curl https://gitee.com/` = `200 t=1.49s`，属当前出口对 github.com 的 DNS/TLS 阻断，非仓库配置），改推可达远程 `mygitee main`（Gitee szluoji）**成功** `e0a9ee95bd..a293cdb64b`（推送前核对 `mygitee/main` 为本地 `main` 祖先，0 ahead / 13 behind，纯快进）。回退 = `git revert a293cdb64b`；整体退基线 = `git revert 08765bf2f4`。
+**仓库侧**：第一段的 17 个文件变更已提交为 `08765bf2f4`（`chore: 仓库基线随升 0.2.0-rc.2…`）并推送 `fork/main`。第二段的文档收口（本文件第十节与 `docs/STATUS.md` 续三十一节）已提交为 `1e368c2faf` 并推送 `fork/main`。**升级后回归修复**的文档回填（本文件第十节第 10 小节 + `docs/STATUS.md` 续三十三节）已提交为 `a293cdb64b`（父 `1e368c2faf`，2 文件 +215/-9），其后推送结果登记为 `451726b466`（2 文件 +3/-2）。推送 `fork main`（GitHub hkluoji-lab）首次因网络出口 DNS/TLS 阻断（`Could not resolve host: github.com`；`curl https://github.com/` = `(28) Resolving timed out`，同期 `curl https://gitee.com/` = `200`）**失败**，期间改推可达远程 `mygitee main`（Gitee szluoji）成功 `e0a9ee95bd..451726b466`（推送前核对 `mygitee/main` 为本地 `main` 祖先，纯快进）；**网络恢复后重试 `git push fork main` 成功 `1e368c2faf..451726b466`**，`fork/main` 与 `mygitee/main` 均等于本地 `main` = `451726b466`。回退 = `git revert 451726b466 a293cdb64b`；整体退基线 = `git revert 08765bf2f4`。
 
 **服务器侧**（`192.168.11.205`，均为就地保留、未清理）：
 
