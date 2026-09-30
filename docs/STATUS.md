@@ -1,4 +1,49 @@
-## 2026-09-30（续三十）：0.2.x 适配首批——仓库基线随升 `0.2.0-rc.2` + 8 插件制品重出 + 派生镜像自建（**未部署，未发布**）
+## 2026-09-30（续三十一）：0.2.0-rc.2 线上升级部署（**已部署到 dsh.10ge.cn**）
+
+按用户指令「执行线上升级部署」+「一并重传 12 个制品」执行。目标 `dsh.10ge.cn`（`192.168.11.205`，1Panel 应用 `deepseek-harness`，容器 `dsh`）由 `0.1.5-rc.1` 镜像 + `0.1.7-rc.2` 挂载树升级为 `0.2.0-rc.2`。证据见 [dsh-0.2.0-rc.2-upgrade](evidence/dsh-0.2.0-rc.2-upgrade.md) 第十节。
+
+### 一、部署面（实测）
+
+| 项 | 前 | 后 |
+| --- | --- | --- |
+| CLI | `0.1.7-rc.2` | `0.2.0-rc.2` |
+| compose image | `1panel/deepseek-harness:0.1.5-rc.1` | `1panel/deepseek-harness:0.2.0-rc.2-localbuild-patched`（`sha256:2840936a34b59…`） |
+| compose md5 | `c97ce5892408f2952ba16df83ad2002a` | `6cf0b443b5554e7a5a4fc472fea59224` |
+| standalone 挂载树 | `0.1.7-rc.2`（旧树保留） | `0.2.0-rc.2`（`version-distribution` 277 条 + 11 条非 dsh ⇒ `TREE_VERSION_OK`） |
+| 容器 | `Up 8 hours (healthy)` | `--force-recreate` → `Up 10 seconds (healthy)`；`restarts=0`；`started=2026-09-30T03:53:54.946383189Z` |
+
+- **Phase1**：12 个制品（bundle + 10 插件 + identity-local provider）由 `file:/workspace/wd-upload-019/*.tgz` 重装进 `profiles/web/`；`upload-sha256.txt` **12/12 OK**、`installed-versions.txt` 12 条 OK（`INSTALLED_VERSIONS_OK`）、`profile-deps-after.txt` = `RETARGET_OK`；容器内 pnpm `11.7.0` / node `v24.21.0`。
+- **Phase2**：门禁 A `RESOLUTION_ALL_OK`（resolved 83 packages / 74 dsh）→ 门禁 B `0.2.0-rc.2` → 换 standalone 树 → **双份 auth-proxy 补丁重放**（`patch-standalone.txt` + `patch-profile.txt` 均 `PATCHED`）→ 改 compose tag → `docker compose up -d --force-recreate`。
+
+### 二、升级后验证（全绿）
+
+| 检查 | 实测 |
+| --- | --- |
+| 三层健康 | inner 3080 = `200` / 宿主 3080 = `200` / `https://dsh.10ge.cn/` = `302`（重定向登录） |
+| 存量数据 | `pre/post-sessions` 均 124 行；`diff` 仅 `session-bb2d4935-…/session.lock` mtime 变化（运行时刷新会话锁，非数据改写）；`pre-adsh-count` = `232` |
+| 本次窗口门禁 | `skipping profile bundle` = **0**、`is incompatible with dsh` = **0**、`disabling profile plugin row` = **0**（以 `--since 2026-09-30T03:53:54` 切分；累计口径的 12/14/2 均为历史行） |
+| 窗口内 error/warn | 仅 caddy `admin endpoint disabled`（warn，正常）+ pki trust store（info） |
+
+### 三、业务面回归修复（u6-fix）
+
+换树重启后业务面插件未激活。**根因**：`/data/dsh/tools/workdsh-identity-portal/package.json` 的 peer 值失实——`"@deepseek-ai/dsh-storage-domain": "^0.1.7-alpha.2"`，而 0.2 线只发布 `0.2.0-rc.2`，不满足 ⇒ identity-portal 作为 bundle 被整包跳过 ⇒ 依赖其主体解析的业务面连锁未激活。**修复**：peer 改为 `"^0.2.0-rc.2"`（备份 `package.json.bak.rc202fix.20260930033616`，815B，保留原值）并重启。**复验**：10 条目业务面恢复激活；带门户身份的只读探针（HMAC 门户头）实测 experts 17 / templates 15 / library space 1 / skills 46（plugin 9 + 本机 `~/.agents` 37）/ connectors 3 / 错误 `{}`。
+
+### 四、第三方 bundle 门禁跳过处置（u6-fix2）
+
+u6-fix 后仍有 **4 个第三方 bundle** 因 peer 不满足被跳过。处置（改 `profiles/web/package.json`）：`dshmarket 1.66.3→1.66.6`、`@nanmicoder/dsh-agent-teams 0.1.21→0.1.22`、`dsh-mcp-connector 0.2.59→0.2.62`（新版 peer 含 `0.2.0-rc.2`）；`dsh-builtin-browser` 从 `dependencies` 与 `dsh.profile.bundles` 移除（bundles **24 → 23**）。移除依据：上游 `dsh.compatibility.dsh` 显式排除 0.2.x、其 electron `dist/` 历史即为空（能力从未可用）、无 DISPLAY/Xvfb、sessions 与仓库均无 `browser_*` 使用痕迹 ⇒ 与「跳过 = 不加载」等价。`pnpm install` = `Packages: +13 -107`（连带移除 electron 树）。复验：本次窗口跳过计数全 0；bundles 23；`builtin-browser=false`。
+
+### 五、u3 判定与遗留
+
+- **派生脚本链无需复跑**：三个基座镜像五项基座 md5 未变，且 patched 镜像 `2840936a34b5` 即第一段产物 ⇒ 本次直接复用。**宿主增强 entrypoint 兼容**：宿主 `docker-entrypoint.sh`（md5 `fa304713e29b2d4b23851369935501eb`）与 `Caddyfile`（md5 `53bad44d355cdf5924703a949835586c`）以 ro 挂载，与 0.2.0-rc.2 兼容（实证 healthy + 健康全过 + 门禁归零），宿主脚本本次未修改。
+- **遗留**：`linshu-bridge python3 ENOENT` 为**既存问题**（u6-fix2 前窗口已有 17 次），来自第三方 `@furongjun1999/dsh-memory`（本批未升级），容器内无 `python3`/`python`；非本次引入，超出授权范围，**未处置**。
+
+### 六、未执行与边界
+
+- **npm 发布、core 清理、`git config` 变更 —— 未授权，未执行**。
+- `test:integration` / `test:activity` / `test:planning` / `probe:*` 未复跑；浏览器面（已移除）与真实模型验收未跑。
+- 线上回退锚点：`/home/luoji/dsh-backup-020-{anchor,p1,swap}-*`、`dsh-backup-rc202-{3rd,4th}-20260930/`；旧 standalone 树与 `0.1.5-rc.1` 基础镜像均保留未删。
+
+## 2026-09-30（续三十）：0.2.x 适配首批——仓库基线随升 `0.2.0-rc.2` + 8 插件制品重出 + 派生镜像自建（**未部署，未发布**；第二段部署见续三十一）
 
 按用户裁决「按方案 (b) 执行 0.2.x 适配，先重出插件制品并自建派生镜像」执行。三项前置裁决：① `@deepseek-ai/dsh-typert-generator` 保留 `0.2.0-rc.1` 单条例外；② 派生镜像 base = `1panel/deepseek-harness:0.1.7-rc.2`；③ 官方文档镜像 `docs/dsh-v0.2.0-rc.2/` 本批不落盘。证据见 [dsh-0.2.0-rc.2-upgrade](evidence/dsh-0.2.0-rc.2-upgrade.md)。
 
@@ -42,7 +87,7 @@ if (process.env.ONEPANEL_DSH_AUTH_PROXY === "1") return true;
 ```
 `npm install -g @deepseek-ai/dsh@0.2.0-rc.2` 替换整棵 `node_modules` 后补丁丢失 ⇒ `127.0.0.1:3080` 恒 401 ⇒ entrypoint 的 `curl -fsS` 就绪探针 60s 超时 ⇒ `exit 1`。派生镜像第 3 步等价重放同一行补丁（含锚点唯一性与幂等校验）后恢复；补丁文件 md5 与 base 逐字一致 `69f8b3ef85e03eed4f0e8ac4295c61c5`。
 
-生产容器 `dsh | 1panel/deepseek-harness:0.1.5-rc.1 | Up 7 hours (healthy)` **全程未动**。
+生产容器 `dsh | 1panel/deepseek-harness:0.1.5-rc.1 | Up 7 hours (healthy)` 在**第一段期间全程未动**（第二段的线上换树升级见续三十一）。
 
 ### 五、附属同步（t9–t10）
 
@@ -60,7 +105,7 @@ if (process.env.ONEPANEL_DSH_AUTH_PROXY === "1") return true;
 
 ### 七、未执行与边界
 
-- **线上升级部署、core 清理、npm 发布、git 提交/推送均未授权，未执行**。
+- **线上升级部署**：第一段未授权、未执行；**第二段已获授权并执行完毕**（见续三十一）。第一段 17 文件已于后续提交 `08765bf2f4` 并推 `fork/main`（见续三十一说明）。**core 清理、npm 发布** 仍未授权、未执行。
 - 本批未复跑 `pnpm install --no-frozen-lockfile` / `typecheck` / `build`（沿用早前记录 EXIT 0）；未复跑 `test:integration` / `test:activity` / `test:planning` / `probe:*`。
 - `docs/dsh-v0.2.0-rc.2/` 官方文档镜像未落盘；相关路径暂留 `0.1.7-rc.2`，待镜像落盘后统一重锚。
 - 派生 patched 镜像仅在服务器本地构建与验证，未推送 registry、未接入任何 compose/1Panel 编排。
