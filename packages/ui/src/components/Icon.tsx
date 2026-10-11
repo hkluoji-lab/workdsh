@@ -18,6 +18,7 @@ const paths = {
   more: 'M3 3h6v6H3zM17 2v8M13 6h8M6 14l4 7H2zM21 18a4 4 0 11-8 0 4 4 0 018 0',
   settings: 'M9 3l1-2h4l1 2 3 2 2 0 2 4-1 2v3l1 2-2 4h-2l-3 2h-6l-3-2H4l-2-4 1-2v-3L2 9l2-4h2zM16 12a4 4 0 11-8 0 4 4 0 018 0',
   folder: 'M3 5h6l2 3h10v12H3z',
+  drive: 'M17.5 19a4.5 4.5 0 00.4-8.98A6 6 0 006.7 9.5 5 5 0 005 19h12.5zM7.5 14.5h9',
   close: 'M6 6l12 12M18 6L6 18',
 } as const;
 

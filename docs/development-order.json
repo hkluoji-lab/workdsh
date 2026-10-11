@@ -251,6 +251,21 @@
       "status": "todo",
       "evidence": [],
       "note": "本字段是步骤状态，不代表模块实现状态；模块已在本机实现并有证据时，本步仍可为 todo（与 D05/D06/D07 同一口径）。前置取 D01：门户的会话与门禁边界必须建立在已锁定的安装链与本地治理基线（access/audit 契约）之上，而不是在新位置另立一套身份判断，依据见 ADR-0034 与 docs/evidence/d01-access-audit.md。范围：packages/portal 静态企业门户（首页四段、案例分区以能力证明代替）+ 单文件 Node 服务（登录/退出/会话校验/限流）+ 派生 Caddyfile 的路径分流与 forward_auth 门禁。线上切换属于部署动作，必须按用户单独授权执行并单独留证，不能由本机实现推断为已完成。企业 SSO（identity-oidc，属 B5）与自助找回不在本步范围。"
+    },
+    {
+      "id": "D18",
+      "title": "网盘插件",
+      "tasks": [
+        "P1-14"
+      ],
+      "dependsOn": [
+  "D01"
+ ],
+ "status": "todo",
+      "evidence": [
+        "docs/evidence/drive-plugin-alpha1.md"
+      ],
+      "note": "2026-10-11 用户需求新增网盘：左侧导航「网盘」入口，自动归档并浏览所有对话产生的文档/图片（AI 生成 + 用户上传附件 + 工具输出文件），类似豆包智能体网盘。独立插件 workdsh-plugin-drive（modules.json 已登记 P1-14）。前置取已完成 D01 基线（storageDomain/identity 治理），不阻断主线 D04 推进。用户明确新指令实施中（首期切片已 typecheck/build/探针验证通过，证据见 drive-plugin-alpha1），当前步骤仍为 D04，D18 完成验收证据后置为 in_progress/completed。实施计划见 .trae/documents/netdisk-drive-plugin-plan.md。"
     }
   ],
   "batches": [

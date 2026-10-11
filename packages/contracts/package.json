@@ -38,6 +38,10 @@
     "./automations": {
       "types": "./dist/automations.d.ts",
       "default": "./dist/automations.js"
+    },
+    "./drive": {
+      "types": "./dist/drive.d.ts",
+      "default": "./dist/drive.js"
     }
   },
   "files": [

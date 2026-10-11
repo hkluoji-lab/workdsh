@@ -1,3 +1,23 @@
+## 2026-10-11（续四十四）：网盘插件实现完成（t5—t8）+ 探针验证全绿
+
+按已批准计划 [netdisk-drive-plugin-plan](../.trae/documents/netdisk-drive-plugin-plan.md) t1→t8 执行，网盘插件 **workdsh-plugin-drive v0.1.0-alpha.1 已实现并通过探针验证**，证据见 [drive-plugin-alpha1](evidence/drive-plugin-alpha1.md)。
+
+- **实现**：domain（per-record nodes/files/revisions/receipts）→ capture（`session/event` 两路：user/message 附件引用、deliverables/presented 字节归档，receipts 幂等）→ drive-manager（save/saveReference/readBytes/list/search/listSessions/rename/move/archive/quota/uniqueName）→ 7 个 Agent 工具 → Remote（/api/workdsh-drive，source 白名单）→ client（sidebar.panellist「网盘」order=55 + 配对 main 页面 + 三栏筛选/面包屑/搜索/上传/预览/操作菜单/移动 + 会话预览 tab）→ bundle productViews 登记。
+- **测试**：`tests/probe-interfaces.mjs`（t4 接口探针）+ `tests/drive.test.mjs`（t8 自动化 **4/4 通过**）：生命周期/幂等（operation-conflict、同名后缀 `方案 (2).md`）/两主体两组织授权矩阵/撤权（invalid-actor）/跨组织拒绝/捕获幂等（重复事件不重复）/remote 转发。
+- **工程**：drive typecheck/build（含 client.browser.js bundle）通过；bundle typecheck exit 0；`node scripts/check-plan.mjs` PASS。
+- **台账**：development-order.json D18 补 evidence；D18 状态仍为 todo（主线 D04 in_progress，避免多活动步骤），完成验收证据后由用户确认推进。
+- **未覆盖**：全文内容搜索、真实模型链路端到端、浏览器实测 dsh.10ge.cn 侧栏（登录墙处理）——待后续授权执行，未声明 dsh.bundle/可加载 exports。
+
+## 2026-10-11（续四十三）：网盘插件（workdsh-plugin-drive）立项与台账登记
+
+用户需求：「浏览器实测 dsh.10ge.cn 左侧导航能否开发一个网盘，存储所有对话产生的文档，图片，方便查看，类似豆包的智能体一样，左侧导航菜单栏中显示一个网盘。」经确认三项决策：**独立新插件**（非扩展资料库）、**归档来源**=AI 生成文档/图片 + 用户上传附件 + 工具输出文件、**首期能力**=列表预览搜索 + 会话关联筛选 + 文件操作 + 手动上传。
+
+- 已批准实施计划：[netdisk-drive-plugin-plan](../.trae/documents/netdisk-drive-plugin-plan.md)。
+- 台账登记：`development-order.json` 新增 D18（网盘插件，P1-14，前置 D01，in_progress）；`modules.json` 登记 `packages/plugins/drive`（moduleVersion 0.1，P1-14，in_progress）；`CONTRACTS.md` 领域表新增 drive 行。
+- 契约：`packages/contracts/src/drive.ts` 新建（DriveService/DriveFile/DriveNode/DriveRevision/DriveSearchHit 等），index.ts 导出。
+- 关键复用：侧栏 `sidebar.panellist`（order=55，紧邻资料库 50）+ 配对 `main` 同 key 页面；官方 `dsh-attachment` 存不可变字节；`dsh-session` 的 `session/event` + `dsh-tool-present` 的 `deliverables/presented` 捕获产物；`dsh-fs` 读呈现文件字节；`workdsh-contracts/governance` 的 actor/owner 授权。
+- 待执行：最小探针确认附件/事件/fs 接口（隔离环境）→ 插件骨架 + domain/capture/manager/tools/remote → client（sidebar+main+预览+上传）→ bundle 装配 + typecheck/build → 探针验证 + 浏览器实测（登录墙处理）+ 证据回填。
+
 ## 2026-10-11（续四十一）：`0.2.0-rc.2 → 0.2.1-alpha.2` 升级执行完成（仓库基线 + 制品 + 线上部署 + 回归全绿）
 
 经用户授权「好的，执行升级吧」分四段执行：仓库基线随升 → 12 制品重出上传 → 服务器换树/profile 重装/`--force-recreate` → 门禁/健康/存量/业务面回归验证。**升级已实质完成并全绿**，证据见 [dsh-0.2.1-alpha.2-upgrade](evidence/dsh-0.2.1-alpha.2-upgrade.md)（从评估段改写为已执行段）。
@@ -5117,6 +5137,7 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 | P1-11 | 项目配置、待办、任务、资产与交接 | P1 | in_progress |
 | P1-12 | 助理入口包 | P1 | todo |
 | P1-13 | 企业门户与登录门禁（部署边缘面） | P1 | in_progress |
+| P1-14 | 网盘（对话产物自动归档与浏览） | P1 | in_progress |
 | P2-01 | 专家团模型及执行映射 | P2 | todo |
 | P2-02 | 专家团失败与取消 | P2 | todo |
 | P2-03 | 自动化配置与调度 | P2 | todo |

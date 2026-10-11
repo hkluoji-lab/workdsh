@@ -1,3 +1,9 @@
+# 0.1.0-alpha.58 — 2026-10-11
+
+- `productViews` 新增 `drive: 'workdsh-drive'` 视图映射（URL view 导航与 `NavigationLocation` 展示用）。
+- 网盘页面与侧栏「网盘」入口由 `workdsh-plugin-drive@0.1.0-alpha.1` 自持注册（`main` + `sidebar.panellist`，order=55），组合包自身代码仅登记视图映射，不代注册入口。
+- 需与 `workdsh-plugin-drive@0.1.0-alpha.1` 同批安装；只升组合包不会凭空出现「网盘」入口（同 α.57/α.16 助理条目口径）。
+
 # 0.1.0-alpha.57 — 2026-10-01
 
 - 侧栏品牌名称（`sidebar.brand.name`）由 `DSH 企业AI工作台` 改为 `企业AI工作台`，去掉 `DSH` 前缀（2026-10-01 用户要求）。

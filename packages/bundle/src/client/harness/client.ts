@@ -12,7 +12,7 @@ export const inject = ['slots', 'layout', 'remote', 'remote.pluginInventory'];
 
 const productViews: Readonly<Record<string, string>> = {
   experts: 'workdsh-experts', skills: 'workdsh-skills', assistant: 'workdsh-assistant', projects: 'workdsh-projects',
-  library: 'workdsh-library', automation: 'workdsh-automation', more: 'workdsh-more',
+  library: 'workdsh-library', drive: 'workdsh-drive', automation: 'workdsh-automation', more: 'workdsh-more',
 };
 
 export function apply(ctx: Context): void {

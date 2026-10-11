@@ -6,6 +6,22 @@
 
 # 逐插件开发顺序与版本交付
 
+## 当前专项：网盘插件 D18 / P1-14（2026-10-11 用户需求）
+
+左侧导航新增「网盘」，自动归档并浏览所有对话产生的文档/图片（AI 生成 + 用户上传附件 + 工具输出文件）。独立插件 `workdsh-plugin-drive`，与资料库（上下文知识）职责分离，不另造 Agent loop / registry / storage backend / transport。
+
+- 实施计划：[netdisk-drive-plugin-plan](../.trae/documents/netdisk-drive-plugin-plan.md)（已批准）。
+- 官方能力复用记录（探针实测证据，2026-10-11，锁定发布包 0.2.1-alpha.2 本地 .pnpm 与运行时验证）：
+  - 附件不可变存储 `@deepseek-ai/dsh-attachment@0.2.1-alpha.2`（服务名 `ctx.attachments`，`AttachmentStore`）：`saveFile({data:Uint8Array,name?})→FileAttachmentRef{attachmentId, name, bytes}`，`attachmentId` 为内容寻址 `sha256:<hex>`（带前缀）；`readFileStream(ref,signal):AsyncIterable<Uint8Array>` 返回逐字字节；`fileHostPath(ref)` 返回宿主绝对路径（dsh-attachment-local 后端落盘可校验）。后端 `@deepseek-ai/dsh-attachment-local@0.2.1-alpha.2` 默认导出 `LocalAttachmentStore`，配置 `{dshHome}`。
+  - 会话事件 `@deepseek-ai/dsh-session@0.2.1-alpha.2`：`ctx.on('session/event',(session,event)=>{})`（cordis 事件，`SessionEventMap` 含 `'user/message': UserMessage`；UserMessage 的 `content` 块 `ImageBlock.attachment: ImageAttachmentRef` / `FileBlock.attachment: FileAttachmentRef` 已带附件引用）。
+  - 产物呈现事件 `@deepseek-ai/dsh-tool-present@0.2.1-alpha.2`：`'deliverables/presented'` 并入 `SessionEventMap`，payload `{turn, callId, files: PresentedFile[]}`，`PresentedFile={path, description?}`（路径可经 `ctx.fs` 读字节）。
+  - 宿主文件读取 `@deepseek-ai/dsh-fs-local@0.2.1-alpha.2`：`ctx.fs.resolve(path,{cwd?,signal?})` + `ctx.fs.readBytes(target,signal,maxBytes)`（`ctx.fs` 由 `@deepseek-ai/dsh-fs` 声明，LocalFileSystem 以 `fs` 服务名注册）。
+  - 领域存储 `@deepseek-ai/dsh-storage-domain@0.2.1-alpha.2`（`defineDomain`/`domainTable`，per-record，仿 library domain.ts）；侧栏/主区 Slot `dsh-client-ui-layout` / `dsh-client-ui-slots`（同 library client.tsx 配对自持模式）。
+  - 上传入口 `@deepseek-ai/dsh-client-file-upload@0.2.1-alpha.2`：自身 package.json 声明 `dsh.client.inject=["@deepseek-ai/dsh-api-remotes"]` 且 `immediately:true`，装包即自动加载浏览器上传服务（`ctx.fileUpload`），无需 drive 加入自身 inject 列表；drive 手动上传可直接走自有 Remote POST。
+  - 探针：`packages/plugins/drive/tests/probe-interfaces.mjs`（隔离临时 Agents home + 最小 Context：Storage/JsonStorage/StorageDomain/LocalAttachmentStore/LocalFileSystem）实测通过——saveFile 返回内容寻址引用、readFileStream 逐字回读、fileHostPath 落盘校验、session/event 监听可达、fs.resolve+readBytes 读文件字节。任务 ID=P1-14。
+- 自有边界：仅新增 files/nodes/revisions 业务对象、owner/status/source/sessionId 元数据、授权校验、侧栏与 main 页面、Agent 工具。执行事实归 Harness 日志。
+- 验收：正例（上传/AI 产物/工具输出归档 + 列表预览搜索 + 会话筛选 + 重命名/移动/归档/下载）+ 两主体两组织授权矩阵 + 幂等捕获；typecheck/build/check-plan 通过；浏览器实测 dsh.10ge.cn 侧栏。
+
 > 当前用户授权专项（2026-09-12）：OFFICE-AI-01 / Office模块0.1，覆盖Word、PPT、Excel、PDF、画布、多维表格、HTML、Markdown的原生编辑与统一AI工具。依[ADR-0024](adr/0024-ai-visible-browser-editing.md)、[U1—U5](design/office/UNIFIED-API.md)与[插件门槛](design/office/PLUGIN-ARCHITECTURE.md)推进；顺序台账activeSlice为当前专项，currentStep保留主线D04。U1最小插件和U2确定性工具/UI链路已通过，[真实证据](evidence/office-live-u1.md)记录范围；真实模型、完整格式和生命周期门槛待验，不以该专项标记D04/D15完成。下方旧Skill专项及主线说明保留历史；用户此项范围优先。
 
 > 当前追加（2026-09-11）：P1-03 当前切片扩展到新增技能闭环。“添加技能”提供查找、上传、创建；创建进入 Harness 原生任务并预填 `/skill-creator`，原生 `/`、`@`、权限、模型与发送保持 Conversation owner。上传使用 Connection 鉴权的流式 exact Fetch route，经 Host 预检和用户确认后写入官方文件技能目录；监听刷新和后续 `/name` 调用仍由 Harness Skill 子系统拥有。SkillHub/套件不在当前产品范围。默认/本地修订、启停、卸载已实现；当前不开发公共市场。企业服务端、管理 Web、组织目录、分类、版本和下发策略按 ADR 0015 进入后期 ToDo。

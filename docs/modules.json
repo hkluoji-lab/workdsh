@@ -572,5 +572,23 @@
       "evidence": "docs/releases/2026-09-15-dsh-0.1.6-alpha.1.md"
     },
     "acceptanceNote": "官方 Team 协作栏布局与状态投影已验证；60 分钟资源收敛和跨平台长任务仍未验收。"
+  },
+  {
+    "path": "packages/plugins/drive",
+    "title": "网盘",
+    "phase": "P1",
+    "task": "P1-14",
+    "status": "in_progress",
+    "moduleVersion": "0.1",
+    "directories": [
+      "src/storage",
+      "src/services",
+      "src/tools",
+      "src/remote",
+      "src/runtime",
+      "src/client",
+      "tests"
+    ],
+    "acceptanceNote": "2026-10-11 用户需求：左侧导航「网盘」自动归档对话产物（AI 生成文档/图片、用户上传附件、工具输出文件）。实现计划见 .trae/documents/netdisk-drive-plugin-plan.md；首期切片开发中，未验收。"
   }
 ]

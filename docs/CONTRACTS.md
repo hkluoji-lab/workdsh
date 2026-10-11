@@ -44,6 +44,7 @@ Office已导出`workdsh-contracts/office`的 U1 文档类型，并注册`ctx.wor
 | assets | import/read/search/createRevision/registerDeliverable/listByTask | 资料页面、Agent 工具、成果面板 |
 | automations | createRule/updateRule/enable/disable/acceptDelivery/listRuns/reconcileRun | 自动化页面、Schedule/Webhook 适配器、运行恢复 |
 | workbench | registerNavigation/registerView/registerObjectLink | 功能 Client 插件 |
+| drive | list/search/read/rename/move/archive/upload/save | 网盘页面、Agent 工具、对话产物归档捕获 |
 
 这些名称是意图级草案，不预先锁死 Remote wire 格式。正式 API 必须与选定 Harness Client/Remote 公开接口一致，避免自建传输。
 
