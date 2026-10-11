@@ -1,3 +1,13 @@
+## 2026-10-11（续四十五）：网盘插件上线 dsh.10ge.cn + 浏览器实测全绿 + 推送 fork
+
+经用户授权「执行部署并推送代码」，网盘插件已部署上线并通过浏览器实测，代码已推送 GitHub fork。
+
+- **部署**：本地打包 `workdsh-plugin-drive@0.1.0-alpha.1` 与 `workdsh-bundle@0.1.0-alpha.58`（productViews 新增 drive 映射，CHANGELOG 补记）→ scp 上传容器挂载目录（wd-upload-019，sha256 本地/服务器一致）→ profile package.json 更新 bundle file: 依赖并新增 drive file: 依赖 + bundles 登记 → `pnpm install`（node_modules 落位）→ `docker compose up -d --force-recreate` 重启。
+- **服务端验证**：容器 healthy、CLI 0.2.1-alpha.2；容器内 `POST /api/workdsh-drive` 返回 200 `{"ok":true,"value":[]}` ⇒ drive server 已激活。
+- **浏览器实测**（用户提供凭据登录 dsh.10ge.cn）：侧栏「网盘」入口存在、点击进入 `?workdsh-view=drive` 三栏布局正常（类型/来源/会话筛选 + 工具栏搜索/上传/新建文件夹 + 文件列表）、上传与新建文件夹入口可用；**「自动化任务」导航复验通过**（dsh-experimental-schedule-bundle 移除后入口仍在）；`?diagnostics=1` 清单 234 项含 `workdsh-plugin-drive`（active）；console 无报错。
+- **遗留**：启动窗口 `1 entry did not activate`（非 drive，drive 已实测 active），归属未定位，如实登记未深究。
+- **推送**：`git commit 7cef499ee4`（feat(drive) 网盘插件实现）+ `git push fork main`（e6144b4978..7cef499ee4）成功，仅 GitHub fork（hkluoji-lab/workdsh），符合「只同步 GitHub」约定。
+
 ## 2026-10-11（续四十四）：网盘插件实现完成（t5—t8）+ 探针验证全绿
 
 按已批准计划 [netdisk-drive-plugin-plan](../.trae/documents/netdisk-drive-plugin-plan.md) t1→t8 执行，网盘插件 **workdsh-plugin-drive v0.1.0-alpha.1 已实现并通过探针验证**，证据见 [drive-plugin-alpha1](evidence/drive-plugin-alpha1.md)。
