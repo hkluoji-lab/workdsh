@@ -33,6 +33,8 @@ export const driveStateSchema = z.object({
   files: z.record(id, file),
   revisions: z.record(id, revision),
   receipts: z.record(id, receipt).default({}),
+  /** 全文内容索引：revisionId → 降采样 UTF-8 文本（仅供内容搜索，非权威数据）。 */
+  textIndex: z.record(id, id).default({}),
 });
 
 export type DriveState = z.infer<typeof driveStateSchema>;

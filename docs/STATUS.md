@@ -1,3 +1,23 @@
+# 当前进度
+
+## 2026-10-11（续四十七）：网盘插件增量 alpha.2——全文内容搜索 + 回收站/恢复 + 配额展示
+
+用户确认「忽略 dream-skin 告警，继续开发网盘功能」，四项方向全部纳入：全文内容搜索、回收站与恢复、真实模型端到端验证、分享与配额等增强。本次完成三项编码项中的全文搜索与回收站 + 配额展示，并完成真实模型端到端验证；分享（外部只读链接，涉跨主体授权）如实后置二期。已部署上线 dsh.10ge.cn 并通过浏览器 + 真实模型实测。证据见 [drive-plugin-alpha2](evidence/drive-plugin-alpha2.md)。
+
+- **全文内容搜索**：文本类文件（TEXT_MEDIA 且 ≤256KB）在归档时建降采样内容索引（textIndex，schema 新增字段 `.default({})` 兼容旧记录）；`drive_search` 与网盘搜索同时按文件名与正文匹配，正文命中返回上下文片段（±40/80 字符）。AI 生成/工具输出（save）直接取字节，用户上传文本附件（saveReference）读附件字节建索引。
+- **类型推断修复（验证中发现并修复）**：捕获路径此前一律落为 `application/octet-stream`（presented 未传类型、官方 `FileAttachmentRef` 无 mediaType），导致全文索引对真实文件从不生效。新增按扩展名推断文本类型（`mediaTypeOf`），使 `.md/.txt/...` 等真实产物建立内容索引。
+- **回收站与恢复**：侧栏新增「回收站」入口与视图；删除文案改为「移入回收站」；支持恢复（restore，子树回 active）与彻底删除（purge，移除对象与修订引用并清理 receipts，附件字节由附件后端保留）。删除/恢复闭环补齐，误删可恢复。
+- **配额展示**：sidebar footer 显示真实 `已用 X / 总量 Y`（usedBytes = revisions 字节合计，totalBytes = 5GB 配额，来自实际服务非示例数据）。
+- **预览返回修复（验证中发现并修复）**：预览替换列表且原先整体隐藏工具栏，打开文件后无法回到列表；`DrivePreview` 新增 `onClose`，预览头渲染「← 返回列表」。
+- **验证**：drive test 4/4 通过（全文命中/excerpt、捕获路径类型推断、saveReference 内容索引、回收站流、purge 幂等重放、配额、remote 端点）；`node scripts/check-plan.mjs` PASS。UI 变更仅新增 `.wd-drive-crumb-current` 类，全部沿用 `--dsw-*` token（UI-DESIGN §8）。
+- **部署（dsh.10ge.cn）**：制品 `workdsh-plugin-drive-0.1.0-alpha.2.tgz`（sha256 `a4355493…d2765`）上传 `wd-upload-022` → 依赖指针切换 + 容器内 `pnpm install`（Done in 11.3s）→ `docker compose up -d --force-recreate`；复验容器 healthy、CLI 0.2.1-alpha.2、HTTP 200、13 个 workdsh 包齐全、新代码 `grep` 命中。（首次 install 出现 `Segmentation fault`，改用 `--reporter=append-only` 后正常，详见证据文档。）
+- **真实模型端到端验证（已执行）**：线上新建会话（DeepSeek-V4.1-Flash）→ 模型真实写入并交付 `diskverify-2026.md`（含标记词 `ZQNETDISKCHECK2026`）→ 网盘自动归档 → 搜索标记词命中并显示正文 excerpt；服务端状态确认该文件 mediaType=`text/markdown` 且 textIndex 收录正文。回收站空态、配额 footer、「← 返回列表」均实测通过。
+- **未覆盖项**：分享（二期）；存量文件索引重建（α.1 期 `周报_2026-W41.md` 仍无 textIndex，正文暂不可搜）；多端并发一致性——如实登记于证据文档。
+
+## 2026-10-11（续四十六）：启动「1 entry did not activate」排查结论（dsh-dream-skin 时序性 pending）
+
+经排查确认：未激活条目为 **dsh-dream-skin@10.10.0**（官方市场皮肤插件，client bundle）。日志 `pending (waiting for service: webRuntime)`——webRuntime 由浏览器端 client runtime 提供，服务端启动快照时未注册属正常时序；浏览器访问后注册，dream-skin 在浏览器端激活（实测 `__DSH_DREAM_SKIN_STATUS__`=ready、皮肤 nebula 生效，Host 清单 234 项全部 active）。与 drive/bundle 部署无关（备份 package.json 中已有此条目）。此前验证为 0 系验证时机在浏览器探针访问之后。属良性快照状态，无故障、无需处置。
+
 ## 2026-10-11（续四十五）：网盘插件上线 dsh.10ge.cn + 浏览器实测全绿 + 推送 fork
 
 经用户授权「执行部署并推送代码」，网盘插件已部署上线并通过浏览器实测，代码已推送 GitHub fork。

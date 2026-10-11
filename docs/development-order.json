@@ -263,7 +263,8 @@
  ],
  "status": "todo",
       "evidence": [
-        "docs/evidence/drive-plugin-alpha1.md"
+        "docs/evidence/drive-plugin-alpha1.md",
+        "docs/evidence/drive-plugin-alpha2.md"
       ],
       "note": "2026-10-11 用户需求新增网盘：左侧导航「网盘」入口，自动归档并浏览所有对话产生的文档/图片（AI 生成 + 用户上传附件 + 工具输出文件），类似豆包智能体网盘。独立插件 workdsh-plugin-drive（modules.json 已登记 P1-14）。前置取已完成 D01 基线（storageDomain/identity 治理），不阻断主线 D04 推进。用户明确新指令实施中（首期切片已 typecheck/build/探针验证通过，证据见 drive-plugin-alpha1），当前步骤仍为 D04，D18 完成验收证据后置为 in_progress/completed。实施计划见 .trae/documents/netdisk-drive-plugin-plan.md。"
     }

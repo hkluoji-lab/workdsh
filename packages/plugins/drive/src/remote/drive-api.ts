@@ -51,6 +51,9 @@ export function registerDriveConnection(ctx: Context): void {
         if (endpoint === 'rename' && typeof payload.nodeId === 'string' && typeof payload.name === 'string') return Response.json(ok(await manager.rename(current, payload.nodeId, payload.name, request.signal)));
         if (endpoint === 'move' && typeof payload.nodeId === 'string' && (payload.parentId === undefined || typeof payload.parentId === 'string')) return Response.json(ok(await manager.move(current, payload.nodeId, payload.parentId as string | undefined, request.signal)));
         if (endpoint === 'archive' && typeof payload.nodeId === 'string') { await manager.archive(current, payload.nodeId, request.signal); return Response.json(ok({ archived: true })); }
+        if (endpoint === 'list-archived') return Response.json(ok(await manager.listArchived(current, request.signal)));
+        if (endpoint === 'restore' && typeof payload.nodeId === 'string') { await manager.restore(current, payload.nodeId, request.signal); return Response.json(ok({ restored: true })); }
+        if (endpoint === 'purge' && typeof payload.nodeId === 'string') { await manager.purge(current, payload.nodeId, request.signal); return Response.json(ok({ purged: true })); }
         return Response.json(fail('drive/invalid-request', '网盘请求无效。'), { status: 400 });
       } catch (cause) {
         const code = cause instanceof Error && cause.message.startsWith('drive/') ? cause.message : 'drive/internal';

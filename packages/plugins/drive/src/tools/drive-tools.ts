@@ -51,7 +51,7 @@ export function registerDriveTools(ctx: Context): void {
   }));
   ctx.tools.register(defineTool({
     name: 'drive_search',
-    description: '按文件名关键词搜索当前用户网盘文件。支持来源、类型与会话筛选。',
+    description: '按文件名或文档正文关键词搜索当前用户网盘文件（文本类文件按内容匹配，返回内容片段）。支持来源、类型与会话筛选。',
     parameters: { query: { type: 'string', required: true }, source: { type: 'string', enum: ['ai-generated', 'user-upload', 'tool-output'] }, kind: { type: 'string', enum: ['document', 'image', 'video', 'audio', 'archive', 'other'] }, session_id: { type: 'string' } },
     output: { schema: { type: 'object', additionalProperties: false, properties: { hits: { type: 'array', required: true, items: { type: 'object', additionalProperties: false, properties: { file_id: { type: 'string', required: true }, node_id: { type: 'string', required: true }, name: { type: 'string', required: true }, kind: { type: 'string', required: true }, source: { type: 'string', required: true }, session_id: { type: 'string' }, updated_at: { type: 'string', required: true }, folder_path: { type: 'string', required: true }, excerpt: { type: 'string', required: true } } } } } }, render: (_args, value) => [{ type: 'text', text: value.hits.length ? value.hits.map(hit => `${hit.name}: ${hit.excerpt}`).join('\n') : '没有找到匹配文件。' }] },
     async execute(args, exec) {

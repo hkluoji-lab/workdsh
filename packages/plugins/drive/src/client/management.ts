@@ -31,6 +31,9 @@ export function createDriveClient(_ctx: Context, lifetime?: AbortSignal) {
     rename: (nodeId: string, name: string) => invoke<DriveNode>('rename', { nodeId, name }, lifetime),
     move: (nodeId: string, parentId?: string) => invoke<DriveNode>('move', { nodeId, parentId }, lifetime),
     archive: (nodeId: string) => invoke<{ archived: true }>('archive', { nodeId }, lifetime),
+    listArchived: () => invoke<readonly DriveTreeEntry[]>('list-archived', {}, lifetime),
+    restore: (nodeId: string) => invoke<{ restored: true }>('restore', { nodeId }, lifetime),
+    purge: (nodeId: string) => invoke<{ purged: true }>('purge', { nodeId }, lifetime),
   };
 }
 export type DriveClient = ReturnType<typeof createDriveClient>;

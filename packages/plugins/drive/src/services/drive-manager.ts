@@ -13,9 +13,23 @@ declare module '@deepseek-ai/cordis' { interface Context { workdshDrive: DriveMa
 
 const MAX_BYTES = 100 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 5 * 1024 * 1024 * 1024;
+const MAX_INDEX_BYTES = 256 * 1024;
+const MAX_INDEX_CHARS = 128 * 1024;
+const TEXT_MEDIA = /^(text\/|application\/(json|x-yaml|yml|xml|javascript|typescript|csv|x-www-form-urlencoded)(;|$))/i;
 const sha256 = (value: Uint8Array | string): string => createHash('sha256').update(value).digest('hex');
 const now = (): string => new Date().toISOString();
 const ATTACHMENT_ID = /^sha256:[0-9a-f]{64}$/;
+
+/** 文本类文件提取降采样索引文本；二进制/解码失败返回 undefined（不建内容索引）。 */
+const indexTextOf = (mediaType: string, bytes: Uint8Array): string | undefined => {
+  if (!TEXT_MEDIA.test(mediaType) || bytes.byteLength > MAX_INDEX_BYTES) return undefined;
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes).slice(0, MAX_INDEX_CHARS); } catch { return undefined; }
+};
+const excerptOf = (indexText: string | undefined, needle: string): string | undefined => {
+  if (!indexText || !needle) return undefined;
+  const at = indexText.toLocaleLowerCase().indexOf(needle);
+  return at < 0 ? undefined : `…${indexText.slice(Math.max(0, at - 40), at + 80)}…`;
+};
 
 /** 内容变更 = 新 revision，附件不可变。删除 = 归档（status:'archived'），历史引用保留。 */
 export interface DriveReferenceInput {
@@ -68,6 +82,23 @@ const kindFrom = (name: string, mediaType?: string): DriveFileKind => {
   return 'other';
 };
 
+/** 文本类扩展名 → mediaType。捕获路径（presented / 会话附件）拿不到真实类型，按扩展名补齐。 */
+const textMediaTypes: Readonly<Record<string, string>> = {
+  '.md': 'text/markdown', '.markdown': 'text/markdown', '.txt': 'text/plain', '.log': 'text/plain',
+  '.csv': 'text/csv', '.tsv': 'text/tab-separated-values', '.json': 'application/json',
+  '.yaml': 'application/x-yaml', '.yml': 'application/x-yaml', '.xml': 'application/xml',
+  '.html': 'text/html', '.htm': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
+  '.mjs': 'application/javascript', '.cjs': 'application/javascript', '.ts': 'application/typescript',
+  '.tsx': 'application/typescript', '.jsx': 'application/javascript',
+};
+
+/** 已有具体类型时保留；仅为通用二进制或缺失时按文本扩展名推断，供内容索引与预览判定。 */
+const mediaTypeOf = (name: string, provided?: string): string => {
+  const given = provided?.trim();
+  if (given && given !== 'application/octet-stream') return given;
+  return textMediaTypes[extname(name).toLowerCase()] ?? given ?? 'application/octet-stream';
+};
+
 export class DriveManager extends Service implements DriveService {
   static inject = ['storageDomain', 'attachments'];
   private table?: KvTable<string, DriveState>;
@@ -88,7 +119,11 @@ export class DriveManager extends Service implements DriveService {
   }
 
   space(actor: ActorContext, signal?: AbortSignal): Promise<DriveSpace> {
-    return this.enqueue(async () => (await this.ensureState(actor, signal)).space);
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal);
+      const usedBytes = Object.values(state.revisions).reduce((total, revision) => total + revision.byteLength, 0);
+      return { ...state.space, usedBytes, totalBytes: this.maxTotalBytes };
+    });
   }
 
   list(actor: ActorContext, parentId?: string, signal?: AbortSignal): Promise<readonly DriveTreeEntry[]> {
@@ -123,8 +158,9 @@ export class DriveManager extends Service implements DriveService {
       if (Object.values(state.revisions).reduce((total, revision) => total + revision.byteLength, 0) + input.bytes.byteLength > this.maxTotalBytes) throw new Error('drive/quota-exceeded');
       this.assertFolder(state, input.parentId); signal?.throwIfAborted();
       const name = this.uniqueName(state, input.parentId, cleanName(input.name));
+      const mediaType = mediaTypeOf(name, input.mediaType);
       const ref = await this.ctx.attachments.saveFile({ data: input.bytes, name });
-      return this.commitRef(state, actor, { name, attachmentId: ref.attachmentId, byteLength: ref.bytes, mediaType: input.mediaType?.trim() || 'application/octet-stream', sessionId: input.sessionId, operationId: input.operationId, parentId: input.parentId, sha256: sha256(input.bytes), inputSha256, source: input.source }, signal);
+      return this.commitRef(state, actor, { name, attachmentId: ref.attachmentId, byteLength: ref.bytes, mediaType, sessionId: input.sessionId, operationId: input.operationId, parentId: input.parentId, sha256: sha256(input.bytes), inputSha256, source: input.source }, indexTextOf(mediaType, input.bytes), signal);
     });
   }
 
@@ -141,7 +177,17 @@ export class DriveManager extends Service implements DriveService {
       if (Object.values(state.revisions).reduce((total, revision) => total + revision.byteLength, 0) + input.byteLength > this.maxTotalBytes) throw new Error('drive/quota-exceeded');
       signal?.throwIfAborted();
       const name = this.uniqueName(state, undefined, cleanName(input.name));
-      return this.commitRef(state, actor, { name, attachmentId: input.attachmentId, byteLength: input.byteLength, mediaType: input.mediaType.trim() || 'application/octet-stream', sessionId: input.sessionId, operationId: input.operationId, parentId: undefined, sha256: input.attachmentId.slice('sha256:'.length), inputSha256, source: 'user-upload' }, signal);
+      const mediaType = mediaTypeOf(name, input.mediaType);
+      let indexText: string | undefined;
+      if (TEXT_MEDIA.test(mediaType) && input.byteLength <= MAX_INDEX_BYTES) {
+        try {
+          const ref: FileAttachmentRef = { attachmentId: input.attachmentId as FileAttachmentRef['attachmentId'], name, bytes: input.byteLength };
+          const chunks: Uint8Array[] = [];
+          for await (const chunk of this.ctx.attachments.readFileStream(ref, signal)) chunks.push(chunk);
+          indexText = indexTextOf(mediaType, Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))));
+        } catch { indexText = undefined; }
+      }
+      return this.commitRef(state, actor, { name, attachmentId: input.attachmentId, byteLength: input.byteLength, mediaType, sessionId: input.sessionId, operationId: input.operationId, parentId: undefined, sha256: input.attachmentId.slice('sha256:'.length), inputSha256, source: 'user-upload' }, indexText, signal);
     });
   }
 
@@ -169,10 +215,12 @@ export class DriveManager extends Service implements DriveService {
         if (filters.updatedBefore && file.updatedAt > filters.updatedBefore) continue;
         signal?.throwIfAborted(); const node = this.requireNode(state, file.nodeId);
         const name = node.name.toLocaleLowerCase();
-        const score = needle ? name === needle ? 4 : name.startsWith(needle) ? 3 : name.includes(needle) ? 2 : 1 : 0;
-        if (needle && score === 1) continue;
-        const excerpt = `来源：${sourceLabel(file.source)}${file.sessionId ? ` · 会话 ${file.sessionId}` : ''}`;
-        hits.push({ fileId: file.id, revisionId: file.currentRevisionId, nodeId: node.id, name: node.name, kind: file.kind, source: file.source, ...(file.sessionId ? { sessionId: file.sessionId } : {}), updatedAt: file.updatedAt, folderPath: this.folderPath(state, node.parentId), excerpt, score });
+        const nameScore = needle ? name === needle ? 4 : name.startsWith(needle) ? 3 : name.includes(needle) ? 2 : 0 : 0;
+        const indexText = needle ? state.textIndex[file.currentRevisionId] : undefined;
+        const excerpt = excerptOf(indexText, needle);
+        const score = Math.max(nameScore, excerpt ? 2 : 0);
+        if (needle && score === 0) continue;
+        hits.push({ fileId: file.id, revisionId: file.currentRevisionId, nodeId: node.id, name: node.name, kind: file.kind, source: file.source, ...(file.sessionId ? { sessionId: file.sessionId } : {}), updatedAt: file.updatedAt, folderPath: this.folderPath(state, node.parentId), excerpt: excerpt ?? `来源：${sourceLabel(file.source)}${file.sessionId ? ` · 会话 ${file.sessionId}` : ''}`, score });
       }
       return hits.sort((a, b) => b.score - a.score || b.updatedAt.localeCompare(a.updatedAt) || a.name.localeCompare(b.name, 'zh-CN')).slice(0, 50);
     });
@@ -211,12 +259,48 @@ export class DriveManager extends Service implements DriveService {
     });
   }
 
-  private async commitRef(state: DriveState, actor: ActorContext, input: DriveCommitInput, _signal?: AbortSignal): Promise<DriveTreeEntry> {
+  listArchived(actor: ActorContext, signal?: AbortSignal): Promise<readonly DriveTreeEntry[]> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal);
+      return Object.values(state.files).filter((file) => file.status === 'archived')
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .map((file) => this.entry(state, this.requireNode(state, file.nodeId)));
+    });
+  }
+
+  restore(actor: ActorContext, nodeId: string, signal?: AbortSignal): Promise<void> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); this.requireNode(state, nodeId); signal?.throwIfAborted();
+      const ids = new Set([nodeId, ...this.descendants(state, nodeId)]);
+      const files: DriveState['files'] = Object.fromEntries(Object.entries(state.files).map(([id, file]) => ids.has(file.nodeId) && file.status === 'archived' ? [id, { ...file, status: 'active' as const, updatedAt: now() }] : [id, file])) as DriveState['files'];
+      await this.states().put(this.key(actor), { ...state, files, space: { ...state.space, updatedAt: now() } });
+    });
+  }
+
+  purge(actor: ActorContext, nodeId: string, signal?: AbortSignal): Promise<void> {
+    return this.enqueue(async () => {
+      const state = await this.ensureState(actor, signal); this.requireNode(state, nodeId); signal?.throwIfAborted();
+      const ids = new Set([nodeId, ...this.descendants(state, nodeId)]);
+      const fileIds = new Set(Object.values(state.files).filter((file) => ids.has(file.nodeId)).map((file) => file.id));
+      const next: DriveState = {
+        ...state,
+        nodes: Object.fromEntries(Object.entries(state.nodes).filter(([id]) => !ids.has(id))),
+        files: Object.fromEntries(Object.entries(state.files).filter(([, file]) => !fileIds.has(file.id))),
+        revisions: Object.fromEntries(Object.entries(state.revisions).filter(([, revision]) => !fileIds.has(revision.fileId))),
+        receipts: Object.fromEntries(Object.entries(state.receipts).filter(([, receipt]) => !ids.has(receipt.nodeId) && !fileIds.has(receipt.fileId))),
+        textIndex: Object.fromEntries(Object.entries(state.textIndex).filter(([revisionId]) => state.revisions[revisionId] && !fileIds.has(state.revisions[revisionId]!.fileId))),
+        space: { ...state.space, updatedAt: now() },
+      };
+      await this.states().put(this.key(actor), next);
+    });
+  }
+
+  private async commitRef(state: DriveState, actor: ActorContext, input: DriveCommitInput, indexText: string | undefined, _signal?: AbortSignal): Promise<DriveTreeEntry> {
       const timestamp = now(); const nodeId = randomUUID(); const fileId = randomUUID(); const revisionId = randomUUID();
       const node: DriveNode = { id: nodeId, spaceId: state.space.id, ...(input.parentId ? { parentId: input.parentId } : {}), kind: 'file', name: input.name, fileId, createdAt: timestamp, updatedAt: timestamp };
       const file = { id: fileId, spaceId: state.space.id, nodeId, kind: kindFrom(input.name, input.mediaType), mediaType: input.mediaType, byteLength: input.byteLength, owner: this.owner(actor), status: 'active' as const, source: input.source, ...(input.sessionId ? { sessionId: input.sessionId } : {}), currentRevisionId: revisionId, attachmentId: input.attachmentId, createdAt: timestamp, updatedAt: timestamp } satisfies DriveFile;
       const revision: DriveRevision = { id: revisionId, fileId, number: 1, sha256: input.sha256, byteLength: input.byteLength, attachmentId: input.attachmentId, createdBy: actor.principalId, createdAt: timestamp };
-      const next: DriveState = { ...state, space: { ...state.space, updatedAt: timestamp }, nodes: { ...state.nodes, [nodeId]: node }, files: { ...state.files, [fileId]: file }, revisions: { ...state.revisions, [revisionId]: revision }, receipts: { ...state.receipts, [input.operationId]: { operationId: input.operationId, fileId, revisionId, nodeId, inputSha256: input.inputSha256 } } };
+      const next: DriveState = { ...state, space: { ...state.space, updatedAt: timestamp }, nodes: { ...state.nodes, [nodeId]: node }, files: { ...state.files, [fileId]: file }, revisions: { ...state.revisions, [revisionId]: revision }, receipts: { ...state.receipts, [input.operationId]: { operationId: input.operationId, fileId, revisionId, nodeId, inputSha256: input.inputSha256 } }, ...(indexText ? { textIndex: { ...state.textIndex, [revisionId]: indexText } } : {}) };
       await this.states().put(this.key(actor), next);
       return { ...node, file, revision };
   }
@@ -226,7 +310,7 @@ export class DriveManager extends Service implements DriveService {
   }
   private async ensureState(actor: ActorContext, signal?: AbortSignal): Promise<DriveState> {
     signal?.throwIfAborted(); this.validateActor(actor); const key = this.key(actor); const current = this.states().get(key); if (current) return current;
-    const timestamp = now(); const state: DriveState = { schemaVersion: 1, space: { id: randomUUID(), title: '我的网盘', owner: this.owner(actor), createdAt: timestamp, updatedAt: timestamp }, nodes: {}, files: {}, revisions: {}, receipts: {} };
+    const timestamp = now(); const state: DriveState = { schemaVersion: 1, space: { id: randomUUID(), title: '我的网盘', owner: this.owner(actor), createdAt: timestamp, updatedAt: timestamp }, nodes: {}, files: {}, revisions: {}, receipts: {}, textIndex: {} };
     await this.states().put(key, state); return state;
   }
   private entry(state: DriveState, node: DriveNode): DriveTreeEntry { const file = node.fileId ? state.files[node.fileId] : undefined; const revision = file ? state.revisions[file.currentRevisionId] : undefined; return { ...node, ...(file ? { file } : {}), ...(revision ? { revision } : {}) }; }

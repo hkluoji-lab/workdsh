@@ -12,6 +12,10 @@ export interface DriveSpace {
   readonly owner: ResourceOwner;
   readonly createdAt: string;
   readonly updatedAt: string;
+  /** 已用字节（当前 revision 字节合计，来自真实服务）。 */
+  readonly usedBytes: number;
+  /** 配额上限字节。 */
+  readonly totalBytes: number;
 }
 
 export interface DriveNode {
@@ -110,4 +114,10 @@ export interface DriveService {
   rename(actor: ActorContext, nodeId: string, name: string, signal?: AbortSignal): Promise<DriveNode>;
   move(actor: ActorContext, nodeId: string, parentId: string | undefined, signal?: AbortSignal): Promise<DriveNode>;
   archive(actor: ActorContext, nodeId: string, signal?: AbortSignal): Promise<void>;
+  /** 回收站：列出已归档文件（含其原路径），按归档时间倒序。 */
+  listArchived(actor: ActorContext, signal?: AbortSignal): Promise<readonly DriveTreeEntry[]>;
+  /** 恢复已归档节点（含后代），回到 active。 */
+  restore(actor: ActorContext, nodeId: string, signal?: AbortSignal): Promise<void>;
+  /** 彻底删除节点（含后代）：移除网盘对象与修订引用，附件字节由附件后端保留。 */
+  purge(actor: ActorContext, nodeId: string, signal?: AbortSignal): Promise<void>;
 }

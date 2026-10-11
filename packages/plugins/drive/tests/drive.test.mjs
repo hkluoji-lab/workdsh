@@ -30,7 +30,10 @@ test('drive persists tree, content-addressable files, search, ops and restarts c
   const root = await mkdtemp(join(tmpdir(), 'workdsh-drive-lifecycle-')); let ctx;
   try {
     ctx = await boot(root);
-    assert.equal((await ctx.workdshDrive.space(actor)).title, '我的网盘');
+    const initialSpace = await ctx.workdshDrive.space(actor);
+    assert.equal(initialSpace.title, '我的网盘');
+    assert.equal(initialSpace.usedBytes, 0);
+    assert.equal(initialSpace.totalBytes, 5 * 1024 * 1024 * 1024);
     const folder = await ctx.workdshDrive.createFolder(actor, '项目甲');
     const saved = await ctx.workdshDrive.save(actor, { name: '方案.md', bytes: text('# 方案\n\n唯一词 DriveAlpha'), mediaType: 'text/markdown', source: 'ai-generated', sessionId: 'session-1', operationId: 'drive-op-1' });
     assert.equal(saved.kind, 'file');
@@ -50,6 +53,10 @@ test('drive persists tree, content-addressable files, search, ops and restarts c
     assert.equal(referenced.file.kind, 'image');
     assert.equal(referenced.file.source, 'user-upload');
     assert.equal(referenced.revision.attachmentId, ref.attachmentId);
+    // 用户上传的文本附件也建立内容索引（saveReference 读附件字节）
+    const textRef = await ctx.attachments.saveFile({ data: text('# 用户文档\n\n用户独特词 RefAlpha'), name: '用户文档.md' });
+    await ctx.workdshDrive.saveReference(actor, { name: '用户文档.md', attachmentId: textRef.attachmentId, byteLength: textRef.bytes, mediaType: 'text/markdown', sessionId: 'session-1', operationId: 'drive-ref-2' });
+    assert.equal((await ctx.workdshDrive.search(actor, 'RefAlpha'))[0].name, '用户文档.md');
     // 目录移动 + 重命名
     const moved = await ctx.workdshDrive.move(actor, saved.id, folder.id);
     assert.equal(moved.parentId, folder.id);
@@ -61,25 +68,44 @@ test('drive persists tree, content-addressable files, search, ops and restarts c
     assert.equal((await ctx.workdshDrive.search(actor, '方案.md'))[0].name, '方案.md');
     assert.equal((await ctx.workdshDrive.search(actor, '方案.md'))[0].folderPath, '我的网盘 / 项目甲（归档）');
     assert.equal((await ctx.workdshDrive.search(actor, '', { kinds: ['image'] }))[0].name, '图片.png');
-    assert.equal((await ctx.workdshDrive.search(actor, '', { sources: ['user-upload'] })).length, 1);
-    assert.equal((await ctx.workdshDrive.search(actor, '', { sessionId: 'session-1' })).length, 2);
+    assert.equal((await ctx.workdshDrive.search(actor, '', { sources: ['user-upload'] })).length, 2);
+    assert.equal((await ctx.workdshDrive.search(actor, '', { sessionId: 'session-1' })).length, 3);
+    // 全文内容搜索：正文词命中并返回内容片段
+    const contentHit = (await ctx.workdshDrive.search(actor, 'DriveAlpha'))[0];
+    assert.equal(contentHit.name, '方案.md');
+    assert.match(contentHit.excerpt, /DriveAlpha/);
+    assert.equal((await ctx.workdshDrive.search(actor, '不存在的词Xyz')).length, 0);
     // 会话维度引用
     assert.deepEqual((await ctx.workdshDrive.listSessions(actor)).map(row => row.sessionId), ['session-1']);
-    assert.equal((await ctx.workdshDrive.listSessions(actor))[0].fileCount, 2);
+    assert.equal((await ctx.workdshDrive.listSessions(actor))[0].fileCount, 3);
     // readBytes 一致
     assert.deepEqual(Buffer.from(await ctx.workdshDrive.readBytes(actor, saved.file.id)), Buffer.from(text('# 方案\n\n唯一词 DriveAlpha')));
     // 归档：从列表与搜索移除（含会话维度），历史引用仍可读
     assert.equal((await ctx.workdshDrive.search(actor, '方案', { sessionId: 'session-1' })).length, 1);
     await ctx.workdshDrive.archive(actor, saved.id);
     assert.equal((await ctx.workdshDrive.search(actor, '方案', { sessionId: 'session-1' })).length, 0);
-    assert.equal((await ctx.workdshDrive.listSessions(actor))[0].fileCount, 1, 'archived file no longer counts toward session');
+    assert.equal((await ctx.workdshDrive.listSessions(actor))[0].fileCount, 2, 'archived file no longer counts toward session');
     assert.deepEqual(Buffer.from(await ctx.workdshDrive.readBytes(actor, saved.file.id, saved.revision.id)), Buffer.from(text('# 方案\n\n唯一词 DriveAlpha')), 'archived revisions stay readable by explicit reference');
+    // 回收站：归档文件可见并可恢复；彻底删除后不可恢复
+    assert.equal((await ctx.workdshDrive.listArchived(actor)).length, 1);
+    await ctx.workdshDrive.restore(actor, saved.id);
+    assert.equal((await ctx.workdshDrive.listArchived(actor)).length, 0);
+    assert.equal((await ctx.workdshDrive.search(actor, '方案', { sessionId: 'session-1' })).length, 1, 'restored file is searchable again');
+    const beforePurge = (await ctx.workdshDrive.space(actor)).usedBytes;
+    await ctx.workdshDrive.archive(actor, saved.id);
+    await ctx.workdshDrive.purge(actor, saved.id);
+    assert.equal((await ctx.workdshDrive.listArchived(actor)).length, 0);
+    await assert.rejects(ctx.workdshDrive.readBytes(actor, saved.file.id), /drive\/not-found/, 'purged file is gone');
+    assert.ok((await ctx.workdshDrive.space(actor)).usedBytes < beforePurge, 'purge frees accounted bytes');
     // 重启持久化
     await ctx.fiber.dispose(); ctx = undefined;
     ctx = await boot(root);
     const roots = await ctx.workdshDrive.list(actor);
     assert.equal(roots[0].name, '项目甲（归档）');
     assert.equal((await ctx.workdshDrive.list(actor, folder.id)).length, 1, 'referenced file persists in folder; archived file excluded from list');
+    // purge 清除幂等凭证：相同操作可重新保存为新文件
+    const recreated = await ctx.workdshDrive.save(actor, { name: '方案.md', bytes: text('# 方案\n\n唯一词 DriveAlpha'), mediaType: 'text/markdown', source: 'ai-generated', sessionId: 'session-1', operationId: 'drive-op-1' });
+    assert.notEqual(recreated.id, saved.id, 'purge clears receipts so replay creates a fresh node');
   } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
 });
 
@@ -138,6 +164,9 @@ test('drive capture idempotently archives user attachments and presented deliver
     assert.ok(presented, 'presented deliverable is archived');
     assert.equal(presented.file.source, 'tool-output');
     assert.deepEqual(Buffer.from(await ctx.workdshDrive.readBytes(actor, presented.file.id)), Buffer.from('# 交付物\n\ncapture-presented-bytes'));
+    // 捕获路径无真实 mediaType：按扩展名推断文本类型并建立内容索引
+    assert.equal(presented.file.mediaType, 'text/markdown', 'captured .md infers text media type');
+    assert.equal((await ctx.workdshDrive.search(actor, 'capture-presented-bytes'))[0].name, '交付.md', 'presented deliverable is content-searchable');
     // 重复 presented 事件不重复
     ctx.emit('session/event', session, { type: 'deliverables/presented', seq: 4, data: { turn: 1, callId: 'call-1', files: [{ path: join(root, 'ws', '交付.md') }] } });
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -169,6 +198,13 @@ test('drive remote endpoint forwards whitelisted sources and exposes sessions', 
     const bad = await post('rename', { nodeId: 'missing-node', name: 'x' });
     assert.equal(bad.body.error.code, 'drive/not-found');
     assert.equal(bad.status, 400);
+    // 回收站端点：list-archived / restore / purge
+    assert.equal((await post('archive', { nodeId: upload.body.value.id })).body.value.archived, true);
+    assert.equal((await post('list-archived', {})).body.value.length, 1);
+    assert.equal((await post('restore', { nodeId: upload.body.value.id })).body.value.restored, true);
+    assert.equal((await post('list-archived', {})).body.value.length, 0);
+    assert.equal((await post('purge', { nodeId: upload.body.value.id })).body.value.purged, true);
+    assert.equal((await post('list-archived', {})).body.value.length, 0);
   } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
 });
 

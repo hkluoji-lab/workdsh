@@ -21,7 +21,7 @@ export interface DrivePreviewInput {
 const sourceLabel = (source?: string): string => source === 'ai-generated' || source === 'user-upload' || source === 'tool-output' ? ({ 'ai-generated': 'AI 生成', 'user-upload': '用户上传', 'tool-output': '工具输出' } as const)[source] : source || '未知来源';
 const kindLabel = (kind?: string): string => ({ document: '文档', image: '图片', video: '视频', audio: '音频', archive: '压缩包', other: '文件' }[kind ?? ''] ?? kind ?? '文件');
 
-export function DrivePreview({ management, input }: { management: DriveClient; input: DrivePreviewInput }) {
+export function DrivePreview({ management, input, onClose }: { management: DriveClient; input: DrivePreviewInput; onClose?: () => void }) {
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
   const [error, setError] = useState('');
@@ -64,9 +64,11 @@ export function DrivePreview({ management, input }: { management: DriveClient; i
   </div>;
   return <section className="wd-drive-preview">
     <header className="wd-drive-preview-header">
-      <button onClick={download}>下载</button>
+      {onClose ? <button onClick={onClose}>← 返回列表</button> : null}
       <strong>{input.name}</strong>
       <span>{kindLabel(input.kind)} · {sourceLabel(input.source)}</span>
+      <span className="spacer" />
+      <button onClick={download}>下载</button>
     </header>
     <div className="wd-drive-preview-body">
       {busy ? <div className="wd-drive-state">正在读取文件…</div>
