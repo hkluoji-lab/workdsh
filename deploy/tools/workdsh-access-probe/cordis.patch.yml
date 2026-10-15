@@ -1,0 +1,14 @@
+# 只在沙箱 profile 里引用。生产补丁层**不要**加这一条。
+- insert:
+    - id: workdsh-access-probe
+      name: 'file:///data/dsh/tools/workdsh-access-probe/dist/index.js'
+      config:
+        organizationId: local-personal
+        fallbackPrincipalId: local-user
+        # 真实资源样本（来自生产 workdsh_experts/experts/document-review-advisor.json）
+        resourceDomain: workdsh-experts
+        resourceId: document-review-advisor
+        resourceRevision: r-193ea21a-b9e0-4666-9008-0c072c0d6249
+        ownerPrincipalId: local-user
+        # 被验证的账号主体
+        subjectPrincipalId: portal:alice

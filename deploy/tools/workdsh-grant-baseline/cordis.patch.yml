@@ -1,0 +1,10 @@
+# 只在沙箱 profile 里引用；生产启用时再按需加入（默认 dry-run）。
+- insert:
+    - id: workdsh-grant-baseline
+      name: 'file:///data/dsh/tools/workdsh-grant-baseline/dist/index.js'
+      config:
+        organizationId: local-personal
+        siteOwnerPrincipalId: local-user
+        storageRoot: /data/dsh/tmp/p1sandbox-home/storages
+        rosterFile: /data/dsh/tmp/p1sandbox-home/principals.json
+        baselineActions: read,use

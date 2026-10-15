@@ -1,0 +1,39 @@
+{
+  "name": "workdsh-plugin-schedule",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "WorkDSH 定时任务入口：把左侧导航「定时任务」从待开放占位替换为可用的提醒管理面板（当前会话读/增/删 + 跨会话总览），复用官方 @deepseek-ai/dsh-schedule 的持久化与交付语义。",
+  "exports": {
+    ".": {
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "default": "./dist/client.browser.js"
+    }
+  },
+  "files": [
+    "dist",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-session"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "4.0.4"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "workdsh-remote-shell",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Inject host-shell semantics (__DSH_TRANSPORT__.ownsHost) into the DSH boot HTML so Settings → Models works behind a reverse proxy.",
+  "exports": {
+    ".": "./index.js"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*"
+  }
+}

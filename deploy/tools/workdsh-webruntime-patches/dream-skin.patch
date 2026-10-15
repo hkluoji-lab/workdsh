@@ -1,0 +1,56 @@
+--- a/lib/index.js	2026-10-15 08:14:53.269216996 +0800
++++ b/lib/index.js	2026-10-15 08:14:53.269216996 +0800
+@@ -43,8 +43,8 @@
+ 
+ /** Plugin identity for cordis.yml rows. */
+ export const name = "dsh-dream-skin";
+-/** Services required before mounting: the web server routes and the trust fence host list. */
+-export const inject = ["webServer", "webRuntime"];
++/** Services required before mounting: the web server route registry (trust list is read per request). */
++export const inject = ["webServer"];
+ 
+ // ── state file ─────────────────────────────────────────────────────────────
+ 
+@@ -114,7 +114,7 @@
+  * Anything WHATWG parsing would silently rewrite (whitespace, dangling
+  * colon, zero-padded port, path fragment, bogus host spellings) is refused,
+  * so a misconfigured entry cannot quietly broaden the authority grant. The
+- * host list here comes from webRuntime (already validated by dsh-web-app);
++ * host list here comes from webRuntime (DSH 0.1.x) or the connection service (DSH 0.2.x);
+  * this is a defensive second check that fails loud on a broken value.
+  */
+ function assertTrustedAuthority(entry) {
+@@ -263,14 +263,14 @@
+ 
+ /**
+  * Host loader entry: mount the fenced persistence API.
+- * @param ctx - host cordis context (webServer, webRuntime).
++ * @param ctx - host cordis context (webServer; deployment trust via webRuntime or connection).
+  */
+ export function apply(ctx) {
+ 	ctx.effect(() => ctx.webServer.register({
+ 		kind: "prefix",
+ 		path: API_PREFIX,
+ 		handler: async (req, res) => {
+-			if (!isTrustedApiRequest(req, ctx.webRuntime.trustedHosts)) {
++			if (!isTrustedApiRequest(req, ((c) => { const r = c.get("webRuntime")?.trustedHosts; if (Array.isArray(r) && r.length > 0) return r; return c.get("connection")?.trustedHosts ?? []; })(ctx))) {
+ 				writeJson(res, 403, { ok: false, error: { code: "forbidden", message: "forbidden" } });
+ 				return;
+ 			}
+--- a/lib/types/index.d.ts	2026-10-15 08:14:53.269216996 +0800
++++ b/lib/types/index.d.ts	2026-10-15 08:14:53.269216996 +0800
+@@ -33,8 +33,12 @@
+       handler(req: unknown, res: unknown): Promise<void> | void;
+     }): () => void;
+   };
+-  /** Bind-derived trust list sampled at boot (LAN literals + --trusted-host). */
+-  webRuntime: {
++  /** DSH 0.1.x only: bind-derived trust list sampled at boot (LAN literals + --trusted-host). */
++  webRuntime?: {
++    trustedHosts: readonly string[];
++  };
++  /** DSH 0.2.x: the deployment trust list (`--trusted-host`) now lives on the connection service. */
++  connection?: {
+     trustedHosts: readonly string[];
+   };
+   /** Register a disposer on the calling fiber. */

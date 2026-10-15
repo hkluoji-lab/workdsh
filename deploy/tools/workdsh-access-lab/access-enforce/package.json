@@ -1,0 +1,13 @@
+{
+  "name": "workdsh-access-enforce",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "技能与连接器的授权判定点（C4/P2）：包装管理器破坏性方法，以调用者身份要求 manage。默认 dry-run。",
+  "exports": { ".": { "default": "./dist/index.js" } },
+  "files": ["dist", "README.md"],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/schemastery": "^3.18.4"
+  }
+}

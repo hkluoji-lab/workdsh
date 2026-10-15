@@ -1,0 +1,14 @@
+# workdsh-identity-portal 自带补丁：把 Host 半边插进插件树。
+# 注意：与 profile 层的 `- id: …` 定向覆盖不同，这里是 insert；不要在 profile 层重复 insert
+# 同一个 id，否则 loader 会抛 "duplicate loader entry id" 并让容器进入崩溃循环。
+- insert:
+    - id: workdsh-identity-portal
+      name: 'file:///data/dsh/tools/workdsh-identity-portal/dist/index.js'
+      config:
+        # 必须与 workdsh-provider-identity-local 的持久化档案一致，否则老会话的
+        # 归属绑定（organizationId=local-personal）会与新主体对不上，历史会话里的工具调用会被拒。
+        organizationId: local-personal
+        organizationName: 本地个人空间
+        fallbackPrincipalId: local-user
+        secretFile: /data/dsh/portal/identity-bridge.key
+        rosterFile: /data/dsh/storages/workdsh_identity_portal/principals.json

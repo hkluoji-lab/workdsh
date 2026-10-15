@@ -1,0 +1,22 @@
+{
+  "name": "workdsh-access-probe",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "授权决策探针：用真实资源/真实所有者调用 workdshAccess.authorize，把「按账号主体之后既有资源会不会被拒」这件事端到端复现出来，并验证 grant 能否修好它。只在沙箱使用。",
+  "exports": {
+    ".": {
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "cordis.patch.yml", "README.md"],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/schemastery": "^3.18.4"
+  }
+}

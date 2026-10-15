@@ -1,0 +1,34 @@
+{
+  "name": "workdsh-plugin-users",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "WorkDSH 用户管理入口：在左侧导航左下角（紧邻「设置」上方）加入「用户管理」，用于查看本站在册账号、登录信息（最后登录时间/来源网段/登录与失败次数）并分配角色与状态。数据来自门户的同源 /api/portal/users*，只有管理员会话可用。",
+  "exports": {
+    ".": {
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "default": "./dist/client.browser.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "4.0.4"
+  }
+}

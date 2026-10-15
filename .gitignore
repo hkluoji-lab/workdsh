@@ -18,3 +18,8 @@ tmp/
 *.py[cod]
 
 packages/plugins/office/src/presentation/native-react/native.css
+
+# 部署资产：deploy/tools 下的 workdsh-* 线上插件只交付编译产物（无 TS 源码），
+# 需从上面的 **/dist/ 规则中显式豁免，否则回填后仓库里只剩 package.json 与 README。
+!deploy/tools/**/dist/
+!deploy/tools/**/dist/**
