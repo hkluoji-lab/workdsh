@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="same-origin">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%231d4ed8'/%3E%3Cg%20fill='%23fff'%3E%3Crect%20x='7'%20y='16'%20width='4'%20height='9'%20rx='1.2'/%3E%3Crect%20x='14'%20y='11'%20width='4'%20height='14'%20rx='1.2'/%3E%3Crect%20x='21'%20y='7'%20width='4'%20height='18'%20rx='1.2'/%3E%3C/g%3E%3C/svg%3E">
+<title>问卷结果管理台 · 企业 Agent 工作台</title>
+<style>
+:root{
+  --ad-bg:#f4f6fb;--ad-surface:#fff;--ad-ink:#0f172a;--ad-ink2:#4a5568;--ad-ink3:#8b95a5;
+  --ad-line:#e3e8f0;--ad-line-soft:#f0f3f9;--ad-brand:#2563eb;--ad-brand-deep:#1d4ed8;
+  --ad-brand-soft:#eef4ff;--ad-ok:#047857;--ad-warn:#b45309;--ad-warn-soft:#fffbeb;--ad-rose:#be123c;
+  --ad-radius:14px;--ad-maxw:1180px;
+  --ad-font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ad-bg);color:var(--ad-ink);font-family:var(--ad-font);font-size:14px;line-height:1.6;overflow-wrap:break-word}
+h1,h2,h3,h4,p{margin:0}
+a{color:var(--ad-brand-deep)}
+.ad-top{background:linear-gradient(135deg,#0f2557,#1d4ed8);color:#fff;padding:26px 24px}
+.ad-top__in{max-width:var(--ad-maxw);margin:0 auto;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.ad-top h1{font-size:20px;font-weight:680}
+.ad-top p{font-size:13px;color:rgba(255,255,255,.8);margin-top:5px}
+.ad-top__act{margin-left:auto;display:flex;gap:9px;flex-wrap:wrap}
+.ad-btn{font-family:inherit;font-size:13px;font-weight:600;border-radius:9px;padding:9px 15px;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.ad-btn--light{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);color:#fff}
+.ad-btn--light:hover{background:rgba(255,255,255,.26)}
+.ad-btn--solid{background:#fff;color:var(--ad-brand-deep)}
+.ad-btn--solid:hover{background:#eef4ff}
+.ad-wrap{max-width:var(--ad-maxw);margin:0 auto;padding:22px 24px 60px}
+.ad-note{background:var(--ad-warn-soft);border:1px solid #fde68a;color:#78350f;border-radius:10px;padding:11px 15px;font-size:13px;margin-bottom:18px}
+.ad-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.ad-kpi{background:var(--ad-surface);border:1px solid var(--ad-line);border-radius:var(--ad-radius);padding:17px 19px}
+.ad-kpi__n{font-size:29px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.ad-kpi__n small{font-size:14px;font-weight:600;color:var(--ad-ink3);margin-left:3px}
+.ad-kpi__l{font-size:12.5px;color:var(--ad-ink3);margin-top:3px}
+.ad-card{background:var(--ad-surface);border:1px solid var(--ad-line);border-radius:var(--ad-radius);padding:20px 22px;margin-bottom:16px}
+.ad-card>h2{font-size:15.5px;font-weight:670;margin-bottom:4px}
+.ad-card>p.ad-sub{font-size:12.5px;color:var(--ad-ink3);margin-bottom:15px}
+.ad-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.ad-bars{display:flex;flex-direction:column;gap:8px}
+.ad-bar{display:flex;align-items:center;gap:10px;font-size:13px}
+.ad-bar__l{flex:0 0 46%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ad-bar__t{flex:1;min-width:0;background:var(--ad-line-soft);border-radius:6px;height:16px;overflow:hidden}
+.ad-bar__f{height:100%;background:linear-gradient(90deg,var(--ad-brand),#60a5fa);border-radius:6px}
+.ad-bar__v{flex:none;font-variant-numeric:tabular-nums;color:var(--ad-ink2);font-weight:600;min-width:30px;text-align:right}
+.ad-scroll{overflow-x:auto}
+table.ad-t{width:100%;border-collapse:collapse;font-size:13px}
+table.ad-t th,table.ad-t td{padding:9px 11px;border-bottom:1px solid var(--ad-line-soft);text-align:left;vertical-align:top}
+table.ad-t th{font-size:12px;color:var(--ad-ink3);font-weight:600;white-space:nowrap;background:#fafbfe}
+table.ad-t td.ad-num{font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap}
+table.ad-t tr:last-child td{border-bottom:none}
+.ad-rank{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--ad-brand-soft);color:var(--ad-brand-deep);font-size:12px;font-weight:700}
+.ad-pill{display:inline-block;font-size:11.5px;font-weight:600;border-radius:5px;padding:1px 7px;white-space:nowrap}
+.ad-pill--risk{background:#fff1f2;color:var(--ad-rose);border:1px solid #fecdd3}
+.ad-pill--ok{background:#ecfdf5;color:var(--ad-ok);border:1px solid #a7f3d0}
+.ad-pill--mute{background:var(--ad-line-soft);color:var(--ad-ink3);border:1px solid var(--ad-line)}
+.ad-score{font-weight:700;font-variant-numeric:tabular-nums}
+.ad-rec{border:1px solid var(--ad-line);border-radius:11px;margin-bottom:10px;overflow:hidden}
+.ad-rec>summary{padding:12px 15px;cursor:pointer;font-size:13.5px;display:flex;gap:11px;align-items:center;flex-wrap:wrap;background:#fafbfe}
+.ad-rec>summary:hover{background:#f3f6fd}
+.ad-rec>summary::marker{color:var(--ad-ink3)}
+.ad-rec__dept{font-weight:670}
+.ad-rec__meta{color:var(--ad-ink3);font-size:12.5px}
+.ad-rec__body{padding:15px 17px;border-top:1px solid var(--ad-line-soft)}
+.ad-qa{margin-bottom:13px}
+.ad-qa:last-child{margin-bottom:0}
+.ad-qa__q{font-size:12.5px;font-weight:650;color:var(--ad-ink2)}
+.ad-qa__a{font-size:13.5px;margin-top:3px;white-space:pre-wrap}
+.ad-qa__a.is-empty{color:var(--ad-ink3)}
+.ad-empty{color:var(--ad-ink3);font-size:13.5px;padding:26px 0;text-align:center}
+.ad-err{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239;border-radius:10px;padding:13px 16px;font-size:13.5px}
+.ad-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ad-ink3);margin-top:12px}
+@media (max-width:900px){
+  .ad-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ad-cols{grid-template-columns:1fr}
+  .ad-bar__l{flex:0 0 40%}
+}
+@media (max-width:560px){
+  .ad-top{padding:20px 15px}
+  .ad-wrap{padding:16px 14px 48px}
+  .ad-kpi__n{font-size:24px}
+}
+</style>
+</head>
+<body>
+<header class="ad-top">
+  <div class="ad-top__in">
+    <div>
+      <h1>问卷结果管理台</h1>
+      <p>企业 Agent 工作台 · 岗位工作与 Agent 化机会调研<span id="adMeta"></span></p>
+    </div>
+    <div class="ad-top__act">
+      <button class="ad-btn ad-btn--light" id="adReload">刷新数据</button>
+      <button class="ad-btn ad-btn--light" id="adCsvAll">导出全部答卷 CSV</button>
+      <button class="ad-btn ad-btn--solid" id="adCsvMatrix">导出任务评分明细 CSV</button>
+    </div>
+  </div>
+</header>
+
+<div class="ad-wrap">
+  <div class="ad-note">
+    <b>本页含个人信息，请勿外传。</b>地址中的访问令牌 <code>t</code> 即密码，转发链接等于交出全部答卷。答卷同时以 JSONL 落盘在服务器 <code>data/submissions.ndjson</code>。
+  </div>
+  <div id="adBody"><div class="ad-empty">正在加载…</div></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var TOKEN = new URLSearchParams(location.search).get('t') || '';
+  var body = document.getElementById('adBody');
+  var records = [];
+
+  var esc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
+  var fmtDate = function (iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    var p = function (n) { return n < 10 ? '0' + n : String(n); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  };
+  var DIMS = [
+    { key: 'frequency', label: '频率' },
+    { key: 'duration', label: '单次耗时' },
+    { key: 'rules', label: '规则明确度' },
+    { key: 'central', label: '数据集中度' },
+    { key: 'risk', label: '出错代价' }
+  ];
+  var priority = function (r) {
+    return ['frequency', 'duration', 'rules', 'central']
+      .map(function (k) { return typeof r[k] === 'number' ? r[k] : 0; })
+      .reduce(function (a, b) { return a + b; }, 0);
+  };
+  var avg = function (list) {
+    var nums = list.filter(function (n) { return typeof n === 'number'; });
+    if (!nums.length) return null;
+    return Math.round((nums.reduce(function (a, b) { return a + b; }, 0) / nums.length) * 10) / 10;
+  };
+  var tally = function (key) {
+    var m = {};
+    records.forEach(function (r) {
+      var v = key(r);
+      (Array.isArray(v) ? v : (v ? [v] : [])).forEach(function (x) {
+        var k = String(x).trim();
+        if (k) m[k] = (m[k] || 0) + 1;
+      });
+    });
+    return Object.keys(m).map(function (k) { return { k: k, n: m[k] }; })
+      .sort(function (a, b) { return b.n - a.n; });
+  };
+
+  function barList(rows, emptyText) {
+    if (!rows.length) return '<div class="ad-empty">' + esc(emptyText || '暂无数据') + '</div>';
+    var max = rows[0].n || 1;
+    return '<div class="ad-bars">' + rows.map(function (r) {
+      return '<div class="ad-bar"><span class="ad-bar__l" title="' + esc(r.k) + '">' + esc(r.k) + '</span>' +
+        '<span class="ad-bar__t"><span class="ad-bar__f" style="width:' + Math.max(4, Math.round(r.n / max * 100)) + '%"></span></span>' +
+        '<span class="ad-bar__v">' + r.n + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  /** 第 6 题：按任务名归并，输出 Agent 化优先级榜（本次问卷的核心分析产物）。 */
+  function matrixRows() {
+    var map = {};
+    records.forEach(function (r) {
+      (r.q6 || []).forEach(function (row) {
+        var name = String(row.task || '').trim();
+        if (!name) return;
+        var k = name.toLowerCase();
+        if (!map[k]) map[k] = { name: name, n: 0, dims: {}, depts: {} };
+        var it = map[k];
+        it.n += 1;
+        it.depts[r.meta && r.meta.dept || '未填'] = 1;
+        DIMS.forEach(function (d) {
+          if (typeof row[d.key] === 'number') {
+            (it.dims[d.key] = it.dims[d.key] || []).push(row[d.key]);
+          }
+        });
+      });
+    });
+    return Object.keys(map).map(function (k) {
+      var it = map[k];
+      var o = { name: it.name, n: it.n, deptCount: Object.keys(it.depts).length, raw: it.dims };
+      DIMS.forEach(function (d) { o[d.key] = avg(it.dims[d.key] || []); });
+      o.score = priority(o);
+      return o;
+    }).sort(function (a, b) { return b.score - a.score || b.n - a.n; });
+  }
+
+  function render() {
+    if (!records.length) {
+      body.innerHTML = '<div class="ad-card"><h2>还没有答卷</h2><p class="ad-sub">把问卷链接发出去后，这里会实时出现数据。</p></div>';
+      return;
+    }
+    var depts = tally(function (r) { return r.meta && r.meta.dept; });
+    var hours = records.reduce(function (a, r) {
+      var h = r.q8 && typeof r.q8.hours === 'number' ? r.q8.hours : 0;
+      return a + h;
+    }, 0);
+    var mrows = matrixRows();
+    var taskCount = mrows.reduce(function (a, r) { return a + r.n; }, 0);
+    var riskTasks = mrows.filter(function (r) { return typeof r.risk === 'number' && r.risk >= 4; }).length;
+
+    var html = '';
+
+    html += '<div class="ad-kpis">' +
+      kpi(records.length, '份', '已回收答卷') +
+      kpi(depts.length, '个', '覆盖部门') +
+      kpi(Math.round(hours * 10) / 10, '小时/周', '受访者合计可节省工时') +
+      kpi(taskCount, '条', '待评估任务（涉及 ' + riskTasks + ' 条高风险）') +
+      '</div>';
+
+    /* 第 6 题：第一批 Agent 候选 */
+    html += '<div class="ad-card"><h2>① 第一批 Agent 化候选任务（按优先分排序）</h2>' +
+      '<p class="ad-sub">优先分 = 频率 + 单次耗时 + 规则明确度 + 数据集中度（4—20 分）。分数越高越适合先做；出错代价 ≥4 的任务必须保留人工确认环节。</p>';
+    if (!mrows.length) {
+      html += '<div class="ad-empty">还没有第 6 题的任务评分</div>';
+    } else {
+      html += '<div class="ad-scroll"><table class="ad-t"><thead><tr><th>#</th><th>任务</th><th>提及</th><th>覆盖部门</th>' +
+        DIMS.map(function (d) { return '<th>' + d.label + '</th>'; }).join('') +
+        '<th>优先分</th><th>提示</th></tr></thead><tbody>';
+      mrows.forEach(function (r, i) {
+        html += '<tr><td><span class="ad-rank">' + (i + 1) + '</span></td>' +
+          '<td>' + esc(r.name) + '</td>' +
+          '<td class="ad-num">' + r.n + '</td>' +
+          '<td class="ad-num">' + r.deptCount + '</td>' +
+          DIMS.map(function (d) { return '<td class="ad-num">' + (r[d.key] == null ? '—' : r[d.key]) + '</td>'; }).join('') +
+          '<td class="ad-num"><span class="ad-score">' + r.score + '</span></td>' +
+          '<td>' + (typeof r.risk === 'number' && r.risk >= 4
+            ? '<span class="ad-pill ad-pill--risk">需人工确认</span>'
+            : '<span class="ad-pill ad-pill--ok">可自动</span>') + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+    html += '<div class="ad-legend"><span>优先分 ≥16：第一批候选</span><span>12—15：第二批</span><span>≤11：暂不优先</span></div></div>';
+
+    /* 根因 / 期望 / 风险 */
+    html += '<div class="ad-cols">';
+    html += '<div class="ad-card"><h2>② 最拖慢工作的根因（第 7 题）</h2><p class="ad-sub">每人最多选 3 项</p>' +
+      barList(tally(function (r) { return r.q7; })) + '</div>';
+    html += '<div class="ad-card"><h2>③ 必须人工确认的环节（第 10 题）</h2><p class="ad-sub">决定 Agent 的权限边界</p>' +
+      barList(tally(function (r) { return r.q10; })) + '</div>';
+    html += '</div>';
+
+    html += '<div class="ad-cols">';
+    html += '<div class="ad-card"><h2>④ 验收指标（第 13 题）</h2><p class="ad-sub">上线后用哪些指标证明「有用」</p>' +
+      barList(tally(function (r) { return r.q13; })) + '</div>';
+    html += '<div class="ad-card"><h2>⑤ 安全合规硬性要求（第 12 题）</h2><p class="ad-sub">决定部署形态（私有化 / 审计日志）</p>' +
+      barList(tally(function (r) { return r.q12; })) + '</div>';
+    html += '</div>';
+
+    html += '<div class="ad-cols">';
+    html += '<div class="ad-card"><h2>⑥ 日常使用的系统与工具（第 3 题）</h2>' +
+      barList(tally(function (r) { return r.q3; })) + '</div>';
+    html += '<div class="ad-card"><h2>⑦ 部门分布</h2>' +
+      barList(depts) + '</div>';
+    html += '</div>';
+
+    /* 期望场景 */
+    var scenes = [];
+    records.forEach(function (r) {
+      (r.q9 || []).forEach(function (s) {
+        if (s.scene || s.deliverable) scenes.push({ dept: (r.meta && r.meta.dept) || '', scene: s.scene, deliverable: s.deliverable });
+      });
+    });
+    html += '<div class="ad-card"><h2>⑧ 期望 Agent 场景（第 9 题汇总）</h2><p class="ad-sub">共 ' + scenes.length + ' 条，可直接作为场景池输入</p>';
+    html += scenes.length
+      ? '<div class="ad-scroll"><table class="ad-t"><thead><tr><th>部门</th><th>期望场景</th><th>期望交付物</th></tr></thead><tbody>' +
+        scenes.map(function (s) {
+          return '<tr><td>' + esc(s.dept) + '</td><td>' + esc(s.scene) + '</td><td>' + esc(s.deliverable) + '</td></tr>';
+        }).join('') + '</tbody></table></div>'
+      : '<div class="ad-empty">暂无</div>';
+    html += '</div>';
+
+    /* 逐份答卷 */
+    html += '<div class="ad-card"><h2>⑨ 逐份答卷</h2><p class="ad-sub">按提交时间倒序。点开查看全文；姓名与部门请按内部规范使用。</p>';
+    records.forEach(function (r, i) {
+      var m = r.meta || {};
+      html += '<details class="ad-rec"><summary>' +
+        '<span class="ad-rec__dept">' + esc(m.dept || '未填部门') + '</span>' +
+        (m.name ? '<span class="ad-rec__meta">' + esc(m.name) + '</span>' : '') +
+        (m.role ? '<span class="ad-rec__meta">' + esc(m.role) + '</span>' : '') +
+        '<span class="ad-rec__meta">' + fmtDate(r.submittedAt) + '</span>' +
+        '<span class="ad-rec__meta">第 6 题 ' + ((r.q6 || []).length) + ' 项任务</span>' +
+        '<span class="ad-rec__meta" style="margin-left:auto">#' + (records.length - i) + '</span>' +
+        '</summary><div class="ad-rec__body">' + renderRecord(r) + '</div></details>';
+    });
+    html += '</div>';
+
+    body.innerHTML = html;
+  }
+
+  function kpi(n, unit, label) {
+    return '<div class="ad-kpi"><div class="ad-kpi__n">' + esc(n) + '<small>' + esc(unit) + '</small></div>' +
+      '<div class="ad-kpi__l">' + esc(label) + '</div></div>';
+  }
+
+  function qa(q, a) {
+    var txt = a == null || a === '' ? '（未填）' : String(a);
+    var empty = txt === '（未填）';
+    return '<div class="ad-qa"><div class="ad-qa__q">' + esc(q) + '</div>' +
+      '<div class="ad-qa__a' + (empty ? ' is-empty' : '') + '">' + esc(txt) + '</div></div>';
+  }
+
+  function renderRecord(r) {
+    var h = '';
+    h += qa('1. 岗位核心职责', r.q1);
+    h += qa('2. 主要工作与耗时', (r.q2 || []).map(function (x, i) {
+      return (i + 1) + ') ' + (x.task || '—') + '（' + (x.time || '未填耗时') + '）';
+    }).join('\n') || '（未填）');
+    h += qa('3. 使用的系统/工具', [(r.q3 || []).join('、'), r.q3Other].filter(Boolean).join('；'));
+    var q4 = r.q4 || {};
+    h += qa('4. 最常执行的流程', [
+      q4.name && ('名称：' + q4.name),
+      q4.trigger && ('触发：' + q4.trigger),
+      q4.steps && ('环节：' + q4.steps),
+      q4.systems && ('系统：' + q4.systems),
+      q4.roles && ('角色：' + q4.roles),
+      q4.duration && ('耗时：' + q4.duration)
+    ].filter(Boolean).join('\n'));
+    h += qa('5. 最耗时/最无价值环节', [((r.q5 || {}).tags || []).join('、'), (r.q5 || {}).text].filter(Boolean).join('　'));
+    var tasks = r.q6 || [];
+    h += qa('6. 重复性任务评分', tasks.length ? tasks.map(function (t) {
+      return '· ' + (t.task || '（未命名）') + '　' + DIMS.map(function (d) {
+        return d.label + ' ' + (typeof t[d.key] === 'number' ? t[d.key] : '—');
+      }).join(' / ') + '　【优先分 ' + priority(t) + (typeof t.risk === 'number' && t.risk >= 4 ? ' · 需人工确认】' : '】');
+    }).join('\n') : '（未填）');
+    h += qa('7. 最拖慢工作的根因', [(r.q7 || []).join('\n'), r.q7Other].filter(Boolean).join('\n'));
+    var q8 = r.q8 || {};
+    h += qa('8. 每周可节省工时 / 用途', [q8.hours != null ? q8.hours + ' 小时/周' : '', q8.usage].filter(Boolean).join('\n'));
+    h += qa('9. 期望 Agent 场景', (r.q9 || []).map(function (s, i) {
+      return (i + 1) + ') ' + (s.scene || '—') + '　交付物：' + (s.deliverable || '未填');
+    }).join('\n'));
+    h += qa('10. 必须人工确认', (r.q10 || []).join('、'));
+    h += qa('11. 数据存放与权限', r.q11);
+    h += qa('12. 安全合规要求', (r.q12 || []).join('、'));
+    h += qa('13. 验收指标', [(r.q13 || []).join('、'), r.q13Other].filter(Boolean).join('；'));
+    h += qa('14. 建议与顾虑', r.q14);
+    var m = r.meta || {};
+    h += qa('填报用时', m.elapsedMs ? Math.round(m.elapsedMs / 60000 * 10) / 10 + ' 分钟' : '（未知）');
+    return h;
+  }
+
+  function load() {
+    body.innerHTML = '<div class="ad-empty">正在加载…</div>';
+    fetch('/survey/api/list?t=' + encodeURIComponent(TOKEN), { headers: { 'Accept': 'application/json' } })
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status === 404 ? '令牌无效或已失效，请使用带 ?t=… 的完整管理链接。' : 'HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (j) {
+        records = (j && j.records) || [];
+        render();
+      })
+      .catch(function (e) {
+        body.innerHTML = '<div class="ad-err">加载失败：' + esc(e.message || e) + '</div>';
+      });
+  }
+
+  document.getElementById('adReload').addEventListener('click', load);
+  document.getElementById('adCsvAll').addEventListener('click', function () {
+    location.href = '/survey/api/export.csv?type=all&t=' + encodeURIComponent(TOKEN);
+  });
+  document.getElementById('adCsvMatrix').addEventListener('click', function () {
+    location.href = '/survey/api/export.csv?type=matrix&t=' + encodeURIComponent(TOKEN);
+  });
+  document.getElementById('adMeta').textContent = TOKEN ? '　·　管理令牌已加载' : '　·　缺少令牌';
+  load();
+}());
+</script>
+</body>
+</html>

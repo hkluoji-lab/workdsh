@@ -37,7 +37,34 @@
       "tools",
       "tests"
     ],
-    "acceptanceNote": "部署边缘面，不是功能插件：静态企业门户 + 无状态签名 Cookie 门禁。本机服务契约与页面已验证，线上路由切换与 forward_auth 行为已于 2026-09-23 部署并实测（15 项探针 + 浏览器级回归）；2026-09-24 性能修复（α.2）：缓存头与安全头分离（静态资源不再 no-store，新增 ETag 条件请求 304），门户 5 张界面截图上 WebP 双尺寸 srcset（3.34MB → 约 115KB@1x / 325KB@2x），已同日部署并公网复验（首屏 9 资源 166291B、三档视口档位正确、门禁零回归）；部署时暴露线上 server.mjs 含一段仓库未登记的 /portal/products/* 路由，已按用户裁决回填仓库并纳入缓存分档（与门户首页同档 no-cache + ETag，仅该路径放宽 CSP），同日再次部署公网复验通过。2026-09-24 性能修复（α.3）：verifyPassword 由两次 scryptSync 改为异步 scrypt（KDF 走 libuv 线程池），登录不再阻塞与 forward_auth 共用的单线程事件循环；容器内 A/B 实测事件循环最长阻塞 321.1ms → 1.9ms，单测 6/6、内部与公网 forward_auth 链路复验通过，同日就地部署并让看护循环重拉。2026-09-24 登录故障修复（α.4）：① 归一化凭据输入（全角符号 U+FF01—U+FF5E 与首尾空白含 U+3000 折叠为半角/去除），命令行下的\"看着一样、字节不同\"不再造成登录失败；② 限流按真实客户端 IP 分桶（此前取 X-Forwarded-For，经 CF 隧道恒为隧道主机地址，全站共用一个桶），改用 cf-connecting-ip；③ 新增 accounts.json 账号表（0600/1000:1000，主账号仍是官方 DSH_AUTH_USERNAME/PASSWORD），支持多成员账号；④ 登录失败日志只登记输入形态（pwLength/pwFullWidth/usernameNormalized）不落凭据。单测 12/12 通过，容器内 3098 预演 14 项 + 公网复验 14 项全绿，同日就地部署。企业 SSO 与自助找回后置。"
+    "acceptanceNote": "部署边缘面，不是功能插件：静态企业门户 + 无状态签名 Cookie 门禁。本机服务契约与页面已验证，线上路由切换与 forward_auth 行为已于 2026-09-23 部署并实测（15 项探针 + 浏览器级回归）；2026-09-24 性能修复（α.2）：缓存头与安全头分离（静态资源不再 no-store，新增 ETag 条件请求 304），门户 5 张界面截图上 WebP 双尺寸 srcset（3.34MB → 约 115KB@1x / 325KB@2x），已同日部署并公网复验（首屏 9 资源 166291B、三档视口档位正确、门禁零回归）；部署时暴露线上 server.mjs 含一段仓库未登记的 /portal/products/* 路由，已按用户裁决回填仓库并纳入缓存分档（与门户首页同档 no-cache + ETag，仅该路径放宽 CSP），同日再次部署公网复验通过。2026-09-24 性能修复（α.3）：verifyPassword 由两次 scryptSync 改为异步 scrypt（KDF 走 libuv 线程池），登录不再阻塞与 forward_auth 共用的单线程事件循环；容器内 A/B 实测事件循环最长阻塞 321.1ms → 1.9ms，单测 6/6、内部与公网 forward_auth 链路复验通过，同日就地部署并让看护循环重拉。2026-09-24 登录故障修复（α.4）：① 归一化凭据输入（全角符号 U+FF01—U+FF5E 与首尾空白含 U+3000 折叠为半角/去除），命令行下的\"看着一样、字节不同\"不再造成登录失败；② 限流按真实客户端 IP 分桶（此前取 X-Forwarded-For，经 CF 隧道恒为隧道主机地址，全站共用一个桶），改用 cf-connecting-ip；③ 新增 accounts.json 账号表（0600/1000:1000，主账号仍是官方 DSH_AUTH_USERNAME/PASSWORD），支持多成员账号；④ 登录失败日志只登记输入形态（pwLength/pwFullWidth/usernameNormalized）不落凭据。单测 12/12 通过，容器内 3098 预演 14 项 + 公网复验 14 项全绿，同日就地部署。企业 SSO 与自助找回后置。2026-10-15 一致性回填：线上门户已超出仓库约 90%（用户/角色/身份桥/手册/产品页后台），已按用户裁决回填产品源码。"
+  },
+  {
+    "path": "packages/survey",
+    "title": "需求调研问卷",
+    "moduleVersion": "0.1",
+    "phase": "P1",
+    "task": "P1-13",
+    "status": "in_progress",
+    "directories": [
+      "deploy",
+      "host-gateway"
+    ],
+    "acceptanceNote": "部署边缘面，不是功能插件：自建零依赖问卷收集服务（127.0.0.1:3082，由容器内 Caddy route /survey 反代），表单/管理台为单文件静态页，答卷以 NDJSON 落盘。2026-09-21 已在 dsh.10ge.cn 上线并实测（deploy-report/finish-report 留档）。2026-10-15 因仓库缺失而从线上回填源码；回填范围仅产品源码，排除答卷数据（data/submissions.ndjson）、管理令牌与运行报告。"
+  },
+  {
+    "path": "packages/vas",
+    "title": "增值业务产品页后台",
+    "moduleVersion": "0.1",
+    "phase": "P1",
+    "task": "P1-13",
+    "status": "in_progress",
+    "directories": [
+      "src",
+      "public",
+      "tools"
+    ],
+    "acceptanceNote": "部署边缘面，不是功能插件：增值业务产品页独立管理后台（127.0.0.1:3085，登录复用门户会话 Cookie，不新增账号体系），渲染并发布 8 页产品站到门户静态目录，公开订购单同源限流接收。2026-09-27 上线、2026-10-02 完成总览页改版。2026-10-15 因仓库缺失而从线上回填源码；线上 site/ 与门户 site/products/ 逐字节相同（重复制品）故不重复入库，docs/ 属业务内容亦不入库。"
   },
   {
     "path": "packages/bundle",

@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="same-origin">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%232563eb'/%3E%3Cg%20fill='%23fff'%3E%3Crect%20x='8'%20y='9'%20width='16'%20height='2.6'%20rx='1.3'/%3E%3Crect%20x='8'%20y='15'%20width='16'%20height='2.6'%20rx='1.3'/%3E%3Crect%20x='8'%20y='21'%20width='10'%20height='2.6'%20rx='1.3'/%3E%3C/g%3E%3C/svg%3E">
+<title>企业 Agent 工作台 · 需求调研问卷</title>
+<style>
+:root{
+  --sv-bg:#f4f6fb;
+  --sv-surface:#ffffff;
+  --sv-ink:#0f172a;
+  --sv-ink-2:#4a5568;
+  --sv-ink-3:#8b95a5;
+  --sv-line:#e3e8f0;
+  --sv-line-soft:#f0f3f9;
+  --sv-brand:#2563eb;
+  --sv-brand-deep:#1d4ed8;
+  --sv-brand-soft:#eef4ff;
+  --sv-teal:#0e7490;
+  --sv-teal-soft:#ecfeff;
+  --sv-amber:#b45309;
+  --sv-amber-soft:#fffbeb;
+  --sv-rose:#be123c;
+  --sv-ok:#047857;
+  --sv-radius:16px;
+  --sv-radius-sm:10px;
+  --sv-shadow:0 1px 2px rgba(15,23,42,.04),0 10px 30px -18px rgba(15,23,42,.22);
+  --sv-maxw:900px;
+  --sv-font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--sv-bg);color:var(--sv-ink);
+  font-family:var(--sv-font);font-size:15px;line-height:1.65;
+  overflow-wrap:break-word;
+}
+h1,h2,h3,p{margin:0}
+em{font-style:normal}
+
+/* ---------- 顶部进度 ---------- */
+.sv-meter{position:fixed;inset:0 0 auto 0;height:4px;background:rgba(148,163,184,.22);z-index:60}
+.sv-meter__bar{height:100%;width:0;background:linear-gradient(90deg,var(--sv-brand),#38bdf8);transition:width .35s ease}
+
+/* ---------- 头图 ---------- */
+.sv-hero{
+  background:linear-gradient(160deg,#0f2557 0%,#143a86 52%,#1d4ed8 100%);
+  color:#fff;padding:52px 24px 60px;position:relative;overflow:hidden;
+}
+.sv-hero::after{
+  content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);
+  background-size:34px 34px;mask-image:linear-gradient(180deg,rgba(0,0,0,.85),transparent 78%);
+}
+.sv-hero__inner{position:relative;max-width:var(--sv-maxw);margin:0 auto}
+.sv-hero__eyebrow{
+  display:inline-block;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
+  padding:5px 12px;border-radius:999px;margin-bottom:20px;
+}
+.sv-hero h1{font-size:30px;line-height:1.28;font-weight:700;letter-spacing:-.01em}
+.sv-hero__lead{margin-top:14px;font-size:15.5px;color:rgba(255,255,255,.86);max-width:660px}
+.sv-hero__meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.sv-chip{
+  display:inline-flex;align-items:center;gap:7px;font-size:13px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  padding:6px 13px;border-radius:999px;white-space:nowrap;
+}
+.sv-chip b{font-weight:650;color:#fff}
+
+/* ---------- 主体 ---------- */
+.sv-shell{max-width:var(--sv-maxw);margin:-32px auto 0;padding:0 20px 8px;position:relative;z-index:2}
+.sv-notice{
+  display:none;align-items:flex-start;gap:12px;margin-bottom:18px;
+  background:var(--sv-amber-soft);border:1px solid #fde68a;border-radius:var(--sv-radius-sm);
+  padding:13px 16px;font-size:13.5px;color:#78350f;
+}
+.sv-notice.is-on{display:flex}
+.sv-notice button{
+  margin-left:auto;flex:none;background:#fff;border:1px solid #fcd34d;color:#92400e;
+  border-radius:7px;padding:4px 10px;font-size:12.5px;cursor:pointer;font-family:inherit;
+}
+.sv-card{
+  background:var(--sv-surface);border:1px solid var(--sv-line);border-radius:var(--sv-radius);
+  box-shadow:var(--sv-shadow);padding:26px 28px 28px;margin-bottom:18px;
+}
+.sv-card__head{display:flex;gap:14px;align-items:flex-start;padding-bottom:18px;border-bottom:1px solid var(--sv-line-soft);margin-bottom:22px}
+.sv-card__no{
+  flex:none;width:40px;height:40px;border-radius:11px;background:var(--sv-brand-soft);color:var(--sv-brand-deep);
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;letter-spacing:.02em;
+}
+.sv-card__head h2{font-size:17.5px;font-weight:680;letter-spacing:-.005em}
+.sv-card__head p{font-size:13.5px;color:var(--sv-ink-3);margin-top:3px}
+
+/* ---------- 题目 ---------- */
+.sv-q+.sv-q{margin-top:26px;padding-top:26px;border-top:1px dashed var(--sv-line)}
+.sv-q__label{display:block;font-size:15px;font-weight:640;line-height:1.55}
+.sv-q__no{
+  display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;
+  background:var(--sv-ink);color:#fff;border-radius:6px;font-size:12px;font-weight:700;margin-right:8px;
+  vertical-align:1.5px;
+}
+.sv-tag-required{
+  display:inline-block;margin-left:8px;font-size:11.5px;font-weight:600;color:var(--sv-rose);
+  background:#fff1f2;border:1px solid #fecdd3;border-radius:5px;padding:1px 7px;vertical-align:1.5px;
+}
+.sv-tag-optional{
+  display:inline-block;margin-left:8px;font-size:11.5px;font-weight:600;color:var(--sv-ink-3);
+  background:var(--sv-line-soft);border:1px solid var(--sv-line);border-radius:5px;padding:1px 7px;vertical-align:1.5px;
+}
+.sv-q__hint{font-size:13px;color:var(--sv-ink-3);margin:6px 0 10px;line-height:1.6}
+.sv-q__hint kbd{
+  font-family:inherit;background:var(--sv-line-soft);border:1px solid var(--sv-line);
+  border-radius:5px;padding:0 6px;font-size:12.5px;color:var(--sv-ink-2);
+}
+
+/* ---------- 表单控件 ---------- */
+.sv-input,.sv-textarea,.sv-select{
+  width:100%;font-family:inherit;font-size:14.5px;color:var(--sv-ink);
+  background:#fdfefe;border:1px solid var(--sv-line);border-radius:var(--sv-radius-sm);
+  padding:11px 13px;line-height:1.6;transition:border-color .15s,box-shadow .15s,background .15s;
+}
+.sv-textarea{min-height:88px;resize:vertical}
+.sv-input:focus,.sv-textarea:focus,.sv-select:focus{
+  outline:none;border-color:var(--sv-brand);background:#fff;
+  box-shadow:0 0 0 3.5px rgba(37,99,235,.13);
+}
+.sv-input.is-error,.sv-textarea.is-error,.sv-select.is-error{border-color:var(--sv-rose);background:#fff5f6}
+.sv-input::placeholder,.sv-textarea::placeholder{color:#a9b3c1}
+.sv-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238b95a5' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}
+
+.sv-grid{display:grid;gap:13px}
+.sv-grid--2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.sv-grid--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sv-field{min-width:0}
+.sv-field>span{display:block;font-size:12.5px;font-weight:600;color:var(--sv-ink-2);margin-bottom:6px}
+
+/* ---------- 选项 ---------- */
+.sv-choices{display:flex;flex-direction:column;gap:9px}
+.sv-choice{
+  display:flex;gap:11px;align-items:flex-start;cursor:pointer;
+  border:1px solid var(--sv-line);border-radius:var(--sv-radius-sm);
+  padding:11px 14px;background:#fdfefe;transition:border-color .15s,background .15s;
+}
+.sv-choice:hover{border-color:#c7d5ec;background:#fbfdff}
+.sv-choice input{margin:3px 0 0;accent-color:var(--sv-brand);width:16px;height:16px;flex:none;cursor:pointer}
+.sv-choice span{font-size:14px;line-height:1.55;min-width:0}
+.sv-choice:has(input:checked){border-color:var(--sv-brand);background:var(--sv-brand-soft)}
+.sv-choice:has(input:disabled:not(:checked)){opacity:.45;cursor:not-allowed}
+.sv-choice--wide{width:100%}
+.sv-count{font-size:12.5px;color:var(--sv-ink-3);margin:0 0 10px}
+.sv-count b{color:var(--sv-brand-deep)}
+
+/* ---------- 矩阵量表（第 6 题） ---------- */
+.sv-matrix{display:flex;flex-direction:column;gap:14px}
+.sv-task{border:1px solid var(--sv-line);border-radius:var(--sv-radius-sm);padding:15px 16px;background:#fdfdfe}
+.sv-task.is-empty{border-style:dashed}
+.sv-task__head{display:flex;gap:10px;align-items:center;margin-bottom:13px}
+.sv-task__idx{flex:none;font-size:12.5px;font-weight:700;color:var(--sv-teal);background:var(--sv-teal-soft);border:1px solid #cffafe;border-radius:6px;padding:3px 9px;white-space:nowrap}
+.sv-task__head .sv-input{flex:1;min-width:0}
+.sv-task__del{
+  flex:none;background:#fff;border:1px solid var(--sv-line);color:var(--sv-ink-3);
+  border-radius:8px;padding:8px 10px;font-size:12.5px;cursor:pointer;font-family:inherit;line-height:1;
+}
+.sv-task__del:hover{border-color:#fecdd3;color:var(--sv-rose);background:#fff5f6}
+.sv-scale-row{display:flex;gap:14px;align-items:center;padding:7px 0}
+.sv-scale-row+.sv-scale-row{border-top:1px solid var(--sv-line-soft)}
+.sv-scale-row__label{flex:0 0 132px;min-width:0;font-size:13.5px;font-weight:600}
+.sv-scale-row__label em{display:block;font-size:11.5px;font-weight:400;color:var(--sv-ink-3);line-height:1.4;margin-top:1px}
+.sv-scale{display:flex;gap:7px;flex:1;min-width:0}
+.sv-scale label{flex:1;min-width:0;cursor:pointer}
+.sv-scale input{position:absolute;opacity:0;width:0;height:0}
+.sv-scale span{
+  display:flex;align-items:center;justify-content:center;height:34px;border-radius:8px;
+  border:1px solid var(--sv-line);background:#fff;font-size:13.5px;font-weight:600;color:var(--sv-ink-2);
+  transition:all .13s;
+}
+.sv-scale label:hover span{border-color:#c7d5ec;background:#f8fbff}
+.sv-scale input:checked+span{background:var(--sv-brand);border-color:var(--sv-brand);color:#fff;box-shadow:0 3px 10px -3px rgba(37,99,235,.55)}
+.sv-scale input:focus-visible+span{box-shadow:0 0 0 3.5px rgba(37,99,235,.25)}
+.sv-scale input:checked:focus-visible+span{box-shadow:0 0 0 3.5px rgba(37,99,235,.25),0 3px 10px -3px rgba(37,99,235,.55)}
+.sv-matrix-legend{
+  display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--sv-ink-3);
+  background:var(--sv-line-soft);border-radius:9px;padding:10px 13px;margin-top:14px;
+}
+.sv-matrix-legend b{color:var(--sv-ink-2);font-weight:600}
+.sv-add{
+  margin-top:13px;background:#fff;border:1px dashed #c3d3ea;color:var(--sv-brand-deep);
+  border-radius:9px;padding:10px 15px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.sv-add:hover{background:var(--sv-brand-soft);border-color:var(--sv-brand)}
+.sv-add:disabled{opacity:.45;cursor:not-allowed;color:var(--sv-ink-3);border-color:var(--sv-line)}
+
+/* ---------- 其他补充 / 行容器 ---------- */
+.sv-other{display:none;margin-top:9px}
+.sv-other.is-on{display:block}
+.sv-repeat{display:flex;flex-direction:column;gap:11px}
+.sv-repeat-row{display:flex;gap:11px;align-items:flex-start}
+.sv-repeat-row__idx{flex:none;font-size:12.5px;font-weight:700;color:var(--sv-ink-3);padding-top:12px;width:44px}
+.sv-repeat-row__body{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
+
+/* ---------- 提交区 ---------- */
+.sv-submit{background:var(--sv-surface);border:1px solid var(--sv-line);border-radius:var(--sv-radius);box-shadow:var(--sv-shadow);padding:24px 28px}
+.sv-submit h3{font-size:16px;font-weight:660;margin-bottom:6px}
+.sv-submit p{font-size:13.5px;color:var(--sv-ink-3)}
+.sv-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.sv-btn{
+  font-family:inherit;font-size:15px;font-weight:640;border-radius:11px;padding:13px 30px;cursor:pointer;
+  border:1px solid transparent;transition:background .15s,box-shadow .15s,transform .1s;
+}
+.sv-btn--primary{background:var(--sv-brand);color:#fff;box-shadow:0 8px 20px -10px rgba(37,99,235,.8)}
+.sv-btn--primary:hover{background:var(--sv-brand-deep)}
+.sv-btn--primary:active{transform:translateY(1px)}
+.sv-btn--primary:disabled{opacity:.6;cursor:not-allowed;box-shadow:none}
+.sv-btn--ghost{background:#fff;border-color:var(--sv-line);color:var(--sv-ink-2)}
+.sv-btn--ghost:hover{border-color:#c7d5ec;color:var(--sv-ink)}
+.sv-status{font-size:13.5px;margin-top:14px;display:none;border-radius:9px;padding:11px 14px;line-height:1.6;white-space:pre-wrap}
+.sv-status.is-on{display:block}
+.sv-status--err{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
+.sv-status--ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+.sv-status--info{background:var(--sv-brand-soft);border:1px solid #c7ddff;color:#1e40af}
+
+/* ---------- 完成态 ---------- */
+.sv-done{display:none;text-align:center;padding:52px 28px}
+.sv-done.is-on{display:block}
+.sv-done__mark{
+  width:60px;height:60px;margin:0 auto 20px;border-radius:50%;background:#ecfdf5;color:var(--sv-ok);
+  display:flex;align-items:center;justify-content:center;font-size:30px;border:1px solid #a7f3d0;
+}
+.sv-done h2{font-size:21px;font-weight:680;margin-bottom:10px}
+.sv-done p{color:var(--sv-ink-2);font-size:14.5px;max-width:520px;margin:0 auto}
+.sv-done code{
+  display:inline-block;margin-top:16px;font-size:12.5px;color:var(--sv-ink-3);
+  background:var(--sv-line-soft);border:1px solid var(--sv-line);border-radius:8px;padding:7px 12px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;
+}
+.sv-foot{max-width:var(--sv-maxw);margin:0 auto;padding:22px 20px 56px;font-size:12.5px;color:var(--sv-ink-3);line-height:1.7}
+.sv-foot b{color:var(--sv-ink-2);font-weight:600}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:760px){
+  .sv-hero{padding:38px 18px 50px}
+  .sv-hero h1{font-size:24px}
+  .sv-hero__lead{font-size:14.5px}
+  .sv-shell{padding:0 14px 8px}
+  .sv-card{padding:20px 17px 22px;border-radius:14px}
+  .sv-card__head{gap:11px;padding-bottom:15px;margin-bottom:18px}
+  .sv-card__no{width:34px;height:34px;border-radius:9px;font-size:13.5px}
+  .sv-card__head h2{font-size:16px}
+  .sv-grid--2,.sv-grid--3{grid-template-columns:1fr}
+  .sv-scale-row{flex-direction:column;align-items:stretch;gap:7px;padding:10px 0}
+  .sv-scale-row__label{flex:none}
+  .sv-scale span{height:38px;font-size:14px}
+  .sv-task__head{flex-wrap:wrap}
+  .sv-task__head .sv-input{flex:1 1 100%;order:3}
+  .sv-task__del{margin-left:auto}
+  .sv-repeat-row__idx{width:auto;padding-top:11px}
+  .sv-submit{padding:20px 17px}
+  .sv-btn{width:100%;padding:14px 20px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="sv-meter" aria-hidden="true"><div class="sv-meter__bar" id="svBar"></div></div>
+
+<header class="sv-hero">
+  <div class="sv-hero__inner">
+    <span class="sv-hero__eyebrow">企业 Agent 工作台建设 · 需求调研</span>
+    <h1>岗位工作与 Agent 化机会调研问卷</h1>
+    <p class="sv-hero__lead">
+      本问卷用于在企业搭建 Agent（AI 智能体）工作台前，摸清各部门真实的工作流程与耗时结构。
+      请结合日常真实的工作状态填写，<strong>无需美化</strong>——我们更关心真实耗时与真实阻力。
+    </p>
+    <div class="sv-hero__meta">
+      <span class="sv-chip">预计用时 <b>15–20 分钟</b></span>
+      <span class="sv-chip">共 <b>14 题</b> · <b>6</b> 个部分</span>
+      <span class="sv-chip">填写进度 <b id="svPct">0%</b></span>
+      <span class="sv-chip">草稿自动保存</span>
+    </div>
+  </div>
+</header>
+
+<main class="sv-shell">
+  <div class="sv-notice" id="svDraftNotice">
+    <span>已恢复上次未提交的草稿内容。</span>
+    <button type="button" id="svDraftClear">清空重填</button>
+  </div>
+
+  <form id="svForm" novalidate autocomplete="off">
+    <!-- 身份 -->
+    <section class="sv-card" id="sv-sec0">
+      <div class="sv-card__head">
+        <div class="sv-card__no">◎</div>
+        <div>
+          <h2>填报人信息</h2>
+          <p>用于按部门/岗位汇总分析。姓名选填，仅用于必要时回访确认口径。</p>
+        </div>
+      </div>
+      <div class="sv-grid sv-grid--3">
+        <label class="sv-field">
+          <span>部门 <em class="sv-tag-required">必填</em></span>
+          <select class="sv-select" id="svDept" name="dept"></select>
+        </label>
+        <label class="sv-field">
+          <span>姓名 <em class="sv-tag-optional">选填</em></span>
+          <input class="sv-input" id="svName" name="name" placeholder="如：张伟" maxlength="40">
+        </label>
+        <label class="sv-field">
+          <span>岗位 <em class="sv-tag-optional">选填</em></span>
+          <input class="sv-input" id="svRole" name="role" placeholder="如：销售内勤 / 财务核算" maxlength="40">
+        </label>
+      </div>
+      <div class="sv-other" id="svDeptOtherWrap">
+        <input class="sv-input" id="svDeptOther" placeholder="请填写你的部门名称">
+      </div>
+    </section>
+
+    <!-- 第一部分 -->
+    <section class="sv-card" id="sv-sec1">
+      <div class="sv-card__head">
+        <div class="sv-card__no">01</div>
+        <div><h2>岗位与工作概览</h2><p>先把你日常在做什么、花多少时间讲清楚。</p></div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label" for="svQ1"><span class="sv-q__no">1</span>您的岗位核心职责是什么？<em class="sv-tag-required">必填</em></label>
+        <p class="sv-q__hint">请用 2–3 句话概括，不必写成岗位说明书。</p>
+        <textarea class="sv-textarea" id="svQ1" data-q="q1" rows="3" placeholder="例：负责华东区存量客户的续约与增购，跟进报价、合同、回款全流程。"></textarea>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">2</span>按时间占比从高到低，您每天的 3 项主要工作是什么？</label>
+        <p class="sv-q__hint">请分别填写工作事项及每日约耗时；不足 3 项可留空。</p>
+        <div class="sv-repeat" id="svQ2"></div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">3</span>您日常主要使用哪些系统或工具开展工作？</label>
+        <p class="sv-q__hint">可多选。</p>
+        <div class="sv-choices" data-group="q3" data-limits="0">
+          <label class="sv-choice"><input type="checkbox" name="q3" value="CRM / 客户管理系统"><span>CRM / 客户管理系统</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q3" value="ERP / 业务系统"><span>ERP / 业务系统</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q3" value="OA / 审批系统"><span>OA / 审批系统</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q3" value="企业微信 / 钉钉 / 飞书"><span>企业微信 / 钉钉 / 飞书</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q3" value="Excel / 本地表格"><span>Excel / 本地表格</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q3" value="邮件"><span>邮件</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q3" value="其他" data-other="svQ3Other"><span>其他（请注明）</span></label>
+        </div>
+        <div class="sv-other" id="svQ3OtherWrap"><input class="sv-input" id="svQ3Other" placeholder="请注明系统或工具名称"></div>
+      </div>
+    </section>
+
+    <!-- 第二部分 -->
+    <section class="sv-card" id="sv-sec2">
+      <div class="sv-card__head">
+        <div class="sv-card__no">02</div>
+        <div><h2>业务流程梳理</h2><p>挑一条最常执行的完整流程，按环节拆开看。</p></div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">4</span>请描述一条您最常执行的完整流程</label>
+        <p class="sv-q__hint">按提示分项填写，比写一大段更容易被准确分析。</p>
+        <div class="sv-grid sv-grid--2" style="gap:13px">
+          <label class="sv-field"><span>流程名称</span><input class="sv-input" id="svQ4Name" placeholder="如：客户月度对账与开票"></label>
+          <label class="sv-field"><span>触发条件</span><input class="sv-input" id="svQ4Trigger" placeholder="如：每月 25 日 / 客户提出申请"></label>
+        </div>
+        <div style="margin-top:13px">
+          <label class="sv-field"><span>涉及环节（按顺序）</span><textarea class="sv-textarea" id="svQ4Steps" rows="3" placeholder="如：导出明细 → 与客户核对 → 差异沟通 → 提交开票申请 → 财务审核 → 寄送"></textarea></label>
+        </div>
+        <div class="sv-grid sv-grid--3" style="margin-top:13px">
+          <label class="sv-field"><span>涉及系统</span><input class="sv-input" id="svQ4Systems" placeholder="如：CRM、ERP、Excel"></label>
+          <label class="sv-field"><span>参与角色</span><input class="sv-input" id="svQ4Roles" placeholder="如：销售、财务、客户"></label>
+          <label class="sv-field"><span>整体耗时</span><input class="sv-input" id="svQ4Duration" placeholder="如：约 3 个工作日"></label>
+        </div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">5</span>上述流程中，哪个环节您认为最消耗时间、最没有价值？</label>
+        <p class="sv-q__hint">先勾选最贴近的原因，再补充具体说明。</p>
+        <div class="sv-choices" data-group="q5tags" data-limits="0">
+          <label class="sv-choice"><input type="checkbox" name="q5tags" value="等待多"><span>等待多（等审批、等回复、等数据）</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q5tags" value="重复劳动"><span>重复劳动（同一件事反复做）</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q5tags" value="找不到信息"><span>找不到信息（散落在各处）</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q5tags" value="反复修改"><span>反复修改（口径不一、来回返工）</span></label>
+        </div>
+        <textarea class="sv-textarea" id="svQ5" rows="3" style="margin-top:13px" placeholder="请具体说明是哪个环节、为什么，以及大概占用多少时间。"></textarea>
+      </div>
+    </section>
+
+    <!-- 第三部分 -->
+    <section class="sv-card" id="sv-sec3">
+      <div class="sv-card__head">
+        <div class="sv-card__no">03</div>
+        <div><h2>任务特征评估<em class="sv-tag-required" style="margin-left:8px">核心</em></h2><p>这一部分决定哪些任务第一批交给 Agent，请尽量打准。</p></div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">6</span>请列出 3–5 项您工作中重复性较高的具体任务，并逐项打分</label>
+        <p class="sv-q__hint">
+          每项任务按 <kbd>频率</kbd> <kbd>单次耗时</kbd> <kbd>规则明确度</kbd> <kbd>数据集中度</kbd> <kbd>出错代价</kbd>
+          五个维度打分：<b>1 = 很低 / 从不，5 = 很高 / 总是</b>。请写具体任务，例如「每周整理客户拜访纪要并同步 CRM」，不要写「做报表」这类笼统表述。
+        </p>
+        <div class="sv-matrix" id="svQ6"></div>
+        <button type="button" class="sv-add" id="svQ6Add">+ 添加一项任务（最多 5 项）</button>
+        <div class="sv-matrix-legend">
+          <span><b>筛选参考：</b>频率高 + 耗时长 + 规则明确 + 数据集中 → Agent 化第一批候选</span>
+          <span><b>出错代价高</b>（≥4 分）→ 保留人工确认环节</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第四部分 -->
+    <section class="sv-card" id="sv-sec4">
+      <div class="sv-card__head">
+        <div class="sv-card__no">04</div>
+        <div><h2>耗时根因诊断</h2><p>找出真正拖慢工作的那一类问题。</p></div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">7</span>以下哪类情况最拖慢您的工作？<em class="sv-tag-optional">最多选 3 项</em></label>
+        <p class="sv-count" data-count-for="q7">已选 <b>0</b> / 3</p>
+        <div class="sv-choices" data-group="q7" data-limits="3">
+          <label class="sv-choice"><input type="checkbox" name="q7" value="信息分散在多个系统，查找汇总费时"><span>信息分散在多个系统，查找汇总费时</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q7" value="同一数据要在多个系统/表格重复录入"><span>同一数据要在多个系统/表格重复录入</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q7" value="审批流程长，大量时间在等待"><span>审批流程长，大量时间在等待</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q7" value="报告/文档类写作占用大量时间"><span>报告 / 文档类写作占用大量时间</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q7" value="跨部门沟通反复对齐、口径不一"><span>跨部门沟通反复对齐、口径不一</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q7" value="数据核对、纠错、返工频繁"><span>数据核对、纠错、返工频繁</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q7" value="向客户准备资料/回复的响应链路长"><span>向客户准备资料 / 回复的响应链路长</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q7" value="其他" data-other="svQ7Other"><span>其他（请注明）</span></label>
+        </div>
+        <div class="sv-other" id="svQ7OtherWrap"><input class="sv-input" id="svQ7Other" placeholder="请注明"></div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">8</span>如果上述问题被解决，您每周可以节省多少小时？这些时间您会用在哪里？</label>
+        <div class="sv-grid sv-grid--2" style="margin-top:10px">
+          <label class="sv-field">
+            <span>每周可节省（小时）</span>
+            <input class="sv-input" id="svQ8Hours" type="number" min="0" max="80" step="0.5" inputmode="decimal" placeholder="如：6">
+          </label>
+        </div>
+        <textarea class="sv-textarea" id="svQ8Usage" rows="3" style="margin-top:13px" placeholder="这些时间您会用在什么地方？（如：多拜访客户、做方案、带新人、提前下班）"></textarea>
+      </div>
+    </section>
+
+    <!-- 第五部分 -->
+    <section class="sv-card" id="sv-sec5">
+      <div class="sv-card__head">
+        <div class="sv-card__no">05</div>
+        <div><h2>Agent 期望场景</h2><p>越具体越好——具体到「输入什么、输出什么」。</p></div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">9</span>请写出 2–3 个您最希望 Agent 帮您自动完成的场景</label>
+        <p class="sv-q__hint">每个场景请注明期望交付物（如清单 / 报告 / 提醒 / 草稿）。</p>
+        <div class="sv-repeat" id="svQ9"></div>
+        <button type="button" class="sv-add" id="svQ9Add">+ 添加一个场景（最多 3 个）</button>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">10</span>哪些环节您不放心交给 Agent 自动处理，必须人工确认？</label>
+        <p class="sv-q__hint">可多选；选「基本都可以」则其余选项自动取消。</p>
+        <div class="sv-choices" data-group="q10" data-limits="0" data-exclusive="基本都可以，只要结果准确">
+          <label class="sv-choice"><input type="checkbox" name="q10" value="对外发送给客户的内容"><span>对外发送给客户的内容</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q10" value="涉及价格/合同/资金的操作"><span>涉及价格 / 合同 / 资金的操作</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q10" value="正式报告与决策建议"><span>正式报告与决策建议</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q10" value="数据的最终修改与提交"><span>数据的最终修改与提交</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q10" value="基本都可以，只要结果准确"><span>基本都可以，只要结果准确</span></label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第六部分 -->
+    <section class="sv-card" id="sv-sec6">
+      <div class="sv-card__head">
+        <div class="sv-card__no">06</div>
+        <div><h2>数据、风险与验收标准</h2><p>决定 Agent 能不能拿到数据、上线后怎么算「有用」。</p></div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">11</span>您工作所需的数据目前主要存放在哪里？数据获取是否有权限限制？</label>
+        <textarea class="sv-textarea" id="svQ11" rows="3" placeholder="如：客户资料在 CRM，合同在 OA，明细在自己电脑的 Excel；跨部门数据需要找对应负责人申请。"></textarea>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">12</span>对数据安全与合规，您所在岗位有哪些硬性要求？</label>
+        <p class="sv-q__hint">可多选。</p>
+        <div class="sv-choices" data-group="q12" data-limits="0">
+          <label class="sv-choice"><input type="checkbox" name="q12" value="客户信息不得外传给第三方大模型"><span>客户信息不得外传给第三方大模型</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q12" value="数据必须留在公司内网/私有化环境"><span>数据必须留在公司内网 / 私有化环境</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q12" value="操作需留存审计日志"><span>操作需留存审计日志</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q12" value="暂不清楚，需咨询 IT/合规部门"><span>暂不清楚，需咨询 IT / 合规部门</span></label>
+        </div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">13</span>您认为 Agent 工作台上线后，用什么指标衡量「有没有用」？<em class="sv-tag-optional">最多选 3 项</em></label>
+        <p class="sv-count" data-count-for="q13">已选 <b>0</b> / 3</p>
+        <div class="sv-choices" data-group="q13" data-limits="3">
+          <label class="sv-choice"><input type="checkbox" name="q13" value="每周节省工时数"><span>每周节省工时数</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q13" value="任务周转时长缩短（如报告从2天到2小时）"><span>任务周转时长缩短（如报告从 2 天到 2 小时）</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q13" value="错误率/返工率下降"><span>错误率 / 返工率下降</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q13" value="客户响应速度提升"><span>客户响应速度提升</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q13" value="人均处理业务量提升"><span>人均处理业务量提升</span></label>
+          <label class="sv-choice"><input type="checkbox" name="q13" value="其他" data-other="svQ13Other"><span>其他（请注明）</span></label>
+        </div>
+        <div class="sv-other" id="svQ13OtherWrap"><input class="sv-input" id="svQ13Other" placeholder="请注明"></div>
+      </div>
+
+      <div class="sv-q">
+        <label class="sv-q__label"><span class="sv-q__no">14</span>其他建议或顾虑</label>
+        <textarea class="sv-textarea" id="svQ14" rows="3" placeholder="任何想说的：担心、期待、试点建议、不想被替代的部分……"></textarea>
+      </div>
+    </section>
+
+    <!-- 提交 -->
+    <section class="sv-submit" id="svSubmitCard">
+      <h3>提交问卷</h3>
+      <p>提交后如需修改，请联系调研发起人；本问卷每题都会被逐条阅读，不会只做统计。</p>
+      <input type="text" id="svWebsite" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+      <div class="sv-actions">
+        <button type="submit" class="sv-btn sv-btn--primary" id="svSubmitBtn">提交问卷</button>
+        <button type="button" class="sv-btn sv-btn--ghost" id="svSaveDraft">保存草稿</button>
+      </div>
+      <div class="sv-status" id="svStatus" role="status" aria-live="polite"></div>
+    </section>
+  </form>
+
+  <section class="sv-card sv-done" id="svDone" role="status" aria-live="polite">
+    <div class="sv-done__mark">✓</div>
+    <h2>提交成功，谢谢你的时间</h2>
+    <p>你的问卷已记录。我们会把第 6 题的任务评分和第 8 题的节省工时汇总后，作为第一批 Agent 场景的筛选依据；条目如有歧义，可能会联系你确认 5 分钟。</p>
+    <code id="svDoneId"></code>
+  </section>
+</main>
+
+<footer class="sv-foot">
+  <b>关于本问卷：</b>数据仅用于企业内部 Agent 工作台的需求分析，结果按部门聚合呈现，不与个人绩效挂钩。
+  问卷设置「每人限填一次」，如重复提交以最后一次为准。<br>
+  <b>反馈：</b>如题目有歧义或你想补充，请直接在企业微信上找调研发起人。
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============ 可调整项：部门列表（按公司组织架构改这里即可） ============ */
+  var SV_DEPTS = [
+    '销售 / 商务', '市场 / 品牌', '产品', '研发 / 技术', '售前 / 解决方案',
+    '客户成功 / 客服', '交付 / 实施', '供应链 / 采购', '生产 / 质量',
+    '财务', '人力资源', '行政 / 法务', '管理层', '其他（请填写）'
+  ];
+
+  var MATRIX = [
+    { key: 'frequency', label: '频率', tip: '1 偶发 → 5 每日' },
+    { key: 'duration',  label: '单次耗时', tip: '1 极短 → 5 超 2 小时' },
+    { key: 'rules',     label: '规则明确度', tip: '1 靠经验 → 5 有 SOP' },
+    { key: 'central',   label: '数据集中度', tip: '1 散落 → 5 集中' },
+    { key: 'risk',      label: '出错代价', tip: '1 可改 → 5 高风险' }
+  ];
+  var Q6_LABELS = ['任务一', '任务二', '任务三', '任务四', '任务五'];
+  var Q6_PLACEHOLDER = [
+    '如：每周整理客户拜访纪要并同步到 CRM',
+    '如：按模板给客户出报价单',
+    '如：导出多系统数据核对差异',
+    '如：从聊天记录里汇总客户问题',
+    '如：月末整理经营数据做汇报'
+  ];
+  var DRAFT_KEY = 'sv-agent-survey-draft-v1';
+  var API_SUBMIT = '/survey/api/submit';
+  var startedAt = new Date().toISOString();
+
+  var $ = function (id) { return document.getElementById(id); };
+  var el = function (tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  /* ------------------------------ 部门下拉 ------------------------------ */
+  (function buildDepts() {
+    var sel = $('svDept');
+    var opt0 = el('option', null, '请选择所在部门');
+    opt0.value = '';
+    sel.appendChild(opt0);
+    SV_DEPTS.forEach(function (d) {
+      var o = el('option', null, d);
+      o.value = d;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', function () {
+      $('svDeptOtherWrap').classList.toggle('is-on', sel.value === '其他（请填写）');
+      sel.classList.remove('is-error');
+    });
+  }());
+
+  /* ------------------------------ 第 2 题 ------------------------------ */
+  (function buildQ2() {
+    var box = $('svQ2');
+    for (var i = 0; i < 3; i += 1) {
+      var row = el('div', 'sv-repeat-row');
+      row.appendChild(el('span', 'sv-repeat-row__idx', '第 ' + (i + 1) + ' 项'));
+      var body = el('div', 'sv-repeat-row__body');
+      var task = el('input', 'sv-input');
+      task.placeholder = '工作事项' + (i === 0 ? '（如：客户对账与开票）' : '');
+      task.maxLength = 120;
+      var time = el('input', 'sv-input');
+      time.placeholder = '每日约耗时（如：2 小时 / 40%）';
+      time.maxLength = 40;
+      body.appendChild(task);
+      body.appendChild(time);
+      row.appendChild(body);
+      box.appendChild(row);
+    }
+  }());
+
+  /* ------------------------------ 第 6 题矩阵 ------------------------------ */
+  var q6Count = 0;
+
+  function buildTask(index) {
+    q6Count += 1;
+    var n = q6Count;
+    var wrap = el('div', 'sv-task');
+    wrap.setAttribute('data-task', String(index));
+
+    var head = el('div', 'sv-task__head');
+    head.appendChild(el('span', 'sv-task__idx', Q6_LABELS[index] || ('任务' + (index + 1))));
+    var nameInput = el('input', 'sv-input');
+    nameInput.setAttribute('data-field', 'task');
+    nameInput.placeholder = Q6_PLACEHOLDER[index] || '填写任务名称';
+    nameInput.maxLength = 120;
+    head.appendChild(nameInput);
+    var del = el('button', 'sv-task__del', '删除');
+    del.type = 'button';
+    del.addEventListener('click', function () {
+      wrap.remove();
+      reindexTasks();
+      scheduleSave();
+    });
+    head.appendChild(del);
+    wrap.appendChild(head);
+
+    var rows = el('div', 'sv-task__rows');
+    MATRIX.forEach(function (dim) {
+      var r = el('div', 'sv-scale-row');
+      var lab = el('span', 'sv-scale-row__label');
+      lab.appendChild(document.createTextNode(dim.label));
+      lab.appendChild(el('em', null, dim.tip));
+      r.appendChild(lab);
+      var scale = el('div', 'sv-scale');
+      for (var v = 1; v <= 5; v += 1) {
+        var l = el('label');
+        var input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'q6-' + n + '-' + dim.key;
+        input.value = String(v);
+        input.setAttribute('data-key', dim.key);
+        input.addEventListener('change', scheduleSave);
+        l.appendChild(input);
+        l.appendChild(el('span', null, String(v)));
+        scale.appendChild(l);
+      }
+      r.appendChild(scale);
+      rows.appendChild(r);
+    });
+    wrap.appendChild(rows);
+    return wrap;
+  }
+
+  function reindexTasks() {
+    var tasks = $('svQ6').querySelectorAll('[data-task]');
+    tasks.forEach(function (t, i) {
+      t.setAttribute('data-task', String(i));
+      var idx = t.querySelector('.sv-task__idx');
+      if (idx) idx.textContent = Q6_LABELS[i] || ('任务' + (i + 1));
+      var nameInput = t.querySelector('input[data-field="task"]');
+      if (nameInput) nameInput.placeholder = Q6_PLACEHOLDER[i] || '填写任务名称';
+      t.querySelectorAll('input[type="radio"]').forEach(function (r) {
+        var key = r.getAttribute('data-key');
+        r.name = 'q6-' + i + '-' + key;
+      });
+      var del = t.querySelector('.sv-task__del');
+      if (del) del.hidden = tasks.length <= 1;
+    });
+    $('svQ6Add').disabled = tasks.length >= 5;
+  }
+
+  function addTask() {
+    var tasks = $('svQ6').querySelectorAll('[data-task]');
+    if (tasks.length >= 5) return;
+    $('svQ6').appendChild(buildTask(tasks.length));
+    reindexTasks();
+    scheduleSave();
+  }
+
+  (function initQ6() {
+    for (var i = 0; i < 3; i += 1) $('svQ6').appendChild(buildTask(i));
+    reindexTasks();
+    $('svQ6Add').addEventListener('click', addTask);
+  }());
+
+  /* ------------------------------ 第 9 题 ------------------------------ */
+  var q9Count = 0;
+  function buildScene(index) {
+    q9Count += 1;
+    var row = el('div', 'sv-repeat-row');
+    row.setAttribute('data-scene', String(index));
+    row.appendChild(el('span', 'sv-repeat-row__idx', '场景 ' + (index + 1)));
+    var body = el('div', 'sv-repeat-row__body');
+    var scene = el('textarea', 'sv-textarea');
+    scene.rows = 2;
+    scene.placeholder = '希望 Agent 帮我做什么、输入是什么、什么时候触发';
+    scene.setAttribute('data-field', 'scene');
+    var deliv = el('input', 'sv-input');
+    deliv.placeholder = '期望交付物（如：核对清单 / 周报草稿 / 待办提醒 / 客户回复初稿）';
+    deliv.setAttribute('data-field', 'deliverable');
+    deliv.maxLength = 200;
+    body.appendChild(scene);
+    body.appendChild(deliv);
+    row.appendChild(body);
+    return row;
+  }
+  function reindexScenes() {
+    var rows = $('svQ9').querySelectorAll('[data-scene]');
+    rows.forEach(function (r, i) {
+      r.setAttribute('data-scene', String(i));
+      r.querySelector('.sv-repeat-row__idx').textContent = '场景 ' + (i + 1);
+    });
+    $('svQ9Add').disabled = rows.length >= 3;
+  }
+  (function initQ9() {
+    for (var i = 0; i < 2; i += 1) $('svQ9').appendChild(buildScene(i));
+    reindexScenes();
+    $('svQ9Add').addEventListener('click', function () {
+      var rows = $('svQ9').querySelectorAll('[data-scene]');
+      if (rows.length >= 3) return;
+      $('svQ9').appendChild(buildScene(rows.length));
+      reindexScenes();
+      scheduleSave();
+    });
+  }());
+
+  /* --------------------- 多选组的「最多 N 项」与互斥 --------------------- */
+  document.querySelectorAll('.sv-choices[data-group]').forEach(function (group) {
+    var name = group.getAttribute('data-group');
+    var limit = Number(group.getAttribute('data-limits') || 0);
+    var exclusive = group.getAttribute('data-exclusive') || '';
+    var inputs = Array.prototype.slice.call(group.querySelectorAll('input[type="checkbox"]'));
+    var counter = document.querySelector('[data-count-for="' + name + '"] b');
+
+    function refresh() {
+      var checked = inputs.filter(function (i) { return i.checked; });
+      if (limit > 0) {
+        var full = checked.length >= limit;
+        inputs.forEach(function (i) { i.disabled = full && !i.checked; });
+        if (counter) counter.textContent = String(checked.length);
+      }
+    }
+
+    inputs.forEach(function (input) {
+      input.addEventListener('change', function () {
+        if (input.checked) {
+          if (limit > 0) {
+            var checked = inputs.filter(function (i) { return i.checked; });
+            if (checked.length > limit) { input.checked = false; refresh(); return; }
+          }
+          if (exclusive) {
+            if (input.value === exclusive) {
+              inputs.forEach(function (i) { if (i !== input) i.checked = false; });
+            } else {
+              var ex = inputs.filter(function (i) { return i.value === exclusive; })[0];
+              if (ex) ex.checked = false;
+            }
+          }
+        }
+        var otherId = input.getAttribute('data-other');
+        if (otherId) {
+          var o = $(otherId);
+          if (o) {
+            var box = o.parentNode;
+            var on = inputs.some(function (i) { return i.getAttribute('data-other') && i.checked; });
+            box.classList.toggle('is-on', on);
+            if (!on) o.value = '';
+          }
+        }
+        refresh();
+        scheduleSave();
+      });
+    });
+    refresh();
+  });
+
+  /* ------------------------------ 进度 ------------------------------ */
+  function answered() {
+    var total = 15, n = 0;
+    if ($('svDept').value) n += 1;
+    if ($('svQ1').value.trim()) n += 1;
+    var q2 = $('svQ2').querySelectorAll('input');
+    if (q2[0] && q2[0].value.trim()) n += 1;
+    if (checked('q3').length || $('svQ3Other').value.trim()) n += 1;
+    if ($('svQ4Name').value.trim()) n += 1;
+    if ($('svQ5').value.trim() || checked('q5tags').length) n += 1;
+    var tasks = $('svQ6').querySelectorAll('[data-task]');
+    var anyTask = Array.prototype.some.call(tasks, function (t) {
+      return t.querySelector('input[data-field="task"]').value.trim();
+    });
+    if (anyTask) n += 1;
+    if (checked('q7').length || $('svQ7Other').value.trim()) n += 1;
+    if ($('svQ8Hours').value !== '' || $('svQ8Usage').value.trim()) n += 1;
+    var scenes = $('svQ9').querySelectorAll('[data-scene]');
+    var anyScene = Array.prototype.some.call(scenes, function (s) {
+      return s.querySelector('[data-field="scene"]').value.trim();
+    });
+    if (anyScene) n += 1;
+    if (checked('q10').length) n += 1;
+    if ($('svQ11').value.trim()) n += 1;
+    if (checked('q12').length) n += 1;
+    if (checked('q13').length || $('svQ13Other').value.trim()) n += 1;
+    if ($('svQ14').value.trim()) n += 1;
+    return { n: n, total: total };
+  }
+
+  function checked(name) {
+    return Array.prototype.filter.call(
+      document.querySelectorAll('input[name="' + name + '"]:checked'),
+      function () { return true; }
+    ).map(function (i) { return i.value; });
+  }
+
+  function paintProgress() {
+    var a = answered();
+    var pct = Math.round((a.n / a.total) * 100);
+    $('svBar').style.width = pct + '%';
+    $('svPct').textContent = pct + '%';
+  }
+
+  /* ------------------------------ 草稿 ------------------------------ */
+  var saveTimer = null;
+  function collect() {
+    var tasks = Array.prototype.map.call($('svQ6').querySelectorAll('[data-task]'), function (t) {
+      var row = { task: t.querySelector('input[data-field="task"]').value.trim() };
+      MATRIX.forEach(function (dim) {
+        var sel = t.querySelector('input[data-key="' + dim.key + '"]:checked');
+        row[dim.key] = sel ? Number(sel.value) : null;
+      });
+      return row;
+    }).filter(function (r) {
+      return r.task || MATRIX.some(function (d) { return r[d.key] !== null; });
+    });
+
+    var q2 = Array.prototype.map.call($('svQ2').querySelectorAll('.sv-repeat-row'), function (r) {
+      var i = r.querySelectorAll('input');
+      return { task: i[0].value.trim(), time: i[1].value.trim() };
+    }).filter(function (r) { return r.task || r.time; });
+
+    var q9 = Array.prototype.map.call($('svQ9').querySelectorAll('[data-scene]'), function (s) {
+      return {
+        scene: s.querySelector('[data-field="scene"]').value.trim(),
+        deliverable: s.querySelector('[data-field="deliverable"]').value.trim()
+      };
+    }).filter(function (r) { return r.scene || r.deliverable; });
+
+    var dept = $('svDept').value;
+    if (dept === '其他（请填写）') dept = $('svDeptOther').value.trim() || '其他';
+
+    return {
+      meta: {
+        dept: dept,
+        name: $('svName').value.trim(),
+        role: $('svRole').value.trim(),
+        startedAt: startedAt,
+        elapsedMs: Date.now() - new Date(startedAt).getTime()
+      },
+      q1: $('svQ1').value.trim(),
+      q2: q2,
+      q3: checked('q3'),
+      q3Other: $('svQ3Other').value.trim(),
+      q4: {
+        name: $('svQ4Name').value.trim(),
+        trigger: $('svQ4Trigger').value.trim(),
+        steps: $('svQ4Steps').value.trim(),
+        systems: $('svQ4Systems').value.trim(),
+        roles: $('svQ4Roles').value.trim(),
+        duration: $('svQ4Duration').value.trim()
+      },
+      q5: { tags: checked('q5tags'), text: $('svQ5').value.trim() },
+      q6: tasks,
+      q7: checked('q7'),
+      q7Other: $('svQ7Other').value.trim(),
+      q8: {
+        hours: $('svQ8Hours').value === '' ? null : Number($('svQ8Hours').value),
+        usage: $('svQ8Usage').value.trim()
+      },
+      q9: q9,
+      q10: checked('q10'),
+      q11: $('svQ11').value.trim(),
+      q12: checked('q12'),
+      q13: checked('q13'),
+      q13Other: $('svQ13Other').value.trim(),
+      q14: $('svQ14').value.trim(),
+      website: $('svWebsite').value
+    };
+  }
+
+  function saveDraft() {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(collect())); } catch (e) { /* 隐私模式忽略 */ }
+  }
+  function scheduleSave() {
+    paintProgress();
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDraft, 600);
+  }
+
+  $('svForm').addEventListener('input', scheduleSave);
+  $('svForm').addEventListener('change', scheduleSave);
+
+  function restoreDraft() {
+    var raw = null;
+    try { raw = localStorage.getItem(DRAFT_KEY); } catch (e) { return; }
+    if (!raw) return;
+    var d;
+    try { d = JSON.parse(raw); } catch (e) { return; }
+    if (!d || typeof d !== 'object') return;
+    var hasContent = (d.q1 || '').trim() || (d.q2 && d.q2.length) || (d.q6 && d.q6.length) || (d.q11 || '').trim();
+    if (!hasContent) return;
+
+    if (d.meta) {
+      if (d.meta.dept) {
+        var found = false;
+        Array.prototype.forEach.call($('svDept').options, function (o) {
+          if (o.value === d.meta.dept) found = true;
+        });
+        if (found) $('svDept').value = d.meta.dept;
+        else { $('svDept').value = '其他（请填写）'; $('svDeptOther').value = d.meta.dept; $('svDeptOtherWrap').classList.add('is-on'); }
+      }
+      $('svName').value = d.meta.name || '';
+      $('svRole').value = d.meta.role || '';
+    }
+    $('svQ1').value = d.q1 || '';
+    if (Array.isArray(d.q2)) {
+      var rows = $('svQ2').querySelectorAll('.sv-repeat-row');
+      d.q2.slice(0, rows.length).forEach(function (r, i) {
+        var ins = rows[i].querySelectorAll('input');
+        ins[0].value = r.task || '';
+        ins[1].value = r.time || '';
+      });
+    }
+    setChecked('q3', d.q3);
+    $('svQ3Other').value = d.q3Other || '';
+    if ($('svQ3Other').value) $('svQ3OtherWrap').classList.add('is-on');
+
+    var q4 = d.q4 || {};
+    $('svQ4Name').value = q4.name || '';
+    $('svQ4Trigger').value = q4.trigger || '';
+    $('svQ4Steps').value = q4.steps || '';
+    $('svQ4Systems').value = q4.systems || '';
+    $('svQ4Roles').value = q4.roles || '';
+    $('svQ4Duration').value = q4.duration || '';
+
+    setChecked('q5tags', d.q5 && d.q5.tags);
+    $('svQ5').value = (d.q5 && d.q5.text) || '';
+
+    if (Array.isArray(d.q6) && d.q6.length) {
+      var box = $('svQ6');
+      box.innerHTML = '';
+      q6Count = 0;
+      d.q6.slice(0, 5).forEach(function (row, i) {
+        if (i >= 3) return;
+        var t = buildTask(i);
+        box.appendChild(t);
+        t.querySelector('input[data-field="task"]').value = row.task || '';
+      });
+      while (box.querySelectorAll('[data-task]').length < 3) box.appendChild(buildTask(box.querySelectorAll('[data-task]').length));
+      reindexTasks();
+      var taskEls = $('svQ6').querySelectorAll('[data-task]');
+      d.q6.slice(0, 5).forEach(function (row, i) {
+        var t = taskEls[i];
+        if (!t) return;
+        MATRIX.forEach(function (dim) {
+          if (row[dim.key] == null) return;
+          var target = t.querySelector('input[data-key="' + dim.key + '"][value="' + row[dim.key] + '"]');
+          if (target) target.checked = true;
+        });
+      });
+    }
+
+    setChecked('q7', d.q7);
+    $('svQ7Other').value = d.q7Other || '';
+    if ($('svQ7Other').value) $('svQ7OtherWrap').classList.add('is-on');
+    if (d.q8) {
+      $('svQ8Hours').value = d.q8.hours == null ? '' : String(d.q8.hours);
+      $('svQ8Usage').value = d.q8.usage || '';
+    }
+    if (Array.isArray(d.q9) && d.q9.length) {
+      var sbox = $('svQ9');
+      sbox.innerHTML = '';
+      q9Count = 0;
+      d.q9.slice(0, 3).forEach(function (row, i) {
+        var s = buildScene(i);
+        sbox.appendChild(s);
+        s.querySelector('[data-field="scene"]').value = row.scene || '';
+        s.querySelector('[data-field="deliverable"]').value = row.deliverable || '';
+      });
+      while (sbox.querySelectorAll('[data-scene]').length < 2) sbox.appendChild(buildScene(sbox.querySelectorAll('[data-scene]').length));
+      reindexScenes();
+    }
+    setChecked('q10', d.q10);
+    $('svQ11').value = d.q11 || '';
+    setChecked('q12', d.q12);
+    setChecked('q13', d.q13);
+    $('svQ13Other').value = d.q13Other || '';
+    if ($('svQ13Other').value) $('svQ13OtherWrap').classList.add('is-on');
+    $('svQ14').value = d.q14 || '';
+
+    document.querySelectorAll('.sv-choices[data-group]').forEach(function (g) {
+      var first = g.querySelector('input[type="checkbox"]');
+      if (first) first.dispatchEvent(new Event('change', { bubbles: false }));
+    });
+
+    var any = $('svQ1').value.trim() || $('svQ4Name').value.trim() || $('svQ11').value.trim() || $('svQ6').querySelector('input[data-field="task"]').value.trim();
+    if (any) $('svDraftNotice').classList.add('is-on');
+  }
+
+  function setChecked(name, values) {
+    if (!Array.isArray(values)) return;
+    document.querySelectorAll('input[name="' + name + '"]').forEach(function (i) {
+      i.checked = values.indexOf(i.value) >= 0;
+    });
+  }
+
+  $('svDraftClear').addEventListener('click', function () {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
+    location.reload();
+  });
+  $('svSaveDraft').addEventListener('click', function () {
+    saveDraft();
+    setStatus('info', '草稿已保存在本机浏览器，关掉页面后重新打开会自动恢复。');
+  });
+
+  /* ------------------------------ 校验与提交 ------------------------------ */
+  function setStatus(kind, text) {
+    var s = $('svStatus');
+    s.className = 'sv-status is-on sv-status--' + kind;
+    s.textContent = text;
+  }
+  function clearStatus() { $('svStatus').className = 'sv-status'; }
+
+  function validate() {
+    var problems = [];
+    var dept = $('svDept').value;
+    if (!dept) { problems.push('请选择所在部门'); $('svDept').classList.add('is-error'); }
+    if (dept === '其他（请填写）' && !$('svDeptOther').value.trim()) problems.push('请填写你的部门名称');
+    if (!$('svQ1').value.trim()) { problems.push('第 1 题：请填写岗位核心职责'); $('svQ1').classList.add('is-error'); }
+
+    var tasks = $('svQ6').querySelectorAll('[data-task]');
+    var incomplete = [];
+    Array.prototype.forEach.call(tasks, function (t, i) {
+      var name = t.querySelector('input[data-field="task"]').value.trim();
+      var scored = MATRIX.filter(function (d) {
+        return t.querySelector('input[data-key="' + d.key + '"]:checked');
+      }).length;
+      if (name && scored > 0 && scored < MATRIX.length) incomplete.push(Q6_LABELS[i]);
+      if (!name && scored > 0) incomplete.push(Q6_LABELS[i] + '（缺任务名称）');
+    });
+    if (incomplete.length) problems.push('第 6 题：' + incomplete.join('、') + ' 的打分不完整（每项任务 5 个维度都要打分）');
+    return problems;
+  }
+
+  $('svForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    clearStatus();
+    document.querySelectorAll('.is-error').forEach(function (n) { n.classList.remove('is-error'); });
+
+    var problems = validate();
+    if (problems.length) {
+      setStatus('err', '还差几项：\n· ' + problems.join('\n· '));
+      var firstBad = document.querySelector('.is-error') || $('svQ6');
+      if (firstBad && firstBad.scrollIntoView) firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    var payload = collect();
+    var btn = $('svSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = '提交中…';
+    setStatus('info', '正在提交…');
+
+    fetch(API_SUBMIT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; });
+    }).then(function (res) {
+      if (!res.ok || !res.body || !res.body.ok) {
+        throw new Error((res.body && res.body.error) || ('提交失败（HTTP ' + res.status + '）'));
+      }
+      saveDraft();
+      try { localStorage.setItem(DRAFT_KEY + ':submitted', res.body.id || ''); } catch (e) { /* ignore */ }
+      $('svForm').style.display = 'none';
+      $('svDoneId').textContent = '提交编号：' + (res.body.id || '-') + '　' + new Date().toLocaleString('zh-CN');
+      $('svDone').classList.add('is-on');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }).catch(function (err) {
+      btn.disabled = false;
+      btn.textContent = '重新提交';
+      setStatus('err',
+        '提交没有成功：' + (err && err.message ? err.message : '网络异常') +
+        '\n你的填写内容已自动保存在本机浏览器，不会丢失。请检查网络后点「重新提交」；' +
+        '若多次失败，请把下面的信息发给调研发起人。');
+    });
+  });
+
+  /* ------------------------------ 启动 ------------------------------ */
+  restoreDraft();
+  paintProgress();
+}());
+</script>
+</body>
+</html>

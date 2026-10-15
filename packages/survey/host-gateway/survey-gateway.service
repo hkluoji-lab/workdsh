@@ -1,0 +1,25 @@
+[Unit]
+Description=Survey public gateway (survey.10ge.cn -> dsh container Caddy)
+Documentation=file:/opt/survey-gateway/README.md
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/survey-gateway
+Environment=GW_PORT=3092
+Environment=GW_BIND=127.0.0.1
+Environment=GW_PUBLIC_HOST=survey.10ge.cn
+Environment=GW_UPSTREAM_HOST=127.0.0.1
+Environment=GW_UPSTREAM_PORT=3080
+Environment=GW_UPSTREAM_SNI=dsh.10ge.cn
+ExecStart=/usr/bin/node /opt/survey-gateway/gateway.mjs
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=survey-gateway
+
+[Install]
+WantedBy=multi-user.target

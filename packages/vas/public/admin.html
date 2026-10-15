@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>增值业务产品页 · 管理后台</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="csrf" content="{{CSRF}}">
+<meta name="user" content="{{USER}}">
+<link rel="stylesheet" href="/portal/zengzhi/admin/admin.css">
+</head>
+<body>
+<header class="ah">
+  <div class="ah__brand">
+    <strong>增值业务产品页</strong>
+    <span>管理后台 · 独立模块</span>
+  </div>
+  <nav class="ah__tabs" role="tablist">
+    <button role="tab" class="ah__tab on" data-tab="editor" aria-selected="true">内容编辑</button>
+    <button role="tab" class="ah__tab" data-tab="orders" aria-selected="false">需求单</button>
+    <button role="tab" class="ah__tab" data-tab="meta" aria-selected="false">页面信息</button>
+  </nav>
+  <div class="ah__side">
+    <a class="ab ab--q ab--sm" id="viewPage" href="/portal/products/2026Q3-zengzhi.html" target="_blank" rel="noopener">查看线上页</a>
+    <span class="ah__user" id="userLabel"></span>
+  </div>
+</header>
+
+<div class="toast" id="toast" hidden></div>
+
+<main class="am">
+
+  <!-- ============ 内容编辑 ============ -->
+  <section class="ap on" id="p-editor">
+    <div class="abar">
+      <div class="abar__l">
+        <label class="asel">产品
+          <select id="prodSelect"></select>
+        </label>
+        <span class="ahint" id="dirtyHint"></span>
+      </div>
+      <div class="abar__r">
+        <button class="ab ab--q ab--sm" type="button" id="btnValidate">校验</button>
+        <button class="ab ab--q ab--sm" type="button" id="btnSave">仅保存（不发布）</button>
+        <button class="ab ab--p ab--sm" type="button" id="btnPublish">保存并发布</button>
+      </div>
+    </div>
+
+    <div id="issues" hidden></div>
+
+    <div class="acard">
+      <h3>产品与资费</h3>
+      <p class="ahint">每个产品可维护定位、特征、价值叙述、应用场景、价值维度与资费档位。资费价格与受理登记表原文依据会被前台直接展示，请勿填写原文未给出的金额。</p>
+      <div id="productList"></div>
+      <div class="acard__act"><button class="ab ab--sm" type="button" id="addProduct">新增产品</button></div>
+    </div>
+
+    <div class="acard">
+      <h3>应用场景</h3>
+      <div id="sceneList"></div>
+      <div class="acard__act"><button class="ab ab--sm" type="button" id="addScene">新增场景</button></div>
+    </div>
+
+    <div class="acard">
+      <h3>企业价值维度</h3>
+      <div id="benefitList"></div>
+      <div class="acard__act"><button class="ab ab--sm" type="button" id="addBenefit">新增维度</button></div>
+    </div>
+
+    <div class="acard">
+      <h3>常见问题</h3>
+      <div id="faqList"></div>
+      <div class="acard__act"><button class="ab ab--sm" type="button" id="addFaq">新增问答</button></div>
+    </div>
+
+    <div class="acard">
+      <h3>服务条款摘要</h3>
+      <textarea id="termsBox" rows="7" class="aw"></textarea>
+      <p class="ahint">每行一条。</p>
+    </div>
+
+    <div class="acard">
+      <h3>原始 JSON（高级）</h3>
+      <p class="ahint">仅供排查与批量修改。点击「应用 JSON」会用文本内容替换当前数据；格式错误会提示且不生效。</p>
+      <textarea id="jsonBox" rows="10" class="aw mono"></textarea>
+      <div class="acard__act">
+        <button class="ab ab--sm" type="button" id="applyJson">应用 JSON</button>
+        <button class="ab ab--q ab--sm" type="button" id="reloadJson">从当前数据刷新</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 需求单 ============ -->
+  <section class="ap" id="p-orders" hidden>
+    <div class="abar">
+      <div class="abar__l">
+        <label class="asel">状态
+          <select id="orderStatus">
+            <option value="">全部</option>
+            <option value="new">待跟进</option>
+            <option value="contacted">已联系</option>
+            <option value="won">已受理</option>
+            <option value="lost">已关闭</option>
+          </select>
+        </label>
+        <span class="ahint" id="orderStats"></span>
+      </div>
+      <div class="abar__r"><button class="ab ab--q ab--sm" type="button" id="reloadOrders">刷新</button></div>
+    </div>
+    <div class="atw">
+      <table class="at">
+        <thead><tr>
+          <th>时间</th><th>单位 / 联系人</th><th>联系方式</th><th>意向产品</th><th>号码数量</th><th>备注</th><th>状态</th>
+        </tr></thead>
+        <tbody id="orderBody"></tbody>
+      </table>
+    </div>
+    <p class="ahint" id="orderEmpty" hidden>暂无需求单。</p>
+  </section>
+
+  <!-- ============ 页面信息 ============ -->
+  <section class="ap" id="p-meta" hidden>
+    <div class="acard">
+      <h3>页面信息</h3>
+      <div class="ag">
+        <label><span>页面标题 title</span><input id="m-title"></label>
+        <label><span>og:title</span><input id="m-ogTitle"></label>
+        <label class="ag__full"><span>页面描述 description</span><textarea id="m-description" rows="2"></textarea></label>
+        <label class="ag__full"><span>og:description</span><textarea id="m-ogDescription" rows="2"></textarea></label>
+        <label><span>主题色</span><input id="m-themeColor"></label>
+      </div>
+    </div>
+    <div class="acard">
+      <h3>数据来源与说明</h3>
+      <div class="ag">
+        <label><span>运营主体</span><input id="c-operator"></label>
+        <label><span>客服热线</span><input id="c-hotline"></label>
+        <label class="ag__full"><span>受理渠道</span><input id="c-channel"></label>
+        <label class="ag__full"><span>数据来源（受理登记表）</span><input id="c-sourceForm"></label>
+        <label class="ag__full"><span>数据口径声明</span><textarea id="c-dataPolicy" rows="3"></textarea></label>
+        <label class="ag__full"><span>产品名称</span><input id="p-name"></label>
+      </div>
+    </div>
+    <div class="acard">
+      <h3>发布</h3>
+      <p class="ahint">线上入口：<code id="publishedUrl"></code>（保存并发布后立即生效，无需重启服务）</p>
+      <p class="ahint" style="margin-top:10px">本数据一次生成 <b>8 个页面</b>（产品总览 + 5 个产品详情 + 资费总表 + 需求登记），可逐页打开核对：</p>
+      <ul class="plist" id="pageList"></ul>
+      <div class="acard__act">
+        <button class="ab ab--q ab--sm" type="button" id="btnValidate2">校验</button>
+        <button class="ab ab--p ab--sm" type="button" id="btnPublish2">保存并发布</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="/portal/zengzhi/admin/admin.js"></script>
+</body>
+</html>
