@@ -1,3 +1,12 @@
+# access 域模块补丁层：三条既有服务 + P1-15 批 1 并入的三件线上对象。
+#
+# 三条并入件（原 deploy/tools/ 手写 JS，现为本模块 Host 半边）：
+#   workdsh-grant-admin   面板「资源授权」的后端路由（验签门户身份 → 以调用者身份提交）
+#   workdsh-grant-baseline 基线授权迁移工具，**默认 dry-run**；由部署补丁层给 config 开关
+#   workdsh-access-enforce 技能/连接器的授权判定点（C4/P2），默认 enforce:false 只审计
+#
+# 环境相关配置（storageRoot / secretFile / rosterFile / activationFile / enforce）一律由
+# 部署侧 profile 补丁层按 id 覆盖，本文件只声明「模块提供哪些入口」。
 - insert:
     - id: workdsh-access
       name: workdsh-plugin-access
@@ -7,3 +16,9 @@
       name: workdsh-plugin-access/tool
       config:
         autoBindPersonalSessions: true
+    - id: workdsh-grant-admin
+      name: workdsh-plugin-access/grant-admin
+    - id: workdsh-grant-baseline
+      name: workdsh-plugin-access/grant-baseline
+    - id: workdsh-access-enforce
+      name: workdsh-plugin-access/access-enforce

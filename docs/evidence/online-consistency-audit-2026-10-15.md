@@ -184,5 +184,7 @@
 
 1. ~~**部署态配置无仓库真源**~~ —— **2026-10-15 追加已解决**：profile 的 `cordis.patch.yml`、`package.json`（28 bundles）、`cordis.yml`、`compatibility.json`、`pnpm-workspace.yaml` 已回填至 `deploy/profile/`（见 3.4）。**仍未入库**：`compose` 派生挂载（`docker-compose.yml` 的挂载定义与派生镜像构建）、`node_modules` 形态 —— 完整重建仍需读服务器。
 2. **`dist/`-only 插件的形态**（2026-10-15 补充调研）：这些 `dist/*.js` **不是压缩产物**，而是带完整中文注释的可读 JS 源码（插件本身用 JS 直接写，无 TS 编译步骤），因此**不存在"源码丢失"**。真实缺口是**工程化与位置**：它们留在 `deploy/tools/`，不在 `docs/modules.json`、无 `moduleVersion`、无仓库内测试与 typecheck。若要长期维护，应迁入 `packages/plugins/<domain>` 并补登记、测试与类型声明；其中 `workdsh-plugin-schedule`（**已部署**）与仓库 `packages/plugins/automations`（**未部署**）需先决定二选一。属新开发，不在本次回填范围。
-3. **`automations` 与 `workdsh-plugin-schedule` 的关系未收敛**：仓库 `packages/plugins/automations`（未部署）与线上 `workdsh-plugin-schedule`（已部署）是两套实现，建议后续二选一。
+3. **`automations` 与 `workdsh-plugin-schedule` 的关系未收敛**：仓库 `packages/plugins/automations`（未部署）与线上 `workdsh-plugin-schedule`（已部署）是两套实现，建议后续二选一。结转见本节末。
 4. **未验证范围（明确未执行）**：未从仓库重新部署到线上；未在本地启动 `survey`/`vas` 服务；未执行 `grants.test.mjs` 的沙箱链路；7 个 `dist`-only 插件未在本地加载运行。以上均**未执行**，不得据本文件推断其通过。
+
+> 遗留项②③**已于同日立项处置**（2026-10-15）：用户裁决这批插件全量迁入 `packages/plugins/`、identity 域门户身份桥升为 0.1 实现；决策见 [ADR-0035](../adr/0035-online-plugin-ownership-consolidation.md)（Accepted），分批执行见 [线上插件工程化归并方案](../design/ONLINE-PLUGIN-CONSOLIDATION.md)，台账登记为 step **D19 / task P1-15**（`currentStep` 仍为 D04）。二选一的结论是**保留 `automations` 为唯一所有权**，schedule 并入其中。

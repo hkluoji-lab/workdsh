@@ -338,7 +338,8 @@
       "src/harness",
       "tests"
     ],
-    "moduleVersion": "0.1"
+    "moduleVersion": "0.1",
+    "acceptanceNote": "P1-15 批 1（access 域收敛）已并入线上四件手写插件：grant-admin / grant-baseline / access-enforce 三个 Host 服务子入口由模块 cordis.patch.yml 的 dsh.bundle.patch 声明，探针等价用例并入 tests。门禁：typecheck / build 退出码 0，test 21/21 通过（access 0.1.0-alpha.6）。未验证：新服务未在真实 Loader/Profile 下加载与路由可达性验证；domain/changed 在仓库内无发出方，基线迁移的去抖触发路径线上仍依赖 deploy/tools 写入方；未部署、deploy/tools 四件尚未删除。官方能力复用记录见 docs/design/ONLINE-PLUGIN-CONSOLIDATION.md。"
   },
   {
     "path": "packages/plugins/audit",

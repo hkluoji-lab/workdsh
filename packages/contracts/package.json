@@ -1,6 +1,6 @@
 {
   "name": "workdsh-contracts",
-  "version": "0.1.0-alpha.11",
+  "version": "0.1.0-alpha.12",
   "private": true,
   "type": "module",
   "exports": {
@@ -42,6 +42,10 @@
     "./drive": {
       "types": "./dist/drive.d.ts",
       "default": "./dist/drive.js"
+    },
+    "./portal-identity": {
+      "types": "./dist/portal-identity.d.ts",
+      "default": "./dist/portal-identity.js"
     }
   },
   "files": [

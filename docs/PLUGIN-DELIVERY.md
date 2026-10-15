@@ -4,6 +4,23 @@
 
 按当前用户方向由设计者执行 TM-01 隔离验证，activeSlice 已切换为 expert-team-tm01；原 Office 专项保留在 deferredSlices，未标完成。仅验证官方运行接点，D04主线与D11完整产品验收保持原状态，不据此推进TM-02～04。证据见[TM-01](evidence/expert-team-tm01.md)。
 
+## 当前专项：线上插件工程化归并 D19 / P1-15（2026-10-15 用户裁决）
+
+2026-10-15 一致性审计与回填后，`dsh.10ge.cn` 线上独有的 10 个**手写 JS** 插件对象停在 `deploy/tools/`（是可读源码，不是编译产物，但无 TS、无契约、无仓库内测试与 typecheck、不在 `modules.json`）。用户裁决：**全量迁入 `packages/plugins/`**（不接受留在 `deploy/`）、identity 域**门户身份桥升为 identity 实现**、推进方式**先出 ADR+方案，再分域分批**。
+
+- 决策：[ADR-0035](adr/0035-online-plugin-ownership-consolidation.md)（Accepted）。
+- 方案与分批：[ONLINE-PLUGIN-CONSOLIDATION.md](design/ONLINE-PLUGIN-CONSOLIDATION.md)（归并总表 + 5 批 + DoD + 台账变更 + 风险回退）。
+- 归并口径：
+  - `workdsh-grant-admin`、`workdsh-grant-baseline`（两份同名副本保留一份）、`access-lab/access-enforce`、`workdsh-access-probe` → `packages/plugins/access`；
+  - `workdsh-identity-portal` → `packages/plugins/identity`（升为 0.1 实现；`packages/providers/identity-local` 降为提供方）；
+  - `workdsh-portal-auth` 与门户 `identity-bridge.mjs` → `packages/contracts` 的**单份**签名实现（防验签静默恒失败）；
+  - `workdsh-plugin-schedule` → `packages/plugins/automations`（删 `workdsh-bundle` 占位导航行与 `priority -10` 遮蔽）；
+  - `workdsh-plugin-users` → `packages/plugins/admin` 首个切片（数据源仍是门户 `/api/portal/*`，不复制账号真源）；
+  - `workdsh-remote-shell` + `webruntime-patches/*.patch` → **新建模块 `packages/plugins/web-runtime`**。
+- 门槛：TypeScript 源码 + `tsconfig.json` + `build`/`typecheck`；`workdsh-contracts` 契约；仓库内测试；`modules.json` 登记与 `moduleVersion`；官方能力复用记录；依赖重钉基线 `0.2.1-alpha.2`（含 `zod 4.4.3`）。**禁止直接把 `dist/*.js` 复制进 `packages/plugins/`**。
+- 边界：**不改线上部署**；`deploy/tools/` 与 `packages/plugins/` 并存期**禁止双写**；删除 `deploy/tools` 侧前必须确认线上引用已切换（profile 的 13 条 `file:` 依赖需重打包，属另一次授权部署）。
+- 状态：批 1（access 域 4 件收敛）**已落码并通过仓库门禁**（access `0.1.0-alpha.6`；`typecheck`/`build` 退出码 0，`test:access` 21/21，`check-plan`/`check:versions` PASS；官方能力复用记录见方案第 7 节），**未部署、未在真实 Loader 下加载**；`deploy/tools/` 四件尚未删除。批 2～5 尚未开始。`currentStep` 保留 `D04`，不因本专项跳步。
+
 # 逐插件开发顺序与版本交付
 
 ## 当前专项：网盘插件 D18 / P1-14（2026-10-11 用户需求）

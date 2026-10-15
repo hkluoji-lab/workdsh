@@ -28,7 +28,7 @@
 
 | 模块 | 版本线 | 当前包版本 | 实现状态 |
 | --- | --- | --- | --- |
-| 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.10` | implemented |
+| 领域公开契约 | 0.1 | `workdsh-contracts@0.1.0-alpha.12` | implemented |
 | 共享展示组件 | 0.1 | `workdsh-ui@0.1.0-alpha.6` | implemented |
 | 企业门户与登录门禁 | 0.1 | `workdsh-portal@0.1.0-alpha.2` | in_progress |
 | 默认组合包 | 0.1 | `workdsh-bundle@0.1.0-alpha.57` | in_progress |
@@ -36,7 +36,7 @@
 | 专家管理 | 0.1 | `workdsh-plugin-experts@0.1.0-alpha.9` | in_progress |
 | 技能管理 | 0.1 | `workdsh-plugin-skills@0.1.0-alpha.32` | implemented |
 | 连接器管理 | 0.1 | `workdsh-plugin-connectors@0.1.0-alpha.3` | in_progress |
-| 资源授权 | 0.1 | `workdsh-plugin-access@0.1.0-alpha.5` | implemented |
+| 资源授权 | 0.1 | `workdsh-plugin-access@0.1.0-alpha.6` | implemented |
 | 审计 | 0.1 | `workdsh-plugin-audit@0.1.0-alpha.4` | implemented |
 | 本地身份提供方 | 0.1 | `workdsh-provider-identity-local@0.1.0-alpha.6` | implemented |
 | Office 浏览器编辑插件 | 0.1 | `workdsh-plugin-office@0.1.0-alpha.8` | in_progress |
@@ -44,6 +44,8 @@
 | 项目管理 | 0.1 | `workdsh-plugin-projects@0.1.0-alpha.4` | in_progress |
 | 资料库 | 0.1 | `workdsh-plugin-library@0.1.0-alpha.4` | implemented |
 | 助理 | 0.1 | `workdsh-plugin-assistant@0.1.0-alpha.1` | in_progress |
+
+2026-10-15 更新：access α.5→**α.6**、contracts α.11→**α.12**（均 Unreleased）——P1-15「线上插件所有权归并」批 1（access 域收敛，[ADR-0035](adr/0035-online-plugin-ownership-consolidation.md) / [方案](design/ONLINE-PLUGIN-CONSOLIDATION.md)）。把线上 `deploy/tools/` 四件手写插件（`workdsh-grant-admin`、`workdsh-grant-baseline`、`workdsh-access-lab` 的 C4 授权判定点、`workdsh-access-probe` 探针）按业务所有权并入既有 `packages/plugins/access` 模块（**不新建 npm 包**）：新增三个 Host 服务子入口 `./grant-admin`、`./grant-baseline`、`./access-enforce`（`src/host/` 内原样 TS 化 + 契约化），由模块 `cordis.patch.yml` 的 `dsh.bundle.patch` 声明（`insert` 6 条），取代 `apply-c4.sh` 现场生成 loader 块。授权判定点保留**默认 dry-run** 的安全语义（`ensure()` 无参调用时 `dryRun = !apply`）。签名协议真源落在 contracts 新子路径 `workdsh-contracts/portal-identity`（HMAC-SHA256、字段数组 JSON 载荷、`timingSafeEqual` + `v1=` 容错）；因 [ADR-0019](adr/0019-installable-host-self-containment-and-governance-assembly.md) 要求可安装 Host 自包含，access 内保留同构副本并由仓库测试逐向量交叉校验两者同值。access 同时新增 `@deepseek-ai/dsh-host-webserver`（peer `optional` + devDep 精确 `0.2.1-alpha.2`）与 `@deepseek-ai/schemastery` devDep；`pnpm-lock.yaml` 随之改写。门禁实测：`typecheck` 退出码 0；`build` 退出码 0；`test` **21/21 通过**（portal-signature 4 + access-enforce 5 + grant-baseline 5 + grant-admin 6 + access-decision 1）。**未验证范围**：三个新服务**未在真实 Loader/Profile 下加载与路由可达性验证**（仅进程内 + 单元级）；`domain/changed` 事件在仓库内**无发出方**，基线迁移的「变更去抖触发」路径在仓库侧不会自然触发，线上依赖既有 `deploy/tools/workdsh-grant-baseline` 的写入方；`ctx.logger` 的 `%s/%d` 占位符签名运行时行为未观测。**未部署**（线上仍为 `deploy/tools/` 版本，切换属另一次授权部署）；`deploy/tools/` 四件**尚未删除**（删除前置＝线上引用已切换）。本表 contracts 行此前的 α.10 为滞后登记，实际 HEAD 已是 α.11（随网盘插件新增 `./drive` 子路径），本次一并回填为 α.12。
 
 2026-10-01 更新：library α.3 → **α.4**（Unreleased）——「给 import 分支补 source 透传」。资料库 HTTP 连接接口 `/api/workdsh-library` 的 `import` 分支此前**不透传** `source` / `sourceTaskId`，导致经接口导入的资料落库恒为默认 `upload`，「产出」视图（`sources: ['task']`）不再列出它们（2026-09-30 方案 B 重建 8 篇资料的已知偏差 ②）。本版只补**转发层**：`connection-api.ts` 的 import 分支新增 `source` 白名单（`upload` / `task` / `created`，非白名单值回落默认 `upload`）与 `sourceTaskId`（须为字符串，否则丢弃）；客户端 `management.ts` 的 `importFile` 新增可选第三参 `origin`，不传时行为与旧版等价。**公开契约未变**（`LibraryImportInput` 本就含这两个字段）、服务端 `LibraryManager` 已消费，故属「同一能力基线内的兼容修复或补全 ⇒ 递增预发布序号」。**重定版理由**：`0.1.0-alpha.3` 已是线上运行制品（见上方 2026-09-25 更新（四）与本表），同名不同内容按本项目「撞号必须重新定版」口径处理。门禁实测：`corepack pnpm --filter workdsh-plugin-library typecheck` 退出码 0；`test` **6/6 通过**（原 5 + 新增 1 条 source 透传回归）。**线上 `dsh.10ge.cn` 已部署 α.4**（2026-10-01：`file:` 指针 → `pnpm install`（`+6 -92`，8.7s，EXIT=0）→ 重启 healthy；线上 `dist/remote/connection-api.js` 含 `payload.source === 'task'`）；已打包 `.artifacts/library-release/workdsh-plugin-library-0.1.0-alpha.4.tgz`（61279B，SHA256 `4b176118…d833e46`）；**未发布 npm、未提交未推送**。同日以方案②（直改 state 元数据，非官方重导）把 8 篇资料 `source` 由 `upload` 修正为 `task`，产出视图恢复；证据见 [STATUS](STATUS.md)「续三十七」（补透传）与「续三十八」（上线 + source 修复）。
 

@@ -267,6 +267,22 @@
         "docs/evidence/drive-plugin-alpha2.md"
       ],
       "note": "2026-10-11 用户需求新增网盘：左侧导航「网盘」入口，自动归档并浏览所有对话产生的文档/图片（AI 生成 + 用户上传附件 + 工具输出文件），类似豆包智能体网盘。独立插件 workdsh-plugin-drive（modules.json 已登记 P1-14）。前置取已完成 D01 基线（storageDomain/identity 治理），不阻断主线 D04 推进。用户明确新指令实施中（首期切片已 typecheck/build/探针验证通过，证据见 drive-plugin-alpha1），当前步骤仍为 D04，D18 完成验收证据后置为 in_progress/completed。实施计划见 .trae/documents/netdisk-drive-plugin-plan.md。"
+    },
+    {
+      "id": "D19",
+      "title": "线上插件工程化归并",
+      "tasks": [
+        "P1-15"
+      ],
+      "dependsOn": [
+        "D01"
+      ],
+      "status": "todo",
+      "evidence": [
+        "docs/adr/0035-online-plugin-ownership-consolidation.md",
+        "docs/design/ONLINE-PLUGIN-CONSOLIDATION.md"
+      ],
+      "note": "2026-10-15 用户裁决专项：把 dsh.10ge.cn 线上独有的手写 JS 插件（deploy/tools 下 10 个对象 + webruntime 补丁）按业务所有权归并进 packages/plugins 的既有模块（access/identity/automations/admin）与新建模块 web-runtime，补齐 TS/契约/测试/typecheck/modules.json 登记/官方能力复用记录。决策与口径见 ADR-0035（Accepted），执行分批、门槛与清理项见 docs/design/ONLINE-PLUGIN-CONSOLIDATION.md。与 D17/D18 同口径：数组位置在末位以保持既有编号不变，currentStep 保留 D04，不因本专项跳步；不改线上部署，线上切换属另一次授权动作。批 1（access 域 4 件收敛）已落码并通过仓库门禁（access 0.1.0-alpha.6；typecheck/build 退出码 0、test:access 21/21、check-plan/check:versions PASS；官方能力复用记录见方案第 7 节），未部署、未在真实 Loader 下加载，deploy/tools 四件尚未删除；批 2～5 尚未开始。"
     }
   ],
   "batches": [
@@ -324,6 +340,15 @@
       "tasks": ["P1-13"],
       "goal": "把公网入口从匿名直达改为经企业门户与登录门禁进入工作台，并提供面向企业用户的私有化与联署定制介绍。",
       "exit": "本机门户与门禁服务契约、页面渲染与响应式已验证；线上路由切换按用户单独授权执行并单独留证；回滚方式已文档化。企业 SSO 与自助找回不在本批。"
+    },
+    {
+      "id": "B7",
+      "title": "线上插件工程化归并",
+      "status": "todo",
+      "steps": ["D19"],
+      "tasks": ["P1-15"],
+      "goal": "把 deploy/tools 下线上独有的手写 JS 插件按业务所有权归并进 packages/plugins：access 域 4 件并入 access、身份桥升为 identity 实现、签名实现唯一化、schedule 并入 automations、users 并入 admin 首个切片、remote-shell 与 webruntime 补丁迁入新建模块 web-runtime。",
+      "exit": "五批全部落地并各自回填证据：TS/契约/测试/typecheck/build 通过、modules.json 登记与 moduleVersion 同步、官方能力复用记录落盘、deploy/tools 侧对插件源码的删除已完成（且线上引用已切换或明确登记未切换）。不改线上部署。"
     }
   ],
   "crossCutting": [
@@ -430,6 +455,6 @@
       ]
     }
   ],
-  "lastReconciled": "2026-09-22",
+  "lastReconciled": "2026-10-15",
   "statusGuide": "主线/切片完成、模块实现、公开发行与产品验收分别登记；STATUS顶部是当前摘要，scopeHistory只供历史追溯。"
 }

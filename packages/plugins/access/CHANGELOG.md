@@ -1,3 +1,12 @@
+## 0.1.0-alpha.6 — 2026-10-15
+
+- P1-15 批 1（access 域收敛，[ADR-0035](../../../docs/adr/0035-online-plugin-ownership-consolidation.md)）：把线上 `deploy/tools/` 四件手写插件按业务所有权并入本模块，不新建 npm 包。
+- 新增 Host 服务子入口 `./grant-admin`（面板「资源授权」后端：门户签名鉴权、岗位门槛、资源摘要、授权签发与撤销）、`./grant-baseline`（基线 grant 一次性迁移 + 持续幂等收敛，**默认 dry-run**，可回收自己签发且已不在计划内的授权）、`./access-enforce`（在技能与连接器的破坏性方法上做运行时授权判定，判定异常一律放行并记 decisions）。
+- 三者由模块 `cordis.patch.yml` 的 `dsh.bundle.patch` 声明（`insert` 6 条），取代 `deploy/tools/workdsh-access-lab/apply-c4.sh` 现场生成 loader 块。
+- 新增 `src/host/portal-signature.ts`：门户身份签名协议的同构内建副本（ADR-0019 自包含要求），唯一真源为 `workdsh-contracts/portal-identity`；`tests/portal-signature.test.mjs` 逐向量交叉校验两端同值，守护「签名静默恒失败」风险。
+- 新增仓库内测试 5 个文件共 21 条用例，等价迁移自线上 `verify-enforce.mjs`、`baseline-verify.mjs` 与 `workdsh-access-probe` 探针；`package.json` 新增 `test` 脚本与 `@deepseek-ai/dsh-host-webserver`（peer `optional` + devDep 精确 `0.2.1-alpha.2`）、`@deepseek-ai/schemastery` devDep。
+- 未部署；`deploy/tools/` 四件尚未删除（前置＝线上引用已切换）。未验证：新服务在真实 Loader/Profile 下的加载与路由可达性、`domain/changed` 触发路径（仓库内暂无发出方）、`ctx.logger` 占位符的运行时输出格式。
+
 ## 0.1.0-alpha.5 — 2026-09-15
 
 - 将 Session、Storage Domain 与工具授权边界适配到 DeepSeek Harness 0.1.6-alpha.1。

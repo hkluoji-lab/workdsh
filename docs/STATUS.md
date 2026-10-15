@@ -1,5 +1,40 @@
 # 当前进度
 
+## 2026-10-15（续五十）：P1-15 批 1 落码——access 域收敛（线上四件 → 1 个模块）
+
+承接续四十九的 D19 分批方案，按用户裁决「先落台账，再开始批 1」执行批 1（**access 域 4 件收敛**）。本批**只改仓库、不触线上**。
+
+- **并入范围**：`deploy/tools/workdsh-grant-admin`、`workdsh-grant-baseline`（同名副本只留一份，`workdsh-access-lab/grant-baseline` 不再需要）、`workdsh-access-lab/access-enforce`、`workdsh-access-probe` → `packages/plugins/access`（**不新建 npm 包**）。
+- **接线**：`package.json` 新增三个 Host 子入口 `./grant-admin`、`./grant-baseline`、`./access-enforce`（`src/{...}.ts` 一行再导出 + `src/host/` 实现，与既有 `session`/`tool` 范式一致）与 `test` 脚本；依赖新增 `@deepseek-ai/dsh-host-webserver`（peer `optional: true` + devDep 精确 `0.2.1-alpha.2`）与 `@deepseek-ai/schemastery` devDep（与 `connectors` 同写法），`pnpm-lock.yaml` 随之改写。
+- **声明方式**：模块 `cordis.patch.yml` 由 3 条 `insert` 扩为 **6 条**，三件线上对象改由 `dsh.bundle.patch` 声明，**取代 `apply-c4.sh` 现场生成 loader 块**。
+- **签名唯一化**：`packages/contracts` 新增子路径 `workdsh-contracts/portal-identity`（HMAC-SHA256、载荷为**字段数组 JSON**、`timingSafeEqual` + `v1=` 容错、密钥文件只读去空白）；因 [ADR-0019](adr/0019-installable-host-self-containment-and-governance-assembly.md) 要求可安装 Host 自包含，access 内保留**同构内建副本** `src/host/portal-signature.ts`，由 `tests/portal-signature.test.mjs` 逐向量交叉校验两端同值。
+- **语义修正（本批真发现的缺陷）**：迁移工具 `ensure()` 原写法 `const { dryRun = false, apply = false } = options` 在无参调用时算出的 mode 是 `apply`，**违反线上「默认 dry-run」的安全语义**，已改为 `dryRun = !apply`。这是线上代码的真实缺陷，不是测试写错。
+- **测试**：新增 5 个文件 21 条用例——`portal-signature`（4）/`access-enforce`（5）/`grant-baseline`（5）/`grant-admin`（6）分别等价迁移自线上 `verify-enforce.mjs`、`baseline-verify.mjs` 与 `workdsh-grant-admin/dist/index.js` 语义；`access-decision`（1）是原沙箱探针 `workdsh-access-probe` 的进程内等价物，把「未授权 → 签发 → 已授权 → 撤销 → 又未授权 + 跨组织拒绝」完整决策链钉进仓库。
+- **门禁实测**：`typecheck` 退出码 **0**；`build` 退出码 **0**（产出 `dist/{grant-admin,grant-baseline,access-enforce}.js` 与 `dist/host/*`）；`test:access` **21/21 pass，0 fail**；`node scripts/check-plan.mjs` **PASS**（34 模块 / 50 文档）；`check:versions` **PASS**（578 条锁定 `0.2.1-alpha.2`、Cordis `4.0.5-alpha.1` 族）。
+- **登记**：`docs/modules.json` 的 access 补 `acceptanceNote`；`docs/MODULE-VERSIONS.md` 表内 access α.5→**α.6**、contracts α.10→**α.12**（后者同时回填一处滞后：HEAD 实际已是 α.11）；`packages/plugins/access/{README,CHANGELOG}.md` 同步；官方能力复用记录（6 字段）落 [ONLINE-PLUGIN-CONSOLIDATION.md](design/ONLINE-PLUGIN-CONSOLIDATION.md) 第 7 节。
+- **未验证（不得据本批推断通过）**：三个新服务**未在真实 Loader/Profile 下加载**，路由可达性只到进程内级别；`domain/changed` 事件在仓库内**当前无发出方**，基线迁移的去抖触发路径线上仍依赖既有写入方；`ctx.logger` 的 `%s`/`%d` 未观测运行时输出；**未部署**，`deploy/tools/` 四件**尚未删除**（删除前置＝线上引用已切换）。
+- **边界**：Client「资源授权」页现由线上 `workdsh-plugin-users` 承载（属批 4 的 admin 域），本批只交付 Host 路由与三个服务，**不新建第二套 client**；`deploy/tools`（线上真源）与 `packages/plugins`（仓库真源）并存期**禁止双写**。
+- **下一步**：批 2（identity 域收敛，含门户 `identity-bridge.mjs` 去重）——其前置正是本批的 grant 基线工具；批 1 的部署侧引用切换属**另一次授权部署**。未提交未推送（按 AGENTS.md 需用户授权）。
+
+## 2026-10-15（续四十九）：线上插件工程化归并立项（ADR-0035 + 分批方案，D19 / P1-15）
+
+接续四十八的遗留项②③：用户裁决线上独有的手写 JS 插件**全量迁入 `packages/plugins/`**（不接受留在 `deploy/`）、identity 域**门户身份桥升为 identity 实现**、推进方式**先出 ADR+方案，再分域分批**。
+
+- **决策**：[ADR-0035](adr/0035-online-plugin-ownership-consolidation.md)（**Accepted**）——10 条决策 + 权衡与失败边界 + 7 条被否决替代 + 范围。
+- **方案**：[ONLINE-PLUGIN-CONSOLIDATION.md](design/ONLINE-PLUGIN-CONSOLIDATION.md)（归并总表 / 5 批执行 / 每批 DoD / 台账变更 / 风险回退 / 未验证范围）。
+- **归并口径**（11 个对象 → 4 个既有模块 + 1 个新建模块）：
+  - `access`：`grant-admin` + `grant-baseline`（两份同名副本删一份）+ `access-lab/access-enforce` + `access-probe`（探针入 `tests/`）；
+  - `identity`：`workdsh-identity-portal` **升为 0.1 实现**，`providers/identity-local` 降为提供方；profile 不再用 `disabled`+`insert` 替换；
+  - `contracts`：`workdsh-portal-auth` 与门户 `identity-bridge.mjs` 收敛为**单份签名实现**（同一向量两端断言守护）；
+  - `automations`：`workdsh-plugin-schedule` 并入，删 `workdsh-bundle` 的 `workdsh-automation` 占位行与 `priority -10` 遮蔽；
+  - `admin`：`workdsh-plugin-users` 并入为 P1-10 首个切片（数据源仍为门户 `/api/portal/*`，不复制账号真源）；
+  - **新建 `packages/plugins/web-runtime`**：`workdsh-remote-shell`（经官方 `webserver/index-inject` 注入 `__DSH_TRANSPORT__.ownsHost`）+ `webruntime-patches/*.patch`；修其浮动 peerDep `"*"`。
+- **拆批**：批 1 access（线上在跑优先，且是批 2 切主体的前置基线工具）→ 批 2 identity → 批 3 automations → 批 4 admin → 批 5 web-runtime 新模块 → 收口（部署侧引用切换另行授权）。
+- **台账**：`development-order.json` 新增 step **D19**（task `P1-15`，`dependsOn: D01`，`todo`）与批次 **B7**，`lastReconciled` → `2026-10-15`，`currentStep` **保留 D04**（不跳步）；`STATUS.md` 任务表新增 `| P1-15 |`；`PLUGIN-DELIVERY.md` 追加 D19 专项说明。`modules.json` **本次不动**（四条既有登记随各批落地时更新，`web-runtime` 在批 5 登记）。
+- **边界**：**不改线上部署**；`deploy/tools`（线上真源）与 `packages/plugins`（仓库真源）并存期**禁止双写**；删除 `deploy/tools` 侧前必须确认线上引用已切换（profile 的 13 条 `file:` 依赖需重打包，属另一次授权部署）。
+- **验证**：`node scripts/check-plan.mjs` **PASS**（34 模块 / 50 文档；任务引用与相对链接均校验通过）。
+- **未执行**：批 1 尚未开始；未在本地加载运行任何线上插件；未执行任何线上切换；未跑 access/identity 端到端鉴权。
+
 ## 2026-10-15（续四十八）：dsh.10ge.cn 线上部署代码 ↔ 本地开发代码一致性审计 + 回填 3 域
 
 按用户指令「全面比对 dsh.10ge.cn 线上部署代码与本地开发代码，完成一致性校验后规范提交同步 GitHub」执行。用户裁决两项口径：**只回填产品源码**（排除密钥、账号表、运行数据与业务内容）、**分域多个规范提交**；第二轮追加裁决：**业务进 `packages/`、部署资产进 `deploy/`**、**线上新增 13 个产品页全部入库**。完整报告见 [online-consistency-audit-2026-10-15](evidence/online-consistency-audit-2026-10-15.md)。
@@ -5184,6 +5219,7 @@ D00 设计修订完成，当前 D01 集成验证进行中。已安装并锁定�
 | P1-12 | 助理入口包 | P1 | todo |
 | P1-13 | 企业门户与登录门禁（部署边缘面） | P1 | in_progress |
 | P1-14 | 网盘（对话产物自动归档与浏览） | P1 | in_progress |
+| P1-15 | 线上插件工程化归并（deploy/tools → packages/plugins） | P1 | todo |
 | P2-01 | 专家团模型及执行映射 | P2 | todo |
 | P2-02 | 专家团失败与取消 | P2 | todo |
 | P2-03 | 自动化配置与调度 | P2 | todo |

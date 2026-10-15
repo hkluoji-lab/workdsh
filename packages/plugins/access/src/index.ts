@@ -593,4 +593,8 @@ export class ToolAccessBridge extends Service {
   }
 }
 
+export { GrantAdminService } from './host/grant-admin.js';
+export { GrantBaselineService } from './host/grant-baseline.js';
+export { AccessEnforceService } from './host/access-enforce.js';
+
 export default AccessManager;
