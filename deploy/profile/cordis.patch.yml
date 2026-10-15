@@ -1,0 +1,389 @@
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+
+# 2026-09-21（批次 A）：11 个第三方 bundle 已临时从 dsh.profile.bundles 摘除，
+# 目的是让「宿主升 0.1.6-alpha.2 + WorkDSH 批次 A」成为唯一变量。tgz 与用户数据
+# 全部保留在 /workspace/wd-upload 与各自 storage 内，逐个放回时同步恢复下列覆盖行：
+#   dshmarket / dsh-context / @nanmicoder/dsh-agent-teams / dsh-cost-meter /
+#   @liustack/modlens / dsh-univer-office / @vectorize-io/hindsight-coding-agents /
+#   @anionex/dsh-vision-toolkit / @xmanrui/dsh-im
+#   @furongjun1999-dsh-memory → 原 python 覆盖行
+#   @awiki/dsh-plugin → 原 awiki / awiki-provider / awiki-summary-provider 三条禁用
+
+# 关于 dshmarket（插件市场）：它由 <profile>/package.json 的 dsh.profile.bundles 注册；
+# 该包的 package.json 声明了 dsh.bundle.patch = ./cordis.patch.yml，
+# 插件自身那条 `- insert: [{id: dsh-market, name: dshmarket}]` 已在 bundle 层自动应用。
+# ⚠️ 不要在这里重复 insert，否则 loader 会抛
+#    "duplicate loader entry id: dsh-market" 导致 dsh 无法启动（2026-09-13 实际踩过）。
+# 本文件留给市场写热禁用行（`- id: …` + `disabled: true|false`）使用。
+
+# 2026-09-19：workdsh-bundle 的 cordis.patch.yml 会 insert 这两条 computer-use 条目，
+# 它们依赖 @trycua/cua-driver-linux-x64-gnu 的原生库 libcua_driver_sdk.so，该库需要
+# libX11.so.6，而本容器镜像没有这个共享库；加载失败会让整棵插件树启动失败（不是只影响
+# 该插件）。原来是在 node_modules/workdsh-bundle/cordis.patch.yml 里手删这两条，但
+# 每次 pnpm install 都会把这个文件恢复成 tarball 里的原件，改动会被静默抹掉；改到这里
+# 才能跨重装保留。若镜像补上 libX11 后可把这两行去掉以恢复 computer-use。
+- id: computer-use
+  disabled: true
+- id: computer-use-cua-driver-native
+  disabled: true
+
+# 2026-09-22 探针：官方 ui-plugin-manager 自持左侧「插件」导航行（order 0）。
+# 插件管理能力在 设置 → 内置插件 / 插件管理 中已有官方入口，导航行按用户要求移除。
+- id: ui-plugin-manager
+  disabled: true
+
+# 2026-09-23 定时任务 overlay（等价于官方 @deepseek-ai/dsh-experimental-schedule-bundle
+# 的 cordis.patch.yml，三行同形）：
+#   schedule     = 宿主服务：schedule_create/list/delete 工具 + schedule 会话投影
+#   time-context = 按浏览器时区解释自然语言时间（官方 Web overlay 同款）
+#   ui-schedule  = 官方客户端任务页面（左侧「自动化任务」导航行 + /schedules 面板 +
+#                  会话内任务卡片与提醒目录），Web 组合默认不含，须显式 insert
+# 2026-09-30 修复：原先只 insert 前两行，ui-schedule 写成上面的
+#   `- id: ui-schedule / disabled: false`。该写法是悬空行：目标 id 不在组合树中
+#   （没有任何 bundle 提供它），loader 只 warn，于是左侧「自动化任务」在升级到
+#   0.2.0-rc.2 后消失。改为在 insert 中直接声明官方客户端包。
+#   与 workdsh-plugin-schedule（id workdsh-automation、order 40）id 不同，互不遮蔽。
+#
+# 2026-10-11 修复（插件市场"点更新不能完工"的根因）：官方 @deepseek-ai/dsh-web-app
+#   0.2.1-alpha.2 的 cordis.patch.yml 已自带 `- id: schedule`(L139) 与
+#   `- id: ui-schedule`(L389) 两条 insert，本层再 insert 同名 id 就在组合树里
+#   产生重复条目：
+#     duplicate loader entry id "schedule" (2 rows)    layer: dsh-web-app / user-patch
+#     duplicate loader entry id "ui-schedule" (2 rows) layer: dsh-web-app / user-patch
+#   真实启动容忍这两条重复（2026-10-11 12:00 宿主即在同一份磁盘状态下启动成功），
+#   但 dshmarket 的试启动校验（lib/trial.js 对 composed.duplicates 一律 push 成
+#   error）把它判为致命，且更新流程只要 pnpm 安装成功就必跑该校验 —— 结果是
+#   **任何插件**的更新都会在最后一步被回滚（市场日志 2026-10-11T11:53:23Z，
+#   @goodandready/dsh-russian-lang@0.3.42 exit=0 仍被 rollback）。
+#   因此这里只保留官方仍未自带的 time-context；schedule / ui-schedule 交给
+#   dsh-web-app 自己的 insert 提供（左侧「自动化任务」入口不受影响）。
+#   校验证据：node -e 'trialValidate("/data/dsh/profiles/web", readBundleStack(...).community)'
+#   → 修复前 ok=false（2 条 duplicate），修复后 ok=true。
+- insert:
+    - id: time-context
+      name: '@deepseek-ai/dsh-time-context'
+
+# 2026-09-25 远程设置可用性（P：settings are unavailable in this browser）
+# DSH 0.1.7 的 dsh-client-ui-settings 以 ctx.remote.$host.isLoopback 决定设置表单
+# 能否工作，而该值只认“宿主壳 transport.ownsHost / 无 location / 页面 hostname 是
+# loopback”。经 https://dsh.10ge.cn 访问时三者皆假 → 设置表单固定 unavailable。
+# 本插件走官方 webserver/index-inject 注入一行 global，等价于宿主壳声明。
+# 沙盒实测（容器内独立 DSH_HOME + 3099 实例）：页面 <head> 出现
+#   <script>globalThis["__DSH_TRANSPORT__"] = {"ownsHost":true}</script>
+# 回滚：删除本 insert 块（或还原上面的 .bak.remoteshell.*），补丁层热生效。
+- insert:
+    - id: workdsh-remote-shell
+      name: 'file:///data/dsh/tools/workdsh-remote-shell/index.js'
+- id: ui-settings-general
+  name: "@deepseek-ai/dsh-client-ui-settings-general"
+  config:
+    welcomeNoticeVersion: 2026-09-28.1
+- id: ui-settings
+  name: "@deepseek-ai/dsh-client-ui-settings"
+  config:
+    enabled: true
+- id: llm-pi-ai
+  name: "@deepseek-ai/dsh-llm-pi-ai"
+  config:
+    providers:
+      jhpt:
+        displayName: jhpt
+        apiKeyEnv: JHPT_API_KEY
+        api: openai-completions
+        baseURL: https://aimodel.szhtp.com/v1
+        models:
+          - id: deepseek-v4-flash
+            name: deepseek-v4-flash
+            contextWindow: 1000000
+            maxTokens: 32768
+            input:
+              - text
+          - id: deepseek-v4.1-flash
+            name: deepseek-v4.1-flash
+            contextWindow: 1000000
+            maxTokens: 32768
+            input:
+              - text
+              - image
+          - id: Doubao-Seed-2.0-Lite
+            name: Doubao-Seed-2.0-Lite
+            contextWindow: 262144
+          - id: Doubao-Seed-2.0-mini
+            name: Doubao-Seed-2.0-mini
+            contextWindow: 262144
+          - id: doubao-seedance-2.0
+            name: doubao-seedance-2.0
+            contextWindow: 262144
+          - id: doubao-seedance-2.0-A
+            name: doubao-seedance-2.0-A
+            contextWindow: 262144
+          - id: doubao-seedance-2.0-B
+            name: doubao-seedance-2.0-B
+            contextWindow: 262144
+          - id: doubao-seedance-2.0-B-fast
+            name: doubao-seedance-2.0-B-fast
+            contextWindow: 262144
+          - id: doubao-seedance-2.0-B-mini
+            name: doubao-seedance-2.0-B-mini
+            contextWindow: 262144
+          - id: doubao-seedance-2.0-C
+            name: doubao-seedance-2.0-C
+            contextWindow: 262144
+          - id: doubao-seedance-2.0-D
+            name: doubao-seedance-2.0-D
+            contextWindow: 262144
+          - id: doubao-seedance-2.0-D-fast
+            name: doubao-seedance-2.0-D-fast
+            contextWindow: 262144
+          - id: doubao-seedance-2.0-D-mini
+            name: doubao-seedance-2.0-D-mini
+            contextWindow: 262144
+          - id: doubao-seedance-2.5
+            name: doubao-seedance-2.5
+            contextWindow: 262144
+          - id: doubao-seedance-2.5-D
+            name: doubao-seedance-2.5-D
+            contextWindow: 262144
+          - id: Doubao-Seedream-4.5
+            name: Doubao-Seedream-4.5
+            contextWindow: 262144
+          - id: Doubao-Seedream-5.0-lite
+            name: Doubao-Seedream-5.0-lite
+            contextWindow: 262144
+          - id: glm-5.1
+            name: glm-5.1
+            contextWindow: 262144
+            maxTokens: 32768
+            input:
+              - text
+              - image
+          - id: glm-5.2
+            name: glm-5.2
+            contextWindow: 1000000
+            maxTokens: 32768
+            input:
+              - text
+              - image
+          - id: glm-5.3
+            name: glm-5.3
+            contextWindow: 1000000
+          - id: glm-5.3-flash
+            name: glm-5.3-flash
+            contextWindow: 1000000
+          - id: kimi-k2.5
+            name: kimi-k2.5
+            contextWindow: 262144
+          - id: kimi-k2.6
+            name: kimi-k2.6
+            contextWindow: 262144
+          - id: kimi-k2.7-code
+            name: kimi-k2.7-code
+            contextWindow: 262144
+          - id: kimi-k3
+            name: kimi-k3
+            contextWindow: 1048576
+          - id: MiniMax-M2.5
+            name: MiniMax-M2.5
+            contextWindow: 262144
+          - id: MiniMax/MiniMax-M3
+            name: MiniMax/MiniMax-M3
+            contextWindow: 262144
+            maxTokens: 32768
+            input:
+              - text
+              - image
+          - id: qwen3.6-flash
+            name: qwen3.6-flash
+            contextWindow: 1000000
+          - id: qwen3.6-plus
+            name: qwen3.6-plus
+            contextWindow: 1000000
+          - id: qwen3.7-flash
+            name: qwen3.7-flash
+            contextWindow: 262144
+          - id: qwen3.7-max
+            name: qwen3.7-max
+            contextWindow: 1000000
+          - id: qwen3.7-plus
+            name: qwen3.7-plus
+            contextWindow: 1000000
+          - id: qwen3.8-max
+            name: qwen3.8-max
+            contextWindow: 1000000
+            maxTokens: 32768
+            input:
+              - text
+              - image
+          - id: seedance-2.0
+            name: seedance-2.0
+            contextWindow: 262144
+          - id: seedance-2.0-fast
+            name: seedance-2.0-fast
+            contextWindow: 262144
+          - id: seedance-2.0-mini
+            name: seedance-2.0-mini
+            contextWindow: 262144
+          - id: seedance-2.5
+            name: seedance-2.5
+            contextWindow: 262144
+- id: agent-default-model
+  name: "@deepseek-ai/dsh-agent-default-model"
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+    reasoningEffort: high
+- id: agent-preset-registry
+  name: "@deepseek-ai/dsh-agent-preset-registry"
+  config:
+    default: standard
+    selectedDefault: standard
+
+# >>> workdsh-plugin-schedule BEGIN (managed by deploy/install.sh) >>>
+# 2026-09-26 定时任务入口复修开放（D12 / P2-03）
+# 背景：左侧「定时任务」此前是 workdsh-bundle 注册的「（待开放）」占位入口，
+#   而官方宿主能力（@deepseek-ai/dsh-schedule + time-context）已在 profile 补丁层
+#   启用 —— 缺的只是一个真正的管理入口。本插件补上这个入口，并如实标注官方的
+#   交付边界。
+# 2026-09-30 更正：官方客户端半侧（@deepseek-ai/dsh-client-ui-schedule）此前
+#   **并未**在本补丁层启用（见文件上方 schedule overlay 块，当时只有一条悬空
+#   `- id: ui-schedule / disabled: false`），故升级到 0.2.0-rc.2 后左侧
+#   「自动化任务」（官方 id `schedules`）消失。该行已在 2026-09-30 修复为正式
+#   insert；官方 id `schedules` 与本插件的 id `workdsh-automation` 不同，
+#   两者并存、互不遮蔽，本插件的遮蔽逻辑仍只针对 workdsh-bundle 的旧占位。
+# 遮蔽机制：客户端半侧用 priority -10 注册同名 sidebar.panellist(id) 与
+#   main(key)，官方 SlotCore 对 list/keyed 槽按 (priority, order) 排序后按
+#   id/key 去重、先到者胜，因此占位行与占位面板被替换；同 priority 才会抛
+#   duplicate，故 -10 是必需的。workdsh-bundle 未被修改。
+# 回滚：sudo ./install.sh --rollback（按哨兵精确摘除本块后重启容器）。
+#   补丁层虽为 patchReload=live，但新增 file: 行需要重启才能进插件树。
+- insert:
+    - id: workdsh-schedule
+      name: 'file:///data/dsh/tools/workdsh-plugin-schedule/dist/index.js'
+# <<< workdsh-plugin-schedule END <<<
+
+# 2026-10-01：摘除 tokenledger 的悬空配置（原为「tokenledger relays」块）。
+#   原因：该插件并未安装 —— node_modules 与 dsh.profile.bundles 中都没有它，它也不在
+#   插件市场目录内（npm 上的同名包是无关项目）。原配置是对「该插件自身 bundle patch
+#   所插入的行」做 id-targeted 覆盖（jhpt 中转站 / New API 类型 / 余额凭据引用），
+#   宿主行不存在时这层覆盖无处落地，loader 每次启动都告警
+#   `patch: entry "tokenledger" not found`。
+#   未删除、留待恢复的资产：
+#     · 账本数据 /data/dsh/tokenledger.sqlite（含 WAL；56 条会话汇总，最后写入 2026-09-29 06:12）
+#     · 打过补丁的构建产物 /data/dsh/tools/tokenledger-patches/
+#     · 原配置快照 cordis.patch.yml.bak.tokenledger-relays.20260926062209
+#   如需恢复：重装 tokenledger 后，按上述快照把原 id-targeted config 覆盖行恢复即可。
+#   注意：原先包住本段的 BEGIN/END 哨兵已一并移除 —— 它当时把下面 permission 与
+#   llm-deepseek 两条无关配置也圈在里面，按哨兵整块摘除会误删它们。
+- id: permission
+  name: "@deepseek-ai/dsh-permission-presets"
+  config:
+    presets:
+      read-only:
+        sandbox: read-only
+        approval: ask
+      workspace-write:
+        sandbox: workspace-write
+        approval: ask
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never
+    defaultPreset: danger-full-access
+- id: llm-deepseek
+  name: "@deepseek-ai/dsh-llm-deepseek"
+  config:
+    baseURL: https://api.deepseek.com/anthropic
+    models:
+      - id: deepseek-flash
+        name: deepseek-flash
+        contextWindow: 1000000
+        maxTokens: 32768
+        inputModalities:
+          - text
+        systemPromptUpdate: in-history
+
+# 2026-09-27 22:15：入口形态按用户决定改为**设置内一节「用户与权限」**（settings.section）。
+#   · 不再有左侧导航行，也不占页脚 —— 用户已明确否掉那两个位置（21:54 曾整块移除）。
+#   · 客户端半侧注册 settings.section（id: users / order 16 / 紧随官方「插件」之后），
+#     且所有 CSS 都作用域在 .wd-usr 内，不再注入任何改写宿主容器的全局规则。
+#   · 数据来自门户同源 /api/portal/{me,roles,users*}；自助视图对所有登录账号可见，
+#     管理视图只对平台角色 admin 生效（服务端 requireAdmin 兜底）。
+#   · 回滚：注释掉下面的 insert 块即可（补丁层 live 生效）。
+#   · 移除前的完整备份：cordis.patch.yml.bak.nousers.20260927215407。
+- insert:
+    - id: workdsh-users
+      name: 'file:///data/dsh/tools/workdsh-plugin-users/dist/index.js'
+
+# >>> P1 身份打通 + 资源授权 BEGIN (2026-09-27 启用) >>>
+# 目的：把门户登录身份变成 DSH 内**每个账号各自的主体**，并使岗位角色真正决定能做什么。
+# 组成（三块，缺一不可）：
+#   workdsh-identity-portal  身份服务：按「会话绑定 → 请求作用域门户身份 → 兜底 local-user」解析主体
+#   workdsh-grant-baseline   收敛循环：站点资源 × 活跃成员的基线授权（read/use），并按岗位补 manage、回收降级授权
+#   workdsh-grant-admin      资源授权接口：面板「资源授权」页的后端（验签 + 以调用者身份提交）
+# 为什么先写花名册再启用：把现有两个账号先放进花名册，迁移工具才能以所有者身份给它们签发授权；
+#   否则一上线就会出现"门户账号不是活跃成员、拿不到任何资源"的窗口。
+# 安全：身份头由门户用 /data/dsh/portal/identity-bridge.key 做 HMAC 签名，插件验签后才认。
+# 回滚：注释掉本块（含 disabled 行）即可；老会话的归属绑定与花名册都不受影响。
+# 备份：cordis.patch.yml.bak.p1enable.20260927231315
+- insert:
+    - id: workdsh-identity-portal
+      name: 'file:///data/dsh/tools/workdsh-identity-portal/dist/index.js'
+      config:
+        organizationId: local-personal
+        organizationName: 本地个人空间
+        fallbackPrincipalId: local-user
+        secretFile: /data/dsh/portal/identity-bridge.key
+        rosterFile: /data/dsh/storages/workdsh_identity_portal/principals.json
+        # fail-closed 闸门：收敛工具在"一轮授权完全成功"后写出该文件；
+        # 文件不存在时本插件不认门户身份（全部退回兜底主体），
+        # 因此绝不会出现"人人都是独立主体、却谁都没有权限"的锁定窗口。
+        activationFile: /data/dsh/storages/workdsh_identity_portal/activated
+- insert:
+    - id: workdsh-grant-baseline
+      name: 'file:///data/dsh/tools/workdsh-grant-baseline/dist/index.js'
+      config:
+        organizationId: local-personal
+        siteOwnerPrincipalId: local-user
+        storageRoot: /data/dsh/storages
+        rosterFile: /data/dsh/storages/workdsh_identity_portal/principals.json
+        activationFile: /data/dsh/storages/workdsh_identity_portal/activated
+        baselineActions: read,use
+        manageJobRoles: management,operations
+        ensureIntervalMs: 30000
+        changeDebounceMs: 2000
+- insert:
+    - id: workdsh-grant-admin
+      name: 'file:///data/dsh/tools/workdsh-grant-admin/dist/index.js'
+      config:
+        organizationId: local-personal
+        siteOwnerPrincipalId: local-user
+        storageRoot: /data/dsh/storages
+        rosterFile: /data/dsh/storages/workdsh_identity_portal/principals.json
+        secretFile: /data/dsh/portal/identity-bridge.key
+        adminJobRoles: management,operations
+
+# <<< P1 身份打通 + 资源授权 END <<<
+- id: prompt-enhance
+  disabled: false
+  config:
+    maxOutputTokens: 8192
+    timeoutMs: 120000
+
+# 市场一键重启反向规避（2026-10-02）：本宿主统一由容器级脚本 dsh-restart-web.sh 重启，
+# 不启用市场自带 self-restart（其 detached helper 会与 entrypoint 运行期看护争抢 3080 端口，
+# 表现为「市场升级→重启→网站网关错误」）。效果：/dsh-market/restart 立即返回
+# 403 {"error":"self-restart is disabled for this host"}（语义清晰，不再是 loopback 文案）。
+# 回滚：删除本注释块与下面三行，重启容器即可。
+- id: dsh-market
+  config:
+    allowRestart: false
+- id: auto-continue
+  name: dsh-client-auto-continue
+  config:
+    locale: zh
+    paused: false
+
+# AGENT_LOOP_CONCURRENCY_5 (2026-10-02): 对标官方 issue #699（8 子代理并发触发崩溃），
+# 把 agent-loop 的并行工具/子代理池上限从默认 10 收紧到 5，降低 GC 压力触发面。
+# 回滚：删除本块，

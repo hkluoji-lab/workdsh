@@ -16,14 +16,15 @@
 | 制品 / 插件代码 | profile 13 个 workdsh 依赖，版本与仓库吻合 | 同版本 | **一致**（`dist/` 逐字节相同）✅ |
 | 门户 portal | 9 个 src 模块 + `admin/` + `handbook/` | 仅 3 个 src 模块，缺约 90% | **仓库严重落后** ❌ → 已回填 |
 | 边缘服务 survey / vas | 各自运行中 | 仓库 0 命中 | **仓库缺失** ❌ → 已回填 |
-| 部署配置 | `cordis.patch.yml` / profile `package.json` / `compatibility.json` | 无对应真源 | 线上独有（部署面，留服务器） |
+| 部署配置 | `cordis.patch.yml` / profile `package.json` / `compatibility.json` / `pnpm-workspace.yaml` | 无对应真源 | 线上独有 → **已回填** `deploy/profile/` ✅ |
 | 主机侧部署资产 | `data/dsh/tools`、`/usr/local/bin` 19 脚本、`data/dsh/tmp` 派生器 | 仓库 0 命中 | **仓库缺失** ❌ → 已回填 |
 | 仓库领先线上 | — | `modules.json` 中 12 个 planned 模块未部署 | 设计如此（未实现，不部署） |
 | Git 远端 | — | `main` = `fork/main`（无未推送提交） | **一致** ✅ |
 
 **核心结论**：仓库并不存在「已改未提交」的代码；「提交并同步最新完整代码」的实际内容 =
-**把只存在于服务器上的代码回填入库**。回填后仓库新增 **168 个文件 / +42240 行**，
-线上已运行的产品源码与仓库已对齐（除下节「未回填项」明列者）。
+**把只存在于服务器上的代码回填入库**。第一轮（产品源码 3 域）新增 **168 个文件 / +42240 行**；
+2026-10-15 追加第二轮（用户裁决「全部同步」），把部署态配置回填至 `deploy/profile/`
+（**6 个文件 / +1061 行**）。线上已运行的产品源码**与部署配置**均已对齐（除下节「未回填项」明列者）。
 
 ---
 
@@ -126,7 +127,24 @@
 - `.gitignore`：豁免 `deploy/tools/**/dist/`（这些插件只交付编译产物；否则回填后仓库只剩 `package.json` 与 `README`）。
 - `deploy/README.md`：目录索引与约定。
 
-**合计：168 文件 / +42240 / -443。**
+**第一轮合计：168 文件 / +42240 / -443。**
+
+### 3.4 第二轮（2026-10-15 追加）：部署态配置 → `deploy/profile/`
+
+用户追加「全部同步」后，把此前判定为「部署面、留服务器」的 profile 配置一并入库
+（**6 文件 / +1061 行**）：
+
+- `deploy/profile/package.json`：profile 依赖 + 28 项 `dsh.profile.bundles` + `patchReload: live`。
+- `deploy/profile/cordis.patch.yml`（389 行）：`disabled` 开关（computer-use 系列、`ui-plugin-manager`）、`insert` 条目、`llm-pi-ai` 的 `jhpt` provider、身份桥 `secretFile` 引用等。
+- `deploy/profile/cordis.yml`、`compatibility.json`（1 条豁免）、`pnpm-workspace.yaml`（556 行：`overrides`/`allowBuilds`/`minimumReleaseAgeExclude`/`storeDir`）。
+- `deploy/profile/README.md`：用途、文件作用、应用方式与边界；`deploy/README.md` 索引同步。
+
+**不含密钥**：凭据仅以 `apiKeyEnv: JHPT_API_KEY`（**环境变量名**）与
+`secretFile: /data/dsh/portal/identity-bridge.key`（**路径**）引用，值留在服务器 `.env` 与密钥文件；
+回填前已做高信号扫描，无明文口令 / token / 私钥。
+
+**入选项判定**：`pnpm-lock.yaml`（744K，可由上述配置重建）、`node_modules/`、`*.bak.*` 备份、
+`.plugin-manager/` 运行日志**均不入库**。
 
 ---
 
@@ -164,7 +182,7 @@
 
 ## 六、遗留项与后续建议
 
-1. **部署态配置无仓库真源**（profile `cordis.patch.yml`、28 bundles、`compatibility.json`、`compose` 派生挂载）。这些决定线上实际行为，却只存在于服务器；建议后续单独立项（如在 `deploy/` 下设 `profile/` 真源 + 同步脚本），本次未纳入以免与「产品源码」口径混淆。
-2. **`dist/`-only 插件的源码缺口**：`deploy/tools/workdsh-*` 只有编译产物，无法在仓库内重新构建或评审。若这些能力要长期维护，应迁入 `packages/plugins/<domain>` 并补 TS 源码（属新开发，不在本次回填范围）。
+1. ~~**部署态配置无仓库真源**~~ —— **2026-10-15 追加已解决**：profile 的 `cordis.patch.yml`、`package.json`（28 bundles）、`cordis.yml`、`compatibility.json`、`pnpm-workspace.yaml` 已回填至 `deploy/profile/`（见 3.4）。**仍未入库**：`compose` 派生挂载（`docker-compose.yml` 的挂载定义与派生镜像构建）、`node_modules` 形态 —— 完整重建仍需读服务器。
+2. **`dist/`-only 插件的形态**（2026-10-15 补充调研）：这些 `dist/*.js` **不是压缩产物**，而是带完整中文注释的可读 JS 源码（插件本身用 JS 直接写，无 TS 编译步骤），因此**不存在"源码丢失"**。真实缺口是**工程化与位置**：它们留在 `deploy/tools/`，不在 `docs/modules.json`、无 `moduleVersion`、无仓库内测试与 typecheck。若要长期维护，应迁入 `packages/plugins/<domain>` 并补登记、测试与类型声明；其中 `workdsh-plugin-schedule`（**已部署**）与仓库 `packages/plugins/automations`（**未部署**）需先决定二选一。属新开发，不在本次回填范围。
 3. **`automations` 与 `workdsh-plugin-schedule` 的关系未收敛**：仓库 `packages/plugins/automations`（未部署）与线上 `workdsh-plugin-schedule`（已部署）是两套实现，建议后续二选一。
 4. **未验证范围（明确未执行）**：未从仓库重新部署到线上；未在本地启动 `survey`/`vas` 服务；未执行 `grants.test.mjs` 的沙箱链路；7 个 `dist`-only 插件未在本地加载运行。以上均**未执行**，不得据本文件推断其通过。
