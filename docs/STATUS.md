@@ -1,5 +1,20 @@
 # 当前进度
 
+## 2026-10-15（续四十八）：dsh.10ge.cn 线上部署代码 ↔ 本地开发代码一致性审计 + 回填 3 域
+
+按用户指令「全面比对 dsh.10ge.cn 线上部署代码与本地开发代码，完成一致性校验后规范提交同步 GitHub」执行。用户裁决两项口径：**只回填产品源码**（排除密钥、账号表、运行数据与业务内容）、**分域多个规范提交**；第二轮追加裁决：**业务进 `packages/`、部署资产进 `deploy/`**、**线上新增 13 个产品页全部入库**。完整报告见 [online-consistency-audit-2026-10-15](evidence/online-consistency-audit-2026-10-15.md)。
+
+- **核心结论**：仓库**不存在「已改未提交」的代码**；「提交并同步最新完整代码」的实际内容 = **把只存在于服务器上的代码回填入库**。回填后新增 **168 文件 / +42240 行 / -443 行**（相对回填前 `f9fa84f5bf`）。
+- **运行时基线与制品 —— 一致 ✅**：线上 CLI / standalone 树 = `0.2.1-alpha.2`（镜像 `1panel/deepseek-harness:0.2.0-rc.2` + 挂载树换版）；根 `pnpm.overrides` 300 条全部同版本，残留 `0.2.0-rc.2` 0 处；线上 profile 13 条 workdsh 依赖版本与仓库吻合，`drive`/`experts`/`skills`/`library`/`bundle` 的 `dist/` **逐字节相同**（`package.json` 唯一差异是 pnpm pack 归一化，无功能差异）。
+- **三处仓库缺失 —— 已回填**：
+  - `235fb6747c feat(portal)`：门户扩展（`packages/portal` 13 → **53** 文件）。线上 `src/` 9 模块（`handbook`/`users`/`roles`/`identity-bridge`/`login-info`/`session-key`）vs 仓库 3 模块，`server.mjs` 差 727 行、`config.mjs` 差 228 行；补 `admin/`、`handbook/site/`、`register.html` + 13 个产品页。**保留仓库 `README.md`**（线上版更旧）。移除已过时的 `accounts.test.mjs`；`grants.test.mjs` 补沙箱前置（无 `127.0.0.1:3099` 沙箱时 `SKIP` 退出，不再误报回归）。
+  - `20d6597aba feat(edge)`：新增 `packages/survey`（13 文件）与 `packages/vas`（12 文件）——两者均**不在** Harness bundle 列表，属**部署边缘面**（不是功能插件），已登记 `docs/modules.json`（`moduleVersion 0.1` / `in_progress`）并同步 `pnpm-lock.yaml`（+2 importer / +4 行）。线上 `vas/site/*.html` 与门户 `site/products/` **逐字节相同**（重复制品），不重复入库。
+  - `2764008427 feat(deploy)`：主机侧部署资产进顶层 `deploy/`（**89** 文件）——`deploy/tools`（7 个 `workdsh-*` 插件、授权沙箱、web runtime 补丁）、`deploy/ops/bin`（19 个主机脚本）、`deploy/ops/derived`（16 个幂等派生器，survey 的 2 个已归 `packages/survey/deploy/`）；`.gitignore` 豁免 `deploy/tools/**/dist/`（这些插件只交付编译产物）。
+- **有意不入库（用户口径）**：门户凭据与密钥（`accounts.json`/`session.key`/`identity-bridge.key`/`portal.env`/`users.json` 等）、survey 答卷与令牌、handbook 运行数据与媒体、admin 后台数据/备份、`vas/docs` 业务内容、截图与 `*.bak*`、部署态 profile 配置（`cordis.patch.yml` / `package.json` / `compatibility.json`）。
+- **脱敏复扫（提交前）**：对最终文件集全部回填内容做高信号模式扫描（私钥、`sk-`/`AKIA`/`ghp_`、JWT、企微/飞书/Slack webhook、`password|token|secret=值`），**未发现真实凭据泄漏**；命中项全部为测试夹具口令、shell 变量引用（`portal_password="$auth_password"`）与产品页 Demo 口令。
+- **验证**：`node scripts/check-plan.mjs` **PASS**（34 模块）；`packages/portal` 测试 **10 passed / 0 failed**；新增模块 `.mjs` 全部 `node --check` 通过；`git check-ignore` 确认 `deploy/` 下 88 文件可入库（含 10 个 `dist` 文件），`packages/` 下 `**/dist/` 仍忽略；工作区干净。
+- **遗留项**：①部署态配置（profile `cordis.patch.yml`、28 bundles、`compatibility.json`）**无仓库真源**，建议单独立项（如 `deploy/profile/` + 同步脚本）；②`deploy/tools/workdsh-*` 为 **dist-only**，无 TS 源码，无法在仓库内重建；③仓库 `packages/plugins/automations`（未部署）与线上 `workdsh-plugin-schedule`（已部署）**两套实现未收敛**；④**明确未执行**：未从仓库重新部署到线上、未本地启动 `survey`/`vas`、未跑 `grants` 沙箱链路、7 个 dist-only 插件未本地加载——均不得据本次推断通过。
+
 ## 2026-10-11（续四十七）：网盘插件增量 alpha.2——全文内容搜索 + 回收站/恢复 + 配额展示
 
 用户确认「忽略 dream-skin 告警，继续开发网盘功能」，四项方向全部纳入：全文内容搜索、回收站与恢复、真实模型端到端验证、分享与配额等增强。本次完成三项编码项中的全文搜索与回收站 + 配额展示，并完成真实模型端到端验证；分享（外部只读链接，涉跨主体授权）如实后置二期。已部署上线 dsh.10ge.cn 并通过浏览器 + 真实模型实测。证据见 [drive-plugin-alpha2](evidence/drive-plugin-alpha2.md)。
