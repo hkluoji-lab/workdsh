@@ -74,6 +74,9 @@ export function safeNext(value, fallback = '/') {
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001f\u007f\\]/.test(candidate)) return fallback;
   const path = candidate.split('?')[0];
+  // admin-console-next：产品页管理后台是「需登录才能访问」的页面，回跳它不会产生重定向环路，
+  // 因此对 /portal/admin 作精确放行（不放行 /portal 本身，避免回到公开首页造成环路）。
+  if (path === '/portal/admin' || path.startsWith('/portal/admin/')) return candidate;
   for (const reserved of ['/login', '/logout', '/portal', '/api']) {
     if (path === reserved || path.startsWith(`${reserved}/`)) return fallback;
   }

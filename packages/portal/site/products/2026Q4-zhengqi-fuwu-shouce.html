@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>电信政企事业服务手册 · 在线翻页电子书刊 | 云网数智安 一站式数字化服务</title>
+<meta name="description" content="中国电信政企事业服务手册（罗纪·深圳福田）：在线翻页电子书刊，覆盖基础业务、云网数智安能力、企业全生命周期服务、项目类型、服务承诺与政企专属福利。支持翻页浏览、目录跳转、缩略图与移动端阅读。">
+<meta name="theme-color" content="#0a4ea3">
+<meta property="og:type" content="website">
+<meta property="og:title" content="电信政企事业服务手册 · 在线翻页电子书刊">
+<meta property="og:description" content="云网数智安一站式能力 + 罗纪全生命周期服务：在线翻页手册，含资费、承诺与专属福利。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a4ea3'/%3E%3Cpath d='M16 5.6 22.6 14h-4.2v4.6h-4.8V14H9.4L16 5.6Z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --brand:#0a4ea3;--brand-deep:#062f66;--brand-soft:#eaf1fb;--brand-line:#c3d5ec;
+  --accent:#e8722c;--red:#d71920;--red-soft:#fdecec;
+  --ink:#15243a;--ink2:#40536e;--ink3:#7386a0;
+  --line:#dde5ef;--line-soft:#eef3f9;--bg:#eef2f8;
+  --font:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC","WenQuanYi Micro Hei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --pw:400px;--ph:566px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);color:var(--ink);background:
+    radial-gradient(1200px 600px at 50% -10%,#dfe9f7 0%,transparent 60%),
+    linear-gradient(180deg,#f2f6fc 0%,#e8eef7 100%);
+  min-height:100vh;overflow-x:hidden;
+  display:flex;flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+/* ---------- 顶栏 ---------- */
+.topbar{
+  height:56px;flex:0 0 56px;display:flex;align-items:center;gap:14px;
+  padding:0 16px;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);position:relative;z-index:60;
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .mark{
+  width:28px;height:28px;border-radius:7px;background:var(--brand);color:#fff;
+  display:grid;place-items:center;font-weight:800;font-size:12px;letter-spacing:.5px;flex:0 0 auto;
+}
+.brand .tt{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .tt small{display:block;font-weight:400;font-size:11px;color:var(--ink3);letter-spacing:.2px}
+.spacer{flex:1}
+.tools{display:flex;align-items:center;gap:6px}
+.tb{
+  border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:9px;
+  height:34px;min-width:34px;padding:0 10px;font-size:13px;font-family:inherit;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:.15s;
+}
+.tb:hover{border-color:var(--brand-line);color:var(--brand);background:var(--brand-soft)}
+.tb:active{transform:translateY(1px)}
+.tb[disabled]{opacity:.4;cursor:not-allowed}
+.tb.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.tb.primary:hover{background:var(--brand-deep);color:#fff}
+.tb .lbl{display:inline}
+/* 图标一律用内联 SVG：不依赖 emoji / 特殊符号字体（≤820px 时只显示图标，字体缺字就成方框） */
+.tb .ic{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px}
+.tb .ic svg{width:16px;height:16px;display:block;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:820px){.tb .lbl{display:none}.brand .tt small{display:none}}
+/* ---------- 阅读区 ---------- */
+.reader{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:22px 16px;overflow:hidden;position:relative;
+}
+.stage{perspective:3000px;perspective-origin:50% 45%;position:relative}
+.book{
+  position:relative;width:calc(var(--pw) * 2);height:var(--ph);
+  transform-style:preserve-3d;transition:transform .85s cubic-bezier(.35,.06,.25,1);
+}
+.book.closed{transform:translateX(calc(var(--pw) / -2))}
+.book.single{width:var(--pw)}
+.book.single.closed{transform:none}
+.spine{
+  position:absolute;left:50%;top:0;width:36px;height:100%;transform:translateX(-50%);
+  background:linear-gradient(90deg,rgba(15,32,58,0) 0%,rgba(15,32,58,.13) 42%,rgba(15,32,58,.20) 50%,rgba(15,32,58,.13) 58%,rgba(15,32,58,0) 100%);
+  pointer-events:none;z-index:40;opacity:0;transition:opacity .4s;
+}
+.book.open .spine{opacity:1}
+/* 单页（手机）模式：整本书只有一页宽，书脊的 left:50% 会落在这一页正中，
+   表现为页中央一条竖线。书脊只对「双页对开」有意义，单页模式直接隐藏。 */
+.book.single .spine{display:none}
+.sheet{
+  position:absolute;top:0;left:50%;width:var(--pw);height:var(--ph);
+  transform-origin:left center;transform-style:preserve-3d;
+  transform:rotateY(0deg);transition:transform .85s cubic-bezier(.35,.06,.25,1);
+}
+.book.single .sheet{left:0;transform-origin:left center}
+.sheet.flipped{transform:rotateY(-180deg)}
+.sheet .face{
+  position:absolute;inset:0;overflow:hidden;background:#fff;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  box-shadow:0 10px 30px rgba(16,38,68,.14),0 2px 6px rgba(16,38,68,.08);
+  border-radius:2px;
+}
+.sheet .face.back{transform:rotateY(180deg)}
+.book.single .sheet .face{box-shadow:0 14px 40px rgba(16,38,68,.20),0 3px 8px rgba(16,38,68,.10)}
+/* 翻页时的光影 */
+.sheet::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(90deg,rgba(8,20,40,.42) 0%,rgba(8,20,40,.10) 26%,rgba(255,255,255,0) 55%);
+  transition:opacity .42s;
+}
+.sheet.turning::after{opacity:1}
+.sheet .edge{
+  position:absolute;top:0;right:0;width:10px;height:100%;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(180deg,#f7f9fc 0 2px,#e6ecf5 2px 3px);
+}
+/* ---------- 页 ---------- */
+.page{
+  position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;
+  font-size:var(--pfs,13.5px);line-height:1.62;color:var(--ink);
+}
+.page.blank{background:linear-gradient(180deg,#fbfcfe,#f4f7fb)}
+.pbody{flex:1;padding:34px 34px 12px;overflow:hidden}
+/* 放不下就页内纵向滚动，绝不把内容裁掉：窄屏（单页模式）正文一律可滚；
+   宽屏逐级缩字号后仍超页的少数页，也由 fitAll 加上 .scrollable。 */
+.pbody.scrollable{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* 正文内插图（后台「插入图片」写入的就是这些标签） */
+.pbody img{max-width:100%;height:auto;border-radius:8px;box-shadow:0 2px 10px rgba(16,38,68,.12);display:block;margin:9px auto;cursor:zoom-in}
+.pbody img.half{width:48%;display:inline-block;margin:4px 1%;vertical-align:top}
+.pbody figure{margin:9px 0}
+.pbody figcaption{font-size:.78em;color:var(--ink3);text-align:center;margin-top:4px}
+/* ==== FREE-CSS-START（由 work/build-free.mjs 生成，勿手改）==== */
+/* 新组件样式：图标 / 二维码 / 视频 / 图集 / 表单 / 倒计时 + 入场动效
+   由 work/build-free.mjs 注入后台、预览页与公开页模板三处，保持一处定义。
+   注意：动效的"初始不可见"只在 .page 容器内生效 —— 后台编辑画布不是 .page，
+   否则用户一加动效元素就从画布上消失，没法编辑。 */
+.fe-icon{overflow:visible}
+.fe-qrcode{display:flex;align-items:center;justify-content:center}
+.fe-qrcode svg{display:block}
+.fe-qr-empty,.fe-empty{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-height:28px;font-size:12px;color:#98a6b8;background:repeating-linear-gradient(45deg,#f7f9fc,#f7f9fc 8px,#eef2f8 8px,#eef2f8 16px);border:1px dashed #cfd9e6;border-radius:6px;text-align:center;padding:4px;box-sizing:border-box}
+.fe-video{background:#0b1220}
+.fe-video video{width:100%;height:100%;display:block;object-fit:contain;background:#0b1220}
+.fe-gallery{display:grid;grid-template-columns:repeat(var(--cols,2),1fr);gap:var(--gap,8px);align-content:start}
+.fe-gallery figure{margin:0;overflow:hidden;border-radius:var(--radius,0)}
+.fe-gallery img{width:100%;height:100%;object-fit:cover;display:block}
+.fe-gallery figcaption{font-size:11px;color:#6b7a90;text-align:center;margin-top:2px}
+.fe-form{display:flex;flex-direction:column;gap:6px;overflow:auto}
+.fe-field{display:flex;flex-direction:column;gap:2px;font-size:12px;color:#33455e}
+.fe-field>span{font-weight:600}
+.fe-req{color:#d93025;font-style:normal}
+.fe-field input,.fe-field textarea,.fe-field select{border:1px solid #cfd9e6;border-radius:6px;padding:6px 8px;font-size:13px;font-family:inherit;color:#15243a;background:#fff;width:100%;box-sizing:border-box}
+.fe-submit{margin-top:2px;border:0;border-radius:8px;background:#0a4ea3;color:#fff;font-size:14px;font-weight:600;padding:9px 12px;cursor:pointer;font-family:inherit}
+.fe-submit:disabled{opacity:.6;cursor:default}
+.fe-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.fe-note{font-size:11px;color:#6b7a90}
+.fe-formmsg{font-size:12px;line-height:1.5}
+.fe-formmsg.is-ok{color:#0a7d3c}
+.fe-formmsg.is-err{color:#d93025}
+.fe-countdown{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.fe-cd-label{font-size:12px;color:#6b7a90}
+.fe-cd-time{font-size:26px;font-weight:700;line-height:1.2}
+.page .fe[data-anim]{opacity:0;transition:opacity .5s ease,transform .5s ease}
+.page .fe[data-anim="up"]{transform:translateY(18px)}
+.page .fe[data-anim="down"]{transform:translateY(-18px)}
+.page .fe[data-anim="left"]{transform:translateX(18px)}
+.page .fe[data-anim="right"]{transform:translateX(-18px)}
+.page .fe[data-anim="zoom"]{transform:scale(.92)}
+.page .fe[data-anim].fe-in{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){.page .fe[data-anim]{opacity:1;transform:none;transition:none}}
+
+/* 编辑器里的表单字段行（仅后台使用，公网页不会出现） */
+.fefields{margin-bottom:4px}
+.fefieldrow{display:grid;grid-template-columns:1fr 88px 22px 24px;gap:4px;align-items:center;margin-bottom:4px}
+.fefieldrow input[type=checkbox]{width:auto;margin:0}
+.fefieldrow .febtn{height:24px;padding:0 6px}
+.fe-qrcode .fe-qr-img{width:100%;height:100%;display:block}
+/* ==== FREE-CSS-END ==== */
+/* 自由画布页（type=free）：设计尺寸 750×1061，坐标百分比化，缩放由 --k 承担 */
+.freecanvas{position:absolute;inset:0;overflow:hidden}
+.fe{position:absolute;overflow:hidden;box-sizing:border-box}
+.fe-text{display:block}
+.fe-image img{width:100%;height:100%;display:block}
+.fe-button{text-decoration:none;cursor:pointer}
+.fe-html{overflow:hidden}
+.fe-html img{max-width:100%}
+.pfoot{
+  flex:0 0 auto;padding:9px 34px 12px;display:flex;align-items:center;justify-content:space-between;
+  font-size:10.5px;color:var(--ink3);border-top:1px solid var(--line-soft);letter-spacing:.2px;
+}
+.pfoot .no{font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums}
+h2.pt{
+  font-size:1.5em;line-height:1.25;margin:0 0 4px;color:var(--brand-deep);font-weight:800;letter-spacing:.2px;
+  display:flex;align-items:baseline;gap:9px;
+}
+h2.pt .bar{width:5px;height:1.02em;background:var(--brand);border-radius:3px;flex:0 0 auto;transform:translateY(.1em)}
+.psub{font-size:.86em;color:var(--ink3);margin:0 0 14px;padding-left:14px}
+h3.h3{font-size:1.02em;margin:14px 0 7px;color:var(--brand);font-weight:700;display:flex;align-items:center;gap:7px}
+h3.h3::before{content:"";width:7px;height:7px;background:var(--accent);border-radius:2px;transform:rotate(45deg);flex:0 0 auto}
+p{margin:0 0 9px}
+.lead{background:var(--brand-soft);border-left:3px solid var(--brand);padding:9px 12px;border-radius:0 8px 8px 0;color:var(--ink2);margin:0 0 14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 12px}
+.chip{
+  background:#f5f8fc;border:1px solid var(--line);color:var(--ink2);border-radius:7px;
+  padding:4px 9px;font-size:.86em;white-space:nowrap;
+}
+.chip.hi{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand-deep);font-weight:600}
+.chip.acc{background:#fff4ec;border-color:#f6d9c2;color:#9c4b12}
+.cat{margin:0 0 12px}
+.cat .cn{
+  display:inline-block;background:var(--brand);color:#fff;font-size:.82em;font-weight:700;
+  padding:3px 9px;border-radius:6px 6px 6px 0;margin-bottom:6px;letter-spacing:.3px;
+}
+.cat .cn.alt{background:var(--accent)}
+.cat .cn.grey{background:#5b7089}
+.flow{display:grid;grid-template-columns:74px 1fr;gap:7px;align-items:start;margin:0 0 9px}
+.flow .fl{
+  font-weight:700;color:#fff;background:var(--brand);border-radius:7px;padding:5px 4px;text-align:center;
+  font-size:.8em;line-height:1.25;
+}
+.flow .fl.n1{background:#0a4ea3}.flow .fl.n2{background:#0f6bbf}.flow .fl.n3{background:#1780d0}
+.flow .fl.n4{background:#2a95d8}.flow .fl.n5{background:#4aa8de}
+.flow .fr{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.flow .fr .st{
+  background:#f5f8fc;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.8em;color:var(--ink2);
+}
+.flow .fr .st.k{background:#fff;border-color:var(--brand-line);color:var(--brand-deep);font-weight:600}
+.arw{color:#b9c8dc;font-size:.8em}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.note{
+  font-size:.78em;color:var(--ink3);background:#fafbfd;border:1px dashed var(--line);
+  border-radius:8px;padding:7px 10px;margin-top:10px;line-height:1.5;
+}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:.88em;margin:0 0 10px}
+.kv dt{color:var(--ink3)}
+.kv dd{margin:0;color:var(--ink)}
+.steps{counter-reset:s;margin:0 0 10px;padding:0;list-style:none}
+.steps li{counter-increment:s;position:relative;padding-left:26px;margin-bottom:5px;font-size:.9em}
+.steps li::before{
+  content:counter(s);position:absolute;left:0;top:.1em;width:17px;height:17px;border-radius:50%;
+  background:var(--brand-soft);color:var(--brand);font-size:.72em;font-weight:700;display:grid;place-items:center;border:1px solid var(--brand-line);
+}
+.timeline{margin:0 0 12px}
+.tl{display:grid;grid-template-columns:96px 1fr;gap:10px;position:relative;padding-bottom:7px}
+.tl::before{content:"";position:absolute;left:98px;top:6px;bottom:-4px;width:1px;background:var(--line)}
+.tl:last-child::before{display:none}
+.tl .ty{font-size:.82em;color:var(--brand);font-weight:700;text-align:right}
+.tl .tx{position:relative;padding-left:14px;font-size:.9em}
+.tl .tx::before{content:"";position:absolute;left:-1px;top:5px;width:8px;height:8px;border-radius:50%;background:#fff;border:2px solid var(--brand)}
+/* 封面 */
+.cover{
+  position:absolute;inset:0;display:flex;flex-direction:column;color:#fff;
+  background:
+    radial-gradient(420px 300px at 86% 8%,rgba(232,114,44,.34),transparent 62%),
+    radial-gradient(520px 380px at 6% 92%,rgba(23,128,208,.42),transparent 66%),
+    linear-gradient(155deg,#0a4ea3 0%,#062f66 68%,#04223f 100%);
+  padding:44px 40px;
+}
+.cover .cv-top{display:flex;align-items:center;gap:9px;font-size:12px;letter-spacing:2px;opacity:.92}
+.cover .cv-top .dot{width:7px;height:7px;background:var(--accent);border-radius:50%}
+.cover h1{font-size:2.55em;line-height:1.16;margin:auto 0 10px;font-weight:800;letter-spacing:1px}
+.cover .cv-sub{font-size:1.02em;opacity:.94;letter-spacing:1.4px;margin:0 0 18px;font-weight:300}
+.cover .cv-tag{
+  display:flex;flex-wrap:wrap;gap:6px;margin:0 0 26px;
+}
+.cover .cv-tag span{border:1px solid rgba(255,255,255,.42);border-radius:20px;padding:3px 11px;font-size:11.5px;opacity:.95}
+.cover .cv-line{height:1px;background:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,0));margin:0 0 14px}
+.cover .cv-bot{font-size:12px;opacity:.86;line-height:1.9}
+.cover .cv-bot b{font-weight:600;opacity:1}
+.cover .cv-badge{
+  position:absolute;right:34px;top:38px;width:60px;height:60px;border-radius:14px;
+  background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.28);
+  display:grid;place-items:center;font-weight:800;font-size:19px;letter-spacing:.5px;
+}
+/* 目录页 */
+.toc-l{margin:0;padding:0;list-style:none}
+.toc-l li{margin-bottom:7px}
+.toc-a{
+  display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:10px;width:100%;
+  background:#f7fafd;border:1px solid var(--line);border-radius:9px;padding:8px 11px;
+  cursor:pointer;font-family:inherit;text-align:left;transition:.15s;
+}
+.toc-a:hover{background:var(--brand-soft);border-color:var(--brand-line);transform:translateX(2px)}
+.toc-a .n{font-weight:800;color:var(--brand);font-size:.92em;font-variant-numeric:tabular-nums}
+.toc-a .t{font-weight:600;color:var(--ink);font-size:.94em}
+.toc-a .t em{display:block;font-style:normal;font-weight:400;font-size:.78em;color:var(--ink3);margin-top:1px}
+.toc-a .p{font-size:.76em;color:var(--ink3);white-space:nowrap}
+/* 整页图片页 */
+.imgpage{position:absolute;inset:0;display:flex;flex-direction:column;background:#fff}
+/* 长标题（如「温馨提示…」）与副标题并排会互相挤压、断行难看：改为纵向堆叠，
+   标题一行、副标题一行，四张整页图页的页眉高度和位置保持一致。 */
+.imgpage .ibar{
+  flex:0 0 auto;padding:12px 22px 8px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  border-bottom:1px solid var(--line-soft);
+}
+.imgpage .ibar b{font-size:.98em;color:var(--brand-deep);line-height:1.35}
+.imgpage .ibar span{font-size:.76em;color:var(--ink3);line-height:1.35}
+.imgpage .iimg{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 16px;min-height:0}
+.imgpage img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 2px 14px rgba(16,38,68,.12);cursor:zoom-in}
+.imgpage .ifoot{flex:0 0 auto;padding:0 22px 10px;font-size:10px;color:var(--ink3);text-align:right}
+.imgpair{display:grid;gap:8px;width:100%;height:100%}
+.imgpair.two{grid-template-columns:1fr 1fr}
+.imgpair img{max-height:100%;width:100%;object-fit:contain}
+/* 计费表 */
+table.tb2{width:100%;border-collapse:collapse;font-size:.84em;margin:0 0 10px}
+table.tb2 th,table.tb2 td{border:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top}
+table.tb2 th{background:var(--brand-soft);color:var(--brand-deep);font-weight:700;white-space:nowrap}
+table.tb2 td.num{font-variant-numeric:tabular-nums;font-weight:700;color:#b3360d}
+/* CTA */
+.cta{background:linear-gradient(135deg,#0a4ea3,#062f66);color:#fff;border-radius:12px;padding:14px 16px;margin-top:10px}
+.cta h4{margin:0 0 6px;font-size:1em;letter-spacing:.4px}
+.cta p{margin:0 0 8px;font-size:.84em;opacity:.92}
+.cta .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cta a.btn{
+  background:#fff;color:var(--brand-deep);text-decoration:none;font-weight:700;font-size:.84em;
+  padding:7px 14px;border-radius:8px;border:0;cursor:pointer;font-family:inherit;
+}
+.cta .tel{font-size:1.16em;font-weight:800;letter-spacing:.6px;font-variant-numeric:tabular-nums}
+/* ---------- 底栏 ---------- */
+.bottombar{
+  flex:0 0 auto;height:60px;display:flex;align-items:center;gap:12px;padding:0 16px;
+  background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-top:1px solid var(--line);z-index:60;
+}
+.pg-ind{font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:74px;text-align:center}
+.pg-ind b{color:var(--brand);font-size:15px}
+.progress{flex:1;height:5px;background:var(--line-soft);border-radius:4px;overflow:hidden;cursor:pointer;position:relative}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),#1780d0);border-radius:4px;transition:width .3s}
+.navb{
+  border:0;background:var(--brand);color:#fff;border-radius:10px;height:38px;padding:0 16px;
+  font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;
+}
+.navb:hover{background:var(--brand-deep)}
+.navb[disabled]{background:#c9d6e6;cursor:not-allowed}
+.navb.ghost{background:#fff;color:var(--ink2);border:1px solid var(--line)}
+.navb.ghost:hover{background:var(--brand-soft);color:var(--brand)}
+/* ---------- 抽屉 / 灯箱 ---------- */
+.mask{position:fixed;inset:0;background:rgba(10,22,40,.5);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.28s;z-index:80}
+.mask.on{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;height:100%;width:min(430px,92vw);background:#fff;z-index:90;
+  transform:translateX(102%);transition:transform .3s cubic-bezier(.3,.05,.25,1);
+  display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(10,22,40,.18);
+}
+.drawer.on{transform:translateX(0)}
+.drawer .dh{flex:0 0 auto;padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.drawer .dh b{font-size:15px;color:var(--brand-deep)}
+.drawer .dh .x{margin-left:auto;border:0;background:#f2f5fa;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;color:var(--ink2)}
+.drawer .db{flex:1;overflow:auto;padding:14px 16px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:9px}
+.th{
+  border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:#fbfcfe;cursor:pointer;
+  text-align:left;font-family:inherit;transition:.15s;min-height:74px;display:flex;flex-direction:column;justify-content:space-between;
+}
+.th:hover{border-color:var(--brand-line);background:var(--brand-soft)}
+.th.cur{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 2px rgba(10,78,163,.12)}
+.th .tn{font-size:10.5px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.th .tt2{font-size:12px;font-weight:600;color:var(--ink);line-height:1.35}
+.lightbox{
+  position:fixed;inset:0;background:rgba(8,18,34,.92);z-index:100;display:none;
+  align-items:center;justify-content:center;padding:20px;cursor:zoom-out;
+}
+.lightbox.on{display:flex}
+.lightbox img{max-width:100%;max-height:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.toast{
+  position:fixed;left:50%;bottom:88px;transform:translate(-50%,14px);background:rgba(10,22,40,.92);color:#fff;
+  padding:9px 18px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:120;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.hint{
+  position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:11.5px;color:var(--ink3);
+  background:rgba(255,255,255,.8);border:1px solid var(--line);border-radius:16px;padding:4px 12px;white-space:nowrap;
+}
+@media(max-width:900px){.hint{display:none}}
+@media(prefers-reduced-motion:reduce){.sheet,.book{transition:none}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">CT</div>
+    <div class="tt">政企事业服务手册<small>中国电信 · 云网数智安 · 在线翻页电子书刊</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="tools">
+    <button class="tb" id="btnToc" title="目录"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span><span class="lbl">目录</span></button>
+    <button class="tb" id="btnThumb" title="缩略图"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></span><span class="lbl">缩略图</span></button>
+    <button class="tb" id="btnMode" title="切换单页 / 双页"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="8.5" height="14" rx="1.5"/><rect x="13" y="5" width="8.5" height="14" rx="1.5"/></svg></span><span class="lbl">双页</span></button>
+    <button class="tb" id="btnShare" title="复制本页链接"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 13.5a4 4 0 0 0 5.7 0l3-3a4 4 0 1 0-5.7-5.7l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 1 0 5.7 5.7l1.2-1.2"/></svg></span><span class="lbl">分享</span></button>
+    <button class="tb" id="btnFull" title="全屏阅读"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M15 20h5v-5M9 20H4v-5"/></svg></span><span class="lbl">全屏</span></button>
+  </div>
+</header>
+
+<main class="reader" id="reader">
+  <div class="stage" id="stage">
+    <div class="book closed" id="book"><div class="spine"></div></div>
+  </div>
+  <div class="hint" id="hint">点击页面右侧翻页 ｜ ← → 键翻页 ｜ 双指 / 滚轮缩放</div>
+</main>
+
+<footer class="bottombar">
+  <button class="navb ghost" id="btnFirst" title="回到封面">封面</button>
+  <button class="navb" id="btnPrev">‹ 上一页</button>
+  <div class="progress" id="progress"><i id="progressBar"></i></div>
+  <div class="pg-ind"><b id="curNo">1</b> / <span id="totNo">21</span></div>
+  <button class="navb" id="btnNext">下一页 ›</button>
+</footer>
+
+<div class="mask" id="mask"></div>
+
+<aside class="drawer" id="drawer">
+  <div class="dh"><b id="drawerTitle">目录</b><button class="x" id="drawerClose" aria-label="关闭">✕</button></div>
+  <div class="db" id="drawerBody"></div>
+</aside>
+
+<div class="lightbox" id="lightbox"><img id="lightboxImg" alt="放大查看"></div>
+<div class="toast" id="toast"></div>
+
+<noscript>
+  <div style="max-width:900px;margin:24px auto;padding:20px;background:#fff;border-radius:12px">
+    <h1 style="font-size:20px;color:#0a4ea3">电信政企事业服务手册</h1>
+    <p>本页为在线翻页电子书刊，需启用 JavaScript 以使用翻页浏览。以下为主要栏目：了解罗纪、了解电信、罗纪做什么、产品与项目概览、服务承诺与专属福利、服务誓言与联系方式。</p>
+    <p>联系：18938845688（电话 / 微信）</p>
+  </div>
+</noscript>
+<script>(function(){
+"use strict";
+/* ============================================================
+   电信政企事业服务手册 · 在线翻页电子书刊
+   内容来源：附件《电信政企事业服务手册罗纪20251001.pptx》（19 页）
+   + 4 张整页海报型图片内容（温馨提示 / 彩铃资费 / 网络管家 / 专属福利）
+   ============================================================ */
+
+/* ==== FREE-RENDER-START（由 work/build-free.mjs 生成，勿手改）==== */
+/* 自由画布页渲染器（单页设计尺寸 750 × 1061；坐标以百分比输出，缩放与设备无关）
+   同一份逻辑同时用于：公开翻页页（内联）、后台实时预览、后台列表。
+   字体/圆角等尺寸用 calc(Npx * var(--k))，--k = 当前页宽 / 750，由外层在布局时写入。
+   本块由 work/build-free.mjs 组装生成，请勿直接手改 —— 改 work/free-parts/*。 */
+var FC_W = 750, FC_H = 1061;
+function fcEsc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function fcPct(v, total) { return (v / total * 100).toFixed(3) + '%'; }
+function fcSize(px) { return 'calc(' + px + 'px * var(--k, 0.5))'; }
+
+/* ---------------- 图标库（内联 SVG，零外部请求，公网页 CSP 无需放宽 img-src）
+   统一线稿风格：stroke 取元素颜色，1.8 宽，圆角端点。几何都是基本图形，
+   不依赖任何字体或图标字体（部分容器/访客设备没有符号字体，用字体图标会变豆腐块）。 */
+var FC_ICON_STROKE = 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+
+/** 五角星用公式算，避免手写路径出错 */
+function fcStarPath(cx, cy, r) {
+  var pts = [];
+  for (var i = 0; i < 10; i += 1) {
+    var rad = (i % 2 === 0) ? r : r * 0.42;
+    var a = -Math.PI / 2 + i * Math.PI / 5;
+    pts.push((cx + rad * Math.cos(a)).toFixed(2) + ',' + (cy + rad * Math.sin(a)).toFixed(2));
+  }
+  return 'M' + pts.join(' L') + ' Z';
+}
+
+var FC_ICON_BODY = {
+  phone: '<path d="M6.8 10.6c1.3 2.6 3.5 4.8 6.1 6.1l2-2c.3-.3.7-.4 1-.2 1 .3 2.2.5 3.4.5.6 0 1 .4 1 1v3c0 .6-.4 1-1 1C10.9 20.1 3.9 13 3.9 4.4c0-.6.4-1 1-1h3c.6 0 1 .4 1 1 0 1.2.2 2.3.5 3.4.1.3 0 .7-.2 1l-2.4 1.8z" fill="currentColor" stroke="none"/>',
+  mail: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M4 7.5l8 5.5 8-5.5"/>',
+  chat: '<path d="M4.5 5.5h15v10.5H9.5L4.5 20z"/>',
+  star: '<path d="' + fcStarPath(12, 12.4, 8.6) + '"/>',
+  check: '<path d="M5 12.8l4.6 4.6L19 7.6"/>',
+  location: '<path d="M12 21c0 0 6.8-6.1 6.8-10.8A6.8 6.8 0 0 0 5.2 10.2C5.2 14.9 12 21 12 21z"/><circle cx="12" cy="10.2" r="2.5"/>',
+  clock: '<circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.4 2.1"/>',
+  gift: '<rect x="3.5" y="7.5" width="17" height="3.5"/><rect x="5" y="11" width="14" height="9"/><path d="M12 7.5V20"/><circle cx="9.2" cy="5.2" r="1.7"/><circle cx="14.8" cy="5.2" r="1.7"/>',
+  shield: '<path d="M12 3.2l7 2.8v5.6c0 4.9-3.1 7.9-7 9.2-3.9-1.3-7-4.3-7-9.2V6z"/><path d="M9 12l2.2 2.2L15.4 10"/>',
+  cloud: '<path d="M7.2 18.2h9.6a3.9 3.9 0 0 0 .4-7.8 5.9 5.9 0 0 0-11.4 1.6 3.6 3.6 0 0 0 1.4 6.2z"/>',
+  wifi: '<path d="M4 9.4a12 12 0 0 1 16 0"/><path d="M7.2 12.9a8 8 0 0 1 9.6 0"/><path d="M10.1 16.3a4 4 0 0 1 3.8 0"/><circle cx="12" cy="19.4" r="1.1" fill="currentColor" stroke="none"/>',
+  chart: '<path d="M4 20h16"/><rect x="5.5" y="12" width="3.4" height="5.5"/><rect x="10.3" y="8" width="3.4" height="9.5"/><rect x="15.1" y="4.5" width="3.4" height="13"/>',
+  doc: '<path d="M7 3.2h7l4 4V20.8H7z"/><path d="M14 3.2V7.4h4"/><path d="M9.4 12h5.6M9.4 15.4h5.6"/>',
+  user: '<circle cx="12" cy="8.4" r="3.6"/><path d="M5.2 20c0-3.6 3-5.9 6.8-5.9s6.8 2.3 6.8 5.9"/>',
+  arrow: '<path d="M4 12h15.2"/><path d="M13.6 6.4L19.2 12l-5.6 5.6"/>',
+  cart: '<path d="M3.2 4.4h2.2L8 14.6h10.6L21 7.2H6"/><circle cx="9" cy="19" r="1.6"/><circle cx="17.4" cy="19" r="1.6"/>',
+  link: '<path d="M9.8 14.2l4.4-4.4"/><path d="M7.6 12.4l-2 2a3.4 3.4 0 0 0 4.8 4.8l2-2"/><path d="M12.4 7.6l2-2a3.4 3.4 0 0 1 4.8 4.8l-2 2"/>',
+  heart: '<path d="M12 20.4C12 20.4 3.6 15.3 3.6 9.9A4.3 4.3 0 0 1 12 7.9a4.3 4.3 0 0 1 8.4 2c0 5.4-8.4 10.5-8.4 10.5z"/>',
+};
+
+/** 生成一个图标的 SVG 内容；未知名字回落到 check（服务端也有白名单，双保险）。 */
+function fcIconInner(name, color) {
+  var body = FC_ICON_BODY[name] || FC_ICON_BODY.check;
+  return '<svg viewBox="0 0 24 24" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" '
+    + 'style="color:' + fcEsc(color || '#0a4ea3') + '" ' + FC_ICON_STROKE + ' aria-hidden="true">' + body + '</svg>';
+}
+
+/* ---------------- 入场动效 ----------------
+   渲染时只写 data-anim 属性；是否播放由 freeCanvasRuntime 在可见时决定。
+   这样同一份 HTML 既能用于公网（播放），也能用于后台编辑（不播放，避免干扰操作）。 */
+var FC_ANIM_NAMES = ['fade', 'up', 'down', 'left', 'right', 'zoom'];
+function fcAnimAttrs(el) {
+  var p = el.props || {};
+  if (!p.anim || FC_ANIM_NAMES.indexOf(p.anim) < 0) return '';
+  var delay = Number(p.animDelay) || 0;
+  return ' data-anim="' + fcEsc(p.anim) + '"' + (delay > 0 ? ' data-anim-delay="' + delay + '"' : '');
+}
+
+/* ---------------- 元素渲染 ---------------- */
+
+/** 二维码：交给本站服务端用成熟库生成（/api/portal/handbook/qr），前端只放同源 <img>。
+    为什么不在前端内联编码器：QR 的 RS 纠错/掩码选择/版本信息位极易写错，
+    而且错了也看起来像二维码（实测过一版：76 组里 36 组与参考库不一致）。
+    服务端生成后，后台预览与公网页走的是同一条路径，行为完全一致。 */
+function fcQrSrc(text, ec, fg, bg) {
+  return '/api/portal/handbook/qr?t=' + encodeURIComponent(String(text))
+    + '&ec=' + encodeURIComponent(ec || 'M')
+    + '&fg=' + encodeURIComponent(fg || '#15243a')
+    + '&bg=' + encodeURIComponent(bg || '#ffffff');
+}
+function fcQrSvg(text, ec, fg, bg) {
+  var t = String(text == null ? '' : text);
+  if (t === '') return '<div class="fe-qr-empty">未填写二维码内容</div>';
+  if (t.length > 600) return '<div class="fe-qr-empty">内容过长（超过 600 字符）</div>';
+  return '<img class="fe-qr-img" src="' + fcEsc(fcQrSrc(t, ec, fg, bg)) + '" alt="二维码" loading="lazy">';
+}
+
+/** 倒计时：静态文本先算一次（无 JS 也能看到正确剩余时间），运行期再由 runtime 每秒刷新。 */
+function fcCountdownParts(until, nowMs) {
+  var t = Date.parse(String(until || ''));
+  if (!isFinite(t)) return null;
+  var left = t - (nowMs || Date.now());
+  if (left <= 0) return null;
+  var s = Math.floor(left / 1000);
+  return { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 };
+}
+function fcCountdownText(until, nowMs) {
+  var p = fcCountdownParts(until, nowMs);
+  if (!p) return '';
+  return p.d + ' 天 ' + p.h + ' 时 ' + p.m + ' 分 ' + p.s + ' 秒';
+}
+
+/**
+ * 渲染一个自由画布元素。
+ * 注意：新增组件时这里与 free-editor.js 的属性面板必须成对改，且经 build-free.mjs
+ * 重新组装（公网页用的是同一份内联副本）。
+ */
+function renderFreeEl(el) {
+  var p = el.props || {};
+  var st = 'left:' + fcPct(el.x, FC_W) + ';top:' + fcPct(el.y, FC_H)
+    + ';width:' + fcPct(el.w, FC_W) + ';height:' + fcPct(el.h, FC_H) + ';z-index:' + (el.z || 1);
+  var anim = fcAnimAttrs(el);
+
+  if (el.kind === 'image') {
+    return '<div class="fe fe-image" style="' + st + (p.radius ? ';border-radius:' + fcSize(p.radius) : '') + '"' + anim + '>'
+      + '<img loading="lazy" src="' + fcEsc(p.image ? '/portal/handbook-media/' + encodeURIComponent(p.image) : '') + '" alt="" style="object-fit:' + (p.fit || 'cover') + '"></div>';
+  }
+  if (el.kind === 'divider') {
+    return '<div class="fe fe-divider" style="' + st + ';background:' + (p.color || '#dde5ef') + '"' + anim + '></div>';
+  }
+  if (el.kind === 'rect' || el.kind === 'ellipse') {
+    return '<div class="fe ' + (el.kind === 'ellipse' ? 'fe-ellipse' : 'fe-rect') + '" style="' + st + ';background:' + (p.bg || '#eaf1fb')
+      + (p.radius ? ';border-radius:' + fcSize(p.radius) : (el.kind === 'ellipse' ? ';border-radius:50%' : '')) + '"' + anim + '></div>';
+  }
+  if (el.kind === 'html') {
+    return '<div class="fe fe-html" style="' + st + '"' + anim + '>' + (p.html || '') + '</div>';
+  }
+  if (el.kind === 'button') {
+    var bs = st + ';background:' + (p.bg || '#0a4ea3') + ';color:' + (p.color || '#fff')
+      + ';font-size:' + fcSize(p.fontSize) + ';border-radius:' + fcSize(p.radius || 8)
+      + ';display:flex;align-items:center;justify-content:center;font-weight:' + (p.weight || 600);
+    return p.href
+      ? '<a class="fe fe-button" href="' + fcEsc(p.href) + '" target="_blank" rel="noopener" style="' + bs + '"' + anim + '>' + fcEsc(p.text || '按钮') + '</a>'
+      : '<div class="fe fe-button" style="' + bs + '"' + anim + '>' + fcEsc(p.text || '按钮') + '</div>';
+  }
+  if (el.kind === 'icon') {
+    var istyle = st + ';background:' + (p.bg || 'transparent')
+      + (p.radius ? ';border-radius:' + fcSize(p.radius) : '')
+      + ';display:flex;align-items:center;justify-content:center;padding:' + fcSize(2);
+    return '<div class="fe fe-icon" style="' + istyle + '"' + anim + '>' + fcIconInner(p.icon, p.color) + '</div>';
+  }
+  if (el.kind === 'qrcode') {
+    return '<div class="fe fe-qrcode" style="' + st + '"' + anim + '>'
+      + fcQrSvg(p.qrText, p.qrEc, p.qrFg, p.qrBg) + '</div>';
+  }
+  if (el.kind === 'video') {
+    if (!p.video) return '<div class="fe fe-video fe-empty" style="' + st + '"' + anim + '><span>未选择视频（点右侧「选择视频」）</span></div>';
+    return '<div class="fe fe-video" style="' + st + (p.radius ? ';border-radius:' + fcSize(p.radius) : '') + '"' + anim + '>'
+      + '<video controls playsinline preload="metadata"'
+      + (p.poster ? ' poster="/portal/handbook-media/' + encodeURIComponent(p.poster) + '"' : '')
+      + (p.autoplay ? ' autoplay' : '') + (p.loop ? ' loop' : '')
+      + (p.muted || p.autoplay ? ' muted' : '')
+      + ' src="/portal/handbook-media/' + encodeURIComponent(p.video) + '"></video></div>';
+  }
+  if (el.kind === 'gallery') {
+    var imgs = p.images || [];
+    var cols = Math.max(1, Math.min(4, p.cols || 2));
+    var caps = p.captions || [];
+    var cells = imgs.map(function (n, i) {
+      var cap = caps[i] ? '<figcaption>' + fcEsc(caps[i]) + '</figcaption>' : '';
+      return '<figure><img class="zoomable" loading="lazy" src="/portal/handbook-media/' + encodeURIComponent(n)
+        + '" alt="' + fcEsc(caps[i] || '') + '">' + cap + '</figure>';
+    }).join('');
+    if (!imgs.length) cells = '<div class="fe-empty"><span>未选择图片</span></div>';
+    return '<div class="fe fe-gallery" style="' + st + ';--cols:' + cols + ';--gap:' + fcSize(p.gap || 8)
+      + (p.radius ? ';--radius:' + fcSize(p.radius) : '') + '"' + anim + '>' + cells + '</div>';
+  }
+  if (el.kind === 'form') {
+    var rows = (p.fields || []).map(function (f, i) {
+      var req = f.required ? ' required' : '';
+      var star = f.required ? ' <i class="fe-req">*</i>' : '';
+      var head = '<span>' + fcEsc(f.label) + star + '</span>';
+      var attrs = ' name="f' + i + '" data-label="' + fcEsc(f.label) + '"' + req;
+      if (f.type === 'textarea') return '<label class="fe-field">' + head + '<textarea rows="3"' + attrs + '></textarea></label>';
+      if (f.type === 'select') {
+        var opts = (f.options || []).map(function (o) { return '<option>' + fcEsc(o) + '</option>'; }).join('');
+        return '<label class="fe-field">' + head + '<select' + attrs + '>' + opts + '</select></label>';
+      }
+      var itype = f.type === 'tel' ? 'tel' : (f.type === 'email' ? 'email' : 'text');
+      return '<label class="fe-field">' + head + '<input type="' + itype + '"' + attrs + '></label>';
+    }).join('');
+    if (!rows) rows = '<div class="fe-empty"><span>未配置表单字段</span></div>';
+    return '<form class="fe fe-form" style="' + st + '" data-success="' + fcEsc(p.successText || '已提交') + '" novalidate' + anim + '>'
+      + rows
+      + (p.note ? '<div class="fe-note">' + fcEsc(p.note) + '</div>' : '')
+      + '<button type="submit" class="fe-submit">' + fcEsc(p.submitText || '提交') + '</button>'
+      + '<input type="text" name="_hp" class="fe-hp" tabindex="-1" autocomplete="off" aria-hidden="true">'
+      + '<div class="fe-formmsg" hidden></div></form>';
+  }
+  if (el.kind === 'countdown') {
+    var txt = fcCountdownText(p.until);
+    var done = txt === '';
+    return '<div class="fe fe-countdown" style="' + st + ';color:' + fcEsc(p.color || '#0a4ea3') + '"'
+      + ' data-until="' + fcEsc(p.until || '') + '" data-done="' + fcEsc(p.doneText || '活动已结束') + '"' + anim + '>'
+      + (p.label ? '<div class="fe-cd-label">' + fcEsc(p.label) + '</div>' : '')
+      + '<div class="fe-cd-time">' + fcEsc(done ? (p.doneText || '活动已结束') : txt) + '</div></div>';
+  }
+  return '<div class="fe fe-text" style="' + st + ';color:' + (p.color || '#15243a') + ';font-size:' + fcSize(p.fontSize)
+    + ';font-weight:' + (p.weight || 400) + ';text-align:' + (p.align || 'left') + ';line-height:' + (p.lineHeight || 1.5)
+    + ';white-space:pre-wrap"' + anim + '>' + fcEsc(p.text || '') + '</div>';
+}
+
+function renderFreePage(page) {
+  var c = page.canvas || { bg: '#ffffff' };
+  var els = (page.elements || []).slice().sort(function (a, b) { return (a.z || 1) - (b.z || 1); }).map(renderFreeEl).join('');
+  // data-page-id 供表单提交回传所属页面（服务端据此核对必填字段）
+  return '<div class="page" data-page-id="' + fcEsc(page.id || '') + '"><div class="freecanvas" style="background:' + fcEsc(c.bg || '#ffffff') + '">' + els + '</div></div>';
+}
+function renderFreeCanvasInner(page) {
+  var c = (page && page.canvas) || { bg: '#ffffff' };
+  var els = ((page && page.elements) || []).slice().sort(function (a, b) { return (a.z || 1) - (b.z || 1); }).map(renderFreeEl).join('');
+  return '<div class="freecanvas" style="background:' + fcEsc(c.bg || '#ffffff') + '">' + els + '</div>';
+}
+
+/* ---------------- 运行期行为（公网页用；后台编辑不调用）
+   三件事：倒计时每秒走、表单同源提交、入场动效在可见时播放。
+   幂等：重复调用不会重复绑定（靠 data 标记）。 */
+function fcFormMsg(node, text, isErr) {
+  if (!node) return;
+  node.hidden = false;
+  node.textContent = text;
+  node.className = 'fe-formmsg' + (isErr ? ' is-err' : ' is-ok');
+}
+
+function freeCanvasRuntime(root) {
+  var scope = root || document;
+  if (!scope.querySelectorAll) return;
+
+  /* 1) 倒计时 */
+  Array.prototype.forEach.call(scope.querySelectorAll('.fe-countdown[data-until]'), function (node) {
+    if (node.getAttribute('data-cd') === '1') return;
+    node.setAttribute('data-cd', '1');
+    var time = node.querySelector('.fe-cd-time');
+    var tick = function () {
+      var txt = fcCountdownText(node.getAttribute('data-until'));
+      if (time) time.textContent = txt === '' ? (node.getAttribute('data-done') || '活动已结束') : txt;
+      if (txt === '' && node.__cdTimer) { clearInterval(node.__cdTimer); node.__cdTimer = null; }
+    };
+    tick();
+    if (!node.__cdTimer) node.__cdTimer = setInterval(tick, 1000);
+  });
+
+  /* 2) 表单提交 */
+  Array.prototype.forEach.call(scope.querySelectorAll('form.fe-form'), function (form) {
+    if (form.getAttribute('data-bound') === '1') return;
+    form.setAttribute('data-bound', '1');
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var msg = form.querySelector('.fe-formmsg');
+      var items = [], missing = [];
+      Array.prototype.forEach.call(form.querySelectorAll('[data-label]'), function (input) {
+        var v = String(input.value == null ? '' : input.value).trim();
+        if (input.hasAttribute('required') && v === '') missing.push(input.getAttribute('data-label'));
+        if (v !== '') items.push({ label: input.getAttribute('data-label'), value: v });
+      });
+      if (missing.length) { fcFormMsg(msg, '请填写：' + missing.join('、'), true); return; }
+      if (!items.length) { fcFormMsg(msg, '请至少填写一项', true); return; }
+      var pageEl = form.closest ? form.closest('[data-page-id]') : null;
+      var hp = form.querySelector('.fe-hp');
+      var btn = form.querySelector('.fe-submit');
+      if (btn) btn.disabled = true;
+      fetch('/api/portal/handbook/form', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pageId: pageEl ? pageEl.getAttribute('data-page-id') : '',
+          items: items,
+          _hp: hp ? hp.value : '',
+        }),
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; });
+      }).then(function (res) {
+        if (res.ok && res.j && res.j.ok) {
+          form.reset();
+          fcFormMsg(msg, form.getAttribute('data-success') || '已提交', false);
+          if (btn) { btn.textContent = '已提交'; btn.disabled = true; }
+          return;
+        }
+        var err = (res.j && (res.j.error || (res.j.fields && ('请填写：' + res.j.fields.join('、'))))) || '提交失败';
+        if (err === 'too-many-submissions') err = '提交过于频繁，请稍后再试';
+        else if (err === 'required-missing') err = '请填写必填项';
+        else if (res.j && res.j.fields) err = '请填写：' + res.j.fields.join('、');
+        else err = '提交失败，请稍后再试';
+        fcFormMsg(msg, err, true);
+        if (btn) btn.disabled = false;
+      }).catch(function () {
+        fcFormMsg(msg, '网络异常，请稍后再试', true);
+        if (btn) btn.disabled = false;
+      });
+    });
+  });
+
+  /* 3) 入场动效 */
+  var nodes = Array.prototype.slice.call(scope.querySelectorAll('[data-anim]'));
+  if (!nodes.length) return;
+  var show = function (n) {
+    if (n.getAttribute('data-anim-done') === '1') return;
+    n.setAttribute('data-anim-done', '1');
+    var delay = Number(n.getAttribute('data-anim-delay') || 0);
+    if (delay > 0) setTimeout(function () { n.className += ' fe-in'; }, delay);
+    else n.className += ' fe-in';
+  };
+  var inView = function (n) {
+    var r = n.getBoundingClientRect();
+    var vh = window.innerHeight || 800, vw = window.innerWidth || 1200;
+    return r.width > 0 && r.height > 0 && r.bottom > 0 && r.right > 0 && r.top < vh && r.left < vw;
+  };
+  nodes.forEach(function (n) { if (inView(n)) show(n); });
+  if (typeof IntersectionObserver === 'function') {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { show(en.target); io.unobserve(en.target); } });
+    }, { threshold: 0.05 });
+    nodes.forEach(function (n) { if (n.getAttribute('data-anim-done') !== '1') io.observe(n); });
+  } else {
+    nodes.forEach(show);
+  }
+}
+
+/* ---------- 数据层 ----------
+   内容由手册管理后台维护：GET /api/portal/handbook/state（只返回「已发布」版本）。
+   下方 FALLBACK 为构建时的快照，仅当接口不可用时启用，保证页面永不白屏。 */
+var FALLBACK = {"rev":3012,"meta":{"title":"政企事业服务手册","subtitle":"中国电信 · 云网数智安 · 在线翻页电子书刊","brand":"中国电信 · 政企事业服务手册","updatedAt":"2026-10-01T11:55:21.204Z","updatedBy":"18938845688","publishedAt":"2026-10-01T11:55:21.205Z"},"pages":[{"id":"pg-01","type":"cover","label":"封面","sourceIndex":1,"title":"","subtitle":"","body":"\u003cdiv class=\"cover\">\u003cdiv class=\"cv-badge\">5G\u003c/div>\u003cdiv class=\"cv-top\">\u003cspan class=\"dot\">\u003c/span>中国电信 · 深圳福田 · 政企服务\u003c/div>\u003ch1>政企事业\u003cbr>服务手册\u003c/h1>\u003cp class=\"cv-sub\">云网数智安 · 一站式数字化服务能力\u003c/p>\u003cdiv class=\"cv-tag\">\u003cspan>新通信\u003c/span>\u003cspan>新连接\u003c/span>\u003cspan>新算力\u003c/span>\u003cspan>新智能\u003c/span>\u003cspan>新安全\u003c/span>\u003cspan>新视觉\u003c/span>\u003c/div>\u003cdiv class=\"cv-line\">\u003c/div>\u003cdiv class=\"cv-bot\">\u003cb>编者\u003c/b>：罗纪 · 中国电信深圳福田区分公司 政企服务\u003cbr>\u003cb>版本\u003c/b>：2025-10 版 ｜ \u003cb>页数\u003c/b>：21 页\u003cbr>\u003cb>适用\u003c/b>：政企客户 / 商客经理 / 渠道伙伴\u003c/div>\u003c/div>"},{"id":"pg-02","type":"toc","label":"目录","sourceIndex":2,"title":"目录","subtitle":"CONTENTS · 点击条目直接跳转","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>目录\u003c/h2>\u003cp class=\"psub\">CONTENTS · 点击条目直接跳转\u003c/p>\u003cul class=\"toc-l\">\u003cli>\u003cbutton class=\"toc-a\" data-goto=\"pg-03\">\u003cspan class=\"n\">一\u003c/span>\u003cspan class=\"t\">了解罗纪\u003cem>履历、荣誉与专业方向\u003c/em>\u003c/span>\u003cspan class=\"p\">P3\u003c/span>\u003c/button>\u003c/li>\u003cli>\u003cbutton class=\"toc-a\" data-goto=\"pg-04\">\u003cspan class=\"n\">二\u003c/span>\u003cspan class=\"t\">了解电信\u003cem>七大业务方向与国家战略背景\u003c/em>\u003c/span>\u003cspan class=\"p\">P4\u003c/span>\u003c/button>\u003c/li>\u003cli>\u003cbutton class=\"toc-a\" data-goto=\"pg-05\">\u003cspan class=\"n\">三\u003c/span>\u003cspan class=\"t\">罗纪做什么\u003cem>服务内容、专业能力、全生命周期陪伴\u003c/em>\u003c/span>\u003cspan class=\"p\">P5–P7\u003c/span>\u003c/button>\u003c/li>\u003cli>\u003cbutton class=\"toc-a\" data-goto=\"pg-08\">\u003cspan class=\"n\">四\u003c/span>\u003cspan class=\"t\">产品与项目概览\u003cem>基础业务 / 整合汇聚 / 技术业务 / 项目类型\u003c/em>\u003c/span>\u003cspan class=\"p\">P8–P12\u003c/span>\u003c/button>\u003c/li>\u003cli>\u003cbutton class=\"toc-a\" data-goto=\"pg-13\">\u003cspan class=\"n\">五\u003c/span>\u003cspan class=\"t\">服务承诺与专属福利\u003cem>温馨提示、六项随心、服务承诺、彩铃、网络管家、直播专线、员工福利\u003c/em>\u003c/span>\u003cspan class=\"p\">P13–P19\u003c/span>\u003c/button>\u003c/li>\u003cli>\u003cbutton class=\"toc-a\" data-goto=\"pg-20\">\u003cspan class=\"n\">六\u003c/span>\u003cspan class=\"t\">结语与联系方式\u003cem>服务誓言与致客户的一封信\u003c/em>\u003c/span>\u003cspan class=\"p\">P20–P21\u003c/span>\u003c/button>\u003c/li>\u003c/ul>\u003cdiv class=\"note\">原手册目录标注为「01 了解罗纪 / 02 了解电信 / 03 电信有什么 / 04 罗纪做什么」，与正文实际使用的「一～五」编号不一致。本电子书刊已按正文实际结构统一为六栏，\u003cb>原意未作改动\u003c/b>。\u003c/div>"},{"id":"pg-03","type":"sec","label":"罗纪简介","updatedAt":"2026-10-01T10:02:43.870Z","title":"一、了解罗纪","subtitle":"2007 年加入中国电信深圳福田区分公司 · 一线服务 10+ 年","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>一、了解罗纪\u003c/h2>\u003cp class=\"psub\">2007 年加入中国电信深圳福田区分公司 · 一线服务 10+ 年\u003c/p>\u003cdiv class=\"timeline\">\u003cdiv class=\"tl\">\u003cdiv class=\"ty\">2007–2010\u003c/div>\u003cdiv class=\"tx\">入职工程师\u003c/div>\u003c/div>\u003cdiv class=\"tl\">\u003cdiv class=\"ty\">2011–2012\u003c/div>\u003cdiv class=\"tx\">网格社区营销专员\u003c/div>\u003c/div>\u003cdiv class=\"tl\">\u003cdiv class=\"ty\">2012–2017\u003c/div>\u003cdiv class=\"tx\">政企商客经理\u003c/div>\u003c/div>\u003cdiv class=\"tl\">\u003cdiv class=\"ty\">2018–2019\u003c/div>\u003cdiv class=\"tx\">区分项目经理 / 区分行业经理\u003c/div>\u003c/div>\u003cdiv class=\"tl\">\u003cdiv class=\"ty\">2020 至今\u003c/div>\u003cdiv class=\"tx\">数字化转型咨询顾问\u003c/div>\u003c/div>\u003c/div>\u003ch3 class=\"h3\">荣誉\u003c/h3>\u003cdiv class=\"chips\">\u003cspan class=\"chip hi\">多渠道一线服务 10+ 个年头\u003c/span>\u003cspan class=\"chip hi\">连续 5 年 10 次被评为五星商客经理\u003c/span>\u003cspan class=\"chip hi\">连续 2 年获得深圳市十大优秀商客经理\u003c/span>\u003cspan class=\"chip hi\">深圳电信优秀中级内训师多年\u003c/span>\u003c/div>\u003ch3 class=\"h3\">专业方向\u003c/h3>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">计算机科学与技术\u003c/span>\u003cspan class=\"chip\">计算机操作系统\u003c/span>\u003cspan class=\"chip\">软硬件装机与运营维护\u003c/span>\u003cspan class=\"chip\">业务产品与架构师\u003c/span>\u003cspan class=\"chip\">低代码平台\u003c/span>\u003cspan class=\"chip\">各类网站建设与搭建运维\u003c/span>\u003cspan class=\"chip\">AI 应用服务架构工程师\u003c/span>\u003cspan class=\"chip\">软件工程与系统软件\u003c/span>\u003cspan class=\"chip\">数据科学与大数据技术\u003c/span>\u003cspan class=\"chip\">人工智能与机器学习\u003c/span>\u003cspan class=\"chip\">嵌入式与物联网\u003c/span>\u003cspan class=\"chip\">网络与信息安全\u003c/span>\u003cspan class=\"chip\">云计算与分布式系统\u003c/span>\u003cspan class=\"chip\">量子计算与商业应用\u003c/span>\u003c/div>"},{"id":"pg-04","type":"sec","label":"了解电信","sourceIndex":4,"title":"二、电信有什么？","subtitle":"从传统通信服务商 → 综合智能信息服务提供商","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>二、电信有什么？\u003c/h2>\u003cp class=\"psub\">从传统通信服务商 → 综合智能信息服务提供商\u003c/p>\u003cdiv class=\"lead\">作为中国三大基础电信运营商之一，主要业务涵盖通信服务、信息技术和数字化解决方案。截至 2025 年，核心业务与发展方向围绕国家战略需求、技术演进和市场需求展开；通过云网融合、技术创新和生态合作，推动社会各领域的数字化、智能化升级，目标是成为国家数字经济发展的关键底座。\u003c/div>\u003cdiv class=\"two\">\u003cdiv>\u003ch3 class=\"h3\">1. 通信网络基础设施\u003c/h3>\u003cul class=\"steps\">\u003cli>5G 网络建设与优化：持续推进基站覆盖，深化工业互联网、智慧城市等行业场景应用\u003c/li>\u003cli>千兆光网升级：推广千兆光纤入户（FTTR）\u003c/li>\u003cli>6G 研发储备：参与国家 6G 技术预研\u003c/li>\u003c/ul>\u003ch3 class=\"h3\">2. 云计算与大数据\u003c/h3>\u003cul class=\"steps\">\u003cli>天翼云规模化发展：公有云、混合云，服务政务、金融、医疗等\u003c/li>\u003cli>“东数西算”工程：参与国家算力枢纽节点建设\u003c/li>\u003c/ul>\u003ch3 class=\"h3\">3. 产业数字化转型\u003c/h3>\u003cul class=\"steps\">\u003cli>行业解决方案：工业互联网、智慧农业、智慧交通等\u003c/li>\u003cli>物联网（IoT）：NB-IoT、5G 物联网连接\u003c/li>\u003cli>AI 与边缘计算：自动驾驶、智能制造等实时数据处理\u003c/li>\u003c/ul>\u003ch3 class=\"h3\">4. 智慧民生服务\u003c/h3>\u003cul class=\"steps\">\u003cli>智慧家庭生态：智能家居、家庭安防、云游戏\u003c/li>\u003cli>数字政务与医疗：“一网通办”、远程医疗、智慧医院\u003c/li>\u003cli>数字乡村建设：5G + 物联网助力农村电商、智慧农业\u003c/li>\u003c/ul>\u003c/div>\u003cdiv>\u003ch3 class=\"h3\">5. 安全与自主可控\u003c/h3>\u003cul class=\"steps\">\u003cli>网络安全防护：DDoS 防御、数据加密等\u003c/li>\u003cli>信创产业支持：国产化芯片、操作系统在云网端适配\u003c/li>\u003c/ul>\u003ch3 class=\"h3\">6. 绿色低碳发展\u003c/h3>\u003cul class=\"steps\">\u003cli>节能减排技术：优化数据中心能效（PUE）、绿色能源供电\u003c/li>\u003cli>碳中和目标：网络架构升级 + 清洁能源应用，助力“双碳”战略\u003c/li>\u003c/ul>\u003ch3 class=\"h3\">7. 国际化拓展\u003c/h3>\u003cul class=\"steps\">\u003cli>“一带一路”合作：跨境通信、云网融合服务\u003c/li>\u003cli>国际海缆布局：参与跨国海底光缆建设\u003c/li>\u003c/ul>\u003ch3 class=\"h3\">政策与战略背景\u003c/h3>\u003cdiv class=\"lead\" style=\"margin-bottom:0\">国家“十四五”规划：作为数字中国建设主力军，深度融入新基建、数字经济等国家战略。\u003cbr>“云改数转”战略：以云网融合为基础，推动自身及客户向数字化转型。\u003c/div>\u003c/div>\u003c/div>"},{"id":"pg-05","type":"sec","label":"罗纪做什么","sourceIndex":5,"title":"三、罗纪在电信做什么？","subtitle":"秉承“客户至上，服务第一”的理念，提供优质、高效的服务","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>三、罗纪在电信做什么？\u003c/h2>\u003cp class=\"psub\">秉承“客户至上，服务第一”的理念，提供优质、高效的服务\u003c/p>\u003ch3 class=\"h3\">1）基础服务\u003c/h3>\u003cdiv class=\"chips\">\u003cspan class=\"chip hi\">固话 / 手机 / 宽带 / ITV\u003c/span>\u003cspan class=\"chip hi\">专线 / 电路 / VPN（跨市 · 跨省 · 跨国）\u003c/span>\u003cspan class=\"chip hi\">智慧家庭（WIFI6 / 小度 / 窗帘等，所有带电的都能控制）\u003c/span>\u003cspan class=\"chip hi\">短信服务（验证码专用 / 服务专用 / 公司专用）\u003c/span>\u003cspan class=\"chip hi\">物联网卡（设备联网 / POS 机等）\u003c/span>\u003c/div>\u003ch3 class=\"h3\">2）转型业务\u003c/h3>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">云业务：云主机 / 云桌面 / 云电脑 / 云盘 / 云灾备 / 云迁移 / 云安全 / 服务器托管\u003c/span>\u003cspan class=\"chip\">安全服务：等保测评 / 等保整改 / 安全防护 / 防火墙 / 行为及流量审计 / 风险评估 / 漏洞扫描\u003c/span>\u003cspan class=\"chip\">视频业务：家庭 / 企业 / 村 / 镇、线上线下的视频会议\u003c/span>\u003cspan class=\"chip\">5G 专网建设 / 5G 应用落地 / 5G 技改咨询\u003c/span>\u003cspan class=\"chip\">智慧社区 / 智慧园区 / 智慧乡村\u003c/span>\u003cspan class=\"chip\">跨境云 IP 网络电话 / 智能 AI 云呼\u003c/span>\u003c/div>\u003ch3 class=\"h3\">3）整合平台集上下游能力\u003c/h3>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">各类弱电施工 / 机房建设装修 / 信息化建改\u003c/span>\u003cspan class=\"chip\">应急安全平台及子模块（监管单位、各企业）\u003c/span>\u003cspan class=\"chip\">各类 OA / 办公系统 / 配套系统 / APP 开发\u003c/span>\u003cspan class=\"chip\">固定资产服务类项目\u003c/span>\u003cspan class=\"chip\">设备类项目\u003c/span>\u003cspan class=\"chip\">常规性项目\u003c/span>\u003c/div>\u003ch3 class=\"h3\">4）重大项目主营协同\u003c/h3>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">企事业单位信息化技术服务 / 软件集成\u003c/span>\u003cspan class=\"chip\">数字化服务（数据分析 / 数据治理 / 数据清洗）\u003c/span>\u003cspan class=\"chip\">网络安全 / 数据安全 / 信息安全产品\u003c/span>\u003cspan class=\"chip\">人工智能：智能体开发 / 大模型训练与推理\u003c/span>\u003cspan class=\"chip\">智慧社区 / 园区 / 农业 / 养老\u003c/span>\u003cspan class=\"chip\">运营商网络组网架构优化解决方案\u003c/span>\u003cspan class=\"chip\">英伟达、华为各类算力服务租赁与采购\u003c/span>\u003c/div>"},{"id":"pg-06","type":"sec","label":"专业能力","sourceIndex":6,"title":"三、专业能力 · 云网数智安","subtitle":"用不断演进的云网数智安能力，赋能千行百业数字化转型","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>三、专业能力 · 云网数智安\u003c/h2>\u003cp class=\"psub\">用不断演进的云网数智安能力，赋能千行百业数字化转型\u003c/p>\u003ch3 class=\"h3\">在云的方面\u003c/h3>\u003cp>构建了全国最大的分布式云，是国资委明确的国家云，公有云份额全国第三，目前已升级到天翼云 4.0，实现全栈自研能力，并具备端到端的信创能力。\u003c/p>\u003ch3 class=\"h3\">在网的方面\u003c/h3>\u003cp>国内唯一的卫星移动通信运营商，已发射 11 颗卫星；拥有全国最大的 5G SA 共建共享网络，与各行业共创 1500 多个 5G 定制网服务（与交行的 5G 灾备网络方案入选全球 5G 十大应用案例，唯一入选的金融案例）。此外还有全球最大的千兆光纤网络、全球最大的 NB 物联网网络（已承载 2.5 亿连接），以及面向政企的 OTN 网、CN2-DCI 新平面与视联网。\u003c/p>\u003ch3 class=\"h3\">在数方面\u003c/h3>\u003cp>构建了智能语音云平台等专业数字化平台，为招行完成全国 8 万部电话的 IP 改造，并协助将通信能力赋能 w+、智能导航等对外核心业务；工业互联网平台快速赋能行业数字化应用。\u003c/p>\u003ch3 class=\"h3\">在智方面\u003c/h3>\u003cp>拥有海量真实数据，以及专业的数据处理、AI 建模与大模型能力。\u003c/p>\u003ch3 class=\"h3\">在安方面\u003c/h3>\u003cp>提供云网边端服的全方位安全能力；云堤平台被公安、国资委等誉为国家级防护平台，已为 G20 峰会等活动重保 30 多次。\u003c/p>\u003cdiv class=\"note\">\u003cb>总结概述\u003c/b>：依托“云网数智安”全栈能力，中国电信打造“国云”底座，构建云网一体 4.0、全域数据湖、星辰大模型、量子 + AI 安全三大平台，形成“云随网动、数生智用、安贯全程”的一体化服务。\u003c/div>"},{"id":"pg-07","type":"sec","label":"全生命周期","sourceIndex":7,"title":"四、围绕企业生存发展生命周期","subtitle":"从“一间房四面墙”到“开启分公司”，每一环节，罗纪全程协助支撑解决 —— 为企业代言","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>四、围绕企业生存发展生命周期\u003c/h2>\u003cp class=\"psub\">从“一间房四面墙”到“开启分公司”，每一环节，罗纪全程协助支撑解决 —— 为企业代言\u003c/p>\u003cp class=\"psub\" style=\"padding-left:0;margin-bottom:10px\">原页为图形化生命周期图（阶段名：开始运营 → 公司做强 / 做大的时候 → 越做越大 → 日常协同办公 → 工厂开张 → 走向国际 / 面向全球 → 全面灾备 → 开启分公司）。下按原图出现的能力项归并呈现：\u003c/p>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">起步上线\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">云主机\u003c/span>\u003cspan class=\"chip\">云存储\u003c/span>\u003cspan class=\"chip\">云建站\u003c/span>\u003cspan class=\"chip\">域名服务\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">扩容加速\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">弹性带宽\u003c/span>\u003cspan class=\"chip\">弹性伸缩\u003c/span>\u003cspan class=\"chip\">负载均衡\u003c/span>\u003cspan class=\"chip\">CDN\u003c/span>\u003cspan class=\"chip\">高性能云主机\u003c/span>\u003cspan class=\"chip\">GPU 主机\u003c/span>\u003cspan class=\"chip\">云数据库\u003c/span>\u003cspan class=\"chip\">云专线\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">日常协同\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">财务规范\u003c/span>\u003cspan class=\"chip\">移动办公\u003c/span>\u003cspan class=\"chip\">邮件协同\u003c/span>\u003cspan class=\"chip\">产品研发\u003c/span>\u003cspan class=\"chip\">安全大脑\u003c/span>\u003cspan class=\"chip\">5G 工作用机\u003c/span>\u003cspan class=\"chip\">企业云盘\u003c/span>\u003cspan class=\"chip\">协同办公 OA\u003c/span>\u003cspan class=\"chip\">办公宽带\u003c/span>\u003cspan class=\"chip\">无线上网\u003c/span>\u003cspan class=\"chip\">云电脑\u003c/span>\u003cspan class=\"chip\">云监控\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">成长与安全\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">网讯公众号\u003c/span>\u003cspan class=\"chip\">安全防护\u003c/span>\u003cspan class=\"chip\">业务扩展\u003c/span>\u003cspan class=\"chip\">安全专区\u003c/span>\u003cspan class=\"chip\">漏洞扫描\u003c/span>\u003cspan class=\"chip\">渗透测试\u003c/span>\u003cspan class=\"chip\">等保测评\u003c/span>\u003cspan class=\"chip\">云堤防护\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">组网与专网\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">SD-WAN 组网\u003c/span>\u003cspan class=\"chip\">云专网\u003c/span>\u003cspan class=\"chip\">OTN 专线\u003c/span>\u003cspan class=\"chip\">5G 定制网\u003c/span>\u003cspan class=\"chip\">CTWING\u003c/span>\u003cspan class=\"chip\">边缘云 ECX\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">会议与培训\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">云会议\u003c/span>\u003cspan class=\"chip\">集中培训\u003c/span>\u003cspan class=\"chip\">日常协同办公\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">云与托管\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">对像存储 + CDN\u003c/span>\u003cspan class=\"chip\">私有公有双保险\u003c/span>\u003cspan class=\"chip\">专属云\u003c/span>\u003cspan class=\"chip\">小型私有云\u003c/span>\u003cspan class=\"chip\">全栈私有云\u003c/span>\u003cspan class=\"chip\">IDC 数据托管\u003c/span>\u003cspan class=\"chip\">混合云\u003c/span>\u003cspan class=\"chip\">多云管理\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">算力与智能\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">CPU 渲染\u003c/span>\u003cspan class=\"chip\">HPC 高性能计算\u003c/span>\u003cspan class=\"chip\">诸葛 AI 智能分析\u003c/span>\u003cspan class=\"chip\">大视频平台\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">灾备与信创\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">全面灾备\u003c/span>\u003cspan class=\"chip\">云主机灾备\u003c/span>\u003cspan class=\"chip\">云应用灾备\u003c/span>\u003cspan class=\"chip\">云管家服务\u003c/span>\u003cspan class=\"chip\">灾备台\u003c/span>\u003cspan class=\"chip\">信创云\u003c/span>\u003cspan class=\"chip\">信创云云桌面\u003c/span>\u003cspan class=\"chip\">国产化数据库\u003c/span>\u003cspan class=\"chip\">行业政策\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">出海与拓展\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">出海国际业务\u003c/span>\u003cspan class=\"chip\">面向全球\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"note\">原页为图形化生命周期图（由形状与文本绘制，非图片）。本页按原图出现的\u003cb>能力项\u003c/b>归并分组，未新增任何产品；\u003cb>「阶段 ↔ 能力」的精确一一对应关系（待补充：需原始可编辑版逐项核对）\u003c/b>。\u003c/div>"},{"id":"pg-08","type":"sec","label":"产品概览①","sourceIndex":8,"title":"五、具体企业服务产品概括（一）","subtitle":"用归类思维，把业务讲成大白话","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>五、具体企业服务产品概括（一）\u003c/h2>\u003cp class=\"psub\">用归类思维，把业务讲成大白话\u003c/p>\u003ch3 class=\"h3\">基础业务\u003c/h3>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n1\">1 语音类\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">语音固话\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">移动业务\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">光纤宽带\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">大带宽\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">视联网监控\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">高清 ITV\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n2\">2 专线类\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">对称专线\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">本地电路\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">VPN 组网\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">跨市的\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">跨省的\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">跨国的\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n3\">3 智慧类\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">智慧家庭\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">WIFI6\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">小度应用\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">窗帘家居\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">所有带电\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">都能控制\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n4\">4 服务类\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">短信服务\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">验证码专用\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">服务专用\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">公司专用\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">应急服务\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">技术服务\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n5\">5 感知类\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">物联网卡\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">设备专用\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">POS 专用\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">定向流量\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">不定向流量\u003c/span>\u003c/div>\u003c/div>\u003ch3 class=\"h3\">整合汇聚\u003c/h3>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n1\">1 通信工程\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">各类弱电\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">机房建设\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">信息化建改\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">设备采购\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n2\">2 应急项目\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">安全平台\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">临时线路\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">技术支持\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">运维保障\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">测试项目\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n3\">3 信息化软件\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">管理类\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">服务类\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">运营类\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">生产类\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">推广类\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">销售类\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">定制类\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n4\">4 数字化转型\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">（原页此项未列明细）\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n5\">5 资产转服务\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">固定资产紧张需转服务类项目\u003c/span>\u003c/div>\u003c/div>"},{"id":"pg-09","type":"sec","label":"产品概览②","sourceIndex":9,"title":"五、具体企业服务产品概括（二）","subtitle":"技术业务：云 / 安全 / 视频 / 5G / 项目","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>五、具体企业服务产品概括（二）\u003c/h2>\u003cp class=\"psub\">技术业务：云 / 安全 / 视频 / 5G / 项目\u003c/p>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n1\">A 云业务\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">云主机\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">云桌面\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">云电脑\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">云盘\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">云灾备\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">云迁移\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">云安全\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">服务器托管\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n2\">B 安全类\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">安全服务\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">等保测评\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">等保整改\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">安全防护\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">防火墙\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">行为及流量审计\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">风险评估\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">漏洞扫描\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n3\">C 视频类\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">家庭的\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">企业的\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">村里的\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">镇上的\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">线上的\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">全国的\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n4\">D 5G 专场\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">5G 专网建设\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">5G 应用落地\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">5G 技改咨询\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">5G 室分项目\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"flow\">\u003cdiv class=\"fl n5\">E 项目类\u003c/div>\u003cdiv class=\"fr\">\u003cspan class=\"st k\">智慧社区\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">智慧园区\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">智慧乡村\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">智慧办公室\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">智慧物管\u003c/span>\u003cspan class=\"arw\">➜\u003c/span>\u003cspan class=\"st\">其他智慧\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"note\">以上三类图谱（基础业务 / 整合汇聚 / 技术业务）在原手册中为同一页的三张图示，本电子书刊拆为两页以便阅读，\u003cb>内容未作增删\u003c/b>。\u003c/div>"},{"id":"pg-10","type":"sec","label":"项目类型①","sourceIndex":10,"title":"六、项目类型介绍（一）","subtitle":"物联网 · 医疗卫生 · 电商 · 社交 · AI 智能","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>六、项目类型介绍（一）\u003c/h2>\u003cp class=\"psub\">物联网 · 医疗卫生 · 电商 · 社交 · AI 智能\u003c/p>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">物联网 · 智慧平台\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">智慧公寓\u003c/span>\u003cspan class=\"chip\">智慧园区\u003c/span>\u003cspan class=\"chip\">智慧工地\u003c/span>\u003cspan class=\"chip\">智慧农业\u003c/span>\u003cspan class=\"chip\">智慧物业\u003c/span>\u003cspan class=\"chip\">智慧乡村\u003c/span>\u003cspan class=\"chip\">智慧校园\u003c/span>\u003cspan class=\"chip\">智慧物流\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">物联网 · 平台\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">自助洗车\u003c/span>\u003cspan class=\"chip\">智慧变频机\u003c/span>\u003cspan class=\"chip\">自动售卖机\u003c/span>\u003cspan class=\"chip\">无人超市\u003c/span>\u003cspan class=\"chip\">智能停车系统\u003c/span>\u003cspan class=\"chip\">智能家居系统\u003c/span>\u003cspan class=\"chip\">智慧水利\u003c/span>\u003cspan class=\"chip\">智能手环\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">医疗卫生\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">牙医相关系统\u003c/span>\u003cspan class=\"chip\">体检相关系统\u003c/span>\u003cspan class=\"chip\">在线问诊平台\u003c/span>\u003cspan class=\"chip\">远程医疗会诊\u003c/span>\u003cspan class=\"chip\">医疗健康管理\u003c/span>\u003cspan class=\"chip\">医护对讲系统\u003c/span>\u003cspan class=\"chip\">排队叫号系统\u003c/span>\u003cspan class=\"chip\">产后护理\u003c/span>\u003cspan class=\"chip\">患者关系管理\u003c/span>\u003cspan class=\"chip\">陪诊系统\u003c/span>\u003cspan class=\"chip\">药品管理系统\u003c/span>\u003cspan class=\"chip\">一卡通系统\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">电商平台\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">单商户自营商城\u003c/span>\u003cspan class=\"chip\">多商户入驻商城\u003c/span>\u003cspan class=\"chip\">跨境电商平台\u003c/span>\u003cspan class=\"chip\">分销平台\u003c/span>\u003cspan class=\"chip\">社交电商平台\u003c/span>\u003cspan class=\"chip\">社区团购平台\u003c/span>\u003cspan class=\"chip\">外卖配送平台\u003c/span>\u003cspan class=\"chip\">批发商城平台\u003c/span>\u003cspan class=\"chip\">产业链平台\u003c/span>\u003cspan class=\"chip\">直播带货电商\u003c/span>\u003cspan class=\"chip\">秒杀营销平台\u003c/span>\u003cspan class=\"chip\">拼团营销平台\u003c/span>\u003cspan class=\"chip\">宠物电商平台\u003c/span>\u003cspan class=\"chip\">生鲜电商平台\u003c/span>\u003cspan class=\"chip\">跨境电商平台\u003c/span>\u003cspan class=\"chip\">仓储物流平台\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">社交平台\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">直播交友平台\u003c/span>\u003cspan class=\"chip\">活动社交平台\u003c/span>\u003cspan class=\"chip\">盲盒交友平台\u003c/span>\u003cspan class=\"chip\">相亲交友平台\u003c/span>\u003cspan class=\"chip\">即时通讯平台\u003c/span>\u003cspan class=\"chip\">亲情社交平台\u003c/span>\u003cspan class=\"chip\">兴趣社交平台\u003c/span>\u003cspan class=\"chip\">同城搭子平台\u003c/span>\u003cspan class=\"chip\">婚恋交友平台\u003c/span>\u003cspan class=\"chip\">游戏陪玩平台\u003c/span>\u003cspan class=\"chip\">漂流瓶交友\u003c/span>\u003cspan class=\"chip\">短视频平台\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">AI 智能\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">AI 智能问答\u003c/span>\u003cspan class=\"chip\">AI 客服机器人\u003c/span>\u003cspan class=\"chip\">AI 教育辅导\u003c/span>\u003cspan class=\"chip\">AI 法律咨询\u003c/span>\u003c/div>\u003c/div>"},{"id":"pg-11","type":"sec","label":"项目类型②","sourceIndex":11,"title":"六、项目类型介绍（二）","subtitle":"在线教育 · 上门服务 · 共享平台 · 办公平台 · 舆情 · 金融","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>六、项目类型介绍（二）\u003c/h2>\u003cp class=\"psub\">在线教育 · 上门服务 · 共享平台 · 办公平台 · 舆情 · 金融\u003c/p>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">在线教育\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">化工培训平台\u003c/span>\u003cspan class=\"chip\">智力答题平台\u003c/span>\u003cspan class=\"chip\">心理测试平台\u003c/span>\u003cspan class=\"chip\">线上教育平台\u003c/span>\u003cspan class=\"chip\">在线算命平台\u003c/span>\u003cspan class=\"chip\">职业技能培训\u003c/span>\u003cspan class=\"chip\">知识付费平台\u003c/span>\u003cspan class=\"chip\">K12 教育平台\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">上门服务\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">上门家政\u003c/span>\u003cspan class=\"chip\">上门维修\u003c/span>\u003cspan class=\"chip\">上门按摩\u003c/span>\u003cspan class=\"chip\">上门回收\u003c/span>\u003cspan class=\"chip\">上门洗车\u003c/span>\u003cspan class=\"chip\">上门养老\u003c/span>\u003cspan class=\"chip\">上门医疗\u003c/span>\u003cspan class=\"chip\">上门家教\u003c/span>\u003cspan class=\"chip\">上门洗衣\u003c/span>\u003cspan class=\"chip\">上门美甲 / 美容\u003c/span>\u003cspan class=\"chip\">上门宠物喂养\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">共享平台\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">共享空间\u003c/span>\u003cspan class=\"chip\">共享棋牌室\u003c/span>\u003cspan class=\"chip\">共享自习室\u003c/span>\u003cspan class=\"chip\">共享茶室\u003c/span>\u003cspan class=\"chip\">共享充电桩\u003c/span>\u003cspan class=\"chip\">共享 WIFI\u003c/span>\u003cspan class=\"chip\">共享充电宝\u003c/span>\u003cspan class=\"chip\">共享雨伞\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">办公平台\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">访客管理\u003c/span>\u003cspan class=\"chip\">考勤系统\u003c/span>\u003cspan class=\"chip\">会议系统\u003c/span>\u003cspan class=\"chip\">智能柜系统\u003c/span>\u003cspan class=\"chip\">食堂消费系统\u003c/span>\u003cspan class=\"chip\">资产管理系统\u003c/span>\u003cspan class=\"chip\">节电管理系统\u003c/span>\u003cspan class=\"chip\">OA 审批系统\u003c/span>\u003cspan class=\"chip\">CRM 管理系统\u003c/span>\u003cspan class=\"chip\">人才招聘平台\u003c/span>\u003cspan class=\"chip\">ERP 客户管理系统\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">舆情系统\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">舆情 SAAS 产品\u003c/span>\u003cspan class=\"chip\">舆情解决方案\u003c/span>\u003cspan class=\"chip\">舆情治理\u003c/span>\u003cspan class=\"chip\">舆情监测\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">金融平台\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">区块链系统\u003c/span>\u003cspan class=\"chip\">贷款管理系统\u003c/span>\u003cspan class=\"chip\">数字货币交易平台\u003c/span>\u003cspan class=\"chip\">支付系统\u003c/span>\u003c/div>\u003c/div>"},{"id":"pg-12","type":"sec","label":"项目类型③","sourceIndex":12,"title":"六、项目类型介绍（三）","subtitle":"学校 · 数字孪生 · 游戏 · 其他类目 · 证书 · 驻场 · 云代理","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>六、项目类型介绍（三）\u003c/h2>\u003cp class=\"psub\">学校 · 数字孪生 · 游戏 · 其他类目 · 证书 · 驻场 · 云代理\u003c/p>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">学校平台\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">宿管系统\u003c/span>\u003cspan class=\"chip\">消费系统\u003c/span>\u003cspan class=\"chip\">班牌系统\u003c/span>\u003cspan class=\"chip\">自助报到系统\u003c/span>\u003cspan class=\"chip\">家校通系统\u003c/span>\u003cspan class=\"chip\">课程发布系统\u003c/span>\u003cspan class=\"chip\">校园一卡通\u003c/span>\u003cspan class=\"chip\">排课系统\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">数字孪生\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">智慧前台\u003c/span>\u003cspan class=\"chip\">考勤可视化大屏\u003c/span>\u003cspan class=\"chip\">会议空间管理\u003c/span>\u003cspan class=\"chip\">社区管理大屏\u003c/span>\u003cspan class=\"chip\">智慧文旅大屏\u003c/span>\u003cspan class=\"chip\">智慧农业大屏\u003c/span>\u003cspan class=\"chip\">智慧物流大屏\u003c/span>\u003cspan class=\"chip\">驾驶舱\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">游戏开发\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">手机游戏\u003c/span>\u003cspan class=\"chip\">网页游戏\u003c/span>\u003cspan class=\"chip\">H5 小游戏\u003c/span>\u003cspan class=\"chip\">VR / AR 游戏\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">其他类目\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">打车代驾平台\u003c/span>\u003cspan class=\"chip\">民宿酒店预约\u003c/span>\u003cspan class=\"chip\">法律咨询平台\u003c/span>\u003cspan class=\"chip\">网站建设设计\u003c/span>\u003cspan class=\"chip\">短剧付费平台\u003c/span>\u003cspan class=\"chip\">货运物流平台\u003c/span>\u003cspan class=\"chip\">房屋租赁平台\u003c/span>\u003cspan class=\"chip\">IM 即时通讯\u003c/span>\u003cspan class=\"chip\">本地生活信息平台\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">证书办理\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">软件著作权\u003c/span>\u003cspan class=\"chip\">EDI 经营许可证\u003c/span>\u003cspan class=\"chip\">ICP 经营许可证\u003c/span>\u003cspan class=\"chip\">文网文\u003c/span>\u003cspan class=\"chip\">广播电视节目经营许可证\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">驻场外派\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">驻场开发\u003c/span>\u003cspan class=\"chip\">IT 技术驻场外派\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">云服务代理\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">阿里云\u003c/span>\u003cspan class=\"chip\">腾讯云\u003c/span>\u003cspan class=\"chip\">华为云\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">T 级流量安全厂商能力\u003c/span>\u003cdiv class=\"chips\">\u003cspan class=\"chip\">信安系统新建及扩容\u003c/span>\u003cspan class=\"chip\">IDC / ISP / IRCS 云、CDN 信安系统评测及工信部管局对接\u003c/span>\u003cspan class=\"chip\">备案管理系统、机房域名黑白名单、不良信息监控系统\u003c/span>\u003cspan class=\"chip\">工信部信通院机房运行安全评测解决方案\u003c/span>\u003cspan class=\"chip\">等保定级 / 备案 / 建设整改 / 评测 / 应急响应\u003c/span>\u003cspan class=\"chip\">下一代防火墙、堡垒机、日志审计、数据库审计\u003c/span>\u003cspan class=\"chip\">风险评估、渗透测试、漏洞扫描、代码审计、APP 安全测试\u003c/span>\u003cspan class=\"chip\">数据中心机房、大带宽业务代理合作\u003c/span>\u003cspan class=\"chip\">增值电信领域业务合规解决方案招商加盟\u003c/span>\u003c/div>\u003c/div>\u003cdiv class=\"note\">本页「T 级流量安全厂商能力」等条目来自原手册第 10 页的图片型内容页，为忠实转录。\u003c/div>"},{"id":"pg-13","type":"img","label":"装修期提示","sourceIndex":13,"title":"温馨提示 · 关于申请安装电信业务的温馨提示","subtitle":"公司成立选址办公资源：提前沟通，防止花大钱","image":"p11-tixing.webp","foot":"原手册第 11 页整页内容图（原图含预留联系方式的空白框）"},{"id":"pg-14","type":"sec","label":"服务承诺·六项随心","sourceIndex":14,"title":"七、先锋服务 · 好服务 更随心","subtitle":"中国电信政企用户服务主张","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>七、先锋服务 · 好服务 更随心\u003c/h2>\u003cp class=\"psub\">中国电信政企用户服务主张\u003c/p>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">数智随心\u003c/span>\u003cp>提供智能信息管家服务，为政企客户提供开店、开业、开工等场景化的信息化解决方案，帮助客户快速实现数字化转型。\u003c/p>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">网络随心\u003c/span>\u003cp>实施网络信号优化服务，通过“首问负责、一跟到底”等五项准则，为客户提供全程透明化的网络服务体验，确保网络问题快速响应和解决。\u003c/p>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">便捷随心\u003c/span>\u003cp>提供“7×24 小时不打烊”的全时服务，客户可通过线上平台轻松办理业务，实现“足不出户一屏速办”，紧急需求也能实时响应。\u003c/p>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">安全随心\u003c/span>\u003cp>提供“天翼防骚扰”等智能安全服务，帮助客户阻隔骚扰电话和诈骗信息，保障通话安全。\u003c/p>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn\">消费随心\u003c/span>\u003cp>推出透明消费服务，通过资费解读卡和透明消费专席，帮助客户清晰了解费用构成，确保消费明明白白。\u003c/p>\u003c/div>\u003cdiv class=\"cat\">\u003cspan class=\"cn alt\">关爱随心\u003c/span>\u003cp>建设“爱心翼站”，为特殊群体提供信息化咨询和科普服务，帮助缩小数字鸿沟。\u003c/p>\u003c/div>"},{"id":"pg-15","type":"sec","label":"政企服务承诺","sourceIndex":15,"title":"七、政企客户服务承诺","subtitle":"六项可核验的服务标准","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>七、政企客户服务承诺\u003c/h2>\u003cp class=\"psub\">六项可核验的服务标准\u003c/p>\u003cul class=\"steps\">\u003cli>\u003cb>所有业务线上可办\u003c/b>：持续扩充线上服务清单，提供自助查询、账务服务、业务办理及报障停复机等 200 多项服务。\u003c/li>\u003cli>\u003cb>装维预约准时透明\u003c/b>：针对宽带、固话、全屋 WiFi 等业务，维修服务 1 小时内响应；新装业务提供精准预约，上门服务时间精准到 5 分钟。\u003c/li>\u003cli>\u003cb>宽带迁移新旧并存\u003c/b>：宽带迁移到新地址后，旧址宽带一个月内可继续上网。\u003c/li>\u003cli>\u003cb>家庭网络免费测速\u003c/b>：免费提供有线宽带及无线 WiFi 测速服务，出具专业网络体检报告并提供建议。\u003c/li>\u003cli>\u003cb>政企需求上门服务\u003c/b>：政企客户拨打 10009 或登录翼企购网站咨询业务，2 小时内响应，按预约时间上门服务。\u003c/li>\u003cli>\u003cb>爱心翼站公益助老\u003c/b>：提供休息补给、手机辅导、紧急医疗救助等服务，助力老年人跨越数字鸿沟。\u003c/li>\u003c/ul>\u003cdiv class=\"note\">以上条款为服务标准摘录，具体以正式合同及当地电信营业厅口径为准。\u003c/div>"},{"id":"pg-16","type":"img","label":"音视频彩铃","sourceIndex":16,"title":"八、商务音视频彩铃 · 资费与卖点","subtitle":"主号包月 50 元/月，子号包月 10 元/月","image":"p14-cailing-price.webp","foot":"原手册第 14 页整页内容图（含资费表与产品卖点）"},{"id":"pg-17","type":"img","label":"网络管家","sourceIndex":17,"title":"九、一站式网络管家服务 · 极速城圳先锋","subtitle":"企业内外网双千兆部署升级 + 定制化网络管家服务","image":"p15-wangguanjia.webp","foot":"原手册第 15 页整页内容图"},{"id":"pg-18","type":"sec","label":"直播专线","sourceIndex":18,"title":"十、中国电信直播专线 · 跨境直播","subtitle":"做直播，就找中国电信","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>十、中国电信直播专线 · 跨境直播\u003c/h2>\u003cp class=\"psub\">做直播，就找中国电信\u003c/p>\u003ch3 class=\"h3\">中国电信直播专线\u003c/h3>\u003cul class=\"steps\">\u003cli>\u003cb>稳定流畅\u003c/b>：提供高上行速率，如 100Mbps 的千兆直播宽带，保障直播过程不出现网络延迟或掉线，画面清晰流畅。\u003c/li>\u003cli>\u003cb>专属定制\u003c/b>：针对固定时段开播、直播频率高的企业，建议选择尊享直播专线，拥有固定 IP 地址，保证独享带宽资源。\u003c/li>\u003cli>\u003cb>专业服务\u003c/b>：提供专业网络工程师上门服务，帮助优化网络，并提供路由器、交换机等设备的培训检测服务。\u003c/li>\u003c/ul>\u003ch3 class=\"h3\">中国电信跨境直播\u003c/h3>\u003cul class=\"steps\">\u003cli>\u003cb>技术优势\u003c/b>：利用 SD-WAN 技术提供高速、稳定、低延迟的网络连接，优化网络路径，减少数据传输延迟，使主持人与观众互动更实时。\u003c/li>\u003cli>\u003cb>全球覆盖\u003c/b>：支持全球网络连接，帮助跨境电子商务企业在全球范围内展示和销售产品。\u003c/li>\u003cli>\u003cb>成本效益\u003c/b>：降低网络费用负担，为商户提供高性价比的网络服务。\u003c/li>\u003cli>\u003cb>安全可靠\u003c/b>：采用强化安全的通信协议和加密技术，有效防止黑客攻击和数据泄露，保护用户隐私和企业商业秘密。\u003c/li>\u003c/ul>"},{"id":"pg-19","type":"imgpair","label":"员工专属福利","sourceIndex":19,"title":"十一、政企客户员工专属福利","subtitle":"5G 套餐低至 29 元起 ｜ 160G 流量低至 39 元","images":["p17-tc29-49.webp","p17-tc39-199.webp"],"foot":"原手册第 17 页整页内容图（两张海报）"},{"id":"pg-20","type":"sec","label":"服务誓言","sourceIndex":20,"title":"十二、我是一名电信工作销售服务者","subtitle":"我郑重的承诺","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>十二、我是一名电信工作销售服务者\u003c/h2>\u003cp class=\"psub\">我郑重的承诺\u003c/p>\u003cdiv class=\"lead\">秉承以客户为中心，尊重客户认知，理解每位客户的处境，努力学习专业知识，提升专业技能。\u003c/div>\u003cul class=\"steps\">\u003cli>呈现前，先清晰理解需求，致力为客户提供专业建议和价值方案。\u003c/li>\u003cli>坦诚对待产品不足，不推销，不隐瞒，不胁迫，不操控。\u003c/li>\u003cli>尊重客户独立思考和决策权利，基于自身优势与资源，站在客户角度，帮助客户购买。\u003c/li>\u003cli>销售业绩的达成、个人发展和生活改善，源于为客户创造价值的共赢。\u003c/li>\u003cli>正确看待竞争，战胜对手不是目的，帮客户成功才是目标，客户信任靠我们赢得。\u003c/li>\u003c/ul>\u003cp style=\"margin-top:14px;font-weight:600;color:var(--brand-deep)\">我愿为成为一名“幸福销售人”而努力，请您监督！\u003c/p>"},{"id":"pg-21","type":"sec","label":"致客户的一封信","sourceIndex":21,"title":"十三、致中国电信政企客户朋友们","subtitle":"并肩 · 共赢 · 从今天到长久","body":"\u003ch2 class=\"pt\">\u003cspan class=\"bar\">\u003c/span>十三、致中国电信政企客户朋友们\u003c/h2>\u003cp class=\"psub\">并肩 · 共赢 · 从今天到长久\u003c/p>\u003cp>站在深圳这片敢闯敢试、向新而行的土地上，今天我们聊的不只是产品方案，更是与各位并肩推动城市数字化的“同行之约”。从企业的云网升级到产业链的协同提效，从政务服务的智慧落地到产业集群的数智转型，每一份需求背后，都是大家扎根深圳、服务深圳的初心。\u003c/p>\u003cp>未来，中国电信不会只做“服务提供者”，更想做您最“懂需求的伙伴”——您攻坚技术瓶颈时，我们的专属团队会提前到位；您布局新业务赛道时，我们的定制方案会紧跟节奏；哪怕是日常运维的细微问题，我们也会以“深圳速度”响应，用“电信品质”兜底。\u003c/p>\u003cp>纸短情长，合作未完。期待下一次见面时，我们能带着更贴合您需求的方案、更扎实的服务成果，与您继续在深圳的数字浪潮里，从“并肩”到“共赢”，从“今天”到“长久”。\u003c/p>\u003cdiv class=\"cta\">\u003ch4>联系与办理\u003c/h4>\u003cp>电话 / 微信：\u003cspan class=\"tel\">18938845688\u003c/span>　（联系人：罗纪）\u003c/p>\u003cdiv class=\"row\">\u003cbutton class=\"btn\" id=\"copyLink2\">复制本手册链接\u003c/button>\u003ca class=\"btn\" href=\"tel:18938845688\">拨打电话\u003c/a>\u003c/div>\u003c/div>\u003cdiv class=\"note\">本手册所载资费、套餐与权益内容均摘录自原手册，具体以当地电信营业厅、正式合同或 10000 号口径为准。文中留空处的联系方式与二维码（待补充：需业务方提供正式物料）。\u003c/div>"}]};
+
+async function loadContent(){
+  try{
+    var res = await fetch('/api/portal/handbook/state', { credentials:'same-origin', cache:'no-store' });
+    if(res.ok){
+      var data = await res.json();
+      if(data && data.ok && Array.isArray(data.pages) && data.pages.length) return data;
+    }
+  }catch(e){ /* 接口不可用 → 走兜底 */ }
+  return FALLBACK;
+}
+
+var PAGES = [];
+var CONTENT = null;
+var MEDIA_BASE = '/portal/handbook-media/';
+var N = 0;
+var mode = 'spread';
+var total = 0, L = 0, sheets = [], busy = false;
+var book = document.getElementById('book');
+var stage = document.getElementById('stage');
+var reader = document.getElementById('reader');
+
+
+function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function mediaUrl(n){ return n ? MEDIA_BASE + encodeURIComponent(n) : ''; }
+function brandText(){ return (CONTENT && CONTENT.meta && CONTENT.meta.brand) || '中国电信 · 政企事业服务手册'; }
+function indexOfId(id){ for(var i=0;i<PAGES.length;i++){ if(PAGES[i].id===id) return i; } return -1; }
+
+function pageHTML(i){
+  if(i>=PAGES.length) return '<div class="page blank"></div>';
+  var p = PAGES[i], t = p.type;
+  if(t==='free') return renderFreePage(p);
+  if(t==='cover') return '<div class="page">'+(p.body||'')+'</div>';
+  if(t==='img'){
+    return '<div class="page"><div class="imgpage">'
+      + '<div class="ibar"><b>'+esc(p.title)+'</b><span>'+esc(p.subtitle)+'</span></div>'
+      + '<div class="iimg"><img class="zoomable" loading="lazy" src="'+mediaUrl(p.image)+'" alt="'+esc(p.title)+'"></div>'
+      + '<div class="ifoot">'+esc(p.foot)+'</div></div></div>';
+  }
+  if(t==='imgpair'){
+    var imgs = (p.images||[]).map(function(n){ return '<img class="zoomable" loading="lazy" src="'+mediaUrl(n)+'" alt="'+esc(p.title)+'">'; }).join('');
+    return '<div class="page"><div class="imgpage">'
+      + '<div class="ibar"><b>'+esc(p.title)+'</b><span>'+esc(p.subtitle)+'</span></div>'
+      + '<div class="iimg"><div class="imgpair two">'+imgs+'</div></div>'
+      + '<div class="ifoot">'+esc(p.foot)+'</div></div></div>';
+  }
+  var foot = '<div class="pfoot"><span>'+esc(brandText())+'</span><span class="no">'+pad2(i+1)+' / '+pad2(N)+'</span></div>';
+  return '<div class="page"><div class="pbody" data-pg="'+i+'">'+(p.body||'')+'</div>'+foot+'</div>';
+}
+
+function build(){
+  var prevPage = 0;
+  if(total){ prevPage = focusPage(); }
+  book.innerHTML = '<div class="spine"></div>';
+  book.classList.toggle('single', mode==='single');
+  total = (mode==='single') ? N : Math.ceil(N/2);
+  sheets = [];
+  for(var k=0;k<total;k++){
+    var el = document.createElement('div');
+    el.className='sheet'; el.dataset.k=k;
+    var front, back;
+    if(mode==='single'){ front = pageHTML(k); back = '<div class="page blank"></div>'; }
+    else { front = pageHTML(2*k); back = pageHTML(2*k+1); }
+    el.innerHTML = '<div class="face front"><span class="edge"></span>'+front+'</div>'+
+                   '<div class="face back"><span class="edge"></span>'+back+'</div>';
+    book.appendChild(el);
+    sheets.push(el);
+  }
+  L = leafForPage(prevPage);
+  if(total) L = Math.max(0, Math.min(L, maxLeaf()));
+  apply();
+  requestAnimationFrame(fitAll);
+}
+
+function focusPage(){ return (mode==='single') ? L : 2*L; }
+/* 页数边界：偶数页时「末页」是最后一张纸的背面，只有全部翻完（L=total）才看得到，
+   否则末页永远翻不到；奇数页时末页在最后一张纸的正面，L 只能到 total-1。
+   反过来，跳转到某一页时要按奇偶算出它落在哪张纸上。 */
+function maxLeaf(){ return (mode==='single') ? total-1 : (N % 2 === 0 ? total : total-1); }
+function leafForPage(i){
+  if(mode==='single') return i;
+  return (i % 2 === 0) ? i/2 : (i+1)/2;
+}
+
+function apply(){
+  sheets.forEach(function(el){
+    var k = +el.dataset.k;
+    el.classList.toggle('flipped', k < L);
+    el.style.zIndex = k < L ? (k+1) : (total - k);
+    el.style.transition = '';
+  });
+  book.classList.toggle('closed', L===0);
+  book.classList.toggle('open', L>0);
+  updateChrome();
+}
+
+function updateChrome(){
+  var cur = Math.min(focusPage(), N-1);
+  document.getElementById('curNo').textContent = cur+1;
+  document.getElementById('totNo').textContent = N;
+  var pct = N>1 ? (cur/(N-1))*100 : 100;
+  document.getElementById('progressBar').style.width = pct.toFixed(1)+'%';
+  document.getElementById('btnPrev').disabled = (L<=0);
+  document.getElementById('btnNext').disabled = (L>=maxLeaf());
+  document.getElementById('btnFirst').disabled = (L<=0);
+  syncHash(cur+1);
+}
+/* 深链：#p=N 表示第 N 页。用 replaceState 写地址栏（不产生历史记录），
+   刷新、收藏、转发都能回到同一页；只认 #p=N，忽略无关 hash。 */
+function pageFromHash(){
+  var m = /(?:^|[#&])p=(\d+)/.exec(location.hash);
+  if(!m) return 0;
+  var n = parseInt(m[1], 10);
+  return (isFinite(n) && n > 0) ? n : 0;
+}
+/* 注意：pageFromHash 返回的是 1-based 页码，不在这里按 N 裁剪 ——
+   启动最早期 N 还是 0，裁剪会把深链吃成第 1 页；等 N 就绪后再换算下标。 */
+function pageIndexFromHash(){
+  var n = pageFromHash();
+  return n > 0 ? Math.max(0, Math.min(n-1, N-1)) : -1;
+}
+function syncHash(n){
+  if(!history.replaceState) return;
+  var want = '#p=' + n;
+  if(location.hash !== want) history.replaceState(null, '', location.pathname + location.search + want);
+}
+
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+function next(){
+  if(busy || L>=maxLeaf()) return;
+  var el = sheets[L];
+  busy = true;
+  el.style.zIndex = 999;
+  el.classList.add('turning');
+  requestAnimationFrame(function(){ el.classList.add('flipped'); });
+  setTimeout(function(){
+    L++;
+    el.classList.remove('turning');
+    busy = false;
+    apply();
+    preloadNext();
+  }, 880);
+}
+function prev(){
+  if(busy || L<=0) return;
+  var el = sheets[L-1];
+  busy = true;
+  L--;
+  el.style.zIndex = 999;
+  el.classList.add('turning');
+  apply();
+  sheets.forEach(function(e){ if(+e.dataset.k===L) e.style.zIndex = 999; });
+  setTimeout(function(){ el.classList.remove('turning'); busy=false; apply(); }, 880);
+}
+function goto(page){
+  page = Math.max(0, Math.min(page, N-1));
+  var target = Math.min(leafForPage(page), maxLeaf());
+  closeDrawer();
+  if(target===L){ return; }
+  var steps = Math.abs(target-L);
+  if(steps>3){ doJump(target); return; }
+  (function step(){
+    if(L===target){ return; }
+    if(L<target){ next(); } else { prev(); }
+    setTimeout(step, 900);
+  })();
+}
+function doJump(target){
+  busy = true;
+  book.style.transition = 'opacity .22s';
+  book.style.opacity = '0.06';
+  setTimeout(function(){
+    L = Math.max(0, Math.min(target, maxLeaf()));
+    sheets.forEach(function(el){
+      var k=+el.dataset.k;
+      el.style.transition='none';
+      el.classList.toggle('flipped', k<L);
+      el.style.zIndex = k<L?(k+1):(total-k);
+      void el.offsetWidth;
+      el.style.transition='';
+    });
+    book.classList.toggle('closed', L===0);
+    book.style.opacity='1';
+    book.style.transition='';
+    busy=false;
+    updateChrome();
+    preloadNext();
+  }, 230);
+}
+
+function preloadNext(){
+  /* 图片已内联，此处仅用于将来扩展（如外链图片） */
+}
+
+/* ---------- 自动缩排：内容超页时逐级缩小字号 ---------- */
+function fitAll(){
+  /* 窄屏（单页 + 页内滚动）不需要把正文压到 9.6px 去硬塞一屏，保持默认字号可读即可；
+     宽屏（对开）仍是固定版心，内容超页时逐级缩字号。 */
+  var scrollable = document.documentElement.classList.contains('narrow');
+  document.querySelectorAll('.pbody').forEach(function(body){
+    var sizes = [13.5,12.8,12.1,11.4,10.8,10.2,9.6];
+    body.style.setProperty('--pfs','13.5px');
+    if(scrollable){ body.style.fontSize = sizes[0]+'px'; body.classList.add('scrollable'); return; }
+    var i = 0;
+    body.style.fontSize = sizes[0]+'px';
+    while(body.scrollHeight > body.clientHeight + 2 && i < sizes.length-1){
+      i++;
+      body.style.fontSize = sizes[i]+'px';
+    }
+    /* 缩到最小字号仍超页（当前是第 7、12 页）：改成可滚动，内容必须全部可达 */
+    body.classList.toggle('scrollable', body.scrollHeight > body.clientHeight + 2);
+  });
+}
+
+/* ---------- 尺寸 ---------- */
+function layout(){
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var availH = vh - 56 - 60 - 46;
+  var availW = vw - 36;
+  var pw, ph, want = (vw >= 900) ? 'spread' : 'single';
+  if(document.documentElement.dataset.forceMode) want = document.documentElement.dataset.forceMode;
+  if(want==='spread'){
+    ph = Math.min(availH, 840);
+    pw = Math.round(ph/1.414);
+    if(pw*2 > availW){ pw = Math.floor(availW/2); ph = Math.round(pw*1.414); }
+  } else {
+    pw = Math.min(availW, 560);
+    ph = Math.round(pw*1.414);
+    if(ph > availH){ ph = availH; pw = Math.round(ph/1.414); }
+  }
+  document.documentElement.style.setProperty('--pw', pw+'px');
+  document.documentElement.style.setProperty('--ph', ph+'px');
+  document.documentElement.style.setProperty('--k', (pw/750).toFixed(4));
+  var changed = (want !== mode);
+  mode = want;
+  /* narrow = 单页模式：正文页内可滚动（见 .narrow .pbody），fitAll 也不再缩字号 */
+  document.documentElement.classList.toggle('narrow', mode==='single');
+  document.getElementById('btnMode').querySelector('.lbl').textContent = (mode==='spread'?'双页':'单页');
+  if(changed || !sheets.length){ build(); } else { requestAnimationFrame(fitAll); }
+}
+
+/* ---------- 抽屉 / 灯箱 ---------- */
+var mask = document.getElementById('mask'), drawer = document.getElementById('drawer'),
+    drawerBody = document.getElementById('drawerBody'), drawerTitle = document.getElementById('drawerTitle');
+function pageName(p){ return esc(p.title || p.label || p.type || ''); }
+function openDrawer(kind){
+  if(kind==='toc'){
+    drawerTitle.textContent='目录';
+    drawerBody.innerHTML='<ul class="toc-l">'+PAGES.map(function(p,i){
+      if(p.type!=='sec'&&p.type!=='img'&&p.type!=='imgpair'&&p.type!=='toc'&&p.type!=='cover'&&p.type!=='free') return '';
+      return '<li><button class="toc-a" data-goto="'+esc(p.id)+'"><span class="n">'+pad2(i+1)+'</span><span class="t">'+pageName(p)+'</span><span class="p">P'+(i+1)+'</span></button></li>';
+    }).join('')+'</ul>';
+  } else {
+    drawerTitle.textContent='缩略图（共 '+N+' 页）';
+    drawerBody.innerHTML='<div class="thumbs">'+PAGES.map(function(p,i){
+      var cur = (Math.min(focusPage(),N-1)===i)?' cur':'';
+      return '<button class="th'+cur+'" data-jump="'+i+'"><span class="tn">第 '+(i+1)+' 页</span><span class="tt2">'+pageName(p)+'</span></button>';
+    }).join('')+'</div>';
+  }
+  drawer.classList.add('on'); mask.classList.add('on');
+}
+function closeDrawer(){ drawer.classList.remove('on'); mask.classList.remove('on'); }
+
+document.addEventListener('click', function(e){
+  var g = e.target.closest('[data-goto]');
+  if(g){ var gi = indexOfId(g.dataset.goto); if(gi>=0){ if(typeof closeDrawer==='function') closeDrawer(); goto(gi); } return; }
+  var j = e.target.closest('[data-jump]');
+  if(j){ goto(+j.dataset.jump); return; }
+  var z = e.target.closest('.zoomable');
+  if(z){ document.getElementById('lightboxImg').src = z.src; document.getElementById('lightbox').classList.add('on'); }
+});
+mask.addEventListener('click', closeDrawer);
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+document.getElementById('lightbox').addEventListener('click', function(){ this.classList.remove('on'); });
+
+/* ---------- 顶栏 / 底栏 ---------- */
+document.getElementById('btnToc').addEventListener('click', function(){ openDrawer('toc'); });
+document.getElementById('btnThumb').addEventListener('click', function(){ openDrawer('thumb'); });
+document.getElementById('btnPrev').addEventListener('click', prev);
+document.getElementById('btnNext').addEventListener('click', next);
+document.getElementById('btnFirst').addEventListener('click', function(){ doJump(0); });
+document.getElementById('btnMode').addEventListener('click', function(){
+  document.documentElement.dataset.forceMode = (mode==='spread') ? 'single' : 'spread';
+  layout();
+});
+document.getElementById('btnFull').addEventListener('click', function(){
+  if(document.fullscreenElement){ document.exitFullscreen(); }
+  else if(document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen(); }
+});
+function share(){
+  var url = location.origin + location.pathname + '#p=' + (Math.min(focusPage(), N-1) + 1);
+  var done = function(){ toast('本页链接已复制，对方打开即到第 ' + (Math.min(focusPage(), N-1) + 1) + ' 页'); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done, function(){ legacyCopy(url, done); });
+  } else { legacyCopy(url, done); }
+}
+function legacyCopy(t, cb){
+  var ta = document.createElement('textarea');
+  ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); cb(); }catch(e){ toast('请手动复制：'+t); }
+  document.body.removeChild(ta);
+}
+document.getElementById('btnShare').addEventListener('click', share);
+document.addEventListener('click', function(e){ if(e.target && e.target.id==='copyLink2') share(); });
+var toastEl = document.getElementById('toast'), toastT;
+function toast(msg){
+  toastEl.textContent = msg; toastEl.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(function(){ toastEl.classList.remove('on'); }, 2200);
+}
+document.getElementById('progress').addEventListener('click', function(e){
+  var r = this.getBoundingClientRect();
+  var r2 = Math.max(0, Math.min(1, (e.clientX - r.left)/r.width));
+  goto(Math.round(r2*(N-1)));
+});
+
+/* ---------- 键盘 / 触摸 / 滚轮 ---------- */
+document.addEventListener('keydown', function(e){
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ next(); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ prev(); e.preventDefault(); }
+  else if(e.key==='Home'){ doJump(0); }
+  else if(e.key==='End'){ doJump(N-1); }
+  else if(e.key==='Escape'){ closeDrawer(); document.getElementById('lightbox').classList.remove('on'); }
+});
+var tx=0, ty=0, tt=0;
+reader.addEventListener('touchstart', function(e){ tx=e.touches[0].clientX; ty=e.touches[0].clientY; tt=Date.now(); }, {passive:true});
+reader.addEventListener('touchend', function(e){
+  var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+  if(Date.now()-tt < 700 && Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy)*1.4){ dx<0 ? next() : prev(); }
+}, {passive:true});
+/* 只有「用户真能滚」的正文区才拦截翻页：overflow:hidden 的裁切容器不算，
+   否则宽屏上点击/滚轮滚不动的那种页会被误判成可滚动，翻不了页。 */
+function userScrollableBody(el){
+  if(!el || !el.classList || !el.classList.contains('pbody')) return null;
+  var oy = getComputedStyle(el).overflowY;
+  if(oy !== 'auto' && oy !== 'scroll') return null;
+  return (el.scrollHeight > el.clientHeight + 2) ? el : null;
+}
+var wheelLock = 0;
+reader.addEventListener('wheel', function(e){
+  /* 页内可滚动：先把这一页滚到底/顶，再允许翻页，否则滚不动就跳页 */
+  var sb = userScrollableBody(e.target && e.target.closest ? e.target.closest('.pbody') : null);
+  if(sb){
+    var atTop = sb.scrollTop <= 0;
+    var atBottom = sb.scrollTop + sb.clientHeight >= sb.scrollHeight - 2;
+    if((e.deltaY > 0 && !atBottom) || (e.deltaY < 0 && !atTop)) return;
+  }
+  if(Math.abs(e.deltaY) < 22) return;
+  var now = Date.now();
+  if(now - wheelLock < 850) return;
+  wheelLock = now;
+  e.deltaY > 0 ? next() : prev();
+}, {passive:true});
+reader.addEventListener('click', function(e){
+  if(e.target.closest('button')||e.target.closest('a')||e.target.closest('.zoomable')||e.target.closest('.toc-a')) return;
+  /* 可滚动的正文区不抢点击：否则用户想滚动/阅读时一碰就翻页 */
+  if(userScrollableBody(e.target.closest ? e.target.closest('.pbody') : null)) return;
+  var r = book.getBoundingClientRect();
+  var mid = r.left + r.width/2;
+  (e.clientX > mid) ? next() : prev();
+});
+
+/* ---------- 启动 ---------- */
+var rt;
+window.addEventListener('resize', function(){ clearTimeout(rt); rt = setTimeout(layout, 200); });
+window.addEventListener('hashchange', function(){
+  var i = pageIndexFromHash();
+  if(i < 0) return;
+  if(i !== Math.min(focusPage(), N-1)) doJump(leafForPage(i));
+});
+(async function boot(){
+  // 必须在 layout() 之前取：layout→updateChrome→syncHash 会把地址栏改写成当前页，
+  // 之后才读 hash 就永远只看到第 1 页（深链失效）。
+  var bootPage = pageFromHash();
+  document.getElementById('hint').textContent = '正在载入手册…';
+  CONTENT = await loadContent();
+  PAGES = (CONTENT && CONTENT.pages) || [];
+  MEDIA_BASE = (CONTENT && CONTENT.mediaBase) || MEDIA_BASE;
+  N = PAGES.length;
+  document.getElementById('totNo').textContent = N;
+  var meta = (CONTENT && CONTENT.meta) || {};
+  var ttl = document.querySelector('.brand .tt');
+  if(ttl && meta.title){ ttl.innerHTML = esc(meta.title) + (meta.subtitle ? '<small>'+esc(meta.subtitle)+'</small>' : ''); }
+  if(meta.title) document.title = meta.title + ' · 在线翻页电子书刊';
+  layout();
+  freeCanvasRuntime(document);
+  // 翻页时新页面才进 DOM：点一下之后补扫一次（freeCanvasRuntime 幂等，重复调用不会重复绑定）
+  if (!window.__fcHook) { window.__fcHook = 1; document.addEventListener('click', function(){ setTimeout(function(){ freeCanvasRuntime(document); }, 80); }); }
+  var h = document.getElementById('hint');
+  if(h){ h.textContent = '点击页面右侧翻页 ｜ ← → 键翻页 ｜ 双指 / 滚轮缩放'; setTimeout(function(){ h.style.opacity='0'; }, 6000); }
+  if(bootPage > 0) doJump(leafForPage(Math.max(0, Math.min(bootPage - 1, N - 1))));
+})();
+
+})();
+</script>
+</body>
+</html>

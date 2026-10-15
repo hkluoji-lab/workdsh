@@ -73,6 +73,7 @@
     <div class="auth-card">
       <h2>登录</h2>
       <p class="auth-sub">使用管理员分配的账号进入工作台。</p>
+      {{NOTICE}}
       {{ERROR}}
       <form class="auth-form" method="post" action="/api/portal/login" autocomplete="on">
         <input type="hidden" name="next" value="{{NEXT}}">
@@ -90,6 +91,7 @@
         <button class="button button-primary button-block" type="submit">登录</button>
       </form>
       <p class="auth-hint">账号由管理员统一分配；密码区分大小写，! @ . - 等符号请用英文半角输入。当前不支持企业微信、钉钉或 SSO 登录。</p>
+      {{REGISTER}}
       <p class="auth-back"><a href="/portal">返回产品介绍</a></p>
     </div>
   </section>

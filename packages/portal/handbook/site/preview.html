@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>手册页面预览</title>
+<link rel="stylesheet" href="/portal/handbook/asset/page.css">
+<style>
+  html,body{margin:0;padding:0;background:#e9eef6;height:100%;overflow:hidden;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+  #bar{height:28px;display:flex;align-items:center;gap:8px;padding:0 10px;font-size:11.5px;color:#5b6b82;background:#f7fafd;border-bottom:1px solid #dde5ef}
+  #bar b{color:#0a4ea3}
+  #wrap{position:absolute;top:28px;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:var(--pw);height:var(--ph);box-shadow:0 10px 30px rgba(16,38,68,.18)}
+  #stage .page{position:absolute;inset:0}
+  #empty{color:#7386a0;font-size:13px}
+/* ==== FREE-CSS-START（由 work/build-free.mjs 生成，勿手改）==== */
+/* 新组件样式：图标 / 二维码 / 视频 / 图集 / 表单 / 倒计时 + 入场动效
+   由 work/build-free.mjs 注入后台、预览页与公开页模板三处，保持一处定义。
+   注意：动效的"初始不可见"只在 .page 容器内生效 —— 后台编辑画布不是 .page，
+   否则用户一加动效元素就从画布上消失，没法编辑。 */
+.fe-icon{overflow:visible}
+.fe-qrcode{display:flex;align-items:center;justify-content:center}
+.fe-qrcode svg{display:block}
+.fe-qr-empty,.fe-empty{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-height:28px;font-size:12px;color:#98a6b8;background:repeating-linear-gradient(45deg,#f7f9fc,#f7f9fc 8px,#eef2f8 8px,#eef2f8 16px);border:1px dashed #cfd9e6;border-radius:6px;text-align:center;padding:4px;box-sizing:border-box}
+.fe-video{background:#0b1220}
+.fe-video video{width:100%;height:100%;display:block;object-fit:contain;background:#0b1220}
+.fe-gallery{display:grid;grid-template-columns:repeat(var(--cols,2),1fr);gap:var(--gap,8px);align-content:start}
+.fe-gallery figure{margin:0;overflow:hidden;border-radius:var(--radius,0)}
+.fe-gallery img{width:100%;height:100%;object-fit:cover;display:block}
+.fe-gallery figcaption{font-size:11px;color:#6b7a90;text-align:center;margin-top:2px}
+.fe-form{display:flex;flex-direction:column;gap:6px;overflow:auto}
+.fe-field{display:flex;flex-direction:column;gap:2px;font-size:12px;color:#33455e}
+.fe-field>span{font-weight:600}
+.fe-req{color:#d93025;font-style:normal}
+.fe-field input,.fe-field textarea,.fe-field select{border:1px solid #cfd9e6;border-radius:6px;padding:6px 8px;font-size:13px;font-family:inherit;color:#15243a;background:#fff;width:100%;box-sizing:border-box}
+.fe-submit{margin-top:2px;border:0;border-radius:8px;background:#0a4ea3;color:#fff;font-size:14px;font-weight:600;padding:9px 12px;cursor:pointer;font-family:inherit}
+.fe-submit:disabled{opacity:.6;cursor:default}
+.fe-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.fe-note{font-size:11px;color:#6b7a90}
+.fe-formmsg{font-size:12px;line-height:1.5}
+.fe-formmsg.is-ok{color:#0a7d3c}
+.fe-formmsg.is-err{color:#d93025}
+.fe-countdown{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.fe-cd-label{font-size:12px;color:#6b7a90}
+.fe-cd-time{font-size:26px;font-weight:700;line-height:1.2}
+.page .fe[data-anim]{opacity:0;transition:opacity .5s ease,transform .5s ease}
+.page .fe[data-anim="up"]{transform:translateY(18px)}
+.page .fe[data-anim="down"]{transform:translateY(-18px)}
+.page .fe[data-anim="left"]{transform:translateX(18px)}
+.page .fe[data-anim="right"]{transform:translateX(-18px)}
+.page .fe[data-anim="zoom"]{transform:scale(.92)}
+.page .fe[data-anim].fe-in{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){.page .fe[data-anim]{opacity:1;transform:none;transition:none}}
+
+/* 编辑器里的表单字段行（仅后台使用，公网页不会出现） */
+.fefields{margin-bottom:4px}
+.fefieldrow{display:grid;grid-template-columns:1fr 88px 22px 24px;gap:4px;align-items:center;margin-bottom:4px}
+.fefieldrow input[type=checkbox]{width:auto;margin:0}
+.fefieldrow .febtn{height:24px;padding:0 6px}
+.fe-qrcode .fe-qr-img{width:100%;height:100%;display:block}
+/* ==== FREE-CSS-END ==== */
+</style>
+</head>
+<body>
+<div id="bar">预览：<b id="ptitle">—</b><span id="pmeta"></span></div>
+<div id="wrap"><div id="stage"></div><div id="empty" hidden>未选择页面</div></div>
+<script type="module">
+import { renderPage, fitAll, freeCanvasRuntime } from '/portal/handbook/asset/render.js';
+
+const stage = document.getElementById('stage');
+const state = { page: null, pageNo: 1, total: 1, brand: '', mediaBase: '/portal/handbook-media/' };
+
+function layout() {
+  const w = window.innerWidth, h = window.innerHeight - 28 - 24;
+  let ph = Math.min(h, 900);
+  let pw = Math.round(ph / 1.414);
+  if (pw > w - 24) { pw = w - 24; ph = Math.round(pw * 1.414); }
+  document.documentElement.style.setProperty('--pw', pw + 'px');
+  document.documentElement.style.setProperty('--ph', ph + 'px');
+  document.documentElement.style.setProperty('--k', (pw / 750).toFixed(4));
+}
+
+function draw() {
+  layout();
+  const p = state.page;
+  document.getElementById('empty').hidden = Boolean(p);
+  stage.hidden = !p;
+  document.getElementById('ptitle').textContent = p ? (p.label || p.title || '未命名') : '—';
+  document.getElementById('pmeta').textContent = p
+    ? `　第 ${state.pageNo} 页 / 共 ${state.total} 页　类型：${p.type}${p.updatedAt ? '　改于 ' + p.updatedAt.slice(0, 19).replace('T', ' ') : ''}`
+    : '';
+  if (!p) return;
+  stage.innerHTML = renderPage(p, state.mediaBase, state.pageNo, state.total, state.brand);
+  freeCanvasRuntime(stage);   // 预览也要跑倒计时/表单绑定/动效
+  fitAll(stage);
+}
+
+// 后台通过 postMessage 推送「当前表单（含未保存改动）」，实现所见即所得
+window.addEventListener('message', (ev) => {
+  const d = ev.data;
+  if (!d || d.type !== 'hb-preview') return;
+  Object.assign(state, { page: d.page, pageNo: d.pageNo, total: d.total, brand: d.brand, mediaBase: d.mediaBase });
+  draw();
+});
+
+// 直接打开该页时的兜底：按 ?page=<id> 拉取草稿
+(async function init() {
+  const id = new URLSearchParams(location.search).get('page');
+  try {
+    const res = await fetch('/api/portal/handbook/admin/state', { credentials: 'same-origin' });
+    const data = await res.json();
+    if (!data?.ok) throw new Error(data?.error || 'state-failed');
+    const pages = data.draft?.pages ?? [];
+    const idx = Math.max(0, pages.findIndex((p) => p.id === id));
+    Object.assign(state, {
+      page: pages[idx] ?? null,
+      pageNo: idx + 1,
+      total: pages.length,
+      brand: data.draft?.meta?.brand || '',
+      mediaBase: '/portal/handbook-media/',
+    });
+  } catch { /* 后台会推送 */ }
+  draw();
+})();
+
+window.addEventListener('resize', draw);
+</script>
+</body>
+</html>

@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>企业工作台定制解决方案 · 在线翻页电子书刊 | WorkDSH 企业级 AI 智能体工作台</title>
+<meta name="description" content="企业工作台定制解决方案在线翻页电子书刊：产品功能简介、六大部门业务覆盖、应用场景、团队协同、私有化与联署定制、平台底座、真实界面、信任与安全、常见问题与合作方式。">
+<meta name="theme-color" content="#0b4ea2">
+<link rel="icon" href="/portal/assets/mark.svg" type="image/svg+xml">
+
+<style>
+:root{
+  /* ---- 品牌 ---- */
+  --brand:#0b4ea2;--brand-deep:#06306b;--brand-mid:#1868c0;
+  --brand-soft:#eef4fc;--brand-tint:#f7fafd;--brand-line:#cfe0f2;--brand-line2:#e2ecf8;
+  --accent:#e8722c;--accent-soft:#fdf1e7;--accent-line:#f2d3b8;
+  /* ---- 文本 ---- */
+  --ink:#0f1f36;--ink2:#3f5470;--ink3:#75879f;--ink4:#9aabc0;
+  /* ---- 面/线 ---- */
+  --line:#e6edf6;--line-soft:#f1f5fa;--paper:#ffffff;--bg:#eef2f8;
+  --ok:#0a7d3c;--ok-soft:#e9f6ee;
+  /* ---- 空间节奏（4 的倍数） ---- */
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;
+  /* ---- 版心 ---- */
+  --pad-x:40px;--pad-t:44px;--pad-b:34px;
+  /* ---- 字阶 ---- */
+  --fs-h1:1.72em;--lh-h1:1.24;
+  --fs-h2:1.34em;--lh-h2:1.3;
+  --fs-h3:1.06em;--lh-h3:1.42;
+  --lh-body:1.78;
+  /* ---- 动效 ---- */
+  --ease-book:cubic-bezier(.3,.02,.18,1);--dur-turn:.82s;
+  --font:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC","WenQuanYi Micro Hei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --num:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  --pw:400px;--ph:566px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);color:var(--ink);background:
+    radial-gradient(1200px 600px at 50% -10%,#dde8f7 0%,transparent 62%),
+    linear-gradient(180deg,#f3f7fc 0%,#e7eef7 100%);
+  min-height:100vh;overflow-x:hidden;
+  display:flex;flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+/* ================= 顶栏 ================= */
+.topbar{
+  height:56px;flex:0 0 56px;display:flex;align-items:center;gap:12px;
+  padding:0 14px;background:rgba(255,255,255,.88);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);position:relative;z-index:60;
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .mark{
+  width:30px;height:30px;border-radius:8px;background:linear-gradient(140deg,var(--brand),var(--brand-mid));
+  display:grid;place-items:center;flex:0 0 auto;
+}
+.brand .mark svg{width:20px;height:20px;display:block}
+.brand .tt{font-weight:700;font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .tt small{display:block;font-weight:400;font-size:11px;color:var(--ink3);letter-spacing:.2px}
+.spacer{flex:1}
+.tools{display:flex;align-items:center;gap:6px}
+.tb{
+  border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:9px;
+  height:34px;min-width:34px;padding:0 10px;font-size:13px;font-family:inherit;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.18s;
+}
+.tb:hover{border-color:var(--brand-line);color:var(--brand);background:var(--brand-soft)}
+.tb:disabled{opacity:.4;cursor:default}
+.tb:disabled:hover{border-color:var(--line);color:var(--ink2);background:#fff}
+.tb .lbl{white-space:nowrap}
+@media(max-width:880px){.tb .lbl{display:none}.brand .tt small{display:none}}
+@media(max-width:520px){.brand .tt{font-size:13px}.tools{gap:4px}.tb{padding:0 8px}}
+/* ================= 阅读区 ================= */
+.reader{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:22px 16px;overflow:hidden;position:relative;
+}
+.stage{perspective:2600px;perspective-origin:50% 46%;position:relative}
+.book{
+  position:relative;width:calc(var(--pw) * 2);height:var(--ph);
+  transform-style:preserve-3d;
+  transition:transform var(--dur-turn) var(--ease-book);
+}
+.book.closed{transform:translateX(calc(var(--pw) / -2))}
+.book.single{width:var(--pw)}
+.book.single.closed{transform:none}
+/* 书脊：多层渐变给出圆脊的受光与转折，翻开后渐显 */
+.spine{
+  position:absolute;left:50%;top:-2px;bottom:-2px;width:68px;transform:translateX(-50%);
+  pointer-events:none;z-index:40;opacity:0;
+  transition:opacity .5s ease;
+  background:
+    linear-gradient(90deg,
+      rgba(12,30,58,0) 0%,
+      rgba(12,30,58,.05) 26%,
+      rgba(12,30,58,.15) 42%,
+      rgba(12,30,58,.24) 50%,
+      rgba(12,30,58,.15) 58%,
+      rgba(12,30,58,.05) 74%,
+      rgba(12,30,58,0) 100%);
+}
+.book.open .spine{opacity:1}
+.book.single .spine{display:none}
+/* 纸张：绕左边缘旋转；缓动用带轻微过冲的曲线，接近真实书页落下的手感 */
+.sheet{
+  position:absolute;top:0;left:50%;width:var(--pw);height:var(--ph);
+  transform-origin:left center;transform-style:preserve-3d;
+  transform:rotateY(0deg);
+  transition:transform var(--dur-turn) var(--ease-book);
+}
+.book.single .sheet{left:0}
+.sheet.flipped{transform:rotateY(-180deg)}
+/* 拖拽跟手：关闭过渡 */
+.book.dragging .sheet{transition:none}
+.book.dragging .book,.book.dragging{transition:none}
+.sheet .face{
+  position:absolute;inset:0;overflow:hidden;background:var(--paper);
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  box-shadow:0 12px 34px rgba(15,36,66,.15),0 2px 7px rgba(15,36,66,.08);
+  border-radius:2px;
+}
+.sheet .face.back{transform:rotateY(180deg)}
+/* 多张纸依次叠放时，下层纸的投影会透过上层纸显影，看起来像页边有多余的框。
+   只保留当前可见的两张面有投影（.flat = 被盖住的面）。 */
+.sheet .face.flat{box-shadow:none}
+/* ---- 纸页弧度：随转动角度的受光带 + 页根阴影 ---- */
+/* 高光带：贴在翻动面上，位置随旋转推进（由 turning 的 0→1 动画驱动） */
+.sheet .face::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:5;
+  opacity:0;background:
+    linear-gradient(100deg,
+      rgba(255,255,255,0) 34%,
+      rgba(255,255,255,.5) 48%,
+      rgba(255,255,255,.86) 52%,
+      rgba(255,255,255,.4) 57%,
+      rgba(255,255,255,0) 72%);
+  transform:translateX(-26%);
+}
+/* 页根压暗：越靠近书脊越暗，模拟纸面弯折的受光衰减 */
+.sheet .face::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;
+  background:linear-gradient(90deg,rgba(8,20,40,.22) 0%,rgba(8,20,40,.06) 12%,rgba(255,255,255,0) 34%);
+}
+.sheet .face.back::before{background:linear-gradient(270deg,rgba(8,20,40,.22) 0%,rgba(8,20,40,.06) 12%,rgba(255,255,255,0) 34%)}
+.sheet.turning .face::after{animation:curlGlint var(--dur-turn) var(--ease-book) both}
+.sheet.turning .face::before{opacity:1;transition:opacity .18s}
+@keyframes curlGlint{
+  0%{opacity:.12;transform:translateX(-30%)}
+  46%{opacity:.95;transform:translateX(14%)}
+  100%{opacity:.10;transform:translateX(62%)}
+}
+/* 整张纸在翻转中段略微"鼓起"的投影（用外层阴影近似） */
+.sheet.turning{filter:drop-shadow(0 26px 42px rgba(10,24,48,.22))}
+/* 纸叠边缘：贴在最外侧的横向细纹，增加厚度感 */
+.sheet .edge{
+  position:absolute;top:0;right:0;width:12px;height:100%;pointer-events:none;opacity:.45;z-index:6;
+  background:repeating-linear-gradient(180deg,#f9fbfe 0 2px,#e4ebf4 2px 3px);
+}
+/* 单页模式的纸张略厚 */
+.book.single .sheet .face{box-shadow:0 16px 44px rgba(15,36,66,.22),0 3px 9px rgba(15,36,66,.10)}
+.book.single .sheet .face.flat{box-shadow:none}
+/* ---- 可翻页提示：右下折角 ---- */
+.corner{
+  position:absolute;right:0;bottom:0;width:86px;height:86px;z-index:7;
+  pointer-events:none;opacity:0;transition:opacity .28s ease;
+  background:linear-gradient(315deg,rgba(15,36,66,.10) 0%,rgba(15,36,66,.04) 34%,rgba(255,255,255,0) 52%);
+}
+/* 只在"当前可翻的那张纸"上显示折角：对开模式是 L 号纸，单页模式是 L 号纸 */
+.book .sheet .corner{opacity:0}
+.book.can-turn .sheet.now .face.front .corner{opacity:1}
+@media(hover:hover){
+  .book.can-turn .sheet.now:hover .face.front .corner{
+    opacity:1;
+    background:linear-gradient(315deg,rgba(15,36,66,.17) 0%,rgba(15,36,66,.06) 40%,rgba(255,255,255,0) 58%);
+  }
+}
+/* 允许横向拖拽（纵向仍可滚动） */
+.stage{touch-action:pan-y}
+.book.locked .sheet{transition:none!important}
+/* ================= 页 ================= */
+.page{
+  position:absolute;inset:0;background:var(--paper);display:flex;flex-direction:column;
+  font-size:var(--pfs,13.5px);line-height:var(--lh-body);color:var(--ink2);
+}
+.page.blank{background:linear-gradient(180deg,#fbfcfe,#f4f7fb)}
+/* 版心：内容不足时用 margin-bottom:auto 把富余空间全部沉到页脚之上，
+   形成稳定的「上紧下松」页脚基线；只有真正溢出的页才走 scrollable 兜底。 */
+.pbody{
+  flex:1;min-height:0;padding:var(--pad-t) var(--pad-x) var(--pad-b);
+  overflow:hidden;position:relative;
+  display:flex;flex-direction:column;
+}
+.pbody>*{flex:0 0 auto}
+.pbody>*:last-child{margin-bottom:auto}
+/* 正文内嵌图（方案总览页的产品截图）：必须显式限宽 + height:auto。
+   否则 img 的 height 属性会参与布局，1600px 视口下被拉成竖长条并撑出页面。 */
+.pbody img{max-width:100%;height:auto;border-radius:6px;box-shadow:0 3px 14px rgba(15,36,66,.12);display:block;margin:0 auto;cursor:zoom-in}
+.pbody.scrollable{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.pbody.scrollable>*:last-child{margin-bottom:var(--s5)}
+.pbody.scrollable::-webkit-scrollbar{width:6px}
+.pbody.scrollable::-webkit-scrollbar-thumb{background:var(--brand-line);border-radius:3px}
+/* 内容仍超页时的兜底：明确提示本页可继续滚动，避免被固定页脚截断而看不出还有内容 */
+.scrollhint{
+  position:absolute;left:0;right:0;bottom:0;height:26px;display:none;
+  align-items:flex-end;justify-content:center;pointer-events:none;
+  font-size:10.5px;color:var(--brand);letter-spacing:.5px;
+  background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.96) 62%);
+}
+.page.has-scroll .scrollhint{display:flex}
+.pfoot{
+  position:relative;flex:0 0 auto;height:38px;padding:0 var(--pad-x);gap:var(--s4);
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);
+}
+.pfoot::before{content:"";position:absolute;top:0;left:var(--pad-x);right:var(--pad-x);height:1px;background:var(--line)}
+.pfoot>*{position:relative}
+.pfoot .t{justify-self:start}
+.pfoot .no{
+  justify-self:center;font-family:var(--num);font-size:11px;font-weight:700;letter-spacing:.06em;
+  color:var(--brand);font-variant-numeric:tabular-nums;text-transform:none;
+}
+/* 页边章：像纸书页眉，弱化但可辨 */
+.pfoot .mk{justify-self:end;color:var(--brand-line);letter-spacing:0}
+/* ================= 封面 ================= */
+.cover{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:var(--pad-t) var(--pad-x) var(--pad-b);color:#fff;overflow:hidden;
+  background:
+    radial-gradient(620px 420px at 84% 4%,rgba(232,114,44,.45) 0%,transparent 60%),
+    radial-gradient(700px 520px at 0% 100%,rgba(24,104,192,.60) 0%,transparent 62%),
+    linear-gradient(158deg,#062a5e 0%,#0b4ea2 48%,#083a7c 100%);
+}
+/* 极细网格 + 右上角方向的光：避免大面积纯色发闷，同时给出"工程感" */
+.cover::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.55;
+  background-image:
+    linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px),
+    linear-gradient(180deg,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:34px 34px;
+  -webkit-mask-image:radial-gradient(125% 95% at 86% 4%,#000 0%,transparent 70%);
+  mask-image:radial-gradient(125% 95% at 86% 4%,#000 0%,transparent 70%);
+}
+.cover>*{position:relative}
+.cover .cv-top{
+  display:flex;align-items:center;gap:9px;
+  font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;opacity:.92;
+}
+.cover .cv-top .dot{width:7px;height:7px;background:var(--accent);border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 4px rgba(232,114,44,.22)}
+.cover .cv-mid{margin:auto 0;padding:var(--s4) 0}
+.cover .cv-eyebrow{
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(255,255,255,.64);margin-bottom:var(--s4);
+  display:flex;align-items:center;gap:var(--s2);
+}
+.cover .cv-eyebrow::after{content:"";width:34px;height:1px;background:rgba(255,255,255,.38)}
+.cover h1{
+  font-size:2.62em;line-height:1.13;margin:0 0 var(--s4);font-weight:800;
+  letter-spacing:.01em;text-shadow:0 2px 24px rgba(4,20,48,.3);
+}
+.cover .cv-sub{font-size:1.02em;line-height:1.78;color:rgba(255,255,255,.9);max-width:20em}
+.cover .cv-tags{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s5)}
+.cover .cv-tag{
+  border:1px solid rgba(255,255,255,.38);border-radius:999px;padding:4px 12px;
+  font-size:11.5px;letter-spacing:.04em;background:rgba(255,255,255,.10);
+  backdrop-filter:blur(2px);
+}
+.cover .cv-foot{
+  border-top:1px solid rgba(255,255,255,.28);padding-top:var(--s4);
+  display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s4);
+  font-size:11px;color:rgba(255,255,255,.84);letter-spacing:.04em;line-height:1.6;
+}
+.cover .cv-foot b{display:block;font-size:13px;font-weight:700;margin-bottom:4px;letter-spacing:.06em}
+.cover .cv-badge{
+  flex:0 0 auto;width:66px;height:66px;border-radius:16px;
+  background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.34);
+  display:grid;place-items:center;font-family:var(--num);
+  font-size:18px;font-weight:800;letter-spacing:.06em;
+}
+/* ================= 章节页 ================= */
+.sec{
+  position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  padding:var(--pad-t) var(--pad-x);color:#fff;overflow:hidden;
+  background:linear-gradient(150deg,#083671 0%,#0b4ea2 56%,#1566b8 100%);
+}
+.sec::before{
+  content:"";position:absolute;right:-90px;bottom:-120px;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle,rgba(232,114,44,.34) 0%,transparent 66%);pointer-events:none;
+}
+.sec>*{position:relative}
+.sec .sec-no{
+  font-family:var(--num);font-size:3.4em;font-weight:800;line-height:1;
+  color:rgba(255,255,255,.24);letter-spacing:-.02em;
+}
+.sec h2{font-size:1.86em;line-height:1.28;margin:var(--s3) 0 var(--s4);font-weight:800;letter-spacing:.02em}
+.sec .sec-lead{font-size:1em;line-height:1.8;color:rgba(255,255,255,.88);max-width:22em}
+.sec .sec-rule{width:48px;height:3px;background:var(--accent);border-radius:2px;margin:var(--s5) 0 0}
+.sec .sec-points{margin-top:var(--s5);display:flex;flex-direction:column;gap:var(--s2)}
+.sec .sec-points span{font-size:.9em;color:rgba(255,255,255,.9);display:flex;gap:9px;align-items:flex-start;line-height:1.6}
+.sec .sec-points span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);flex:0 0 auto;margin-top:.6em}
+/* ================= 正文排版 ================= */
+/* 页首组：kicker + 标题 + 导语，与正文之间用固定节奏分隔 */
+.pbody .kicker{
+  display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+  font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--brand);
+  background:var(--brand-soft);border:1px solid var(--brand-line);border-radius:999px;
+  padding:3px 11px 3px 9px;margin-bottom:var(--s4);
+}
+.pbody .kicker::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.pbody h3{
+  font-size:var(--fs-h2);line-height:var(--lh-h2);margin:0 0 var(--s3);
+  color:var(--ink);font-weight:800;letter-spacing:-.01em;
+}
+.pbody h3 .bar{display:none}
+.pbody h3::after{
+  content:"";display:block;width:38px;height:3px;border-radius:2px;
+  background:linear-gradient(90deg,var(--accent),rgba(232,114,44,0));margin-top:var(--s3);
+}
+.pbody .lead{
+  font-size:1.03em;line-height:1.72;color:var(--ink2);margin:0 0 var(--s5);
+  max-width:30em;text-wrap:pretty;
+}
+/* 分节小标题：用于一页内两个主题的分隔 */
+.pbody h4{
+  font-size:var(--fs-h3);line-height:var(--lh-h3);font-weight:700;color:var(--brand-deep);
+  margin:var(--s5) 0 var(--s3);letter-spacing:.01em;display:flex;align-items:center;gap:var(--s2);
+}
+.pbody h4::before{content:"";width:3px;height:1em;border-radius:2px;background:var(--brand);flex:0 0 auto}
+.pbody>*:first-child{margin-top:0}
+.pbody p{margin:0 0 var(--s3);max-width:30em}
+.pbody p:last-child{margin-bottom:0}
+.pbody ul,.pbody ol{margin:0 0 var(--s4);padding-left:1.1em;max-width:30em}
+.pbody li{margin-bottom:var(--s2);padding-left:var(--s1)}
+.pbody li::marker{color:var(--brand-line2);font-weight:700}
+.pbody strong{color:var(--brand-deep);font-weight:700}
+.pbody .muted{color:var(--ink3);font-size:.9em;line-height:1.66}
+.pbody .card .cd,.pbody .mini .md,.pbody .io .txt{line-height:1.6}
+/* 超窄屏兜底档（9.6–10.2px）收一档行高，换取更多整页放得下 */
+.pbody[style*="9.6px"] .card .cd,.pbody[style*="10.2px"] .card .cd{line-height:1.48}
+.pbody[style*="9.6px"] .step .sd,.pbody[style*="10.2px"] .step .sd{line-height:1.5}
+.pbody[style*="9.6px"] .lead,.pbody[style*="10.2px"] .lead{line-height:1.62;margin-bottom:var(--s4)}
+
+/* ================= 目录页 ================= */
+.toc-wrap{display:flex;flex-direction:column;gap:var(--s5);margin-top:clamp(var(--s4),3.2vh,var(--s7))}
+.toc-group{display:flex;flex-direction:column;gap:var(--s1)}
+.toc-cap{
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);
+  font-weight:700;display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2);
+}
+.toc-cap::after{content:"";flex:1;height:1px;background:var(--line)}
+/* 卷首：给一组轻底块，与正文章节形成"弱-强"对比 */
+.toc-front{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s2)}
+.toc-front .fi{
+  display:flex;align-items:baseline;gap:var(--s2);padding:7px 10px;
+  background:var(--brand-tint);border:1px solid var(--brand-line2);border-radius:8px;
+  font-size:.92em;color:var(--ink2);
+}
+.toc-front .fi .fp{margin-left:auto;font-family:var(--num);font-size:.82em;color:var(--brand);font-weight:700}
+/* 章节：章节号 + 标题 …… 页码（导点用 grid + 点线边界实现，比 flex 更稳） */
+.toc-sec-list{display:flex;flex-direction:column}
+.toc-sec{
+  display:grid;grid-template-columns:34px 1fr auto;align-items:baseline;
+  column-gap:var(--s2);padding:8px 0;border-bottom:1px solid var(--line-soft);
+  text-decoration:none;color:inherit;cursor:pointer;
+  background:none;border-left:0;border-right:0;border-top:0;font-family:inherit;width:100%;text-align:left;
+}
+.toc-sec:last-child{border-bottom:0}
+.toc-sec .sn{
+  font-family:var(--num);font-size:.86em;font-weight:700;color:var(--accent);
+  letter-spacing:.04em;font-variant-numeric:tabular-nums;
+}
+.toc-sec .st{
+  font-size:1.0em;font-weight:700;color:var(--ink);letter-spacing:.01em;
+  display:flex;align-items:baseline;gap:var(--s2);min-width:0;
+}
+.toc-sec .st .dots{
+  flex:1;min-width:12px;border-bottom:1px dotted var(--brand-line);transform:translateY(-.28em);
+}
+.toc-sec .sp{
+  font-family:var(--num);font-size:.86em;font-weight:700;color:var(--brand);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.toc-sec:hover{background:var(--brand-tint)}
+.toc-sec:hover .st{color:var(--brand)}
+.toc-foot{
+  display:flex;align-items:baseline;gap:var(--s2);padding-top:var(--s4);margin-top:var(--s1);
+  border-top:1.5px solid var(--brand-line2);font-size:.95em;
+}
+.toc-foot .sn{font-family:var(--num);font-weight:700;color:var(--accent);font-size:.86em}
+.toc-foot .st{font-weight:700;color:var(--ink)}
+.toc-foot .sp{margin-left:auto;font-family:var(--num);font-weight:700;color:var(--brand);font-size:.86em}
+.toc-note{font-size:.84em;color:var(--ink3);line-height:1.7;margin-top:var(--s4)}
+/* 超窄屏（落入 9.6px 兜底档）时，目录条目最多，单独再收一档间距 */
+.narrow .toc-wrap{gap:var(--s4);margin-top:var(--s3)}
+.narrow .toc-sec{padding:6px 0}
+.narrow .toc-front .fi{padding:5px 8px}
+.narrow .toc-note{margin-top:var(--s3)}
+/* 超窄屏兜底档（9.6px）下目录条目最多，整组再密排一次；
+   实测 430×932 时目录组 451px、需 390px，故 gap 与行内边距都要收。 */
+.pbody[style*="9.6px"] .toc-wrap{gap:7px;margin-top:2px}
+.pbody[style*="9.6px"] .toc-group{gap:0}
+.pbody[style*="9.6px"] .toc-sec{padding:2px 0}
+.pbody[style*="9.6px"] .toc-cap{margin-bottom:3px;font-size:9px}
+.pbody[style*="9.6px"] .toc-front{gap:3px}
+.pbody[style*="9.6px"] .toc-front .fi{padding:3px 6px}
+.pbody[style*="9.6px"] .toc-note{display:none}
+.pbody[style*="9.6px"] .kicker{padding:2px 8px;margin-bottom:6px}
+.pbody[style*="9.6px"] h3::after{margin-top:5px}
+.pbody[style*="9.6px"] h3{margin-bottom:6px}
+.toc-note kbd{
+  font-family:var(--num);font-size:.92em;background:var(--brand-soft);color:var(--brand);
+  border:1px solid var(--brand-line);border-radius:4px;padding:0 5px;
+}
+
+/* ================= 卡片 ================= */
+.cards{display:flex;flex-direction:column;gap:var(--s3)}
+.card{
+  border:1px solid var(--line);border-radius:11px;padding:var(--s3) var(--s4);
+  background:var(--paper);box-shadow:0 1px 2px rgba(15,36,66,.04);
+}
+.card .ct{
+  font-weight:700;color:var(--ink);font-size:1.0em;margin-bottom:var(--s2);
+  display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;line-height:1.45;
+}
+.card .ct .num{
+  flex:0 0 auto;width:21px;height:21px;border-radius:7px;
+  background:var(--brand-soft);color:var(--brand);border:1px solid var(--brand-line2);
+  font-size:11px;display:grid;place-items:center;font-weight:800;font-family:var(--num);
+}
+.card .cd{color:var(--ink2);font-size:.94em;line-height:1.65}
+.card.acc{border-left:3px solid var(--accent);background:var(--accent-soft);border-color:var(--accent-line)}
+.card.tint{background:var(--brand-tint);border-color:var(--brand-line2)}
+/* 网格 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+@media(max-width:520px){ .grid3{grid-template-columns:1fr} }
+@media(min-width:521px) and (max-width:820px){ .grid3{grid-template-columns:1fr 1fr} }
+/* 三栏等宽卡：文字长度需要接近，否则会出现一格两行、一格一行的锯齿 */
+.grid3 .md{min-height:2.4em}
+.mini{
+  border:1px solid var(--line);border-radius:10px;padding:var(--s3);
+  background:var(--paper);display:flex;flex-direction:column;gap:var(--s1);
+}
+.mini .mt{
+  font-weight:700;color:var(--brand-deep);font-size:.96em;line-height:1.4;
+  display:flex;align-items:baseline;gap:6px;
+}
+.mini .mt::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);flex:0 0 auto;transform:translateY(-2px)}
+.mini .md{font-size:.86em;color:var(--ink2);line-height:1.62}
+/* 清单：名称在左、说明在右，适合"短名 + 一行描述"的场景，避免窄列里断成两三个字一行 */
+.deflist{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.def{
+  display:grid;grid-template-columns:118px 1fr;gap:var(--s4);align-items:baseline;
+  padding:var(--s3) 0;border-bottom:1px solid var(--line-soft);
+}
+.def .dt{
+  font-weight:700;color:var(--ink);font-size:.97em;line-height:1.5;
+  display:flex;align-items:baseline;gap:var(--s2);
+}
+.def .dt::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);flex:0 0 auto;transform:translateY(-2px)}
+.def .dd{font-size:.92em;color:var(--ink2);line-height:1.66}
+.def:last-child{border-bottom:0}
+@media(max-width:640px){ .def{grid-template-columns:1fr;gap:var(--s1)} }
+
+/* ================= 输入 → 过程 → 交付物 ================= */
+.io{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s1)}
+.io .row{display:grid;grid-template-columns:46px 1fr;gap:var(--s2);align-items:start}
+.io .tag{
+  text-align:center;font-size:10px;font-weight:700;letter-spacing:.08em;
+  padding:3px 0;border-radius:6px;
+  background:var(--brand-soft);color:var(--brand);border:1px solid var(--brand-line2);
+}
+.io .tag.proc{background:var(--line-soft);color:#4a6b93;border-color:var(--line)}
+.io .tag.out{background:var(--accent-soft);color:#b8541a;border-color:var(--accent-line)}
+.io .txt{font-size:.92em;color:var(--ink2);line-height:1.62;padding-top:1px}
+
+/* ================= 步骤 ================= */
+.steps{display:flex;flex-direction:column;margin-top:var(--s2)}
+.step{display:grid;grid-template-columns:26px 1fr;gap:var(--s3);position:relative;padding-bottom:var(--s4)}
+.step:last-child{padding-bottom:0}
+.step .sn{
+  width:26px;height:26px;border-radius:50%;background:var(--paper);color:var(--brand);
+  border:1.5px solid var(--brand-line);font-size:11.5px;font-weight:800;font-family:var(--num);
+  display:grid;place-items:center;z-index:1;
+}
+.step:not(:last-child)::before{
+  content:"";position:absolute;left:12.5px;top:28px;bottom:2px;width:1px;
+  background:linear-gradient(180deg,var(--brand-line),var(--brand-line2));
+}
+.step .st{font-weight:700;color:var(--ink);font-size:1.0em;line-height:1.45;margin-bottom:2px}
+.step .sd{font-size:.92em;color:var(--ink2);line-height:1.64}
+
+/* ================= 徽标 / 提示块 ================= */
+.pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10.5px;font-weight:700;letter-spacing:.02em;
+  padding:2px 9px;border-radius:999px;white-space:nowrap;
+  background:var(--ok-soft);color:var(--ok);
+}
+.pill::before{content:"";width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.7}
+.pill.warn{background:var(--accent-soft);color:#b8541a}
+.pill.info{background:var(--brand-soft);color:var(--brand)}
+.callout{
+  border-radius:11px;padding:var(--s3) var(--s4);
+  background:var(--brand-tint);border:1px solid var(--brand-line2);
+  font-size:.92em;color:var(--ink2);line-height:1.68;
+}
+.callout b,.callout strong{color:var(--brand-deep)}
+.callout.acc{background:var(--accent-soft);border-color:var(--accent-line);color:#7a3c10}
+.callout.acc b{color:#8f4514}
+/* 要点清单 */
+.keylist{margin:0;padding:0;list-style:none}
+.keylist li{position:relative;padding-left:var(--s5);margin-bottom:var(--s3);font-size:.95em;color:var(--ink2);line-height:1.66}
+.keylist li:last-child{margin-bottom:0}
+.keylist li::before{
+  content:"";position:absolute;left:2px;top:.52em;width:9px;height:9px;border-radius:2.5px;
+  background:var(--brand-soft);border:1.5px solid var(--brand);
+}
+.keylist.warn li::before{background:var(--accent-soft);border-color:var(--accent)}
+
+/* ================= 指标 ================= */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+.kpi{
+  border:1px solid var(--line);border-radius:11px;padding:var(--s3) var(--s2) var(--s3);
+  text-align:center;background:var(--paper);
+  display:flex;flex-direction:column;gap:2px;
+}
+.kpi .kv{font-size:1.62em;font-weight:800;color:var(--brand);line-height:1.05;font-family:var(--num);letter-spacing:-.02em}
+.kpi .kl{font-size:10.5px;color:var(--ink3);line-height:1.4;letter-spacing:.02em}
+
+/* ================= 表格 ================= */
+table.tb2{width:100%;border-collapse:collapse;font-size:.9em}
+table.tb2 th,table.tb2 td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;line-height:1.6}
+table.tb2 th{background:var(--brand-tint);color:var(--brand-deep);font-weight:700;white-space:nowrap}
+table.tb2 tr:not(:last-child) td{border-bottom-color:var(--line-soft)}
+table.tb2 td{color:var(--ink2)}
+/* 要点清单 */
+.keylist{margin:0;padding:0;list-style:none}
+.keylist li{
+  position:relative;padding-left:20px;margin-bottom:7px;font-size:.95em;color:var(--ink2);line-height:1.58;
+}
+.keylist li::before{
+  content:"";position:absolute;left:2px;top:.55em;width:8px;height:8px;border-radius:2px;
+  background:var(--brand-soft);border:1.5px solid var(--brand);
+}
+.keylist.warn li::before{background:#fdf3e7;border-color:var(--accent)}
+/* ================= 图片页 ================= */
+/* 页面比例 1:1.414 与截图 1.84:1 不同，按可用宽度等比展示，绝不裁切。 */
+.imgpage{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--paper)}
+.imgpage .ibar{
+  flex:0 0 auto;padding:var(--pad-t) var(--pad-x) var(--s4);
+  border-bottom:1px solid var(--line);
+}
+.imgpage .ibar b{
+  display:flex;align-items:baseline;gap:var(--s2);
+  font-size:var(--fs-h2);color:var(--ink);font-weight:800;line-height:var(--lh-h2);letter-spacing:-.01em;
+}
+.imgpage .ibar span{display:block;font-size:.92em;color:var(--ink2);line-height:1.66;margin-top:var(--s2);max-width:32em}
+.imgpage .iimg{
+  flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;
+  gap:var(--s4);padding:var(--s5) var(--pad-x);min-height:0;overflow:hidden;
+}
+.imgpage .iimg .shot{width:100%;margin:0;text-align:center}
+.imgpage .iimg .shot img{max-height:calc(var(--ph, 566px) - 250px)}
+@media(max-width:640px){ .imgpage .iimg .shot img{max-height:calc(var(--ph, 566px) - 200px)} }
+.imgpage .iimg img{
+  display:block;width:100%;height:auto;object-fit:contain;
+  border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 6px 24px rgba(15,36,66,.13),0 1px 3px rgba(15,36,66,.06);
+  cursor:zoom-in;background:var(--paper);
+}
+.imgpage .iimg .shot figcaption{
+  font-size:11px;color:var(--ink3);margin-top:var(--s3);line-height:1.55;text-align:center;
+}
+.imgpage .ifoot{
+  flex:0 0 auto;padding:0 var(--pad-x) var(--s4);
+  font-size:10px;color:var(--ink4);text-align:right;line-height:1.5;letter-spacing:.04em;
+}
+.imgpage .ifoot::before{content:"";display:block;height:1px;background:var(--line);margin-bottom:var(--s3)}
+/* 落款页 */
+.signature{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.sig-row{display:flex;gap:10px;align-items:baseline;font-size:.95em;color:var(--ink2)}
+.sig-row .sk{flex:0 0 72px;color:var(--ink3);font-size:.88em}
+.sig-row .sv{font-weight:600;color:var(--brand-deep)}
+/* 合作意向表单（内联于手册页，提交门户同源的 /api/portal/orders） */
+.f-form{display:flex;flex-direction:column;gap:6px}
+.f-row{display:flex;flex-direction:column;gap:2px}
+.f-row>span{font-size:.85em;color:var(--ink2);font-weight:600}
+.f-row .req{color:#c0392b;font-style:normal;font-weight:400}
+.f-row .opt{color:var(--ink3);font-style:normal;font-weight:400}
+.f-row input[type=text],.f-row input[type=tel],.f-row textarea{
+  width:100%;border:1px solid var(--line);border-radius:7px;padding:4px 8px;
+  font-size:.9em;font-family:inherit;color:var(--ink);background:#fff;
+}
+.f-row input:focus,.f-row textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft)}
+.f-row textarea{resize:none}
+.f-chips{display:flex;flex-wrap:wrap;gap:5px}
+.f-chips label{
+  display:inline-flex;align-items:center;gap:4px;font-size:.84em;color:var(--ink2);
+  border:1px solid var(--line);border-radius:999px;padding:2px 8px;cursor:pointer;background:#fff;
+}
+.f-chips label.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-deep);font-weight:600}
+.f-chips input{margin:0;vertical-align:middle}
+.f-submit{
+  border:0;border-radius:8px;background:linear-gradient(140deg,var(--brand),var(--brand-mid));color:#fff;
+  font-size:.94em;font-weight:700;padding:7px 12px;cursor:pointer;font-family:inherit;letter-spacing:.5px;
+}
+.f-submit:disabled{opacity:.6;cursor:default}
+.f-msg{font-size:.84em;line-height:1.45;min-height:1.2em}
+.f-msg.err{color:#c0392b}
+.f-msg.ok{color:var(--ok)}
+.f-hint{font-size:.78em;color:var(--ink3);line-height:1.45}
+/* 联系方式块 */
+.contact{
+  border-radius:10px;padding:13px 15px;background:linear-gradient(140deg,#07306b,#0b4ea2);
+  color:#fff;display:flex;align-items:center;gap:14px;
+}
+.contact .cl{flex:1}
+.contact .cl b{display:block;font-size:1.5em;font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums}
+.contact .cl span{display:block;font-size:11px;color:rgba(255,255,255,.82);margin-top:2px}
+.contact .cqr{flex:0 0 auto;width:74px;height:74px;background:#fff;border-radius:8px;padding:5px;display:grid;place-items:center}
+.contact .cqr svg{width:100%;height:100%;display:block}
+/* 目录抽屉 */
+.mask{
+  position:fixed;inset:0;background:rgba(10,22,40,.42);backdrop-filter:blur(2px);
+  opacity:0;pointer-events:none;transition:.25s;z-index:80;
+}
+.mask.on{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;height:100%;width:min(430px,92vw);background:#fff;z-index:90;
+  transform:translateX(105%);transition:transform .3s cubic-bezier(.4,.05,.2,1);
+  display:flex;flex-direction:column;box-shadow:-14px 0 44px rgba(10,22,40,.22);
+}
+.drawer.on{transform:translateX(0)}
+.drawer .dh{
+  flex:0 0 auto;padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;
+}
+.drawer .dh b{font-size:15px;color:var(--brand-deep)}
+.drawer .dh .dc{
+  margin-left:auto;border:0;background:var(--line-soft);color:var(--ink2);width:30px;height:30px;
+  border-radius:8px;cursor:pointer;font-size:15px;line-height:1;font-family:inherit;
+}
+.drawer .db{flex:1;overflow-y:auto;padding:15px 18px 24px}
+.toc-l{margin:0;padding:0;list-style:none}
+.toc-l li{margin-bottom:6px}
+.toc-a{
+  width:100%;display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:#fff;
+  border-radius:9px;padding:8px 10px;cursor:pointer;font-family:inherit;text-align:left;transition:.16s;
+}
+.toc-a:hover{background:var(--brand-soft);border-color:var(--brand-line);transform:translateX(2px)}
+.toc-a .n{font-size:11px;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.toc-a .t{flex:1;font-size:13px;color:var(--ink);line-height:1.4}
+.toc-a .p{font-size:11px;color:var(--ink3);flex:0 0 auto;font-variant-numeric:tabular-nums}
+.toc-sec .t{font-weight:700;color:var(--brand-deep)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:9px}
+.th{
+  border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px;cursor:pointer;
+  font-family:inherit;text-align:left;transition:.16s;
+}
+.th:hover{border-color:var(--brand-line);background:var(--brand-soft)}
+.th.cur{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 1px var(--brand) inset}
+.th .tn{display:block;font-size:10.5px;color:var(--brand);font-weight:700;font-variant-numeric:tabular-nums}
+.th .tt2{display:block;font-size:12px;color:var(--ink);margin-top:3px;line-height:1.4}
+/* 灯箱 */
+.lightbox{
+  position:fixed;inset:0;background:rgba(6,14,26,.9);z-index:100;display:none;
+  align-items:center;justify-content:center;padding:24px;cursor:zoom-out;
+}
+.lightbox.on{display:flex}
+.lightbox img{max-width:100%;max-height:100%;box-shadow:0 20px 60px rgba(0,0,0,.5);border-radius:4px}
+/* 底栏 */
+.bottombar{
+  flex:0 0 46px;height:46px;display:flex;align-items:center;gap:12px;padding:0 16px;
+  background:rgba(255,255,255,.88);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  position:relative;z-index:55;
+}
+.progress{flex:1;height:5px;background:var(--line-soft);border-radius:4px;overflow:hidden;cursor:pointer;position:relative}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),#1780d0);border-radius:4px;transition:width .3s}
+.pageno{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pageno b{color:var(--brand);font-size:14px}
+.hint{
+  position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+  background:rgba(10,22,40,.82);color:#fff;font-size:12px;padding:7px 14px;border-radius:999px;
+  white-space:nowrap;pointer-events:none;transition:opacity .6s;z-index:50;
+}
+@media(max-width:900px){.hint{display:none}}
+/* 提示条 */
+.toast{
+  position:fixed;left:50%;bottom:70px;transform:translate(-50%,10px);background:rgba(10,22,40,.9);
+  color:#fff;font-size:12.5px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:110;max-width:86vw;text-align:center;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+/* 移动端 */
+@media(max-width:640px){
+  .reader{padding:10px 8px}
+  .pbody{padding:18px 18px 6px}
+  .pfoot{padding:0 18px}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  .cover{padding:26px 22px}
+  .cover h1{font-size:2.05em}
+  .sec{padding:28px 24px}
+  .imgpage .ibar{padding:16px 18px 8px}
+  .imgpage .iimg{padding:8px 12px}
+  .imgpage .ifoot{padding:6px 18px 10px}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" fill="none"><path d="M16 4.6 23.4 14h-4.6v5.2h-5.6V14H8.6L16 4.6Z" fill="#fff"/><rect x="12.4" y="20.4" width="7.2" height="3" rx="1" fill="#e8722c"/></svg>
+    </span>
+    <span class="tt">企业工作台定制解决方案<small>WorkDSH · 企业级 AI 智能体工作台</small></span>
+  </div>
+  <span class="spacer"></span>
+  <div class="tools">
+    <button class="tb" id="btnFirst" title="回到封面">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 5v14L8 12l10-7Z"/><path d="M6 5v14"/></svg>
+    </button>
+    <button class="tb" id="btnToc" title="目录"><span class="lbl">目录</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </button>
+    <button class="tb" id="btnThumb" title="缩略图"><span class="lbl">缩略图</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+    </button>
+    <button class="tb" id="btnMode" title="切换单页 / 双页"><span class="lbl">双页</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5.5C10 4 7.4 3.6 4 3.8v14c3.4-.2 6 .2 8 1.7 2-1.5 4.6-1.9 8-1.7v-14c-3.4-.2-6 .2-8 1.7Z"/><path d="M12 5.5v14"/></svg>
+    </button>
+    <button class="tb" id="btnShare" title="复制本页链接"><span class="lbl">分享</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></svg>
+    </button>
+    <button class="tb" id="btnFull" title="全屏">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="reader" id="reader">
+  <div class="stage" id="stage">
+    <div class="book closed" id="book"></div>
+  </div>
+  <div class="hint" id="hint">点击页面右侧翻页 ｜ ← → 键翻页 ｜ 滚轮 / 左右滑动也可以</div>
+</main>
+
+<footer class="bottombar">
+  <button class="tb" id="btnPrev" title="上一页">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+  </button>
+  <button class="tb" id="btnNext" title="下一页">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+  </button>
+  <span class="pageno"><b id="curNo">1</b> / <span id="totNo">1</span></span>
+  <div class="progress" id="progress" title="点击跳转"><i id="progressBar"></i></div>
+</footer>
+
+<div class="mask" id="mask"></div>
+<aside class="drawer" id="drawer" aria-label="目录与缩略图">
+  <div class="dh"><b id="drawerTitle">目录</b><button class="dc" id="drawerClose" title="关闭">✕</button></div>
+  <div class="db" id="drawerBody"></div>
+</aside>
+<div class="lightbox" id="lightbox"><img id="lightboxImg" alt="界面截图放大"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   企业工作台定制解决方案 · 在线翻页电子书刊
+   承载结构复用自 /portal/products/2026Q4-zhengqi-fuwu-shouce.html
+   （#p=N 页码深链、双页对开 / 单页、翻开动画、目录与缩略图）
+   本页为纯静态：全部页面内容内联，无后端接口依赖。
+   ============================================================ */
+var PAGES = [];
+var N = 0;
+var mode = 'spread';
+var total = 0, L = 0, sheets = [], busy = false;
+var book = null, stage = null, reader = null;
+
+function esc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+function indexOfId(id){ for(var i=0;i<PAGES.length;i++){ if(PAGES[i].id===id) return i; } return -1; }
+
+/* 界面截图使用同源既有的小尺寸 WebP 变体：原图是 ~3000px 宽的 PNG（0.4–0.8MB），
+   而书页里最大只显示到 ~600px 宽，整张解码进 GPU 纹理是纯粹的浪费，
+   反复 resize 时还会触发合成器重栅格化。变体在各资产之间命名并不统一
+   （skills 只有 -680/-1360，其余是 -360/-720），因此逐项登记，避免静默 404。 */
+/* 与 layout() 同一套尺寸公式，只为让 <img sizes> 贴近真实显示宽度：
+   sizes 不准会选到分辨率不足的变体（曾出现 378px 原图撑 489px 槽位）。 */
+function sizesForBook(){
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var availH = vh - 56 - 46 - 44;
+  var availW = vw - 32;
+  var force = document.documentElement.dataset.forceMode;
+  var spread = force ? (force === 'spread') : (vw >= 900);
+  var pw;
+  if(spread){
+    var ph = Math.min(availH, 860);
+    pw = Math.round(ph/1.414);
+    if(pw*2 > availW) pw = Math.floor(availW/2);
+  } else {
+    pw = Math.min(availW, 560);
+    var ph2 = Math.round(pw*1.414);
+    if(ph2 > availH){ ph2 = availH; pw = Math.round(ph2/1.414); }
+  }
+  /* 按 2x 设备像素比上报：截图页最宽也就 ~600px，若只报 1x，
+    高分屏（DPR 2）会选到分辨率不足的变体而发虚。 */
+  var layout = (vw < 640) ? (pw - 36) : (pw - 44);
+  return Math.round(layout * 2) + 'px';
+}
+
+/* 站点既有资产的多分辨率登记表。
+   后台只保存基名（skills / ppt / library / team），由这里解析成真实的
+   srcset 与尺寸 —— 变体命名在各资产之间并不统一（skills 只有 -680/-1360），
+   所以逐项登记，避免静默 404 造成空图。 */
+var ASSETS = {
+  skills:  { variants:[['/portal/assets/skills-680.webp',680],['/portal/assets/skills-1360.webp',1360]], w:1360, h:739 },
+  ppt:     { variants:[['/portal/assets/ppt-360.webp',360],['/portal/assets/ppt-720.webp',720]],          w:720,  h:393 },
+  library: { variants:[['/portal/assets/library-360.webp',360],['/portal/assets/library-720.webp',720]],  w:720,  h:395 },
+  team:    { variants:[['/portal/assets/team-360.webp',360],['/portal/assets/team-720.webp',720]],        w:720,  h:393 },
+  dashboard:{ variants:[['/portal/assets/dashboard-1120.webp',1120]], w:1120, h:612 },
+};
+
+/* 把页面的 asset 描述解析成 { src, variants, w, h }：
+   · 数据里给了完整对象（静态单文件）→ 直接用；
+   · 数据里只有基名（后台驱动）→ 查登记表；
+   · 都没有但给了 image 文件名 → 走媒体目录。 */
+function resolveAsset(p){
+  var a = p.asset;
+  if(a && typeof a === 'object' && (a.src || (a.variants && a.variants.length))) return a;
+  var key = typeof a === 'string' ? a : '';
+  if(key && ASSETS[key]) return ASSETS[key];
+  if(p.image){
+    var url = (p.image.indexOf('/') === 0) ? p.image : (MEDIA_BASE + encodeURIComponent(p.image));
+    return { src:url, variants:[[url,0]], w:p.imageW||720, h:p.imageH||393 };
+  }
+  return { src:'', variants:[], w:720, h:393 };
+}
+
+/* 眉标（kicker）由数据字段 theme 渲染，不再写进 body：
+   后台编辑正文时不会误删眉标，眉标本身也可在后台单独改。 */
+function kickerHTML(p){
+  if(!p.theme) return '';
+  var isCover = /^\s*<div class="cover"/.test(String(p.body||''));
+  if(isCover) return '';
+  return '<span class="kicker">'+esc(p.theme)+'</span>';
+}
+/* 页边章：取 theme 里的章节号；没有编号的页留空 */
+function chapterMark(p){
+  var m = String(p.theme||'').match(/^\s*(\d\d)/);
+  return m ? m[1] : '';
+}
+
+function pageHTML(i){
+  if(i>=PAGES.length) return '<div class="page blank"></div>';
+  var p = PAGES[i];
+  if(p.type==='img' || p.image){
+    /* 整页配图：asset 可能是完整对象，也可能只是基名，统一由此解析 */
+    var a = resolveAsset(p);
+    var list = (a.variants && a.variants.length) ? a.variants : (a.src ? [[a.src, 0]] : []);
+    var srcset = list.map(function(v){ return v[0] + (v[1] ? ' ' + v[1] + 'w' : ''); }).join(', ');
+    var src = a.src || p.image || '';
+    var figs = '<figure class="shot">'
+      + '<img class="zoomable" loading="lazy" decoding="async" src="' + esc(src) + '"'
+      + (srcset ? ' srcset="' + esc(srcset) + '"' : '')
+      + ' sizes="' + sizesForBook() + '"'
+      + ' width="' + (a.w||720) + '" height="' + (a.h||393) + '" alt="' + esc(p.alt||p.title) + '">'
+      + (p.caption ? '<figcaption>'+esc(p.caption)+'</figcaption>' : '') + '</figure>';
+    return '<div class="page"><div class="imgpage">'
+      + '<div class="ibar"><b>'+esc(p.title)+'</b><span>'+esc(p.subtitle)+'</span></div>'
+      + '<div class="iimg">'+figs+'</div>'
+      + '<div class="ifoot">'+esc(p.foot||'')+'</div></div></div>';
+  }
+  var body = String(p.body||'');
+  /* 封面/章节页整页自带背景，不套 pbody 与页脚 */
+  if(p.type==='cover' || p.type==='sec' && /^\s*<div class="(cover|sec)"/.test(body)){
+    return '<div class="page">'+body+'</div>';
+  }
+  var foot = '<div class="pfoot">'
+    + '<span class="t">企业工作台定制解决方案</span>'
+    + '<span class="no">'+pad2(i+1)+' / '+pad2(N)+'</span>'
+    + '<span class="mk">'+(chapterMark(p) ? esc(chapterMark(p)) : '')+'</span></div>';
+  return '<div class="page"><div class="pbody" data-pg="'+i+'">'
+    + kickerHTML(p) + body + '</div>'
+    + '<div class="scrollhint">↓ 本页内容较多，可继续向下滚动</div>'+foot+'</div>';
+}
+
+function build(){
+  var prevPage = 0;
+  if(total) prevPage = focusPage();
+  book.innerHTML = '<div class="spine"></div>';
+  book.classList.toggle('single', mode==='single');
+  total = (mode==='single') ? N : Math.ceil(N/2);
+  sheets = [];
+  for(var k=0;k<total;k++){
+    var el = document.createElement('div');
+    el.className='sheet'; el.dataset.k=k;
+    var front, back;
+    if(mode==='single'){ front = pageHTML(k); back = '<div class="page blank"></div>'; }
+    else { front = pageHTML(2*k); back = pageHTML(2*k+1); }
+    el.innerHTML = '<div class="face front"><span class="edge"></span>'+front+'<span class="corner"></span></div>'
+                 + '<div class="face back"><span class="edge"></span>'+back+'<span class="corner"></span></div>';
+    book.appendChild(el);
+    sheets.push(el);
+  }
+  L = leafForPage(prevPage);
+  if(total) L = Math.max(0, Math.min(L, maxLeaf()));
+  apply();
+  initOrderForm();
+  requestAnimationFrame(fitAll);
+}
+
+function focusPage(){ return (mode==='single') ? L : 2*L; }
+function maxLeaf(){ return (mode==='single') ? total-1 : (N % 2 === 0 ? total : total-1); }
+function leafForPage(i){
+  if(mode==='single') return i;
+  return (i % 2 === 0) ? i/2 : (i+1)/2;
+}
+
+function apply(){
+  sheets.forEach(function(el){
+    var k = +el.dataset.k;
+    var flipped = k < L;
+    el.classList.toggle('flipped', flipped);
+    el.style.zIndex = flipped ? (k+1) : (total - k);
+    el.style.transition = '';
+    /* 只有当前可见的两张面保留投影，其余面去掉投影，避免叠影 */
+    var front = el.querySelector('.face.front'), back = el.querySelector('.face.back');
+    var topFlipped = flipped && (k === L-1);
+    var topUnflipped = !flipped && (k === L);
+    if(front) front.classList.toggle('flat', !topUnflipped);
+    if(back) back.classList.toggle('flat', !topFlipped);
+  });
+  book.classList.toggle('closed', L===0);
+  book.classList.toggle('open', L>0);
+  markTurnable();
+  updateChrome();
+}
+
+/* 标出"当前可翻的那张纸"（折角提示只出现在它上面），以及是否还有可翻空间 */
+function markTurnable(){
+  sheets.forEach(function(el, k){
+    el.classList.toggle('now', k === L);
+  });
+  book.classList.toggle('can-turn', L < maxLeaf());
+}
+
+/* 深链：#p=N 表示第 N 页。用 replaceState 写地址栏（不产生历史记录），
+   刷新、收藏、转发都能回到同一页；只认 #p=N，忽略无关 hash。 */
+function pageFromHash(){
+  var m = /(?:^|[#&])p=(\d+)/.exec(location.hash);
+  if(!m) return 0;
+  var n = parseInt(m[1], 10);
+  return (isFinite(n) && n > 0) ? n : 0;
+}
+/* pageFromHash 返回 1-based 页码，此处不按 N 裁剪：启动早期 N 还是 0。 */
+function pageIndexFromHash(){
+  var n = pageFromHash();
+  return n > 0 ? Math.max(0, Math.min(n-1, N-1)) : -1;
+}
+function syncHash(n){
+  if(!history.replaceState) return;
+  var want = '#p=' + n;
+  if(location.hash !== want) history.replaceState(null, '', location.pathname + location.search + want);
+}
+
+function updateChrome(){
+  var cur = Math.min(focusPage(), N-1);
+  document.getElementById('curNo').textContent = cur+1;
+  document.getElementById('totNo').textContent = N;
+  var pct = N>1 ? (cur/(N-1))*100 : 100;
+  document.getElementById('progressBar').style.width = pct.toFixed(1)+'%';
+  document.getElementById('btnPrev').disabled = (L<=0);
+  document.getElementById('btnNext').disabled = (L>=maxLeaf());
+  document.getElementById('btnFirst').disabled = (L<=0);
+  syncHash(cur+1);
+}
+
+function next(){
+  if(busy || L>=maxLeaf()) return;
+  var el = sheets[L];
+  busy = true;
+  el.style.zIndex = 999;
+  el.classList.add('turning');
+  requestAnimationFrame(function(){ el.classList.add('flipped'); });
+  setTimeout(function(){
+    L++;
+    el.classList.remove('turning');
+    busy = false;
+    apply();
+  }, 840);
+}
+function prev(){
+  if(busy || L<=0) return;
+  var el = sheets[L-1];
+  busy = true;
+  L--;
+  el.style.zIndex = 999;
+  el.classList.add('turning');
+  apply();
+  sheets.forEach(function(e){ if(+e.dataset.k===L) e.style.zIndex = 999; });
+  setTimeout(function(){ el.classList.remove('turning'); busy=false; apply(); }, 840);
+}
+function goto(page){
+  page = Math.max(0, Math.min(page, N-1));
+  var target = Math.min(leafForPage(page), maxLeaf());
+  closeDrawer();
+  if(target===L) return;
+  var steps = Math.abs(target-L);
+  if(steps>3){ doJump(target); return; }
+  (function step(){
+    if(L===target) return;
+    if(L<target){ next(); } else { prev(); }
+    setTimeout(step, 900);
+  })();
+}
+/* 直接跳页：淡出 → 立刻把每张纸翻到位 → 淡入。
+   用 jumpToken 作废前一次尚未生效的跳转，否则连续跳页时两个 230ms 回调互相覆盖，
+   L 会停在中途（例如点第 6 页却停在第 9 页）。 */
+var jumpToken = 0, jumpTimer = null;
+function doJump(target){
+  var token = ++jumpToken;
+  busy = true;
+  book.style.transition = 'opacity .22s';
+  book.style.opacity = '0.06';
+  clearTimeout(jumpTimer);
+  jumpTimer = setTimeout(function(){
+    if(token !== jumpToken) return;
+    L = Math.max(0, Math.min(target, maxLeaf()));
+    sheets.forEach(function(el){
+      var k = +el.dataset.k;
+      el.style.transition = 'none';
+      var flipped = k<L;
+      el.classList.toggle('flipped', flipped);
+      el.style.zIndex = flipped ? (k+1) : (total-k);
+      var front = el.querySelector('.face.front'), back = el.querySelector('.face.back');
+      if(front) front.classList.toggle('flat', !(!flipped && k===L));
+      if(back) back.classList.toggle('flat', !(flipped && k===L-1));
+      void el.offsetWidth;
+      el.style.transition = '';
+    });
+    book.classList.toggle('closed', L===0);
+    book.classList.toggle('open', L>0);
+    book.style.opacity = '1';
+    book.style.transition = '';
+    busy = false;
+    markTurnable();
+    updateChrome();
+  }, 200);
+}
+
+/* 自动缩排：内容超页时逐级缩小字号；缩到下限仍放不下才改为页内可滚动（兜底）。
+   单页模式同样先缩字号：窄屏若只靠滚动兜底，固定页脚会压住被截断的正文，观感像坏页。
+   字号下限两边都是 9.6px；对开（桌面）先用较大的中间档，单页（手机）依次下探以保证整页放得下（仍超页才页内滚动）。 */
+function fitAll(){
+  var narrow = document.documentElement.classList.contains('narrow');
+  var sizes = narrow ? [13.5,13,12.5,12,11.4,10.8,10.2,9.6] : [13.5,12.8,12.1,11.4,10.8,10.2,9.6];
+  document.querySelectorAll('.pbody').forEach(function(body){
+    body.style.fontSize = sizes[0]+'px';
+    body.classList.remove('scrollable');
+    var i = 0;
+    while(body.scrollHeight > body.clientHeight + 2 && i < sizes.length-1){
+      i++;
+      body.style.fontSize = sizes[i]+'px';
+    }
+    var scroll = body.scrollHeight > body.clientHeight + 2;
+    body.classList.toggle('scrollable', scroll);
+    var pg = body.closest('.page');
+    if(pg) pg.classList.toggle('has-scroll', scroll);
+  });
+}
+
+/* 单页模式：不加 .narrow 的滚动兜底（改为逐级缩小字号），但标记 narrow 供样式区分 */
+function layout(){
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var availH = vh - 56 - 46 - 44;
+  var availW = vw - 32;
+  var pw, ph, want = (vw >= 900) ? 'spread' : 'single';
+  if(document.documentElement.dataset.forceMode) want = document.documentElement.dataset.forceMode;
+  if(want==='spread'){
+    ph = Math.min(availH, 860);
+    pw = Math.round(ph/1.414);
+    if(pw*2 > availW){ pw = Math.floor(availW/2); ph = Math.round(pw*1.414); }
+  } else {
+    pw = Math.min(availW, 560);
+    ph = Math.round(pw*1.414);
+    if(ph > availH){ ph = availH; pw = Math.round(ph/1.414); }
+  }
+  pw = Math.max(pw, 200); ph = Math.max(ph, 280);
+  var changed = (want !== mode);
+  /* 切换单页/双页时，L 的含义会从「对开索引」变成「页码索引」（或相反）。
+     先按旧模式换算出「当前正在看的页」，build() 再用新模式换算回 L，
+     否则跨断点重排会把读者丢到别的页（实测第 21 页→第 11 页），地址栏页码也被改写。 */
+  var curPageNow = total ? Math.min(focusPage(), N-1) : 0;
+  mode = want;
+  document.documentElement.classList.toggle('narrow', mode==='single');
+  document.documentElement.style.setProperty('--pw', pw+'px');
+  document.documentElement.style.setProperty('--ph', ph+'px');
+  var lbl = document.getElementById('btnMode').querySelector('.lbl');
+  if(lbl) lbl.textContent = (mode==='spread' ? '双页' : '单页');
+  if(changed || !sheets.length){
+    total = (mode==='single') ? N : Math.ceil(N/2);
+    L = Math.max(0, Math.min(leafForPage(curPageNow), maxLeaf()));
+    build();
+  } else {
+    requestAnimationFrame(fitAll);
+  }
+}
+
+/* ---------- 抽屉 / 灯箱 ---------- */
+var mask, drawer, drawerBody, drawerTitle;
+function pageName(p){ return esc(p.title || p.label || ''); }
+function openDrawer(kind){
+  if(kind==='toc'){
+    /* 全书逐页目录：内容页取标题，图片页取界面名称，均可直接跳转 */
+    drawerTitle.textContent = '目录（共 '+N+' 页）';
+    drawerBody.innerHTML = '<ul class="toc-l">'+PAGES.map(function(p,i){
+      var isSec = (p.type==='cover');
+      var cls = isSec ? ' toc-sec' : '';
+      return '<li><button class="toc-a'+cls+'" data-goto="'+esc(p.id)+'">'
+        + '<span class="n">'+pad2(i+1)+'</span><span class="t">'+pageName(p)+'</span>'
+        + '<span class="p">P'+(i+1)+'</span></button></li>';
+    }).join('')+'</ul>';
+  } else {
+    drawerTitle.textContent = '缩略图（共 '+N+' 页）';
+    drawerBody.innerHTML = '<div class="thumbs">'+PAGES.map(function(p,i){
+      var cur = (Math.min(focusPage(),N-1)===i) ? ' cur' : '';
+      return '<button class="th'+cur+'" data-jump="'+i+'"><span class="tn">第 '+(i+1)+' 页</span>'
+        + '<span class="tt2">'+(p.title || p.label || '')+'</span></button>';
+    }).join('')+'</div>';
+  }
+  drawer.classList.add('on'); mask.classList.add('on');
+}
+function closeDrawer(){ if(drawer) drawer.classList.remove('on'); if(mask) mask.classList.remove('on'); }
+
+function onReady(){
+  book = document.getElementById('book');
+  stage = document.getElementById('stage');
+  reader = document.getElementById('reader');
+  mask = document.getElementById('mask');
+  drawer = document.getElementById('drawer');
+  drawerBody = document.getElementById('drawerBody');
+  drawerTitle = document.getElementById('drawerTitle');
+
+  document.addEventListener('click', function(e){
+    var chip = e.target.closest('.f-chips input[type=checkbox]');
+    if(chip){ var lab = chip.closest('label'); if(lab) lab.classList.toggle('on', chip.checked); return; }
+    var g = e.target.closest('[data-goto]');
+    if(g){ var gi = indexOfId(g.dataset.goto); if(gi>=0) goto(gi); return; }
+    var j = e.target.closest('[data-jump]');
+    if(j){ goto(+j.dataset.jump); return; }
+    var z = e.target.closest('.zoomable');
+    if(z){ document.getElementById('lightboxImg').src = z.src; document.getElementById('lightbox').classList.add('on'); }
+  });
+  mask.addEventListener('click', closeDrawer);
+  document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+  document.getElementById('lightbox').addEventListener('click', function(){ this.classList.remove('on'); });
+
+  document.getElementById('btnToc').addEventListener('click', function(){ openDrawer('toc'); });
+  document.getElementById('btnThumb').addEventListener('click', function(){ openDrawer('thumb'); });
+  document.getElementById('btnPrev').addEventListener('click', prev);
+  document.getElementById('btnNext').addEventListener('click', next);
+  document.getElementById('btnFirst').addEventListener('click', function(){ doJump(0); });
+  document.getElementById('btnMode').addEventListener('click', function(){
+    document.documentElement.dataset.forceMode = (mode==='spread') ? 'single' : 'spread';
+    layout();
+  });
+  document.getElementById('btnFull').addEventListener('click', function(){
+    if(document.fullscreenElement){ document.exitFullscreen(); }
+    else if(document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen(); }
+  });
+  document.getElementById('btnShare').addEventListener('click', share);
+  document.getElementById('progress').addEventListener('click', function(e){
+    var r = this.getBoundingClientRect();
+    var r2 = Math.max(0, Math.min(1, (e.clientX - r.left)/r.width));
+    goto(Math.round(r2*(N-1)));
+  });
+
+  document.addEventListener('keydown', function(e){
+    /* 焦点在表单控件里时，方向键/空格属于控件本身，不翻页 */
+    var t = e.target;
+    if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ next(); e.preventDefault(); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ prev(); e.preventDefault(); }
+    else if(e.key==='Home'){ doJump(0); }
+    else if(e.key==='End'){ doJump(N-1); }
+    else if(e.key==='Escape'){ closeDrawer(); document.getElementById('lightbox').classList.remove('on'); }
+  });
+  /* 表单里的滚轮/触摸交给控件本身，避免页内滚动或翻页把表单抢走 */
+  reader.addEventListener('wheel', function(e){
+    var t = e.target;
+    if(t && t.closest && t.closest('.f-form')){ e.stopPropagation(); }
+  }, {passive:true, capture:true});
+  initDrag();
+  function userScrollableBody(el){
+    if(!el || !el.classList || !el.classList.contains('pbody')) return null;
+    var oy = getComputedStyle(el).overflowY;
+    if(oy !== 'auto' && oy !== 'scroll') return null;
+    return (el.scrollHeight > el.clientHeight + 2) ? el : null;
+  }
+  var wheelLock = 0;
+  reader.addEventListener('wheel', function(e){
+    var sb = userScrollableBody(e.target && e.target.closest ? e.target.closest('.pbody') : null);
+    if(sb){
+      var atTop = sb.scrollTop <= 0;
+      var atBottom = sb.scrollTop + sb.clientHeight >= sb.scrollHeight - 2;
+      if((e.deltaY > 0 && !atBottom) || (e.deltaY < 0 && !atTop)) return;
+    }
+    if(Math.abs(e.deltaY) < 22) return;
+    var now = Date.now();
+    if(now - wheelLock < 850) return;
+    wheelLock = now;
+    e.deltaY > 0 ? next() : prev();
+  }, {passive:true});
+  reader.addEventListener('click', function(e){
+    if(e.target.closest('button')||e.target.closest('a')||e.target.closest('.zoomable')||e.target.closest('.toc-a')||e.target.closest('.f-form')||e.target.closest('.f-chips')) return;
+    if(userScrollableBody(e.target.closest ? e.target.closest('.pbody') : null)) return;
+    var r = book.getBoundingClientRect();
+    var mid = r.left + r.width/2;
+    (e.clientX > mid) ? next() : prev();
+  });
+
+  var rt;
+  window.addEventListener('resize', function(){ clearTimeout(rt); rt = setTimeout(layout, 200); });
+  window.addEventListener('hashchange', function(){
+    var i = pageIndexFromHash();
+    if(i < 0) return;
+    if(i !== Math.min(focusPage(), N-1)) doJump(leafForPage(i));
+  });
+}
+
+/* 合作意向表单：复用门户同源接口 /api/portal/orders，与门户首页共用同一套服务端校验、
+   10 分钟去重与按 IP 限流。客户端只做预校验与三态呈现，服务端返回内容一律走 textContent。 */
+var TEL_RE = /^[0-9+\-()\s]{6,40}$/;
+function initOrderForm(){
+  var form = document.getElementById('orderForm');
+  if(!form || form.dataset.bound) return;
+  form.dataset.bound = '1';
+  var msg = document.getElementById('orderMsg');
+  var btn = document.getElementById('orderSubmit');
+  var label = btn ? btn.textContent : '';
+  var say = function(text, kind){
+    if(!msg) return;
+    msg.className = 'f-msg' + (kind ? ' ' + kind : '');
+    msg.textContent = text;
+  };
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var el = form.elements;
+    var org = (el.org.value||'').trim();
+    var contact = (el.contact.value||'').trim();
+    var tel = (el.tel.value||'').trim();
+    var note = (el.note.value||'').trim();
+    var domains = Array.prototype.slice.call(form.querySelectorAll('input[name=domains]:checked')).map(function(i){ return i.value; });
+    var missing = [];
+    if(!org) missing.push('单位名称');
+    if(!contact) missing.push('联系人');
+    if(!tel) missing.push('联系电话');
+    if(!domains.length) missing.push('想优先解决的场景');
+    if(missing.length){ say('请先填写：' + missing.join('、'), 'err'); return; }
+    if(!TEL_RE.test(tel)){ say('联系电话格式不正确：请填 6–40 位数字，可含 + - ( ) 与空格。', 'err'); return; }
+    if(btn){ btn.disabled = true; btn.textContent = '提交中…'; }
+    try{
+      var res = await fetch('/api/portal/orders', {
+        method:'POST', credentials:'same-origin',
+        headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+        body: JSON.stringify({ org:org, contact:contact, tel:tel, note:note, domains:domains, intent:'consult' })
+      });
+      var payload = null;
+      try{ payload = await res.json(); }catch(e2){ payload = null; }
+      if(res.ok && payload && payload.ok){
+        form.reset();
+        form.querySelectorAll('.f-chips label.on').forEach(function(l){ l.classList.remove('on'); });
+        say('✓ 已收到您的合作意向（受理编号 ' + String(payload.id).slice(0,8) + '）。客户经理会尽快与您联系。', 'ok');
+      } else if(res.status === 422 && payload && Array.isArray(payload.errors) && payload.errors.length){
+        /* 服务端校验未通过：原文照显，仅把服务端口径的「意向档位」换成页面上实际的字段名 */
+        say(payload.errors.map(function(t){ return String(t).replace('意向档位', '想优先解决的场景'); }).join('；'), 'err');
+      } else if(res.status === 429){
+        say('提交过于频繁，请稍后再试，或直接致电 199 2529 9929。', 'err');
+      } else {
+        say('提交失败（HTTP ' + res.status + '），请稍后重试或致电 199 2529 9929。', 'err');
+      }
+    }catch(e3){
+      say('网络异常，提交失败。可致电 199 2529 9929，或稍后重试。', 'err');
+    }finally{
+      if(btn){ btn.disabled = false; btn.textContent = label; }
+    }
+  });
+}
+
+/* ============================================================
+   拖拽翻页：指针按住右半页向左拖 → 跟手旋转，松手按位移/速度决定「完成」或「回弹」。
+   左侧向右拖则把刚翻过去的那张纸拉回来。触摸与鼠标共用 Pointer 事件。
+   ============================================================ */
+var drag = null;
+function initDrag(){
+  var DRAG_MIN = 6;          /* 超过这个位移才算拖拽，避免与点击冲突 */
+  var COMMIT_RATIO = 0.28;   /* 拖过 28% 页宽即完成翻页 */
+
+  function pctToDeg(p){ return -180 * Math.max(0, Math.min(1, p)); }
+
+  function begin(e){
+    if(busy || !book) return;
+    var r = book.getBoundingClientRect();
+    if(e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+    var half = r.width / 2;
+    var side = (e.clientX < r.left + half) ? 'left' : 'right';
+    var usable = (side === 'right') ? (L < maxLeaf()) : (L > 0);
+    if(!usable) return;
+    drag = { id:e.pointerId, x0:e.clientX, y0:e.clientY, side:side, active:false, t0:Date.now(), lastX:e.clientX, lastT:Date.now(), v:0 };
+  }
+
+  function move(e){
+    if(!drag || e.pointerId !== drag.id) return;
+    var dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+    if(!drag.active){
+      if(Math.abs(dx) < DRAG_MIN && Math.abs(dy) < DRAG_MIN) return;
+      /* 纵向意图优先：交给页面滚动/翻页手势，不抢 */
+      if(Math.abs(dy) > Math.abs(dx)){ drag = null; return; }
+      drag.active = true;
+      book.classList.add('dragging');
+      if(drag.side === 'left') L = L - 1;      /* 把上一张纸拉回来 */
+    }
+    var now = Date.now();
+    if(now - drag.lastT > 0){
+      drag.v = (e.clientX - drag.lastX) / (now - drag.lastT);
+      drag.lastX = e.clientX; drag.lastT = now;
+    }
+    var pw = book.getBoundingClientRect().width / (mode === 'single' ? 1 : 2);
+    var p = (drag.side === 'right') ? (-dx / pw) : (1 - dx / pw);
+    drag.p = Math.max(0, Math.min(1, p));
+    var el = sheets[drag.side === 'right' ? L : L];
+    if(el){
+      el.style.zIndex = 999;
+      el.style.transform = 'rotateY(' + pctToDeg(drag.p) + 'deg)';
+      el.classList.toggle('turning', drag.p > 0.02);
+    }
+  }
+
+  function finish(e){
+    if(!drag || (e && e.pointerId !== drag.id)) return;
+    var d = drag; drag = null;
+    book.classList.remove('dragging');
+    if(!d.active) return;
+    lastDragEndAt = Date.now();   /* 让随后的 click 不再触发一次翻页 */
+    var pw = book.getBoundingClientRect().width / (mode === 'single' ? 1 : 2);
+    var flung = (d.side === 'right') ? (d.v < -0.6) : (d.v > 0.6);
+    var go = (d.p >= COMMIT_RATIO) || flung;
+    var el = sheets[L];
+    if(d.side === 'left') L = L + 1;          /* 先复位，再决定是否真的翻 */
+    if(el){ el.style.transform = ''; el.classList.remove('turning'); }
+    if(go){
+      if(d.side === 'right'){
+        L = Math.min(L, maxLeaf());
+        var cur = sheets[L];
+        if(cur){ cur.classList.add('turning'); cur.classList.add('flipped'); }
+        apply();
+        setTimeout(function(){ if(cur) cur.classList.remove('turning'); }, 820);
+      } else {
+        prev();
+      }
+    } else {
+      apply();
+    }
+  }
+
+  var stageEl = document.getElementById('stage') || reader;
+  stageEl.addEventListener('pointerdown', begin);
+  window.addEventListener('pointermove', move, {passive:true});
+  window.addEventListener('pointerup', finish);
+  window.addEventListener('pointercancel', finish);
+  /* 拖拽刚结束时抑制一次点击翻页，避免「拖完又跳一页」 */
+  stageEl.addEventListener('click', function(e){
+    if(Date.now() - lastDragEndAt < 320){ e.stopPropagation(); e.preventDefault(); }
+  }, true);
+}
+var lastDragEndAt = 0;
+
+function share(){
+  var url = location.origin + location.pathname + '#p=' + (Math.min(focusPage(), N-1) + 1);
+  var done = function(){ toast('本页链接已复制，对方打开即到第 ' + (Math.min(focusPage(), N-1) + 1) + ' 页'); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done, function(){ legacyCopy(url, done); });
+  } else { legacyCopy(url, done); }
+}
+function legacyCopy(t, cb){
+  var ta = document.createElement('textarea');
+  ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); cb(); }catch(e){ toast('请手动复制：'+t); }
+  document.body.removeChild(ta);
+}
+var toastT;
+function toast(msg){
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(function(){ el.classList.remove('on'); }, 2200);
+}
+</script>
+<script>
+window.__PAGES__ = [{"type":"cover","id":"cover","title":"封面","label":"封面","body":"<div class=\"cover\"><div class=\"cv-top\"><span class=\"dot\"></span>WorkDSH · 企业级 AI 智能体工作台</div><div class=\"cv-mid\"><h1>企业工作台<br>定制解决方案</h1><div class=\"cv-sub\">可私有化部署在企业内网，面向运营、管理、生产、服务、销售、市场推广与应用提供场景化应用，支撑各部门团队协同任务，交付可留痕、可审计的真实文件成果。</div><div class=\"cv-tags\"><span class=\"cv-tag\">私有化部署</span><span class=\"cv-tag\">六大部门覆盖</span><span class=\"cv-tag\">真实文件交付</span><span class=\"cv-tag\">过程可审计</span></div></div><div class=\"cv-foot\"><div><b>在线翻页电子书刊</b>基于 DeepSeek Harness 构建 · 2026 Q4</div><div class=\"cv-badge\">DSH</div></div></div>"},{"type":"content","id":"preface","title":"写在前面","label":"写在前面","theme":"PREFACE · 写在前面","body":"<h3>不是一个套壳对话框，而是能被各部门直接使用的任务工作台</h3><p class=\"lead\">WorkDSH 基于 DeepSeek Harness 构建。它把智能体、技能与连接器组织成各部门可直接使用的任务工作台：任务自主拆解、调用内部系统、产出可交付文件，过程可审批、可留痕；部门之间在同一套任务与资产上交接协作。</p><div class=\"grid3\"><div class=\"mini\"><div class=\"mt\">能执行</div><div class=\"md\">自主拆解任务、调用工具、跑长任务，而不是一问一答。</div></div><div class=\"mini\"><div class=\"mt\">交付成果</div><div class=\"md\">Word、Excel、网页与报告落盘为可交付的真实文件。</div></div><div class=\"mini\"><div class=\"mt\">可审计</div><div class=\"md\">执行过程留痕，命令与写入按策略审批后才落地。</div></div></div><div class=\"callout\" style=\"margin-top:var(--s5)\">本手册内容取自 WorkDSH 门户首页的工作台简介，覆盖产品功能与应用介绍，不额外扩展未经确认的能力。</div>"},{"type":"content","id":"toc","title":"目录","label":"目录","theme":"CONTENTS · 目录","body":"<h3>本手册怎么读</h3><div class=\"toc-wrap\"><div class=\"toc-group\"><div class=\"toc-cap\">卷首</div><div class=\"toc-front\"><div class=\"fi\"><span>封面</span><span class=\"fp\">P1</span></div><div class=\"fi\"><span>写在前面</span><span class=\"fp\">P2</span></div><div class=\"fi\"><span>目录</span><span class=\"fp\">P3</span></div><div class=\"fi\"><span>方案总览</span><span class=\"fp\">P4</span></div><div class=\"fi\"><span>产品真实界面</span><span class=\"fp\">P5</span></div></div></div><div class=\"toc-group\"><div class=\"toc-cap\">正文章节</div><div class=\"toc-sec-list\"><div class=\"toc-sec\"><span class=\"sn\">01</span><span class=\"st\">业务覆盖<i class=\"dots\"></i></span><span class=\"sp\">P6–P7</span></div><div class=\"toc-sec\"><span class=\"sn\">02</span><span class=\"st\">应用场景<i class=\"dots\"></i></span><span class=\"sp\">P8–P11</span></div><div class=\"toc-sec\"><span class=\"sn\">03</span><span class=\"st\">团队协同<i class=\"dots\"></i></span><span class=\"sp\">P12</span></div><div class=\"toc-sec\"><span class=\"sn\">04</span><span class=\"st\">私有化与联署定制<i class=\"dots\"></i></span><span class=\"sp\">P13–P16</span></div><div class=\"toc-sec\"><span class=\"sn\">05</span><span class=\"st\">平台底座<i class=\"dots\"></i></span><span class=\"sp\">P17–P18</span></div><div class=\"toc-sec\"><span class=\"sn\">06</span><span class=\"st\">真实界面<i class=\"dots\"></i></span><span class=\"sp\">P19–P22</span></div><div class=\"toc-sec\"><span class=\"sn\">07</span><span class=\"st\">信任与安全<i class=\"dots\"></i></span><span class=\"sp\">P23–P24</span></div><div class=\"toc-sec\"><span class=\"sn\">08</span><span class=\"st\">常见问题<i class=\"dots\"></i></span><span class=\"sp\">P25–P26</span></div><div class=\"toc-sec\"><span class=\"sn\">09</span><span class=\"st\">合作与签约<i class=\"dots\"></i></span><span class=\"sp\">P27–P29</span></div></div></div><div class=\"toc-foot\"><span class=\"sn\">10</span><span class=\"st\">封底</span><span class=\"dots\" style=\"flex:1;border-bottom:1px dotted var(--brand-line);transform:translateY(-.28em)\"></span><span class=\"sp\">P30</span></div><p class=\"toc-note\">顶部「目录 / 缩略图」可直达任意页；地址栏 <kbd>#p=N</kbd> 记录当前页码，刷新、收藏与转发都会回到同一页。滚轮、<kbd>←</kbd> <kbd>→</kbd> 或直接拖动页角都能翻页。</p></div>"},{"type":"content","id":"overview","title":"方案总览","label":"方案总览","theme":"方案总览 · 全书结构","body":"<h3>六个部门，六种用法</h3><p class=\"lead\">系统按公司现有部门口径定义岗位与能力边界：每个部门登录后看到的任务面、资料面与管理面，对应各自的职责。</p><div class=\"kpis\"><div class=\"kpi\"><div class=\"kv\">6</div><div class=\"kl\">部门覆盖</div></div><div class=\"kpi\"><div class=\"kv\">3</div><div class=\"kl\">交付形态</div></div><div class=\"kpi\"><div class=\"kv\">6</div><div class=\"kl\">定制流程步骤</div></div></div><div class=\"deflist\"><div class=\"def\"><div class=\"dt\">业务覆盖</div><div class=\"dd\">运营 / 管理 / 生产 / 服务 / 销售 / 市场推广与应用，六个部门六种用法。</div></div><div class=\"def\"><div class=\"dt\">应用场景</div><div class=\"dd\">智能体专家、企业技能资产、连接器、企业资料库、办公文档产出、项目与自动化。</div></div><div class=\"def\"><div class=\"dt\">私有化与联署定制</div><div class=\"dd\">公网 SaaS、企业私有化部署、混合部署三种交付形态。</div></div><div class=\"def\"><div class=\"dt\">信任与安全</div><div class=\"dd\">权限与审计、运行隔离、数据边界、版本与发布。</div></div></div>"},{"type":"content","id":"hero","title":"产品真实界面","label":"产品真实界面","body":"<h3>在对话中完成任务，成果落盘为真实文件</h3><p class=\"lead\">以下是产品的真实界面截图，非设计稿。用于判断它是否符合你的场景。</p><div style=\"text-align:center\"><img class=\"zoomable\" loading=\"eager\" fetchpriority=\"high\" decoding=\"async\" width=\"1120\" height=\"612\" src=\"/portal/assets/dashboard-1120.webp\" alt=\"WorkDSH 工作台界面：在对话中制作 HTML，右侧预览成果并交付真实文件。\" style=\"max-width:100%;border:1px solid var(--line);border-radius:6px;box-shadow:0 3px 14px rgba(15,36,66,.12);cursor:zoom-in\"></div><p class=\"muted\" style=\"text-align:center;margin-top:8px\">点击图片可放大查看</p>"},{"type":"content","id":"dept-intro","title":"业务覆盖 · 说明","label":"业务覆盖 · 说明","theme":"01 · 业务覆盖","body":"<h3>边界先定义，能力再落地</h3><p class=\"lead\">系统按公司现有部门口径定义岗位与能力边界：每个部门登录后看到的任务面、资料面与管理面，对应各自的职责。</p><ul class=\"keylist\"><li><b>任务面</b>——本部门能发起、承接与交付哪些任务。</li><li><b>资料面</b>——本部门可查阅、可维护的资料范围。</li><li><b>管理面</b>——本部门可配置的对象、权限与台账视图。</li></ul><div class=\"callout\" style=\"margin-top:10px\">部门岗位与能力边界已定义，逐域的强制生效随身份打通同步覆盖；企业 SSO、组织与跨组织隔离正在推进，本页不作交付承诺。</div><p style=\"margin-top:10px\"><span class=\"pill info\">运营</span> <span class=\"pill info\">管理</span> <span class=\"pill info\">生产</span> <span class=\"pill info\">服务</span> <span class=\"pill info\">销售</span> <span class=\"pill info\">市场推广与应用</span></p>"},{"type":"content","id":"dept-cards","title":"业务覆盖 · 六部门","label":"业务覆盖 · 六部门","theme":"01 · 业务覆盖","body":"<h3>六个部门，六种用法</h3><div class=\"cards\" style=\"margin-top:4px\"><div class=\"card\"><div class=\"ct\"><span class=\"num\">1</span>运营</div><div class=\"cd\">内容资产的编写与发布、项目与任务编排、账号与用量查看。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">2</span>管理</div><div class=\"cd\">全站能力，含平台配置、用户与权限、审计与登录台账。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">3</span>生产</div><div class=\"cd\">承接项目交付、维护资料库与文档、跑定时任务。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">4</span>服务</div><div class=\"cd\">查阅知识库与客户资料、使用专家答疑，以只读为主。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">5</span>销售</div><div class=\"cd\">使用专家与资料库服务客户，维护自己的项目与文档。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">6</span>市场推广与应用</div><div class=\"cd\">维护对外素材与产品页、查看资料库，并进入产品页后台。</div></div></div>"},{"type":"content","id":"scn-intro","title":"应用场景 · 说明","label":"应用场景 · 说明","theme":"02 · 应用场景","body":"<h3>按业务场景落地，而不是按功能清单</h3><p class=\"lead\">下面每一项都写成「输入 → 过程 → 交付物」，便于评估它是否解决你部门的问题。</p><div class=\"deflist\"><div class=\"def\"><div class=\"dt\">智能体专家</div><div class=\"dd\">岗位角色、专业判断与交付职责，写成可发布的专家定义，并配备真实技能与工具。</div></div><div class=\"def\"><div class=\"dt\">企业技能资产</div><div class=\"dd\">既有的工作方法与技能包，版本化、可导入导出，在团队内继续打磨。</div></div><div class=\"def\"><div class=\"dt\">连接器</div><div class=\"dd\">OA、CRM、数据库与内网 API，以 MCP 接入；连接定义、实例与凭据分离。</div></div><div class=\"def\"><div class=\"dt\">企业资料库</div><div class=\"dd\">按目录归集的资料与原件，可搜索正文、可预览，选中即带着上下文开启任务。</div></div><div class=\"def\"><div class=\"dt\">办公文档产出</div><div class=\"dd\">对话里的要求与素材，直接变成可交付的 Word、PowerPoint、Excel、HTML 与 PDF 文件。</div></div><div class=\"def\"><div class=\"dt\">项目与自动化</div><div class=\"dd\">计划、待办、任务、资产与成员在项目空间交接；周期性工作由定时任务触发。</div></div></div><div class=\"callout\" style=\"margin-top:var(--s5)\">每一项能力都标注了当前版本状态：「已在本版本运行」或「在扩展中」，不作无条件承诺。</div>"},{"type":"content","id":"scn-1","title":"智能体专家 / 企业技能资产","label":"智能体专家 / 企业技能资产","theme":"02 · 应用场景","body":"<div class=\"cards\"><div class=\"card\"><div class=\"ct\">智能体专家 <span class=\"pill warn\">SOP 协作在扩展中</span></div><div class=\"io\"><div class=\"row\"><span class=\"tag\">输入</span><span class=\"txt\">岗位角色、专业判断与交付职责</span></div><div class=\"row\"><span class=\"tag proc\">过程</span><span class=\"txt\">写成可发布的专家定义，配备真实技能与工具</span></div><div class=\"row\"><span class=\"tag out\">交付物</span><span class=\"txt\">专家定义与任务交接记录</span></div></div><div class=\"cd muted\" style=\"margin-top:6px\">多专家 SOP 协作在扩展中。</div></div><div class=\"card\"><div class=\"ct\">企业技能资产 <span class=\"pill\">已在本版本运行</span></div><div class=\"io\"><div class=\"row\"><span class=\"tag\">输入</span><span class=\"txt\">既有的工作方法与技能包</span></div><div class=\"row\"><span class=\"tag proc\">过程</span><span class=\"txt\">版本化、导入导出，在团队内继续打磨</span></div><div class=\"row\"><span class=\"tag out\">交付物</span><span class=\"txt\">技能包与修订记录</span></div></div><div class=\"cd muted\" style=\"margin-top:6px\">已在本版本运行。</div></div></div>"},{"type":"content","id":"scn-2","title":"连接器 / 企业资料库","label":"连接器 / 企业资料库","theme":"02 · 应用场景","body":"<div class=\"cards\"><div class=\"card\"><div class=\"ct\">连接器 <span class=\"pill warn\">OAuth 与多账号在扩展中</span></div><div class=\"io\"><div class=\"row\"><span class=\"tag\">输入</span><span class=\"txt\">OA、CRM、数据库与内网 API</span></div><div class=\"row\"><span class=\"tag proc\">过程</span><span class=\"txt\">以 MCP 接入；连接定义、实例与凭据分离，按对话显式选择实例</span></div><div class=\"row\"><span class=\"tag out\">交付物</span><span class=\"txt\">可复用的内部系统接入</span></div></div><div class=\"cd muted\" style=\"margin-top:6px\">交互式 OAuth 与多账号在扩展中。</div></div><div class=\"card\"><div class=\"ct\">企业资料库 <span class=\"pill\">成果回到资料库</span></div><div class=\"io\"><div class=\"row\"><span class=\"tag\">输入</span><span class=\"txt\">按目录归集的资料与原件</span></div><div class=\"row\"><span class=\"tag proc\">过程</span><span class=\"txt\">搜索正文、预览原件；选中资料带着上下文开启任务</span></div><div class=\"row\"><span class=\"tag out\">交付物</span><span class=\"txt\">可检索、可预览的资料集合</span></div></div><div class=\"cd muted\" style=\"margin-top:6px\">成果继续回到资料库。</div></div></div>"},{"type":"content","id":"scn-3","title":"办公文档产出 / 项目与自动化","label":"办公文档产出 / 项目与自动化","theme":"02 · 应用场景","body":"<div class=\"cards\"><div class=\"card\"><div class=\"ct\">办公文档产出 <span class=\"pill warn\">保真度仍在推进</span></div><div class=\"io\"><div class=\"row\"><span class=\"tag\">输入</span><span class=\"txt\">对话里的要求与素材</span></div><div class=\"row\"><span class=\"tag proc\">过程</span><span class=\"txt\">在对话中制作与编辑，边聊边改</span></div><div class=\"row\"><span class=\"tag out\">交付物</span><span class=\"txt\">Word、PowerPoint、Excel、HTML 与 PDF 真实文件</span></div></div><div class=\"cd muted\" style=\"margin-top:6px\">各格式保真度与跨平台验收仍在推进。</div></div><div class=\"card\"><div class=\"ct\">项目与自动化 <span class=\"pill info\">定时任务只负责触发</span></div><div class=\"io\"><div class=\"row\"><span class=\"tag\">输入</span><span class=\"txt\">计划、待办、任务、资产与成员</span></div><div class=\"row\"><span class=\"tag proc\">过程</span><span class=\"txt\">项目空间承载交接；周期性工作由定时任务触发</span></div><div class=\"row\"><span class=\"tag out\">交付物</span><span class=\"txt\">项目空间与任务记录</span></div></div><div class=\"cd muted\" style=\"margin-top:6px\">定时任务只负责触发，不复制业务规则。</div></div></div>"},{"type":"content","id":"collab","title":"团队协同","label":"团队协同","theme":"03 · 团队协同","body":"<h3>任务在部门之间交接，不靠转发聊天记录。</h3><p class=\"lead\">同一套任务、资料与专家在部门间流转：承接方看到的是完整上下文与历史修订，而不是一段需要重新解释的对话。</p><div class=\"steps\"><div class=\"step\"><span class=\"sn\">1</span><div class=\"sb\"><div class=\"st\">派发</div><div class=\"sd\">任务绑定专家与资料，明确交付要求与参与角色。</div></div></div><div class=\"step\"><span class=\"sn\">2</span><div class=\"sb\"><div class=\"st\">协作</div><div class=\"sd\">项目空间承载计划、待办、任务与资产，成员在同一处交接。</div></div></div><div class=\"step\"><span class=\"sn\">3</span><div class=\"sb\"><div class=\"st\">产出</div><div class=\"sd\">Word、PowerPoint、Excel、网页等产出落盘为真实文件，原件可在会话内预览。</div></div></div><div class=\"step\"><span class=\"sn\">4</span><div class=\"sb\"><div class=\"st\">复用与留痕</div><div class=\"sd\">成果回到资料库，专家与技能按修订演进，过程与结果留痕可审计。</div></div></div></div><div class=\"callout\" style=\"margin-top:10px\">专家与团队：团队定位、成员分工与任务入口。</div>"},{"type":"content","id":"onprem-intro","title":"私有化与联署定制 · 说明","label":"私有化与联署定制 · 说明","theme":"04 · 私有化与联署定制","body":"<h3>把智能体放进你的内网，<br>按你的业务长出来</h3><p class=\"lead\">我们提供三种交付形态，并在方案阶段逐项写清数据流向、账号接入方式与验收口径。</p><div class=\"callout acc\"><b>数据与凭据边界</b><br>连接定义、连接实例与账号凭据三者分离；实例由使用者显式选择，不做跨账号回退。凭据不进入对话内容、前端页面、导出包与运行日志。</div><div class=\"callout\" style=\"margin-top:10px\">私有化部署把应用与数据放在企业内网；<b>是否出网取决于所选模型与连接器</b>，我们在方案中逐项列出，不作无条件承诺。</div><p class=\"muted\" style=\"margin-top:9px\">业务操作按权限检查并留下审计记录；组织与跨组织隔离随企业版推进。</p>"},{"type":"content","id":"onprem-forms","title":"三种交付形态","label":"三种交付形态","theme":"04 · 私有化与联署定制","body":"<h3>三种交付形态</h3><div class=\"cards\" style=\"margin-top:4px\"><div class=\"card\"><div class=\"ct\"><span class=\"num\">A</span>公网 SaaS</div><div class=\"cd\">快速验证。使用托管实例评估能力与流程，适合先做概念验证再决定部署形态。</div></div><div class=\"card tint\"><div class=\"ct\"><span class=\"num\">B</span>企业私有化部署</div><div class=\"cd\">应用与数据部署在企业自己的服务器或私有云，由企业掌握运行与账号体系。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">C</span>混合部署</div><div class=\"cd\">控制面在外、数据面在内的组合形态，按业务敏感度逐层划分边界。</div></div></div><div class=\"callout\" style=\"margin-top:10px\">三种形态的能力范围与边界以方案阶段逐项确认为准；本页只列形态定义，不构成交付承诺。</div>"},{"type":"content","id":"onprem-steps","title":"六步定制流程","label":"六步定制流程","theme":"04 · 私有化与联署定制","body":"<h3>六步定制流程</h3><div class=\"steps\" style=\"margin-top:6px\"><div class=\"step\"><span class=\"sn\">1</span><div class=\"sb\"><div class=\"st\">需求澄清</div><div class=\"sd\">业务场景、参与角色、数据边界与验收口径。</div></div></div><div class=\"step\"><span class=\"sn\">2</span><div class=\"sb\"><div class=\"st\">POC 验证</div><div class=\"sd\">在隔离环境用真实数据跑通一条端到端链路。</div></div></div><div class=\"step\"><span class=\"sn\">3</span><div class=\"sb\"><div class=\"st\">定制开发</div><div class=\"sd\">按需开发技能、专家、连接器与业务页面。</div></div></div><div class=\"step\"><span class=\"sn\">4</span><div class=\"sb\"><div class=\"st\">联调验收</div><div class=\"sd\">联接内部系统，按验收清单逐项确认。</div></div></div><div class=\"step\"><span class=\"sn\">5</span><div class=\"sb\"><div class=\"st\">上线与培训</div><div class=\"sd\">私有化部署、权限与审计配置、管理员与使用者培训。</div></div></div><div class=\"step\"><span class=\"sn\">6</span><div class=\"sb\"><div class=\"st\">持续迭代</div><div class=\"sd\">技能与专家按修订演进，新版本不覆盖历史记录。</div></div></div></div>"},{"type":"content","id":"deliverables","title":"联署定制的交付物清单","label":"联署定制的交付物清单","theme":"04 · 私有化与联署定制","body":"<h3>联署定制的交付物清单</h3><ul class=\"keylist\" style=\"margin-top:8px\"><li>私有化部署包、部署说明与回滚方式</li><li>定制技能包与专家定义（含版本与修订记录）</li><li>连接器定义与企业侧账号接入说明</li><li>权限、审计与运行隔离配置</li><li>使用手册与管理员培训</li></ul><div class=\"callout acc\" style=\"margin-top:12px\">清单在方案阶段逐项确认；每一项都在验收清单里对应可核对的交付物与验收口径。</div><div class=\"contact\" style=\"margin-top:12px\"><div class=\"cl\"><b>谈谈你的部署形态</b><span>告诉我们场景、角色与数据边界，我们给出部署形态建议与 POC 方案。</span></div></div>"},{"type":"content","id":"base-intro","title":"平台底座 · 说明","label":"平台底座 · 说明","theme":"05 · 平台底座","body":"<h3>不是一个套壳对话框</h3><p class=\"lead\">WorkDSH 站在 DeepSeek Harness 之上构建：执行循环、技能解析、插件装配、运行隔离与模型接入都由该底座提供，WorkDSH 负责企业业务对象、授权、修订与交付。</p><div class=\"callout\">底座能力与企业业务能力分层：底座不重复造 Agent 循环，WorkDSH 不接管底座已有的执行、隔离与模型接入。</div><p style=\"margin-top:10px\"><span class=\"pill info\">官方执行循环</span> <span class=\"pill info\">原生插件机制</span> <span class=\"pill info\">运行隔离与审批</span> <span class=\"pill info\">模型可替换</span></p>"},{"type":"content","id":"base-detail","title":"底座要点","label":"底座要点","theme":"05 · 平台底座","body":"<div class=\"cards\"><div class=\"card\"><div class=\"ct\"><span class=\"num\">1</span>官方执行循环与技能解析</div><div class=\"cd\">任务拆解、工具调用、长任务执行与上下文处理由 Harness 提供；不在外层再造第二套 Agent 循环。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">2</span>原生插件机制</div><div class=\"cd\">专家、技能、连接器、资料库与办公能力都是可安装、可卸载的功能插件，通过公开契约与会话投影组合。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">3</span>运行隔离与审批</div><div class=\"cd\">命令执行与文件写入走官方沙箱与审批管线；插件的可见范围不等于权限，实际操作仍需服务端检查。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">4</span>模型可替换</div><div class=\"cd\">模型经官方适配器接入，凭据由企业侧提供，与业务数据和对话内容分离管理。</div></div><div class=\"card\"><div class=\"ct\"><span class=\"num\">5</span>真实文件产出</div><div class=\"cd\">产物是可直接交付的文件，不是聊天记录里的代码块；原件可在会话内预览。</div></div></div><p class=\"muted\" style=\"margin-top:9px\">企业 SSO、组织与跨组织隔离、用量与统计正在推进，本页不作交付承诺。</p>"},{"type":"img","id":"ui-skills","title":"06 · 真实界面 · 技能资产","label":"06 · 真实界面 · 技能资产","subtitle":"浏览、导入与管理技能，让工作方法可以被保存、修改和复用。","image":"/portal/assets/skills.png","asset":{"src":"/portal/assets/skills-680.webp","variants":[["/portal/assets/skills-680.webp",680],["/portal/assets/skills-1360.webp",1360]],"w":1360,"h":739},"alt":"WorkDSH 技能管理界面：浏览、导入和管理技能。","foot":"产品真实界面 · 技能资产"},{"type":"img","id":"ui-ppt","title":"06 · 真实界面 · 办公文档产出","label":"06 · 真实界面 · 办公文档产出","subtitle":"对话与演示文稿并排，制作、查看与编辑在同一个工作空间完成。","image":"/portal/assets/ppt.png","asset":{"src":"/portal/assets/ppt-720.webp","variants":[["/portal/assets/ppt-360.webp",360],["/portal/assets/ppt-720.webp",720]],"w":720,"h":393},"alt":"WorkDSH 演示文稿制作界面：对话与演示文稿并排。","foot":"产品真实界面 · 办公文档产出"},{"type":"img","id":"ui-library","title":"06 · 真实界面 · 企业资料库","label":"06 · 真实界面 · 企业资料库","subtitle":"按目录归集资料、搜索正文并预览原件，选中即可带着上下文继续工作。","image":"/portal/assets/library.png","asset":{"src":"/portal/assets/library-720.webp","variants":[["/portal/assets/library-360.webp",360],["/portal/assets/library-720.webp",720]],"w":720,"h":395},"alt":"WorkDSH 资料库界面：按目录管理资料并预览原件。","foot":"产品真实界面 · 企业资料库"},{"type":"img","id":"ui-team","title":"06 · 真实界面 · 专家与团队","label":"06 · 真实界面 · 专家与团队","subtitle":"查看团队定位、成员分工和任务入口，按部门职责划分使用范围。","image":"/portal/assets/team.png","asset":{"src":"/portal/assets/team-720.webp","variants":[["/portal/assets/team-360.webp",360],["/portal/assets/team-720.webp",720]],"w":720,"h":393},"alt":"WorkDSH 专家团队界面：查看团队定位、成员分工与任务入口。","foot":"产品真实界面 · 专家与团队"},{"type":"content","id":"trust-1","title":"信任与安全 · 边界","label":"信任与安全 · 边界","theme":"07 · 信任与安全","body":"<h3>把边界说清楚</h3><p class=\"lead\">安全与合规的每一条，都在方案阶段逐项确认口径；不把「应该没问题」写成承诺。</p><div class=\"cards\" style=\"margin-top:4px\"><div class=\"card\"><div class=\"ct\">权限与审计</div><div class=\"cd\">资源授权与审计已在本版本实现；跨组织引用默认拒绝，组织级能力随企业版推进。</div></div><div class=\"card\"><div class=\"ct\">运行隔离</div><div class=\"cd\">命令与写入受官方沙箱与审批约束，实际操作仍需服务端检查，不以界面隐藏代替鉴权。</div></div><div class=\"card\"><div class=\"ct\">数据边界</div><div class=\"cd\">是否出网由所选模型与连接器决定，逐项在方案中列明。</div></div></div>"},{"type":"content","id":"trust-2","title":"信任与安全 · 版本与在建范围","label":"信任与安全 · 版本与在建范围","theme":"07 · 信任与安全","body":"<div class=\"cards\"><div class=\"card\"><div class=\"ct\">版本与发布</div><div class=\"cd\">已发布对象按修订演进，不原地改写历史；卸载默认保留用户数据。</div></div><div class=\"card tint\"><div class=\"ct\">在建范围</div><div class=\"cd\">项目空间、定时自动化、专家团 SOP、企业后台与企业 SSO 仍在推进；部门岗位与能力边界已定义，逐域的强制生效随身份打通同步覆盖。</div></div></div><div class=\"callout\" style=\"margin-top:11px\">已实现的能力与在建的能力在本手册中分别标注：<span class=\"pill\">已在本版本运行</span> 与 <span class=\"pill warn\">在扩展中</span>，便于你在方案阶段核对范围。</div>"},{"type":"content","id":"faq-1","title":"常见问题（一）","label":"常见问题（一）","theme":"08 · 常见问题","body":"<div class=\"cards\"><div class=\"card\"><div class=\"ct\">可以只用我们内网的模型吗？</div><div class=\"cd\">模型经官方适配器接入，凭据由企业侧提供。具体可用范围取决于所选模型服务与部署形态，我们在方案阶段确认。</div></div><div class=\"card\"><div class=\"ct\">能对接我们已有的 OA、CRM 或数据库吗？</div><div class=\"cd\">连接器以 MCP 接入外部系统，已具备多实例接入与工具发现能力，并已实测对接第三方文档服务。具体系统的接入方式与账号方案在联调阶段确定。</div></div><div class=\"card\"><div class=\"ct\">和直接使用对话式 AI 工具有什么区别？</div><div class=\"cd\">区别在于执行与交付：它自主规划并调用工具完成任务，产出的是可交付文件，过程与结果可留痕、可审批，而不是一段需要你自己复制的回答。</div></div></div>"},{"type":"content","id":"faq-2","title":"常见问题（二）","label":"常见问题（二）","theme":"08 · 常见问题","body":"<div class=\"cards\"><div class=\"card\"><div class=\"ct\">现在哪些能力可以直接用？</div><div class=\"cd\">技能资产、连接器、资料库、办公文档产出与单专家绑定已在本版本运行；项目空间、定时自动化、专家团 SOP、企业后台与企业 SSO 仍在建设中。</div></div><div class=\"card\"><div class=\"ct\">不同部门看到的东西一样吗？</div><div class=\"cd\">不一样。系统按部门口径定义了岗位与能力边界，运营、管理、生产、服务、销售、市场推广与应用各自看到对应的任务面、资料面与管理面。</div></div><div class=\"card tint\"><div class=\"ct\">还有问题？</div><div class=\"cd\">把场景、参与角色与数据边界告诉我们，一次性给出部署形态建议与 POC 方案。</div></div></div><div class=\"contact\" style=\"margin-top:12px\"><div class=\"cl\"><b>199 2529 9929</b><span>商务与合作 · 从一次场景沟通开始</span></div></div>"},{"type":"content","id":"coop-intro","title":"合作与签约 · 说明","label":"合作与签约 · 说明","theme":"09 · 合作与签约","body":"<h3>从一次场景沟通开始</h3><p class=\"lead\">告诉我们你的业务场景、参与角色与数据边界，我们会给出部署形态建议与一份可执行的 POC 方案。</p><div class=\"cards\" style=\"margin-top:8px\"><div class=\"card\"><div class=\"ct\">按需定制</div><div class=\"cd\">不堆砌功能，只解决客户真实业务里的问题。</div></div><div class=\"card\"><div class=\"ct\">联署共建</div><div class=\"cd\">方案由双方共同确认后落地，每一项能力上线前都经过客户验证。</div></div><div class=\"card\"><div class=\"ct\">持续陪伴</div><div class=\"cd\">环境搭好只是起点，后续的迭代、排障与优化由同一支 10 人的自有技术团队跟进，客户随时找得到人。</div></div></div>"},{"type":"content","id":"service","title":"我们提供的服务范围","label":"我们提供的服务范围","theme":"09 · 合作与签约","body":"<h3>我们提供的服务范围</h3><div class=\"deflist\" style=\"margin-top:var(--s2)\"><div class=\"def\"><div class=\"dt\">智能体定制</div><div class=\"dd\">按业务场景定义专家、技能与工具组合，交付可实际运行的智能体应用。</div></div><div class=\"def\"><div class=\"dt\">技能安装与调优</div><div class=\"dd\">安装与导入技能资产，并按真实使用反馈持续打磨产出质量。</div></div><div class=\"def\"><div class=\"dt\">工作台搭建</div><div class=\"dd\">搭建业务工作台与业务页面，联接内部系统，并配置权限与审计。</div></div><div class=\"def\"><div class=\"dt\">日常运维与迭代</div><div class=\"dd\">上线后的排障、优化与版本迭代由同一支团队负责，保留完整修订记录。</div></div></div><div class=\"contact\" style=\"margin-top:14px\"><div class=\"cl\"><b>199 2529 9929</b><span>商务与合作 · 也可以直接致电</span></div><div class=\"cqr\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 200 200\" shape-rendering=\"crispEdges\" role=\"img\" aria-label=\"扫码访问 WorkDSH 门户\"><rect width=\"200\" height=\"200\" fill=\"#ffffff\"/><path d=\"M0 0h8v8h-8zM8 0h8v8h-8zM16 0h8v8h-8zM24 0h8v8h-8zM32 0h8v8h-8zM40 0h8v8h-8zM48 0h8v8h-8zM64 0h8v8h-8zM72 0h8v8h-8zM80 0h8v8h-8zM88 0h8v8h-8zM104 0h8v8h-8zM112 0h8v8h-8zM144 0h8v8h-8zM152 0h8v8h-8zM160 0h8v8h-8zM168 0h8v8h-8zM176 0h8v8h-8zM184 0h8v8h-8zM192 0h8v8h-8zM0 8h8v8h-8zM48 8h8v8h-8zM88 8h8v8h-8zM96 8h8v8h-8zM112 8h8v8h-8zM144 8h8v8h-8zM192 8h8v8h-8zM0 16h8v8h-8zM16 16h8v8h-8zM24 16h8v8h-8zM32 16h8v8h-8zM48 16h8v8h-8zM72 16h8v8h-8zM88 16h8v8h-8zM104 16h8v8h-8zM112 16h8v8h-8zM144 16h8v8h-8zM160 16h8v8h-8zM168 16h8v8h-8zM176 16h8v8h-8zM192 16h8v8h-8zM0 24h8v8h-8zM16 24h8v8h-8zM24 24h8v8h-8zM32 24h8v8h-8zM48 24h8v8h-8zM80 24h8v8h-8zM88 24h8v8h-8zM104 24h8v8h-8zM120 24h8v8h-8zM128 24h8v8h-8zM144 24h8v8h-8zM160 24h8v8h-8zM168 24h8v8h-8zM176 24h8v8h-8zM192 24h8v8h-8zM0 32h8v8h-8zM16 32h8v8h-8zM24 32h8v8h-8zM32 32h8v8h-8zM48 32h8v8h-8zM80 32h8v8h-8zM88 32h8v8h-8zM96 32h8v8h-8zM104 32h8v8h-8zM112 32h8v8h-8zM144 32h8v8h-8zM160 32h8v8h-8zM168 32h8v8h-8zM176 32h8v8h-8zM192 32h8v8h-8zM0 40h8v8h-8zM48 40h8v8h-8zM72 40h8v8h-8zM88 40h8v8h-8zM104 40h8v8h-8zM112 40h8v8h-8zM144 40h8v8h-8zM192 40h8v8h-8zM0 48h8v8h-8zM8 48h8v8h-8zM16 48h8v8h-8zM24 48h8v8h-8zM32 48h8v8h-8zM40 48h8v8h-8zM48 48h8v8h-8zM64 48h8v8h-8zM80 48h8v8h-8zM96 48h8v8h-8zM112 48h8v8h-8zM128 48h8v8h-8zM144 48h8v8h-8zM152 48h8v8h-8zM160 48h8v8h-8zM168 48h8v8h-8zM176 48h8v8h-8zM184 48h8v8h-8zM192 48h8v8h-8zM64 56h8v8h-8zM72 56h8v8h-8zM96 56h8v8h-8zM104 56h8v8h-8zM112 56h8v8h-8zM128 56h8v8h-8zM0 64h8v8h-8zM8 64h8v8h-8zM24 64h8v8h-8zM32 64h8v8h-8zM48 64h8v8h-8zM72 64h8v8h-8zM96 64h8v8h-8zM120 64h8v8h-8zM128 64h8v8h-8zM144 64h8v8h-8zM192 64h8v8h-8zM0 72h8v8h-8zM8 72h8v8h-8zM40 72h8v8h-8zM64 72h8v8h-8zM80 72h8v8h-8zM104 72h8v8h-8zM112 72h8v8h-8zM120 72h8v8h-8zM136 72h8v8h-8zM152 72h8v8h-8zM160 72h8v8h-8zM168 72h8v8h-8zM176 72h8v8h-8zM184 72h8v8h-8zM0 80h8v8h-8zM16 80h8v8h-8zM24 80h8v8h-8zM32 80h8v8h-8zM48 80h8v8h-8zM56 80h8v8h-8zM64 80h8v8h-8zM72 80h8v8h-8zM96 80h8v8h-8zM104 80h8v8h-8zM120 80h8v8h-8zM128 80h8v8h-8zM136 80h8v8h-8zM144 80h8v8h-8zM160 80h8v8h-8zM168 80h8v8h-8zM192 80h8v8h-8zM8 88h8v8h-8zM32 88h8v8h-8zM64 88h8v8h-8zM112 88h8v8h-8zM120 88h8v8h-8zM152 88h8v8h-8zM168 88h8v8h-8zM176 88h8v8h-8zM184 88h8v8h-8zM192 88h8v8h-8zM8 96h8v8h-8zM16 96h8v8h-8zM24 96h8v8h-8zM40 96h8v8h-8zM48 96h8v8h-8zM56 96h8v8h-8zM64 96h8v8h-8zM72 96h8v8h-8zM80 96h8v8h-8zM96 96h8v8h-8zM120 96h8v8h-8zM128 96h8v8h-8zM144 96h8v8h-8zM152 96h8v8h-8zM192 96h8v8h-8zM0 104h8v8h-8zM8 104h8v8h-8zM32 104h8v8h-8zM40 104h8v8h-8zM72 104h8v8h-8zM80 104h8v8h-8zM96 104h8v8h-8zM104 104h8v8h-8zM120 104h8v8h-8zM128 104h8v8h-8zM160 104h8v8h-8zM184 104h8v8h-8zM0 112h8v8h-8zM8 112h8v8h-8zM32 112h8v8h-8zM40 112h8v8h-8zM48 112h8v8h-8zM80 112h8v8h-8zM96 112h8v8h-8zM104 112h8v8h-8zM120 112h8v8h-8zM128 112h8v8h-8zM160 112h8v8h-8zM168 112h8v8h-8zM176 112h8v8h-8zM184 112h8v8h-8zM192 112h8v8h-8zM0 120h8v8h-8zM16 120h8v8h-8zM24 120h8v8h-8zM32 120h8v8h-8zM40 120h8v8h-8zM72 120h8v8h-8zM112 120h8v8h-8zM128 120h8v8h-8zM144 120h8v8h-8zM152 120h8v8h-8zM168 120h8v8h-8zM176 120h8v8h-8zM192 120h8v8h-8zM0 128h8v8h-8zM24 128h8v8h-8zM48 128h8v8h-8zM56 128h8v8h-8zM72 128h8v8h-8zM96 128h8v8h-8zM104 128h8v8h-8zM120 128h8v8h-8zM128 128h8v8h-8zM136 128h8v8h-8zM144 128h8v8h-8zM152 128h8v8h-8zM160 128h8v8h-8zM176 128h8v8h-8zM184 128h8v8h-8zM64 136h8v8h-8zM80 136h8v8h-8zM104 136h8v8h-8zM120 136h8v8h-8zM128 136h8v8h-8zM160 136h8v8h-8zM176 136h8v8h-8zM184 136h8v8h-8zM0 144h8v8h-8zM8 144h8v8h-8zM16 144h8v8h-8zM24 144h8v8h-8zM32 144h8v8h-8zM40 144h8v8h-8zM48 144h8v8h-8zM72 144h8v8h-8zM80 144h8v8h-8zM88 144h8v8h-8zM128 144h8v8h-8zM144 144h8v8h-8zM160 144h8v8h-8zM192 144h8v8h-8zM0 152h8v8h-8zM48 152h8v8h-8zM96 152h8v8h-8zM104 152h8v8h-8zM128 152h8v8h-8zM160 152h8v8h-8zM0 160h8v8h-8zM16 160h8v8h-8zM24 160h8v8h-8zM32 160h8v8h-8zM48 160h8v8h-8zM64 160h8v8h-8zM80 160h8v8h-8zM96 160h8v8h-8zM112 160h8v8h-8zM120 160h8v8h-8zM128 160h8v8h-8zM136 160h8v8h-8zM144 160h8v8h-8zM152 160h8v8h-8zM160 160h8v8h-8zM0 168h8v8h-8zM16 168h8v8h-8zM24 168h8v8h-8zM32 168h8v8h-8zM48 168h8v8h-8zM64 168h8v8h-8zM88 168h8v8h-8zM120 168h8v8h-8zM128 168h8v8h-8zM144 168h8v8h-8zM184 168h8v8h-8zM192 168h8v8h-8zM0 176h8v8h-8zM16 176h8v8h-8zM24 176h8v8h-8zM32 176h8v8h-8zM48 176h8v8h-8zM80 176h8v8h-8zM88 176h8v8h-8zM96 176h8v8h-8zM104 176h8v8h-8zM112 176h8v8h-8zM120 176h8v8h-8zM136 176h8v8h-8zM160 176h8v8h-8zM168 176h8v8h-8zM176 176h8v8h-8zM184 176h8v8h-8zM192 176h8v8h-8zM0 184h8v8h-8zM48 184h8v8h-8zM64 184h8v8h-8zM72 184h8v8h-8zM88 184h8v8h-8zM120 184h8v8h-8zM152 184h8v8h-8zM160 184h8v8h-8zM176 184h8v8h-8zM184 184h8v8h-8zM192 184h8v8h-8zM0 192h8v8h-8zM8 192h8v8h-8zM16 192h8v8h-8zM24 192h8v8h-8zM32 192h8v8h-8zM40 192h8v8h-8zM48 192h8v8h-8zM64 192h8v8h-8zM72 192h8v8h-8zM88 192h8v8h-8zM120 192h8v8h-8zM128 192h8v8h-8zM136 192h8v8h-8zM168 192h8v8h-8zM192 192h8v8h-8z\" fill=\"#14243b\"/></svg></div></div><p class=\"muted\" style=\"margin-top:10px\">扫码访问 WorkDSH 门户首页，或翻至下一页在线留下合作意向。</p>"},{"type":"content","id":"coop-form","title":"留下合作意向","label":"留下合作意向","theme":"09 · 合作与签约","body":"<h3>留下合作意向</h3><form class=\"f-form\" id=\"orderForm\" novalidate autocomplete=\"off\"><label class=\"f-row\"><span>单位名称 <i class=\"req\">必填</i></span><input type=\"text\" name=\"org\" maxlength=\"120\" autocomplete=\"organization\" required></label><label class=\"f-row\"><span>联系人 <i class=\"req\">必填</i></span><input type=\"text\" name=\"contact\" maxlength=\"60\" autocomplete=\"name\" required></label><label class=\"f-row\"><span>联系电话 <i class=\"req\">必填</i></span><input type=\"tel\" name=\"tel\" maxlength=\"40\" inputmode=\"tel\" autocomplete=\"tel\" placeholder=\"例如 13800000000\" required></label><div class=\"f-row\"><span>想优先解决的场景 <i class=\"req\">至少选一项</i></span><div class=\"f-chips\"><label><input type=\"checkbox\" name=\"domains\" value=\"运营\"><span>运营</span></label><label><input type=\"checkbox\" name=\"domains\" value=\"管理\"><span>管理</span></label><label><input type=\"checkbox\" name=\"domains\" value=\"生产\"><span>生产</span></label><label><input type=\"checkbox\" name=\"domains\" value=\"服务\"><span>服务</span></label><label><input type=\"checkbox\" name=\"domains\" value=\"销售\"><span>销售</span></label><label><input type=\"checkbox\" name=\"domains\" value=\"市场推广与应用\"><span>市场推广与应用</span></label></div></div><label class=\"f-row\"><span>补充说明 <i class=\"opt\">选填</i></span><textarea name=\"note\" rows=\"2\" maxlength=\"2000\" placeholder=\"例如：希望先在生产部门做一次 POC。\"></textarea></label><p class=\"f-msg\" id=\"orderMsg\" role=\"alert\"></p><button class=\"f-submit\" type=\"submit\" id=\"orderSubmit\">提交合作意向</button><p class=\"f-hint\">提交后客户经理将与你联系；我们只把信息用于本次沟通。也可直接致电 199 2529 9929。</p></form><p class=\"muted\" style=\"margin-top:8px\">本表单提交至门户既有的合作意向接口，与首页表单共用同一套校验与限流；若暂不提交，可直接致电上方号码。</p>"},{"type":"content","id":"end","title":"封底","label":"封底","body":"<div style=\"display:flex;flex-direction:column;height:100%;justify-content:center;text-align:center;gap:6px\"><div style=\"font-size:1.5em;font-weight:800;color:var(--brand-deep);letter-spacing:.8px\">企业工作台定制解决方案</div><div style=\"font-size:.95em;color:var(--ink2);line-height:1.6;max-width:24em;margin:6px auto 0\">基于 DeepSeek Harness 构建的企业级 AI 智能体工作台。可私有化部署，面向运营、管理、生产、服务、销售、市场推广与应用提供场景化应用，支撑各部门团队协同任务。</div><div style=\"font-size:.95em;color:var(--brand);font-weight:700;margin-top:12px\">商务与合作 199 2529 9929</div><div class=\"signature\" style=\"margin-top:18px;text-align:left;max-width:20em;margin-left:auto;margin-right:auto\"><div class=\"sig-row\"><span class=\"sk\">运营主体</span><span class=\"sv\">云管端运维</span></div><div class=\"sig-row\"><span class=\"sk\">成立时间</span><span class=\"sv\">2018 年 8 月 30 日</span></div><div class=\"sig-row\"><span class=\"sk\">备案号</span><span class=\"sv\">粤ICP备88822166号</span></div></div><div class=\"muted\" style=\"margin-top:16px\">产品页 · 增值业务产品页 · 增值业务后台 · 产品页管理后台</div></div>"}];
+</script>
+<script>
+/* 启动：数据源无关 —— 内联数据（静态单文件）或从 /api/portal/handbook/state 取（后台驱动）。 */
+function bootReader(pages, cfg){
+  PAGES = Array.isArray(pages) ? pages : [];
+  N = PAGES.length;
+  if(cfg && cfg.mediaBase) MEDIA_BASE = cfg.mediaBase;
+  var tot = document.getElementById('totNo');
+  if(tot) tot.textContent = N;
+  var bootPage = pageFromHash();
+  layout();
+  var h = document.getElementById('hint');
+  if(bootPage > 0) doJump(leafForPage(Math.max(0, Math.min(bootPage - 1, N - 1))));
+  if(h){ setTimeout(function(){ h.style.opacity = '0'; }, 6500); }
+}
+
+onReady();
+(function(){
+  var cfg = window.__BOOK__ || {};
+  if(typeof window.__PAGES__ !== 'undefined' && window.__PAGES__){
+    bootReader(window.__PAGES__, cfg);
+    return;
+  }
+  var url = '/api/portal/handbook/state' + (cfg.bookId ? ('?book=' + encodeURIComponent(cfg.bookId)) : '');
+  var hint = document.getElementById('hint');
+  if(hint) hint.textContent = '正在载入…';
+  fetch(url, { credentials:'same-origin', cache:'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(doc){
+      if(!doc || doc.ok === false) throw new Error((doc && doc.error) || 'load-failed');
+      var meta = doc.meta || {};
+      var b = document.querySelector('.brand .tt');
+      if(b && meta.title){ b.innerHTML = esc(meta.title) + (meta.subtitle ? '<small>'+esc(meta.subtitle)+'</small>' : ''); }
+      if(meta.title) document.title = meta.title + ' · 在线翻页电子书刊';
+      bootReader(doc.pages, { mediaBase: doc.mediaBase });
+      if(hint) hint.textContent = '点击页面右侧翻页 ｜ ← → 键翻页 ｜ 滚轮 / 左右滑动也可以';
+    })
+    .catch(function(err){
+      if(hint) hint.textContent = '内容载入失败：' + (err && err.message ? err.message : '未知错误');
+    });
+})();
+</script>
+</body>
+</html>

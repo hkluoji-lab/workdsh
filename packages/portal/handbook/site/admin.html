@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>手册管理后台 · 政企事业服务手册</title>
+<meta name="theme-color" content="#0a4ea3">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a4ea3'/%3E%3Cpath d='M16 5.6 22.6 14h-4.2v4.6h-4.8V14H9.4L16 5.6Z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --brand:#0a4ea3;--brand-deep:#062f66;--brand-soft:#eaf1fb;--brand-line:#c3d5ec;
+  --accent:#e8722c;--ink:#15243a;--ink2:#40536e;--ink3:#7386a0;
+  --line:#dde5ef;--line-soft:#eef3f9;--bg:#eef2f8;--ok:#1c7a4a;--err:#c0392b;--warn:#8a6100;
+  --font:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans CJK SC",system-ui,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);display:flex;flex-direction:column;overflow:hidden;font-size:13px;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+/* 顶栏 */
+header{
+  flex:0 0 54px;display:flex;align-items:center;gap:14px;padding:0 14px;background:#fff;
+  border-bottom:1px solid var(--line);z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px;white-space:nowrap}
+.brand .mark{width:26px;height:26px;border-radius:7px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800}
+.brand small{font-weight:400;color:var(--ink3);font-size:11.5px;border-left:1px solid var(--line);padding-left:9px;margin-left:2px}
+.meta{font-size:11.5px;color:var(--ink3);white-space:nowrap}
+.meta b{color:var(--brand);font-variant-numeric:tabular-nums}
+.spacer{flex:1}
+.actions{display:flex;gap:6px;align-items:center}
+.btn{
+  border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:8px;height:32px;padding:0 11px;
+  font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:.15s;white-space:nowrap;
+}
+.btn:hover{border-color:var(--brand-line);color:var(--brand);background:var(--brand-soft)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+.btn.primary:hover{background:var(--brand-deep);color:#fff}
+.btn.danger:hover{border-color:#e6b0aa;color:var(--err);background:#fdf2f1}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:5px}
+.dot.dirty{background:var(--accent)}
+/* 主区 */
+main{flex:1;display:grid;grid-template-columns:262px minmax(360px,1fr) minmax(360px,0.92fr);min-height:0}
+.pane{min-height:0;min-width:0;display:flex;flex-direction:column;background:#fff;border-right:1px solid var(--line)}
+.pane:last-child{border-right:0}
+.pane-h{
+  flex:0 0 36px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--line);
+  font-size:11.5px;font-weight:700;color:var(--ink2);letter-spacing:.4px;background:#fafcfe;
+}
+.pane-h .spacer{flex:1}
+.pane-h button{height:24px;padding:0 8px;font-size:11.5px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink3);cursor:pointer}
+.pane-h button:hover{color:var(--brand);border-color:var(--brand-line)}
+.pane-b{flex:1;min-height:0;overflow:auto}
+/* 页面列表 */
+#pageList{margin:0;padding:6px;list-style:none}
+.pitem{
+  display:grid;grid-template-columns:24px 1fr auto;gap:6px;align-items:center;border:1px solid transparent;
+  border-radius:8px;padding:6px 7px;cursor:pointer;margin-bottom:3px;
+}
+.pitem:hover{background:var(--line-soft)}
+.pitem.sel{background:var(--brand-soft);border-color:var(--brand-line)}
+.pitem .no{font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums;text-align:right}
+.pitem .lb{min-width:0}
+.pitem .lb b{display:block;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pitem .lb span{font-size:10.5px;color:var(--ink3)}
+.pitem .ops{display:flex;gap:2px;opacity:0;transition:.15s}
+.pitem:hover .ops{opacity:1}
+.pitem .ops button{border:0;background:#fff;border:1px solid var(--line);border-radius:5px;width:20px;height:20px;font-size:10px;cursor:pointer;color:var(--ink3);padding:0;line-height:1}
+.pitem .ops button:hover{color:var(--brand);border-color:var(--brand-line)}
+.tag{display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;background:var(--line-soft);color:var(--ink3);border:1px solid var(--line)}
+.tag.img{background:#fff4ec;border-color:#f6d9c2;color:#9c4b12}
+/* 表单 */
+.form{padding:12px 14px 28px}
+.frow{margin-bottom:11px}
+.frow>label{display:block;font-size:11.5px;color:var(--ink3);margin-bottom:4px;font-weight:600}
+input[type=text],select,textarea{
+  width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-family:inherit;font-size:12.5px;color:var(--ink);
+  background:#fff;outline:none;transition:.15s;
+}
+input[type=text]:focus,select:focus,textarea:focus{border-color:var(--brand-line);box-shadow:0 0 0 3px rgba(10,78,163,.09)}
+textarea{font-family:var(--mono);font-size:11.6px;line-height:1.55;resize:vertical;min-height:260px;white-space:pre;tab-size:2}
+.hint{font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.5}
+.tools{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.tools button{
+  border:1px solid var(--line);background:#fafcfe;border-radius:6px;height:24px;padding:0 7px;font-size:11px;color:var(--ink2);cursor:pointer;
+}
+.tools button:hover{color:var(--brand);border-color:var(--brand-line);background:var(--brand-soft)}
+.formFoot{
+  position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,.55),#fff 34%);padding:10px 0 4px;display:flex;gap:7px;align-items:center;
+  border-top:1px solid var(--line-soft);margin-top:12px;
+}
+.formFoot .grow{flex:1}
+/* 图片槽 */
+.slot{border:1px dashed var(--line);border-radius:10px;padding:9px;background:#fafcfe;display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.slot.has{border-style:solid;background:#fff}
+.slot img{width:76px;height:76px;object-fit:cover;border-radius:7px;border:1px solid var(--line);background:#fff;flex:0 0 auto}
+.slot .info{flex:1;min-width:0;font-size:11px;color:var(--ink3);line-height:1.6}
+.slot .info code{font-family:var(--mono);font-size:10.5px;color:var(--ink2);word-break:break-all}
+.slot .ops{display:flex;flex-direction:column;gap:4px}
+.slot .ops button{border:1px solid var(--line);background:#fff;border-radius:6px;height:24px;padding:0 8px;font-size:11px;cursor:pointer;color:var(--ink2)}
+.slot .ops button:hover{color:var(--brand);border-color:var(--brand-line)}
+.slot.drag{border-color:var(--brand);background:var(--brand-soft)}
+/* 预览 */
+#preview{flex:1;width:100%;border:0;background:#e9eef6;min-height:0}
+/* 弹层 */
+#modal{position:fixed;inset:0;background:rgba(10,22,40,.5);display:grid;place-items:center;z-index:60}
+#modal[hidden]{display:none}
+.sheet{background:#fff;border-radius:12px;width:min(860px,94vw);max-height:86vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(10,22,40,.3)}
+.sheet header{height:48px;border-radius:12px 12px 0 0;border-bottom:1px solid var(--line);flex:0 0 48px}
+.sheet .body{padding:12px 14px;overflow:auto}
+.sheet .close{margin-left:auto;border:0;background:#f2f5fa;width:28px;height:28px;border-radius:7px;cursor:pointer;color:var(--ink2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.mcard{border:1px solid var(--line);border-radius:9px;padding:7px;background:#fbfcfe;font-size:11px;color:var(--ink3)}
+.mcard img{width:100%;height:96px;object-fit:cover;border-radius:6px;border:1px solid var(--line);background:#fff;display:block;margin-bottom:6px}
+.mcard code{font-family:var(--mono);font-size:10px;display:block;word-break:break-all;color:var(--ink2);margin-bottom:3px}
+.mcard .row{display:flex;gap:5px;margin-top:5px}
+.mcard .row button{flex:1;border:1px solid var(--line);background:#fff;border-radius:6px;height:23px;font-size:10.5px;cursor:pointer;color:var(--ink2)}
+.mcard .row button:hover{color:var(--brand);border-color:var(--brand-line)}
+.newcard{
+  text-align:left;border:1px solid var(--line);background:#fbfcfe;border-radius:10px;padding:10px 12px;cursor:pointer;
+  font-family:inherit;transition:.15s;display:flex;flex-direction:column;gap:4px;
+}
+.newcard:hover{border-color:var(--brand);background:var(--brand-soft)}
+.newcard b{font-size:13px;color:var(--brand-deep)}
+/* 自由画布编辑器 */
+.fehost{border:1px solid var(--line);border-radius:10px;background:#f7f9fc;padding:8px;margin-top:2px}
+.febar{display:flex;flex-wrap:wrap;gap:6px;justify-content:space-between;margin-bottom:6px}
+.fetools,.felayers{display:flex;flex-wrap:wrap;gap:4px}
+.febtn{border:1px solid var(--line);background:#fff;border-radius:6px;height:26px;padding:0 9px;font-size:11.5px;cursor:pointer;color:var(--brand-deep);font-family:inherit}
+.febtn:hover{border-color:var(--brand);background:var(--brand-soft)}
+.febtn.ghost{color:var(--ink3)}
+.fewrap{position:relative}
+.fecanvas{position:relative;width:100%;padding-top:141.467%;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;touch-action:none}
+.fecanvas .fe{position:absolute;overflow:hidden;box-sizing:border-box}
+.fecanvas .fe.sel{overflow:visible;outline:2px solid #0a4ea3;outline-offset:0}
+.fecanvas .fe-h{position:absolute;right:-7px;bottom:-7px;width:14px;height:14px;background:#0a4ea3;border:2px solid #fff;border-radius:3px;cursor:nwse-resize;display:block}
+.fecanvas .fe.grouped:not(.sel){outline:1px dashed rgba(10,78,163,.35)}
+.febox{position:absolute;border:1px dashed #0a4ea3;pointer-events:none;box-sizing:border-box;z-index:9998}
+.febox .fe-h{pointer-events:auto}
+.femarquee{position:absolute;border:1px solid #0a4ea3;background:rgba(10,78,163,.08);pointer-events:none;z-index:9999}
+.febtn[disabled]{opacity:.45;cursor:not-allowed}
+.fegrid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(10,78,163,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(10,78,163,.06) 1px,transparent 1px);background-size:6.66% 4.71%}
+.feprops{margin-top:8px;border-top:1px solid var(--line-soft);padding-top:8px}
+.feprops .fehint{font-size:11.5px;color:var(--ink3);line-height:1.6}
+.feprops .fehead{font-size:12px;margin-bottom:6px;color:var(--brand-deep)}
+.feprops .fehead code{font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.feprops .feFrow{margin-bottom:6px}
+.feprops .feFrow>label{display:block;font-size:11px;color:var(--ink3);margin-bottom:2px}
+.feprops input,.feprops select,.feprops textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:4px 7px;font-size:11.5px;font-family:inherit;color:var(--ink)}
+.feprops textarea{min-height:60px;font-family:var(--mono)}
+.fegeo{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin:6px 0}
+.fegeo .feFrow{margin:0}
+/* ==== FREE-CSS-START（由 work/build-free.mjs 生成，勿手改）==== */
+/* 新组件样式：图标 / 二维码 / 视频 / 图集 / 表单 / 倒计时 + 入场动效
+   由 work/build-free.mjs 注入后台、预览页与公开页模板三处，保持一处定义。
+   注意：动效的"初始不可见"只在 .page 容器内生效 —— 后台编辑画布不是 .page，
+   否则用户一加动效元素就从画布上消失，没法编辑。 */
+.fe-icon{overflow:visible}
+.fe-qrcode{display:flex;align-items:center;justify-content:center}
+.fe-qrcode svg{display:block}
+.fe-qr-empty,.fe-empty{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-height:28px;font-size:12px;color:#98a6b8;background:repeating-linear-gradient(45deg,#f7f9fc,#f7f9fc 8px,#eef2f8 8px,#eef2f8 16px);border:1px dashed #cfd9e6;border-radius:6px;text-align:center;padding:4px;box-sizing:border-box}
+.fe-video{background:#0b1220}
+.fe-video video{width:100%;height:100%;display:block;object-fit:contain;background:#0b1220}
+.fe-gallery{display:grid;grid-template-columns:repeat(var(--cols,2),1fr);gap:var(--gap,8px);align-content:start}
+.fe-gallery figure{margin:0;overflow:hidden;border-radius:var(--radius,0)}
+.fe-gallery img{width:100%;height:100%;object-fit:cover;display:block}
+.fe-gallery figcaption{font-size:11px;color:#6b7a90;text-align:center;margin-top:2px}
+.fe-form{display:flex;flex-direction:column;gap:6px;overflow:auto}
+.fe-field{display:flex;flex-direction:column;gap:2px;font-size:12px;color:#33455e}
+.fe-field>span{font-weight:600}
+.fe-req{color:#d93025;font-style:normal}
+.fe-field input,.fe-field textarea,.fe-field select{border:1px solid #cfd9e6;border-radius:6px;padding:6px 8px;font-size:13px;font-family:inherit;color:#15243a;background:#fff;width:100%;box-sizing:border-box}
+.fe-submit{margin-top:2px;border:0;border-radius:8px;background:#0a4ea3;color:#fff;font-size:14px;font-weight:600;padding:9px 12px;cursor:pointer;font-family:inherit}
+.fe-submit:disabled{opacity:.6;cursor:default}
+.fe-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.fe-note{font-size:11px;color:#6b7a90}
+.fe-formmsg{font-size:12px;line-height:1.5}
+.fe-formmsg.is-ok{color:#0a7d3c}
+.fe-formmsg.is-err{color:#d93025}
+.fe-countdown{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.fe-cd-label{font-size:12px;color:#6b7a90}
+.fe-cd-time{font-size:26px;font-weight:700;line-height:1.2}
+.page .fe[data-anim]{opacity:0;transition:opacity .5s ease,transform .5s ease}
+.page .fe[data-anim="up"]{transform:translateY(18px)}
+.page .fe[data-anim="down"]{transform:translateY(-18px)}
+.page .fe[data-anim="left"]{transform:translateX(18px)}
+.page .fe[data-anim="right"]{transform:translateX(-18px)}
+.page .fe[data-anim="zoom"]{transform:scale(.92)}
+.page .fe[data-anim].fe-in{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){.page .fe[data-anim]{opacity:1;transform:none;transition:none}}
+
+/* 编辑器里的表单字段行（仅后台使用，公网页不会出现） */
+.fefields{margin-bottom:4px}
+.fefieldrow{display:grid;grid-template-columns:1fr 88px 22px 24px;gap:4px;align-items:center;margin-bottom:4px}
+.fefieldrow input[type=checkbox]{width:auto;margin:0}
+.fefieldrow .febtn{height:24px;padding:0 6px}
+.fe-qrcode .fe-qr-img{width:100%;height:100%;display:block}
+/* ==== FREE-CSS-END ==== */
+.chip{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11px;line-height:18px;margin-right:6px;white-space:nowrap}
+.chip-added{background:#e6f4ea;color:#0a7d3c}
+.chip-removed{background:#fce8e6;color:#c5221f}
+.chip-changed{background:#fef7e0;color:#b06000}
+.chip-same{background:#eef2f8;color:#5f6b7a}
+.mcard{position:relative}
+.mcard.is-picked{outline:2px solid var(--brand)}
+.mcard video{width:100%;height:96px;object-fit:cover;background:#0b1220;border-radius:6px}
+.newcard span{font-size:11px;color:var(--ink3);line-height:1.5}
+.hitem{display:flex;align-items:center;gap:9px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12px}
+.hitem code{font-family:var(--mono);font-size:10.5px;color:var(--ink2);flex:1;word-break:break-all}
+/* 提示 */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);background:rgba(10,22,40,.93);color:#fff;
+  padding:8px 16px;border-radius:18px;font-size:12.5px;opacity:0;pointer-events:none;transition:.22s;z-index:90;
+}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#toast.err{background:#a3271b}
+#gate{position:fixed;inset:0;background:#eef2f8;display:grid;place-items:center;z-index:80;text-align:center;padding:24px}
+#gate[hidden]{display:none}
+#gate .box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px 30px;max-width:420px;box-shadow:0 12px 40px rgba(16,38,68,.12)}
+#gate h2{margin:0 0 8px;color:var(--brand-deep);font-size:17px}
+#gate p{margin:0 0 14px;color:var(--ink3);font-size:12.5px;line-height:1.7}
+.busy{position:fixed;inset:0;background:rgba(255,255,255,.55);display:grid;place-items:center;z-index:95;font-size:13px;color:var(--brand)}
+.busy[hidden]{display:none}
+@media(max-width:1400px){main{grid-template-columns:238px minmax(0,1fr) minmax(0,.9fr)}}
+@media(max-width:1100px){main{grid-template-columns:minmax(180px,220px) minmax(0,1fr)} #previewPane{display:none}}
+/* 窄屏（平板/手机）：表头折行、页面列表变横向条、编辑区独占一列。
+   修因：原先 <860px 时 grid 子项按 min-content 撑宽，整页横向溢出 221–599px（2026-10-01 实测）。 */
+@media(max-width:860px){
+  header{flex:0 0 auto;flex-wrap:wrap;height:auto;min-height:54px;padding:8px 12px;row-gap:8px;align-items:center}
+  .brand{flex:1 1 auto;min-width:0}
+  .brand .tt{white-space:normal;line-height:1.3}
+  .brand small{display:none}
+  .meta{order:3;flex:1 1 100%;white-space:normal}
+  .spacer{display:none}
+  .actions{flex:1 1 100%;flex-wrap:wrap;padding-bottom:2px}
+  .actions .btn{flex:0 0 auto}
+  main{display:flex;flex-direction:column;min-height:0}
+  #listPane,#editPane{min-width:0}
+  #listPane{flex:0 0 auto;height:186px;border-right:0;border-bottom:1px solid var(--line)}
+  #listPane .pane-b{flex:0 0 auto;max-height:150px}
+  #pageList{display:flex;gap:6px;overflow-x:auto;padding:8px 10px;margin:0}
+  .pitem{flex:0 0 auto;width:152px;margin-bottom:0;grid-template-columns:20px minmax(0,1fr);gap:2px 6px}
+  .pitem .ops{grid-column:1 / -1;justify-content:flex-end;opacity:1}
+  #editPane{flex:1 1 auto;min-height:0}
+  .form{padding:12px 12px 24px}
+  .formFoot{flex-wrap:wrap;gap:6px}
+  .formFoot .grow{display:none}
+  textarea{min-height:170px}
+}
+@media(max-width:520px){
+  .pitem{width:132px}
+  .brand .tt{font-size:13.5px}
+  .pane-h{padding:0 8px;gap:5px}
+  .tools button{font-size:10.5px;height:23px;padding:0 6px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="mark">CT</span>手册管理后台<small id="hbTitle">政企事业服务手册</small></div>
+  <div class="meta"><span class="dot" id="stateDot"></span><span id="stateText">已同步</span> · 修订 <b id="revNum">—</b> · <span id="userName">—</span></div>
+  <div class="spacer"></div>
+  <div class="actions">
+    <button class="btn" id="btnNew">＋ 新增页</button>
+    <button class="btn" id="btnMedia">媒体库</button>
+    <button class="btn" id="btnHistory">历史版本</button>
+    <button class="btn" id="btnDiff">发布前检查</button>
+    <button class="btn" id="btnTpl">页面模板</button>
+    <button class="btn" id="btnLeads">表单提交</button>
+    <button class="btn" id="btnOpen">打开公开页 ↗</button>
+    <a class="btn" href="/logout">退出</a>
+    <button class="btn" id="btnSettings">手册设置</button>
+    <button class="btn primary" id="btnPublish">发布到公网</button>
+  </div>
+</header>
+
+<main>
+  <section class="pane" id="listPane">
+    <div class="pane-h">页面 <span id="pageCount" style="color:var(--ink3);font-weight:400"></span><span class="spacer"></span><button id="btnReset" title="把草稿整体还原为当前已发布的版本">还原到已发布版本</button></div>
+    <div class="pane-b"><ol id="pageList"></ol></div>
+  </section>
+
+  <section class="pane" id="editPane">
+    <div class="pane-h">编辑<span class="spacer"></span><span id="editHint" style="font-weight:400;color:var(--ink3)"></span></div>
+    <div class="pane-b"><div class="form" id="form"></div></div>
+  </section>
+
+  <section class="pane" id="previewPane">
+    <div class="pane-h">实时预览<span class="spacer"></span><span style="font-weight:400;color:var(--ink3)" id="pvHint">未保存的改动也会实时呈现</span></div>
+    <iframe id="preview" src="/portal/handbook/preview" title="页面预览"></iframe>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<div id="gate" hidden>
+  <div class="box">
+    <h2>需要管理员登录</h2>
+    <p id="gateMsg">当前会话无权访问手册管理后台。请登录后重试。</p>
+    <a class="btn primary" href="/login?next=/portal/handbook" style="text-decoration:none">前往登录</a>
+  </div>
+</div>
+
+<div class="busy" id="busy" hidden>处理中…</div>
+<div id="modal" hidden></div>
+
+<script type="module">
+import { esc, renderPage, typeLabel, coverFields, buildCover, inlineImageTag, titleFields, applyTitleFields } from '/portal/handbook/asset/render.js';
+import { mountFreeEditor } from '/portal/handbook/asset/free-editor.js';
+
+const $ = (s) => document.querySelector(s);
+const MEDIA_BASE = '/portal/handbook-media/';
+const PUBLIC_URL = '/portal/products/2026Q4-zhengqi-fuwu-shouce.html';
+
+const S = { draft: null, media: [], history: [], publishedRev: 0, user: '', selected: null, sharp: false, limits: {} };
+let baseline = '';       // 已保存状态的快照串，用于判断脏
+let saveTimer = null;
+let coverAdvanced = {};   // 封面是否处于「直接编辑 HTML」高级模式（按页 id 记忆）
+let pendingPick = null;
+let pendingPickOpts = {};   // 图片选择弹层的回调
+
+/* ---------------- 基础工具 ---------------- */
+function toast(msg, isErr) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.toggle('err', Boolean(isErr));
+  el.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('on'), 2600);
+}
+function busy(on) { $('#busy').hidden = !on; }
+async function api(path, options = {}) {
+  const res = await fetch('/api/portal/handbook/admin/' + path, {
+    credentials: 'same-origin',
+    headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
+    ...options,
+  });
+  const data = await res.json().catch(() => ({ ok: false, error: 'bad-response' }));
+  if (!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
+  return data;
+}
+const pages = () => (S.draft?.pages ?? []);
+const byId = (id) => pages().find((p) => p.id === id);
+function markDirty() {
+  // 脏检查同时覆盖「页面」与「手册设置(meta)」：只比页面会让改过设置却仍显示“已同步”、
+  // 且「放弃改动」按钮不可点（2026-10-01 实测发现）。
+  const cur = JSON.stringify({ p: pages(), m: (S.draft && S.draft.meta) || {} });
+  const dirty = cur !== baseline;
+  $('#stateDot').classList.toggle('dirty', dirty);
+  $('#stateText').textContent = dirty ? '有未发布的改动' : '已同步';
+  // 该按钮执行的是「草稿整体还原为已发布版本」（幂等），因此不再随未保存改动开关。
+  return dirty;
+}
+function snapshot() { baseline = JSON.stringify({ p: pages(), m: (S.draft && S.draft.meta) || {} }); markDirty(); }
+
+/* ---------------- 加载 ---------------- */
+async function load(keepSelection) {
+  busy(true);
+  try {
+    const data = await api('state');
+    S.draft = data.draft; S.media = data.media ?? []; S.history = data.history ?? [];
+    S.isAdmin = Boolean(data.isAdmin); S.isEditor = Boolean(data.isEditor); S.editors = data.editors ?? [];
+    S.limits = data.limits ?? {};
+    S.publishedRev = data.publishedRev; S.user = data.user; S.sharp = data.sharp; S.limits = data.limits ?? {};
+    $('#revNum').textContent = S.draft?.rev ?? '—';
+    $('#userName').textContent = S.user || '—';
+    $('#hbTitle').textContent = S.draft?.meta?.title || '政企事业服务手册';
+    $('#pageCount').textContent = '共 ' + pages().length + ' 页';
+    $('#gate').hidden = true;
+    if (!keepSelection || !byId(S.selected)) S.selected = pages()[0]?.id ?? null;
+    renderList(); renderForm(); snapshot(); pushPreview();
+  } catch (error) {
+    const msg = String(error.message || error);
+    if (msg.includes('admin') || msg.includes('forbidden') || msg.includes('unauth')) {
+      $('#gateMsg').textContent = '当前会话不是管理员或已过期，请登录后重试。';
+      $('#gate').hidden = false;
+    } else {
+      toast('加载失败：' + msg, true);
+    }
+  } finally { busy(false); }
+}
+
+/* ---------------- 页面列表 ---------------- */
+function renderList() {
+  const list = pages();
+  $('#pageList').innerHTML = list.map((p, i) => `
+    <li class="pitem${p.id === S.selected ? ' sel' : ''}" data-id="${esc(p.id)}">
+      <span class="no">${String(i + 1).padStart(2, '0')}</span>
+      <span class="lb"><b>${esc(p.label || p.title || '未命名')}</b><span class="tag ${p.type === 'img' || p.type === 'imgpair' ? 'img' : ''}">${typeLabel(p.type)}</span></span>
+      <span class="ops">
+        <button data-op="up" title="上移">▲</button>
+        <button data-op="down" title="下移">▼</button>
+        <button data-op="dup" title="复制">⧉</button>
+        <button data-op="del" title="删除">✕</button>
+      </span>
+    </li>`).join('');
+  $('#pageCount').textContent = '共 ' + list.length + ' 页';
+}
+$('#pageList').addEventListener('click', async (e) => {
+  const li = e.target.closest('.pitem'); if (!li) return;
+  const id = li.dataset.id;
+  const op = e.target.closest('button')?.dataset.op;
+  if (!op) { S.selected = id; renderList(); renderForm(); pushPreview(); return; }
+  try {
+    busy(true);
+    if (op === 'up' || op === 'down') {
+      await api('page/move', { method: 'POST', body: JSON.stringify({ id, dir: op }) });
+      await load(true); toast('已' + (op === 'up' ? '上移' : '下移'));
+    } else if (op === 'dup') {
+      const r = await api('page/duplicate', { method: 'POST', body: JSON.stringify({ id }) });
+      S.selected = r.page.id; await load(true); toast('已复制为新页');
+    } else if (op === 'del') {
+      if (!confirm('确认删除这一页？删除后需点击「发布到公网」才会生效（历史版本可回滚）。')) return;
+      await api('page/delete', { method: 'POST', body: JSON.stringify({ id }) });
+      if (S.selected === id) S.selected = null;
+      await load(true); toast('已删除');
+    }
+  } catch (error) { toast('操作失败：' + error.message, true); }
+  finally { busy(false); }
+});
+
+/* ---------------- 表单 ---------------- */
+function field(label, inner, hint) {
+  return `<div class="frow"><label>${label}</label>${inner}${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
+}
+function slotHTML(slot, name) {
+  const url = name ? MEDIA_BASE + encodeURIComponent(name) : '';
+  return `<div class="slot ${name ? 'has' : ''}" data-slot="${slot}">
+      ${name ? `<img src="${url}" alt="">` : ''}
+      <div class="info">${name ? `已选：<code>${esc(name)}</code>` : '未选择图片'}<br>支持 PNG / JPG / WebP / GIF，单张 ≤ 6MB${S.sharp ? '，上传后自动压缩为 WebP' : '（当前环境无压缩组件，按原图保存）'}</div>
+      <div class="ops">
+        <button data-pick="${slot}">${name ? '更换' : '上传'}</button>
+        ${name ? `<button data-clear="${slot}">移除</button>` : ''}
+      </div>
+      <input type="file" accept="image/*" hidden data-file="${slot}">
+    </div>`;
+}
+
+function renderForm() {
+  const p = byId(S.selected);
+  const host = $('#form');
+  $('#editHint').textContent = p ? `第 ${pages().findIndex((x) => x.id === p.id) + 1} 页 · ${typeLabel(p.type)}` : '';
+  if (!p) { host.innerHTML = '<div class="hint">从左侧选择一页开始编辑，或点击「＋ 新增页」。</div>'; pushPreview(); return; }
+
+  const isImg = p.type === 'img' || p.type === 'imgpair';
+  const typeSel = `<select id="f-type">
+      ${['cover', 'toc', 'sec', 'img', 'imgpair', 'free'].map((t) => `<option value="${t}"${p.type === t ? ' selected' : ''}>${typeLabel(t)}</option>`).join('')}
+    </select>`;
+
+  let fields = field('页面类型', typeSel, '切换类型会改变下方可编辑字段；文字页的正文是 HTML，可插入下方组件。')
+    + field('列表名称（仅后台显示，不影响内容）', `<input type="text" id="f-label" value="${esc(p.label)}">`);
+
+  /* 书刊扩展字段（HANDBOOK_MULTIBOOK_V1）——只在该页确实用到时才出现，
+     因此现有手册的后台界面字段与之前完全一致。
+       · 眉标 theme：页面左上那个小标签，例如「01 · 业务覆盖」；留空则不显示。
+       · 配图 asset：整页配图页的截图选择（从站点既有资产里挑）。 */
+  if (!isImg) {
+    fields += field('眉标（页面左上小标签）',
+      `<input type="text" id="f-theme" value="${esc(p.theme || '')}" placeholder="如 01 · 业务覆盖；留空则不显示">`,
+      '由数据字段渲染，不会混进正文；正文里改不到它，改这里即可。');
+  }
+  if (p.asset !== undefined && p.asset !== '' && typeof p.asset !== 'object') {
+    const opts = ['', 'skills', 'ppt', 'library', 'team', 'dashboard']
+      .map((k) => `<option value="${k}"${String(p.asset) === k ? ' selected' : ''}>${k === '' ? '（不指定）' : k}</option>`).join('');
+    fields += field('整页配图', `<select id="f-asset">${opts}</select>` + slotHTML('assetup', ''),
+      '选择站点既有的产品截图；也可上传新图后填其文件名。留空则该页不显示图。');
+  }
+
+  if (isImg) {
+    fields += field('页面标题', `<input type="text" id="f-title" value="${esc(p.title || '')}">`)
+      + field('副标题', `<input type="text" id="f-subtitle" value="${esc(p.subtitle || '')}">`)
+      + field('图片' + (p.type === 'imgpair' ? ' 1' : ''), slotHTML('img1', p.type === 'img' ? p.image : (p.images || [])[0]));
+    if (p.type === 'imgpair') fields += field('图片 2', slotHTML('img2', (p.images || [])[1]));
+    fields += field('页脚说明', `<input type="text" id="f-foot" value="${esc(p.foot || '')}">`);
+  } else if (p.type === 'cover' && !coverAdvanced[p.id]) {
+    const cf = coverFields(p.body || '');
+    fields += field('角标文字', `<input type="text" id="c-badge" value="${esc(cf.badge)}">`, '封面右上角的小方块文字，如 5G；留空则不显示。')
+      + field('顶部一行', `<input type="text" id="c-top" value="${esc(cf.top)}">`, '如「中国电信 · 深圳福田 · 政企服务」，左侧自动带一个橙色圆点。')
+      + field('主标题', `<textarea id="c-title" rows="2" style="min-height:58px;font-family:inherit;font-size:13px;white-space:pre-wrap">${esc(cf.title)}</textarea>`, '支持 <code>&lt;br&gt;</code> 换行，例如「政企事业&lt;br&gt;服务手册」。')
+      + field('副标题', `<input type="text" id="c-subtitle" value="${esc(cf.subtitle)}">`)
+      + field('标签', `<input type="text" id="c-tags" value="${esc(cf.tags.join('、'))}">`, '用「、」「,」或空格分隔，例如 新通信、新连接、新算力。')
+      + field('底部信息', `<textarea id="c-footer" rows="3" style="min-height:82px;font-family:inherit;font-size:13px;white-space:pre-wrap">${esc(cf.footer)}</textarea>`, '支持 <code>&lt;b&gt;</code> 加粗与 <code>&lt;br&gt;</code> 换行。')
+      + field('封面背景图（可选）', slotHTML('covbg', cf.bgImage), '上传后自动作为封面底图，原有蓝色渐变会叠加在上面。')
+      + `<div class="frow"><label style="font-weight:400"><input type="checkbox" id="c-adv"> 高级：改为直接编辑封面 HTML</label></div>`;
+  } else if (p.type === 'free') {
+    fields += `<div class="frow"><label>画布（设计尺寸 750 × 1061；桌面双页对开时按单页宽渲染，不会被中缝劈开）</label>
+      <div id="fe-host" class="fehost"></div>
+      <div class="hint">拖动元素移动、拖右下角方块改尺寸；右侧「实时预览」是真实渲染效果。改完点「保存本页」→「发布到公网」。</div></div>`;
+  } else {
+    if (p.type === 'cover') {
+      fields += `<div class="frow"><label style="font-weight:400"><input type="checkbox" id="c-adv" checked> 高级：直接编辑封面 HTML</label></div>`;
+    }
+    const tf = titleFields(p.body || '');
+    fields += field('页面标题（显示在页面顶部）', `<input type="text" id="f-pagetitle" value="${esc(tf.title)}">`, '对应正文里的 &lt;h2&gt;。改这里会自动同步到正文，不必去改 HTML；留空则页面不显示标题。')
+      + field('副标题（显示在标题下方的小字）', `<input type="text" id="f-pagesub" value="${esc(tf.sub)}">`)
+      + `<div class="frow"><label>正文（HTML）</label>
+        <div class="tools">
+          <button data-ins="h3">小标题</button>
+          <button data-ins="cat">分类标签</button>
+          <button data-ins="chips">标签组</button>
+          <button data-ins="flow">流程行</button>
+          <button data-ins="steps">序号列表</button>
+          <button data-ins="note">提示块</button>
+          <button data-ins="lead">引导块</button>
+          <button data-ins="two">双栏</button>
+          <button data-ins="table">表格</button>
+          <button data-ins="img" class="hi">插入图片</button>
+          <button data-ins="link" class="hi">插入链接</button>
+          <button data-ins="goto">目录跳转按钮</button>
+        </div>
+        <textarea id="f-body" spellcheck="false">${esc(p.body || '')}</textarea>
+        <div class="hint">保存后点击「发布到公网」即在公开页生效。目录跳转按钮请用 <code>data-goto="页面id"</code>，页面 id 形如 <code>pg-03</code>。</div>
+      </div>`;
+  }
+
+  host.innerHTML = fields + `<div class="formFoot">
+      <button class="btn primary" id="btnSave">保存本页</button>
+      <button class="btn" id="btnRevert">撤销本页改动</button>
+      <span class="grow"></span>
+      <button class="btn danger" id="btnDelete">删除本页</button>
+    </div>`;
+
+  bindForm(p);
+  mountFreeIfNeeded(p);
+  pushPreview();
+}
+
+let freeEditor = null;
+function mountFreeIfNeeded(p) {
+  if (freeEditor) { try { freeEditor.destroy(); } catch { /* 忽略 */ } freeEditor = null; }
+  const box = document.getElementById('fe-host');
+  if (!box || p.type !== 'free') return;
+  freeEditor = mountFreeEditor(box, {
+    page: p,
+    brand: (S.draft && S.draft.meta && S.draft.meta.brand) || '',
+    onPickMedia: (cb, o) => openMediaPicker(cb, o),
+    onToast: (msg, isErr) => toast(msg, isErr),
+    onChange: (pg) => {
+      const cur = byId(S.selected);
+      if (cur) { cur.canvas = pg.canvas; cur.elements = pg.elements; }
+      schedulePreview(); markDirty();
+    },
+  });
+}
+
+function collect() {
+  const p = byId(S.selected); if (!p) return null;
+  const val = (id) => document.getElementById(id)?.value ?? '';
+  const type = $('#f-type').value;
+  const next = { ...p, type, label: val('f-label'), title: val('f-title'), subtitle: val('f-subtitle') };
+  // 自由画布：元素由编辑器维护，直接取编辑器当前内容
+  if (type === 'free') {
+    const pg = freeEditor ? freeEditor.getPage() : p;
+    return { ...p, type: 'free', label: val('f-label') || p.label, title: pg.title ?? p.title ?? '', canvas: pg.canvas, elements: pg.elements || [] };
+  }
+  // 封面：走结构化字段（高级模式下回落到直接编辑 HTML）
+  if (type === 'cover' && document.getElementById('c-title') !== null) {
+    const raw = (id) => document.getElementById(id)?.value ?? '';
+    const c0 = coverFields(p.body || '');
+    next.body = buildCover({
+      badge: raw('c-badge'),
+      top: raw('c-top'),
+      title: raw('c-title'),
+      subtitle: raw('c-subtitle'),
+      tags: String(raw('c-tags') || '').split(/[\u3001,\uff0c\s]+/).filter(Boolean),
+      footer: raw('c-footer'),
+      bgImage: p.__covbg !== undefined ? p.__covbg : c0.bgImage,
+    });
+    delete next.image; delete next.images; delete next.foot;
+    delete next.title; delete next.subtitle;
+    delete next.__img1; delete next.__img2; delete next.__covbg;
+    return next;
+  }
+  if (type === 'img' || type === 'imgpair') {
+    next.foot = val('f-foot');
+    if (next.imageSlot === undefined) { /* noop */ }
+    if (type === 'img') next.image = p.__img1 ?? (p.type === 'img' ? p.image : (p.images || [])[0]) ?? '';
+    else next.images = [p.__img1 ?? (p.images || [])[0] ?? '', p.__img2 ?? (p.images || [])[1] ?? ''].filter(Boolean);
+    delete next.body;
+  } else {
+    next.body = applyTitleFields(val('f-body'), val('f-pagetitle'), val('f-pagesub'));
+    delete next.image; delete next.images; delete next.foot;
+    delete next.title; delete next.subtitle;
+  }
+  /* 书刊扩展字段：字段不存在时保持原值不动（现有手册的页面没有这两个字段） */
+  const themeVal = val('f-theme');
+  if (themeVal !== undefined) { if (themeVal) next.theme = themeVal; else delete next.theme; }
+  const assetVal = val('f-asset');
+  if (assetVal !== undefined) { if (assetVal) next.asset = assetVal; else delete next.asset; }
+  delete next.__img1; delete next.__img2;
+  return next;
+}
+
+function bindForm(p) {
+  $('#f-type').addEventListener('change', () => {
+    const next = collect();
+    const idx = pages().findIndex((x) => x.id === p.id);
+    pages()[idx] = { ...next, type: $('#f-type').value };
+    S.selected = next.id;
+    renderForm(); renderList(); markDirty();
+  });
+  ['f-label', 'f-title', 'f-subtitle', 'f-foot', 'f-pagetitle', 'f-pagesub'].forEach((id) => {
+    const el = document.getElementById(id);
+    el?.addEventListener('input', () => { schedulePreview(); markDirty(); });
+  });
+  const body = $('#f-body');
+  body?.addEventListener('input', () => { schedulePreview(); markDirty(); body.style.height = 'auto'; });
+  body?.addEventListener('input', () => { schedulePreview(); });
+
+  ['c-badge', 'c-top', 'c-title', 'c-subtitle', 'c-tags', 'c-footer'].forEach((id) => {
+    const el = document.getElementById(id);
+    el?.addEventListener('input', () => { schedulePreview(); markDirty(); });
+  });
+  const adv = document.getElementById('c-adv');
+  adv?.addEventListener('change', () => {
+    coverAdvanced[p.id] = adv.checked;
+    renderForm(); renderList(); markDirty();
+  });
+  document.querySelectorAll('[data-ins]').forEach((b) => b.addEventListener('click', () => insertSnippet(b.dataset.ins)));
+  document.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => {
+    $(`input[data-file="${b.dataset.pick}"]`).click();
+  }));
+  document.querySelectorAll('input[data-file]').forEach((inp) => inp.addEventListener('change', async () => {
+    const file = inp.files?.[0]; if (!file) return;
+    await uploadImage(file, inp.dataset.file);
+    inp.value = '';
+  }));
+  document.querySelectorAll('.slot').forEach((slotEl) => {
+    slotEl.addEventListener('dragover', (e) => { e.preventDefault(); slotEl.classList.add('drag'); });
+    slotEl.addEventListener('dragleave', () => slotEl.classList.remove('drag'));
+    slotEl.addEventListener('drop', async (e) => {
+      e.preventDefault(); slotEl.classList.remove('drag');
+      const file = e.dataTransfer?.files?.[0]; if (file) await uploadImage(file, slotEl.dataset.slot);
+    });
+  });
+  document.querySelectorAll('[data-clear]').forEach((b) => b.addEventListener('click', () => {
+    const slot = b.dataset.clear;
+    const cur = byId(S.selected);
+    if (slot === 'covbg') { cur.__covbg = ''; }
+    else if (slot === 'img1') { cur.__img1 = ''; if (cur.type === 'img') cur.image = ''; else cur.images = [cur.images?.[1]].filter(Boolean); }
+    if (slot === 'img2') { cur.__img2 = ''; cur.images = [cur.images?.[0]].filter(Boolean); }
+    renderForm(); renderList(); markDirty();
+  }));
+
+  $('#btnSave').addEventListener('click', savePage);
+  $('#btnRevert').addEventListener('click', () => load(true));
+  $('#btnDelete').addEventListener('click', async () => {
+    const id = S.selected;
+    if (!id || !confirm('确认删除这一页？删除后需点击「发布到公网」才会生效。')) return;
+    try { busy(true); await api('page/delete', { method: 'POST', body: JSON.stringify({ id }) }); S.selected = null; await load(); toast('已删除'); }
+    catch (error) { toast('删除失败：' + error.message, true); } finally { busy(false); }
+  });
+}
+
+function insertSnippet(kind) {
+  if (kind === 'img') { pickImageForBody(); return; }
+  if (kind === 'link') { openLinkDialog(); return; }
+  const map = {
+    h3: '<h3 class="h3">小标题</h3>',
+    cat: '<div class="cat"><span class="cn">分类名称</span><div class="chips"><span class="chip">条目一</span><span class="chip">条目二</span></div></div>',
+    chips: '<div class="chips"><span class="chip hi">要点一</span><span class="chip">要点二</span></div>',
+    flow: '<div class="flow"><div class="fl n1">标签</div><div class="fr"><span class="st k">起点</span><span class="arw">➜</span><span class="st">下一步</span></div></div>',
+    steps: '<ul class="steps"><li>第一条</li><li>第二条</li></ul>',
+    note: '<div class="note">说明文字（待补充：…）</div>',
+    lead: '<div class="lead">引导性说明文字。</div>',
+    two: '<div class="two"><div><p>左栏</p></div><div><p>右栏</p></div></div>',
+    table: '<table class="tb2"><tr><th>项目</th><th>说明</th></tr><tr><td>—</td><td>—</td></tr></table>',
+    goto: '<button class="toc-a" data-goto="pg-03"><span class="n">一</span><span class="t">目标页名称</span><span class="p">P3</span></button>',
+  };
+  const el = $('#f-body'); if (!el) return;
+  const snip = map[kind] || '';
+  const start = el.selectionStart ?? el.value.length;
+  const end = el.selectionEnd ?? start;
+  el.value = el.value.slice(0, start) + '\n' + snip + '\n' + el.value.slice(end);
+  el.focus();
+  el.selectionStart = el.selectionEnd = start + snip.length + 2;
+  schedulePreview(); markDirty();
+}
+
+function insertRaw(snip) {
+  const el2 = $('#f-body'); if (!el2) return;
+  const start = el2.selectionStart ?? el2.value.length;
+  const end = el2.selectionEnd ?? start;
+  el2.value = el2.value.slice(0, start) + '\n' + snip + '\n' + el2.value.slice(end);
+  el2.focus();
+  el2.selectionStart = el2.selectionEnd = start + snip.length + 2;
+  schedulePreview(); markDirty();
+}
+
+/* 插入链接：此前只能手写 <a>，编辑器没有任何入口（需求 P0）。 */
+function openLinkDialog() {
+  $('#modal').dataset.kind = 'link';
+  $('#modal').hidden = false;
+  $('#modal').innerHTML = '<div class="sheet" style="width:min(520px,94vw)">'
+    + '<header><div class="brand"><span class="mark">CT</span>插入链接<small>支持 https:// 、tel: 、mailto: 与站内路径</small></div><button class="close" data-close>✕</button></header>'
+    + '<div class="body">'
+    + '<div class="frow"><label>显示文字</label><input type="text" id="lk-text" value="点击了解详情"></div>'
+    + '<div class="frow"><label>链接地址</label><input type="text" id="lk-href" value="tel:18938845688"></div>'
+    + '<div class="frow"><label style="font-weight:400"><input type="checkbox" id="lk-new"> 在新窗口打开（站内路径建议不勾）</label></div>'
+    + '<div class="formFoot" style="position:static"><button class="btn primary" id="lk-ok">插入到正文</button></div>'
+    + '</div></div>';
+  $('#modal').querySelector('[data-close]').onclick = () => { $('#modal').hidden = true; };
+  $('#lk-ok').addEventListener('click', () => {
+    const t = document.getElementById('lk-text').value || '链接';
+    const h = document.getElementById('lk-href').value.trim();
+    if (!h) { toast('请填写链接地址', true); return; }
+    insertRaw('<a href="' + esc(h) + '"' + (document.getElementById('lk-new').checked ? ' target="_blank" rel="noopener"' : '') + '>' + esc(t) + '</a>');
+    $('#modal').hidden = true;
+    toast('已插入链接，发布后即可点击');
+  });
+}
+
+function pickImageForBody() {
+  openMediaPicker(function (name) {
+    const el = $('#f-body'); if (!el) return;
+    const snip = inlineImageTag(name, '');
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? start;
+    el.value = el.value.slice(0, start) + '\n' + snip + '\n' + el.value.slice(end);
+    el.focus();
+    el.selectionStart = el.selectionEnd = start + snip.length + 2;
+    schedulePreview(); markDirty();
+  });
+}
+
+async function uploadImage(file, slot) {
+  if (file.size > 6 * 1024 * 1024) return toast('图片超过 6MB，请先压缩', true);
+  busy(true);
+  try {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result));
+      fr.onerror = () => reject(new Error('read-failed'));
+      fr.readAsDataURL(file);
+    });
+    const r = await api('upload', { method: 'POST', body: JSON.stringify({ name: file.name, dataUrl }) });
+    const cur = byId(S.selected);
+    if (slot === 'covbg') { cur.__covbg = r.name; }
+    else if (slot === 'img1') { cur.__img1 = r.name; if (cur.type === 'img') cur.image = r.name; else cur.images = [r.name, cur.images?.[1]].filter(Boolean); }
+    else { cur.__img2 = r.name; cur.images = [cur.images?.[0], r.name].filter(Boolean); }
+    renderForm(); renderList(); markDirty();
+    toast(`已上传 ${r.name}（${(r.bytes / 1024).toFixed(0)}KB${r.optimized ? '，已压缩' : ''}）`);
+    loadMedia();
+  } catch (error) { toast('上传失败：' + error.message, true); }
+  finally { busy(false); }
+}
+
+async function savePage() {
+  const page = collect(); if (!page) return;
+  busy(true);
+  try {
+    const r = await api('page', { method: 'POST', body: JSON.stringify(page) });
+    S.selected = page.id;
+    await load(true);
+    toast('已保存（修订 ' + r.rev + '），点「发布到公网」后对外生效');
+  } catch (error) { toast('保存失败：' + error.message, true); }
+  finally { busy(false); }
+}
+
+/* ---------------- 预览 ---------------- */
+function openMediaPicker(onPick, opts = {}) {
+  const pickKind = opts.kind === 'video' ? 'video' : 'image';
+  const multi = opts.multi === true;
+  pendingPick = onPick;
+  pendingPickOpts = opts;
+  $('#modal').dataset.kind = 'pick';
+  $('#modal').hidden = false;
+  const isVideo = (n) => /\.(mp4|webm)$/i.test(n);
+  const list = S.media.filter((m) => (pickKind === 'video' ? isVideo(m.name) : !isVideo(m.name)));
+  const total = list.reduce((a, m) => a + m.size, 0);
+  const chosen = new Set();
+  const cards = list.map((m) => '<div class="mcard" data-card="' + esc(m.name) + '">'
+    + (pickKind === 'video'
+      ? '<video src="' + MEDIA_BASE + encodeURIComponent(m.name) + '" muted preload="metadata" playsinline></video>'
+      : '<img src="' + MEDIA_BASE + encodeURIComponent(m.name) + '" alt="">')
+    + '<code>' + esc(m.name) + '</code>'
+    + (m.size / 1024).toFixed(0) + 'KB'
+    + '<div class="row"><button data-pick-media="' + esc(m.name) + '">' + (multi ? '选择' : (pickKind === 'video' ? '用这个视频' : '插入到正文')) + '</button></div>'
+    + '</div>').join('');
+  $('#modal').innerHTML = '<div class="sheet">'
+    + '<header><div class="brand"><span class="mark">CT</span>' + (pickKind === 'video' ? '选择视频' : '选择图片')
+    + '<small>' + list.length + ' 个文件 · ' + (total / 1024 / 1024).toFixed(1) + 'MB' + (multi ? ' · 可多选' : '') + '</small></div>'
+    + '<button class="close" data-close>✕</button></header>'
+    + '<div class="body">'
+    + '<div class="hint" style="margin-bottom:10px">上传新文件：<input type="file" id="mUp" accept="' + (pickKind === 'video' ? 'video/mp4,video/webm' : 'image/*') + '" multiple>'
+    + (pickKind === 'video' ? '（mp4 / webm，单个不超过 8MB，需自托管：公网 CSP 不允许第三方播放器）' : '') + '</div>'
+    + '<div class="grid">' + (cards || '<div class="hint">' + (pickKind === 'video' ? '还没有视频文件，请先上传。' : '媒体库为空，请先上传。') + '</div>') + '</div>'
+    + (multi ? '<div class="formFoot" style="position:static;margin-top:10px"><button class="btn primary" id="mPickDone">插入所选（0）</button></div>' : '')
+    + '</div></div>';
+  $('#modal').querySelector('[data-close]').onclick = () => { $('#modal').hidden = true; };
+  const doneBtn = $('#mPickDone');
+  const syncDone = () => { if (doneBtn) { doneBtn.textContent = '插入所选（' + chosen.size + '）'; doneBtn.disabled = chosen.size === 0; } };
+  syncDone();
+  $('#modal').querySelectorAll('[data-pick-media]').forEach((b) => b.addEventListener('click', () => {
+    const name = b.dataset.pickMedia;
+    if (!multi) { $('#modal').hidden = true; onPick(name); return; }
+    if (chosen.has(name)) chosen.delete(name); else chosen.add(name);
+    b.closest('[data-card]').classList.toggle('is-picked', chosen.has(name));
+    syncDone();
+  }));
+  if (doneBtn) doneBtn.addEventListener('click', () => { $('#modal').hidden = true; onPick([...chosen]); });
+  $('#mUp').addEventListener('change', async (e) => {
+    for (const f of [...(e.target.files || [])]) await uploadImageNoPage(f);
+    S.media = (await api('state')).media ?? [];
+    openMediaPicker(pendingPick, pendingPickOpts);
+  });
+}
+
+/* ---------------- F4：发布前检查 / 页面模板库 / 表单提交 ---------------- */
+
+const DIFF_LABEL = { added: '新增', removed: '删除', changed: '改动', same: '未变' };
+
+async function openDiff() {
+  let d;
+  try { d = await api('diff'); } catch (e) { toast('读取差异失败：' + e.message, true); return; }
+  const sum = d.summary || {};
+  const changed = (d.pages || []).filter((p) => p.status !== 'same');
+  const rows = changed.map((p) => '<div class="hitem">'
+    + '<span class="chip chip-' + p.status + '">' + (DIFF_LABEL[p.status] || p.status) + '</span>'
+    + '<code>' + esc(p.label || p.id) + '</code>'
+    + '<span style="color:var(--ink3);font-size:12px">' + esc((p.fields || []).join('；')) + '</span></div>').join('');
+  $('#modal').dataset.kind = 'diff';
+  $('#modal').hidden = false;
+  $('#modal').innerHTML = '<div class="sheet">'
+    + '<header><div class="brand"><span class="mark">CT</span>发布前检查<small>草稿 rev ' + d.draftRev + ' · 线上 rev ' + d.publishedRev + '</small></div>'
+    + '<button class="close" data-close>✕</button></header>'
+    + '<div class="body">'
+    + '<div class="hint" style="margin-bottom:10px">将改动 <b>' + changed.length + '</b> 页：新增 ' + (sum.added || 0) + ' · 删除 ' + (sum.removed || 0) + ' · 改动 ' + (sum.changed || 0) + ' · 未变 ' + (sum.same || 0) + '</div>'
+    + (rows || '<div class="hint">草稿与线上完全一致，没有需要发布的内容。</div>')
+    + '</div><div class="formFoot" style="position:static;margin-top:10px">'
+    + '<button class="btn primary" id="diffGo"' + (changed.length ? '' : ' disabled') + '>确认发布这些改动</button>'
+    + '</div></div>';
+  $('#modal').querySelector('[data-close]').onclick = () => { $('#modal').hidden = true; };
+  const go = $('#diffGo');
+  if (go) go.addEventListener('click', async () => {
+    if (!confirm('确认把草稿发布到公网？发布后公开页立即生效（历史版本可回滚）。')) return;
+    go.disabled = true;
+    try {
+      const r = await api('publish', { method: 'POST' });
+      toast('已发布 rev ' + r.rev + '（' + r.pages + ' 页）');
+      $('#modal').hidden = true;
+      await load(true);
+    } catch (e) { toast('发布失败：' + e.message, true); go.disabled = false; }
+  });
+}
+
+async function openTemplates() {
+  let d;
+  try { d = await api('pagetemplates'); } catch (e) { toast('读取模板失败：' + e.message, true); return; }
+  const cur = byId(S.selected);
+  const list = (d.templates || []).map((t) => '<div class="hitem">'
+    + '<b>' + esc(t.name) + '</b>'
+    + '<span style="color:var(--ink3);font-size:12px">' + esc(t.type) + ' · ' + t.elements + ' 个元素 · ' + String(t.createdAt || '').slice(0, 16).replace('T', ' ') + '</span>'
+    + '<span class="row"><button class="btn" data-tpl-apply="' + esc(t.id) + '">套用为新页</button>'
+    + '<button class="btn" data-tpl-del="' + esc(t.id) + '">删除</button></span></div>').join('');
+  $('#modal').dataset.kind = 'tpl';
+  $('#modal').hidden = false;
+  $('#modal').innerHTML = '<div class="sheet">'
+    + '<header><div class="brand"><span class="mark">CT</span>页面模板库<small>整页（画布 + 全部元素）存下来，在别处再落一页</small></div>'
+    + '<button class="close" data-close>✕</button></header>'
+    + '<div class="body">'
+    + '<div class="hint" style="margin-bottom:10px">当前选中页：' + (cur ? '<b>' + esc(cur.label || cur.id) + '</b>（' + esc(cur.type) + '）' : '未选中（先在列表里点一页）') + '</div>'
+    + '<div class="formFoot" style="position:static;margin-bottom:12px"><button class="btn primary" id="tplSave"' + (cur ? '' : ' disabled') + '>把当前选中页存为模板</button></div>'
+    + (list || '<div class="hint">还没有模板。</div>')
+    + '</div></div>';
+  $('#modal').querySelector('[data-close]').onclick = () => { $('#modal').hidden = true; };
+  const save = $('#tplSave');
+  if (save) save.addEventListener('click', async () => {
+    const pg = byId(S.selected);
+    if (!pg) return;
+    const name = prompt('模板名称（便于下次辨认）', pg.label || '未命名页');
+    if (name == null || name.trim() === '') return;
+    try {
+      await api('pagetemplates', { method: 'POST', body: JSON.stringify({ name: name.trim(), page: pg }) });
+      toast('已存为模板');
+      openTemplates();
+    } catch (e) { toast('保存失败：' + e.message, true); }
+  });
+  $('#modal').querySelectorAll('[data-tpl-apply]').forEach((b) => b.addEventListener('click', async () => {
+    if (!confirm('按此模板新增一页（追加到最后一页之后）？新增后仍需点「发布到公网」才对外生效。')) return;
+    try {
+      await api('pagetemplates/apply', { method: 'POST', body: JSON.stringify({ id: b.dataset.tplApply, at: pages().length }) });
+      $('#modal').hidden = true;
+      toast('已新增一页');
+      await load(true);
+    } catch (e) { toast('套用失败：' + e.message, true); }
+  }));
+  $('#modal').querySelectorAll('[data-tpl-del]').forEach((b) => b.addEventListener('click', async () => {
+    if (!confirm('删除这个模板？（不影响已生成的页面）')) return;
+    try {
+      await api('pagetemplates/delete', { method: 'POST', body: JSON.stringify({ id: b.dataset.tplDel }) });
+      openTemplates();
+    } catch (e) { toast('删除失败：' + e.message, true); }
+  }));
+}
+
+async function openLeads() {
+  let d;
+  try { d = await api('submissions?limit=100'); } catch (e) { toast('读取提交失败：' + e.message, true); return; }
+  const items = d.items || [];
+  const rows = items.map((it) => '<div class="hitem" style="align-items:flex-start">'
+    + '<b style="min-width:150px">' + esc(String(it.at || '').slice(0, 19).replace('T', ' ')) + '</b>'
+    + '<span style="font-size:12px;color:var(--ink3)">' + esc(it.pageLabel || it.pageId || '') + '</span>'
+    + '<span style="font-size:12px">' + (it.items || []).map((x) => esc(x.label) + '：' + esc(x.value)).join(' ｜ ') + '</span></div>').join('');
+  $('#modal').dataset.kind = 'leads';
+  $('#modal').hidden = false;
+  $('#modal').innerHTML = '<div class="sheet">'
+    + '<header><div class="brand"><span class="mark">CT</span>表单提交<small>共 ' + d.total + ' 条，显示最近 ' + items.length + ' 条</small></div>'
+    + '<button class="close" data-close>✕</button></header>'
+    + '<div class="body">'
+    + (rows || '<div class="hint">还没有提交记录。自由画布页里的「表单」元素提交后会出现在这里。</div>')
+    + '</div></div>';
+  $('#modal').querySelector('[data-close]').onclick = () => { $('#modal').hidden = true; };
+}
+
+$('#btnDiff').addEventListener('click', openDiff);
+$('#btnTpl').addEventListener('click', openTemplates);
+$('#btnLeads').addEventListener('click', openLeads);
+
+function pushPreview() {
+  const frame = $('#preview');
+  if (!frame?.contentWindow) return;
+  const p = byId(S.selected);
+  if (!p) return;
+  const live = { ...p };
+  try {
+    const val = (id) => document.getElementById(id)?.value;
+    if (val('f-label') !== undefined) live.label = val('f-label');
+    if (val('f-theme') !== undefined) live.theme = val('f-theme');
+    if (val('f-asset') !== undefined) live.asset = val('f-asset');
+    if (val('f-title') !== undefined) live.title = val('f-title');
+    if (val('f-subtitle') !== undefined) live.subtitle = val('f-subtitle');
+    if (val('f-foot') !== undefined) live.foot = val('f-foot');
+    if (val('f-body') !== undefined) live.body = val('f-body');
+    if (live.type === 'free' && freeEditor) {
+      const pg = freeEditor.getPage();
+      live.canvas = pg.canvas; live.elements = pg.elements;
+    }
+    if (document.getElementById('f-pagetitle') !== null) {
+      live.body = applyTitleFields(val('f-body') || '', val('f-pagetitle'), val('f-pagesub'));
+    }
+    if (live.type === 'cover' && document.getElementById('c-title') !== null) {
+      const c0 = coverFields(p.body || '');
+      live.body = buildCover({
+        badge: val('c-badge'), top: val('c-top'), title: val('c-title'), subtitle: val('c-subtitle'),
+        tags: String(val('c-tags') || '').split(/[\u3001,\uff0c\s]+/).filter(Boolean),
+        footer: val('c-footer'),
+        bgImage: p.__covbg !== undefined ? p.__covbg : c0.bgImage,
+      });
+    }
+  } catch { /* 忽略 */ }
+  frame.contentWindow.postMessage({
+    type: 'hb-preview',
+    page: live,
+    pageNo: pages().findIndex((x) => x.id === p.id) + 1,
+    total: pages().length,
+    brand: S.draft?.meta?.brand || '',
+    mediaBase: MEDIA_BASE,
+  }, location.origin);
+}
+function schedulePreview() { clearTimeout(saveTimer); saveTimer = setTimeout(pushPreview, 180); }
+$('#preview').addEventListener('load', () => setTimeout(pushPreview, 200));
+
+/* ---------------- 新增 / 发布 / 重置 ---------------- */
+$('#btnNew').addEventListener('click', openNewPagePicker);
+
+/* 新增页：原实现用 window.prompt 且要求输入内部代号（cover/toc/sec/imgpair），
+   在弹窗被拦截或输入中文时点击毫无反应、也不报错，用户感知就是“不能添加”。
+   改为中文卡片选择 + 显式插入位置，并给出成功/失败反馈。 */
+function openNewPagePicker() {
+  const cur = byId(S.selected);
+  const types = [
+    ['sec', '文字页', '标题 + 正文，可插入图片、表格、流程、标签等组件'],
+    ['cover', '封面', '手册首页：角标、主标题、副标题、标签、底部信息'],
+    ['toc', '目录', '栏目列表，可点击跳转到指定页'],
+    ['img', '整页图片', '一张图片铺满整页（海报 / 资费表等）'],
+    ['imgpair', '双图页', '两张图片并排显示'],
+  ];
+  $('#modal').dataset.kind = 'newpage';
+  $('#modal').hidden = false;
+  $('#modal').innerHTML = '<div class="sheet">'
+    + '<header><div class="brand"><span class="mark">CT</span>新增页面<small>先选类型，再选插入位置</small></div><button class="close" data-close>✕</button></header>'
+    + '<div class="body">'
+    + '<div class="grid">' + types.map((t) => '<button class="newcard" data-new-type="' + t[0] + '"><b>' + t[1] + '</b><span>' + t[2] + '</span></button>').join('') + '</div>'
+    + '<div class="frow" style="margin-top:14px"><label>插入位置</label><select id="newpos">'
+    + '<option value="end">添加到最后一页之后</option>'
+    + (cur ? '<option value="after">插入到当前页「' + esc(cur.label || '') + '」之后</option>' : '')
+    + '</select></div>'
+    + '<div class="hint">新增后：先点「保存本页」，再点「发布到公网」，才会对外生效。</div>'
+    + '</div></div>';
+  $('#modal').querySelector('[data-close]').onclick = () => { $('#modal').hidden = true; };
+}
+
+async function createPage(type, pos) {
+  busy(true);
+  try {
+    const cur = byId(S.selected);
+    const at = (pos === 'after' && cur) ? pages().findIndex((x) => x.id === cur.id) + 1 : undefined;
+    const seeds = {
+      sec: { label: '新文字页', body: '<h2 class="pt"><span class="bar"></span>新页面</h2>\n<p class="psub">副标题（可留空）</p>\n<p>在此填写正文。</p>' },
+      cover: { label: '新封面', body: buildCover({ badge: '', top: '', title: '标题', subtitle: '', tags: [], footer: '' }) },
+      toc: { label: '新目录', body: '<h2 class="pt"><span class="bar"></span>目录</h2>\n<ul class="toc-l"></ul>' },
+      img: { label: '新图片页', title: '图片页标题', subtitle: '', image: '', foot: '' },
+      imgpair: { label: '新双图页', title: '双图页标题', subtitle: '', images: [], foot: '' },
+    };
+    const payload = Object.assign({ type, at }, seeds[type] || seeds.sec);
+    const r = await api('page', { method: 'POST', body: JSON.stringify(payload) });
+    S.selected = r.page.id;
+    await load(true);
+    toast('已新增「' + typeLabel(type) + '」，编辑后请保存并发布');
+  } catch (error) { toast('新增失败：' + error.message, true); } finally { busy(false); }
+}
+
+/* 手册设置：手册标题 / 副标题 / 页脚品牌文案（此前只有后端接口，前端无入口）。 */
+function openSettings() {
+  const m = (S.draft && S.draft.meta) || {};
+  $('#modal').dataset.kind = 'settings';
+  $('#modal').hidden = false;
+  $('#modal').innerHTML = '<div class="sheet" style="width:min(560px,94vw)">'
+    + '<header><div class="brand"><span class="mark">CT</span>手册设置<small>顶栏标题与页脚品牌文案</small></div><button class="close" data-close>✕</button></header>'
+    + '<div class="body">'
+    + '<div class="frow"><label>手册标题</label><input type="text" id="m-title" value="' + esc(m.title || '') + '"></div>'
+    + '<div class="frow"><label>手册副标题</label><input type="text" id="m-subtitle" value="' + esc(m.subtitle || '') + '"></div>'
+    + '<div class="frow"><label>页脚品牌文案</label><input type="text" id="m-brand" value="' + esc(m.brand || '') + '"><div class="hint">显示在每一页页脚左侧，例如「中国电信 · 政企事业服务手册」。</div></div>'
+    + (S.isAdmin
+      ? '<div class="frow"><label>编辑权限（每行一个账号）</label><textarea id="m-editors" rows="4" style="min-height:84px;font-family:var(--mono);font-size:12px;white-space:pre">' + esc((S.editors || []).join('\n')) + '</textarea><div class="hint">名单里的账号即使不是管理员，也能编辑内容、上传图片、发布与回滚；改权限与导入模板仍仅限管理员。</div></div>'
+      : '<div class="hint">当前账号是编辑者：可改内容与发布；编辑权限与模板导入仅管理员可用。</div>')
+    + '<div class="frow"><label>模板（可复制到其它部署）</label><div class="tools">'
+    + '<button type="button" data-tpl="export">导出为模板 JSON</button>'
+    + (S.isAdmin ? '<button type="button" data-tpl="import">导入模板 JSON</button>' : '')
+    + '</div><div class="hint">导出的 JSON 含全部页面、元素与书稿设置；在另一套部署里导入即可得到同款站点。</div></div>'
+    + '<div class="formFoot" style="position:static"><button class="btn primary" id="m-save">保存设置</button><span class="grow"></span><span class="hint" style="margin:0">保存后仍需「发布到公网」才对外生效</span></div>'
+    + '</div></div>';
+  $('#modal').querySelector('[data-close]').onclick = () => { $('#modal').hidden = true; };
+  const tplExp = $('#modal').querySelector('[data-tpl="export"]');
+  if (tplExp) tplExp.addEventListener('click', () => {
+    window.location.href = '/api/portal/handbook/admin/template/export?name=handbook-template';
+    toast('正在导出模板 JSON…');
+  });
+  const tplImp = $('#modal').querySelector('[data-tpl="import"]');
+  if (tplImp) tplImp.addEventListener('click', () => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'application/json,.json';
+    inp.addEventListener('change', async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      if (!confirm('导入会整体替换当前手册的全部页面（草稿）。确认继续？')) return;
+      busy(true);
+      try {
+        const text = await f.text();
+        const json = JSON.parse(text);
+        const r = await api('template/import', { method: 'POST', body: JSON.stringify(json) });
+        $('#modal').hidden = true;
+        S.selected = null;
+        await load();
+        toast('已导入模板（' + r.pages + ' 页），点「发布到公网」生效');
+      } catch (e) { toast('导入失败：' + e.message, true); } finally { busy(false); }
+    });
+    inp.click();
+  });
+  $('#m-save').addEventListener('click', async () => {
+    busy(true);
+    try {
+      const edEl = document.getElementById('m-editors');
+      if (edEl) {
+        const list = edEl.value.split('\n').map((x) => x.trim()).filter(Boolean);
+        await api('editors', { method: 'POST', body: JSON.stringify({ editors: list }) });
+        S.editors = list;
+      }
+      await api('meta', { method: 'POST', body: JSON.stringify({
+        title: document.getElementById('m-title').value,
+        subtitle: document.getElementById('m-subtitle').value,
+        brand: document.getElementById('m-brand').value,
+      }) });
+      $('#modal').hidden = true;
+      await load(true);
+      toast('手册设置已保存，点「发布到公网」生效');
+    } catch (error) { toast('保存失败：' + error.message, true); } finally { busy(false); }
+  });
+}
+$('#btnSettings').addEventListener('click', openSettings);
+
+$('#btnPublish').addEventListener('click', async () => {
+  if (!confirm('将当前草稿发布到公网？公开链接会立即更新。\n\n' + PUBLIC_URL)) return;
+  busy(true);
+  try {
+    const r = await api('publish', { method: 'POST', body: JSON.stringify({}) });
+    await load(true);
+    toast('已发布（修订 ' + r.rev + '，共 ' + r.pages + ' 页）');
+  } catch (error) { toast('发布失败：' + error.message, true); } finally { busy(false); }
+});
+
+$('#btnReset').addEventListener('click', async () => {
+  if (!confirm('放弃当前草稿的全部改动，回到已发布版本？')) return;
+  busy(true);
+  try { await api('reset', { method: 'POST', body: JSON.stringify({}) }); await load(); toast('已回到已发布版本'); }
+  catch (error) { toast('失败：' + error.message, true); } finally { busy(false); }
+});
+
+$('#btnOpen').addEventListener('click', () => window.open(PUBLIC_URL, '_blank', 'noopener'));
+
+/* ---------------- 媒体库 / 历史 ---------------- */
+async function loadMedia() {
+  try { const d = await api('state'); S.media = d.media ?? []; if ($('#modal').dataset.kind === 'media') showMedia(); } catch { /* 忽略 */ }
+}
+$('#btnMedia').addEventListener('click', showMedia);
+function showMedia() {
+  const total = S.media.reduce((a, m) => a + m.size, 0);
+  $('#modal').dataset.kind = 'media';
+  $('#modal').hidden = false;
+  $('#modal').innerHTML = `<div class="sheet">
+    <header><div class="brand"><span class="mark">CT</span>媒体库<small>${S.media.length} 个文件 · 合计 ${(total / 1024 / 1024).toFixed(1)}MB</small></div>
+      <button class="close" data-close>✕</button></header>
+    <div class="body">
+      <div class="hint" style="margin-bottom:10px">上传：<input type="file" id="mUp" accept="image/*" multiple>（上传后自动出现在此处，可在页面编辑里选择）</div>
+      <div class="grid">${S.media.map((m) => `
+        <div class="mcard">
+          <img src="${MEDIA_BASE + encodeURIComponent(m.name)}" alt="">
+          <code>${esc(m.name)}</code>
+          ${(m.size / 1024).toFixed(0)}KB · ${m.mtime.slice(0, 10)}
+          <div class="row"><button data-copy="${esc(m.name)}">复制名</button><button data-del="${esc(m.name)}">删除</button></div>
+        </div>`).join('') || '<div class="hint">媒体库为空。</div>'}</div>
+    </div></div>`;
+  $('#modal').querySelector('[data-close]').onclick = () => { $('#modal').hidden = true; };
+  $('#mUp').addEventListener('change', async (e) => {
+    const files = [...(e.target.files || [])];
+    for (const f of files) await uploadImageNoPage(f);
+    loadMedia();
+  });
+}
+async function uploadImageNoPage(file) {
+  const isVid = /\.(mp4|webm)$/i.test(file.name) || /^video\//.test(file.type);
+  const cap = isVid ? 8 * 1024 * 1024 : 6 * 1024 * 1024;
+  if (file.size > cap) return toast(file.name + ' 超过 ' + (cap / 1024 / 1024) + 'MB，已跳过', true);
+  const dataUrl = await new Promise((resolve) => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result)); fr.readAsDataURL(file); });
+  try { await api('upload', { method: 'POST', body: JSON.stringify({ name: file.name, dataUrl }) }); toast('已上传 ' + file.name); }
+  catch (error) { toast('上传失败：' + error.message, true); }
+}
+
+$('#btnHistory').addEventListener('click', async () => {
+  const d = await api('history');
+  $('#modal').dataset.kind = 'history';
+  $('#modal').hidden = false;
+  $('#modal').innerHTML = `<div class="sheet">
+    <header><div class="brand"><span class="mark">CT</span>历史版本<small>每次发布前自动留档，最多显示 30 份</small></div>
+      <button class="close" data-close>✕</button></header>
+    <div class="body">${(d.history || []).map((h) => `
+      <div class="hitem"><code>${esc(h.name)}</code><span style="color:var(--ink3)">${h.mtime.slice(0, 19).replace('T', ' ')}</span>
+        <button class="btn" data-restore="${esc(h.name)}">载入为草稿</button></div>`).join('') || '<div class="hint">暂无历史版本（发布一次后即产生）。</div>'}
+    </div></div>`;
+  $('#modal').querySelector('[data-close]').onclick = () => { $('#modal').hidden = true; };
+});
+
+$('#modal').addEventListener('click', async (e) => {
+  if (e.target.id === 'modal') { $('#modal').hidden = true; return; }
+  const close = e.target.closest('[data-close]'); if (close) { $('#modal').hidden = true; return; }
+
+  const nt = e.target.closest('[data-new-type]');
+  if (nt) {
+    const posEl = document.getElementById('newpos');
+    $('#modal').hidden = true;
+    createPage(nt.dataset.newType, posEl ? posEl.value : 'end');
+    return;
+  }
+
+  const pm = e.target.closest('[data-pick-media]');
+  if (pm) {
+    const cb = pendingPick; pendingPick = null;
+    $('#modal').hidden = true;
+    if (cb) cb(pm.dataset.pickMedia);
+    return;
+  }
+
+  const cp = e.target.closest('[data-copy]');
+  if (cp) { try { await navigator.clipboard.writeText(cp.dataset.copy); toast('已复制文件名'); } catch { toast(cp.dataset.copy); } return; }
+
+  const dl = e.target.closest('[data-del]');
+  if (dl) {
+    if (!confirm('删除该图片？引用它的页面会显示为空白。')) return;
+    try {
+      await api('media/delete', { method: 'POST', body: JSON.stringify({ name: dl.dataset.del }) });
+      toast('已删除');
+      S.media = (await api('state')).media ?? [];
+      showMedia();
+    } catch (error) { toast('删除失败：' + error.message, true); }
+    return;
+  }
+
+  const rs = e.target.closest('[data-restore]');
+  if (rs) {
+    if (!confirm('把该历史版本载入为草稿？当前草稿改动会被覆盖（需再点发布才会对外生效）。')) return;
+    busy(true);
+    try {
+      await api('restore', { method: 'POST', body: JSON.stringify({ name: rs.dataset.restore }) });
+      $('#modal').hidden = true;
+      await load();
+      toast('已载入为草稿');
+    } catch (error) { toast('失败：' + error.message, true); } finally { busy(false); }
+  }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#modal').hidden = true; });
+window.addEventListener('beforeunload', (e) => { if (markDirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+load();
+</script>
+</body>
+</html>

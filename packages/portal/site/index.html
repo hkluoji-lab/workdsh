@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#070a10">
 <title>WorkDSH — 企业级 AI 智能体工作台</title>
-<meta name="description" content="WorkDSH 是基于 DeepSeek Harness 构建的企业级 AI 智能体工作台：可私有化部署、可联接企业内部系统、可按业务定制智能体与技能，交付可留痕、可审计的成果。">
+<meta name="description" content="WorkDSH 是基于 DeepSeek Harness 构建的企业级 AI 智能体工作台：可私有化部署在企业内网，面向运营、管理、生产、服务、销售、市场推广与应用提供场景化应用，支撑各部门团队协同任务，交付可留痕、可审计的真实文件成果。">
 <link rel="icon" href="/portal/assets/mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/portal/styles.css">
 </head>
@@ -56,16 +56,25 @@
         <rect x="187" y="44" width="36" height="12" fill="#2670DA"/>
         <rect x="187" y="73" width="48" height="12" fill="#2670DA"/>
       </svg>
+      <span class="brand-slogan">企业AI工作台解决方案</span>
     </a>
-    <nav class="site-nav" aria-label="页面分区">
-      <a href="#foundation">产品定位</a>
-      <a href="#capabilities">能做什么</a>
-      <a href="#onprem">私有化与定制</a>
-      <a href="#about">企业介绍</a>
+
+    <!-- 窄屏导航：900px 以下原实现直接隐藏 .site-nav，导致手机端没有任何导航。此处提供折叠面板。 -->
+    <button class="nav-toggle" type="button" id="navToggle" aria-expanded="false" aria-controls="site-nav" aria-label="打开导航菜单">
+      <span class="nav-toggle-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+    </button>
+
+    <nav class="site-nav" id="site-nav" aria-label="页面分区">
+      <a href="#domains">业务覆盖</a>
+      <a href="#scenes">应用场景</a>
+      <a href="#collab">团队协同</a>
+      <a href="#onprem">私有化部署</a>
       <a href="#trust">信任与安全</a>
-      <a href="#contact">联系我们</a>
+      <a href="#cooperate">合作与签约</a>
+      <a class="site-nav-signin" href="/login?next=%2F">进入工作台</a>
     </nav>
-    <a class="button button-primary button-compact" href="/login?next=%2F">进入工作台</a>
+
+    <a class="button button-primary button-compact header-cta" href="#cooperate">预约方案沟通</a>
   </div>
 </header>
 
@@ -74,12 +83,20 @@
   <section class="hero">
     <div class="shell hero-grid">
       <div class="hero-copy">
-        <p class="eyebrow">企业级 AI 智能体工作台</p>
-        <h1>让 AI 不只回答问题，<br>而是交付成果。</h1>
-        <p class="lead">WorkDSH 基于 DeepSeek Harness 构建。把任务交给能自主规划、调用工具、产出文件的智能体；可私有化部署在企业内网，可联接内部系统，可按业务定制智能体与技能。</p>
+        <p class="eyebrow">企业级 AI 智能体工作台 · 可私有化部署</p>
+        <h1>企业内网的 AI 工作台，运营、管理、生产、服务、<br>销售、市场推广与应用。</h1>
+        <p class="lead">WorkDSH 基于 DeepSeek Harness 构建。它把智能体、技能与连接器组织成各部门可直接使用的任务工作台：任务自主拆解、调用内部系统、产出可交付文件，过程可审批、可留痕；部门之间在同一套任务与资产上交接协作。</p>
+        <ul class="domain-chips" aria-label="覆盖的业务部门">
+          <li>运营</li>
+          <li>管理</li>
+          <li>生产</li>
+          <li>服务</li>
+          <li>销售</li>
+          <li>市场推广与应用</li>
+        </ul>
         <div class="hero-actions">
-          <a class="button button-primary" href="/login?next=%2F">进入工作台</a>
-          <a class="button button-quiet" href="#contact">预约私有化方案沟通</a>
+          <a class="button button-primary" href="#cooperate">预约方案沟通</a>
+          <a class="button button-quiet" href="/login?next=%2F">进入工作台</a>
         </div>
         <dl class="contrast">
           <div>
@@ -110,95 +127,146 @@
   <!-- 首屏与正文之间的窄信任带：只复用前文已成立的事实，不在这里引入新承诺。 -->
   <section class="trustbar" aria-label="交付要点">
     <div class="shell trustbar-inner">
-      <p>可私有化部署</p>
-      <p>执行过程可审计留痕</p>
-      <p>基于 DeepSeek Harness 构建</p>
-      <p>交付真实文件而非对话框</p>
+      <p>可私有化部署在企业内网</p>
+      <p>覆盖运营 / 管理 / 生产 / 服务 / 销售 / 市场推广与应用</p>
+      <p>部门之间任务与资产交接</p>
+      <p>交付真实文件，过程可审计</p>
     </div>
   </section>
 
-  <section class="section" id="foundation">
+  <section class="section" id="domains">
     <div class="shell">
       <div class="section-head">
-        <p class="eyebrow"><span class="eyebrow-num">01</span>依托的底座</p>
-        <h2>不是一个套壳对话框。</h2>
-        <p class="section-lead">WorkDSH 站在 DeepSeek Harness 之上构建：执行循环、技能解析、插件装配、运行隔离与模型接入都由该底座提供，WorkDSH 负责企业业务对象、授权、修订与交付。</p>
+        <p class="eyebrow"><span class="eyebrow-num">01</span>业务覆盖</p>
+        <h2>六个部门，六种用法。</h2>
+        <p class="section-lead">系统按公司现有部门口径定义岗位与能力边界：每个部门登录后看到的任务面、资料面与管理面，对应各自的职责。</p>
       </div>
-      <ul class="cards cards-3 cards-indexed">
-        <li class="card">
-          <h3>官方执行循环与技能解析</h3>
-          <p>任务拆解、工具调用、长任务执行与上下文处理由 Harness 提供；不在外层再造第二套 Agent 循环。</p>
+      <ul class="domains">
+        <li>
+          <h3>运营</h3>
+          <p>内容资产的编写与发布、项目与任务编排、账号与用量查看。</p>
         </li>
-        <li class="card">
-          <h3>原生插件机制</h3>
-          <p>专家、技能、连接器、资料库与办公能力都是可安装、可卸载的功能插件，通过公开契约与会话投影组合。</p>
+        <li>
+          <h3>管理</h3>
+          <p>全站能力，含平台配置、用户与权限、审计与登录台账。</p>
         </li>
-        <li class="card">
-          <h3>运行隔离与审批</h3>
-          <p>命令执行与文件写入走官方沙箱与审批管线；插件的可见范围不等于权限，实际操作仍需服务端检查。</p>
+        <li>
+          <h3>生产</h3>
+          <p>承接项目交付、维护资料库与文档、跑定时任务。</p>
         </li>
-        <li class="card">
-          <h3>模型可替换</h3>
-          <p>模型经官方适配器接入，凭据由企业侧提供，与业务数据和对话内容分离管理。</p>
+        <li>
+          <h3>服务</h3>
+          <p>查阅知识库与客户资料、使用专家答疑，以只读为主。</p>
         </li>
-        <li class="card">
-          <h3>真实文件产出</h3>
-          <p>产物是可直接交付的文件，不是聊天记录里的代码块；原件可在会话内预览。</p>
+        <!-- 2026-10-01 新增第六域：按门户岗位口径 src/roles.mjs 的 sales 定义补齐，
+             沿用既有卡片体例——去掉「销售：」前缀与权限限制句，与运营卡省略「不碰平台配置」同例。 -->
+        <li>
+          <h3>销售</h3>
+          <p>使用专家与资料库服务客户，维护自己的项目与文档。</p>
         </li>
-        <li class="card card-muted">
-          <h3>企业级能力<span class="badge">建设中</span></h3>
-          <p>企业 SSO、组织与跨组织隔离、用量与统计正在推进，本页不作交付承诺。</p>
+        <li>
+          <h3>市场推广与应用</h3>
+          <p>维护对外素材与产品页、查看资料库，并进入产品页后台。</p>
         </li>
       </ul>
     </div>
   </section>
 
-  <section class="section section-alt" id="capabilities">
+  <section class="section section-alt" id="scenes">
     <div class="shell">
       <div class="section-head">
-        <p class="eyebrow"><span class="eyebrow-num">02</span>能做什么</p>
-        <h2>按业务定制，落到具体交付物。</h2>
-        <p class="section-lead">下面每一项都写成「输入 → 过程 → 交付物」，便于评估它是否解决你的问题。标记为已可用的能力，已经在本版本中实际运行。</p>
+        <p class="eyebrow"><span class="eyebrow-num">02</span>应用场景</p>
+        <h2>按业务场景落地，而不是按功能清单。</h2>
+        <p class="section-lead">下面每一项都写成「输入 → 过程 → 交付物」，便于评估它是否解决你部门的问题。</p>
       </div>
       <ul class="cards cards-3">
         <li class="card">
-          <h3>智能体专家<span class="badge badge-ok">已可用</span></h3>
-          <p>把角色、专业判断与交付职责写成可发布的专家定义，配备真实技能与工具；任务可绑定专家并保留交接记录。</p>
-          <p class="card-note">多专家 SOP 协作仍在迭代。</p>
+          <h3>智能体专家</h3>
+          <dl class="scene-rows">
+            <div><dt>输入</dt><dd>岗位角色、专业判断与交付职责</dd></div>
+            <div><dt>过程</dt><dd>写成可发布的专家定义，配备真实技能与工具</dd></div>
+            <div><dt>交付物</dt><dd>专家定义与任务交接记录</dd></div>
+          </dl>
+          <p class="card-note">多专家 SOP 协作在扩展中。</p>
         </li>
         <li class="card">
-          <h3>企业技能资产<span class="badge badge-ok">已可用</span></h3>
-          <p>技能是可版本化、可导入导出、可复用的能力资产；既有的技能包可导入后在团队内继续使用和打磨。</p>
-          <p class="card-note">交付物：技能包与修订记录。</p>
+          <h3>企业技能资产</h3>
+          <dl class="scene-rows">
+            <div><dt>输入</dt><dd>既有的工作方法与技能包</dd></div>
+            <div><dt>过程</dt><dd>版本化、导入导出，在团队内继续打磨</dd></div>
+            <div><dt>交付物</dt><dd>技能包与修订记录</dd></div>
+          </dl>
+          <p class="card-note">已在本版本运行。</p>
         </li>
         <li class="card">
-          <h3>连接器<span class="badge badge-ok">已可用</span></h3>
-          <p>以 MCP 接入 OA、CRM、数据库与内网 API；连接定义、连接实例与账号凭据分离，按对话显式选择实例，不做跨账号回退。</p>
-          <p class="card-note">交互式 OAuth 与多账号在建。</p>
+          <h3>连接器</h3>
+          <dl class="scene-rows">
+            <div><dt>输入</dt><dd>OA、CRM、数据库与内网 API</dd></div>
+            <div><dt>过程</dt><dd>以 MCP 接入；连接定义、实例与凭据分离，按对话显式选择实例</dd></div>
+            <div><dt>交付物</dt><dd>可复用的内部系统接入</dd></div>
+          </dl>
+          <p class="card-note">交互式 OAuth 与多账号在扩展中。</p>
         </li>
         <li class="card">
-          <h3>企业资料库<span class="badge badge-ok">已可用</span></h3>
-          <p>按目录归集资料、搜索正文、预览原件；选中资料即可带着上下文开启新任务，成果继续回到资料库。</p>
-          <p class="card-note">交付物：可检索、可预览的资料集合。</p>
+          <h3>企业资料库</h3>
+          <dl class="scene-rows">
+            <div><dt>输入</dt><dd>按目录归集的资料与原件</dd></div>
+            <div><dt>过程</dt><dd>搜索正文、预览原件；选中资料带着上下文开启任务</dd></div>
+            <div><dt>交付物</dt><dd>可检索、可预览的资料集合</dd></div>
+          </dl>
+          <p class="card-note">成果继续回到资料库。</p>
         </li>
         <li class="card">
-          <h3>办公文档产出<span class="badge badge-ok">已可用</span></h3>
-          <p>在对话中制作与编辑 Word、PowerPoint、Excel、HTML 与 PDF，边聊边改，最终交付真实文件。</p>
+          <h3>办公文档产出</h3>
+          <dl class="scene-rows">
+            <div><dt>输入</dt><dd>对话里的要求与素材</dd></div>
+            <div><dt>过程</dt><dd>在对话中制作与编辑，边聊边改</dd></div>
+            <div><dt>交付物</dt><dd>Word、PowerPoint、Excel、HTML 与 PDF 真实文件</dd></div>
+          </dl>
           <p class="card-note">各格式保真度与跨平台验收仍在推进。</p>
         </li>
         <li class="card">
-          <h3>项目与自动化<span class="badge">建设中</span></h3>
-          <p>项目空间承载计划、待办、任务、资产与成员交接；周期性工作由定时任务触发，只负责触发，不复制业务规则。</p>
-          <p class="card-note">不作为本次交付承诺。</p>
+          <h3>项目与自动化</h3>
+          <dl class="scene-rows">
+            <div><dt>输入</dt><dd>计划、待办、任务、资产与成员</dd></div>
+            <div><dt>过程</dt><dd>项目空间承载交接；周期性工作由定时任务触发</dd></div>
+            <div><dt>交付物</dt><dd>项目空间与任务记录</dd></div>
+          </dl>
+          <p class="card-note">定时任务只负责触发，不复制业务规则。</p>
         </li>
       </ul>
     </div>
   </section>
 
-  <section class="section" id="onprem">
+  <section class="section" id="collab">
     <div class="shell">
       <div class="section-head">
-        <p class="eyebrow"><span class="eyebrow-num">03</span>私有化与联署定制</p>
+        <p class="eyebrow"><span class="eyebrow-num">03</span>团队协同</p>
+        <h2>任务在部门之间交接，不靠转发聊天记录。</h2>
+        <p class="section-lead">同一套任务、资料与专家在部门间流转：承接方看到的是完整上下文与历史修订，而不是一段需要重新解释的对话。</p>
+      </div>
+      <div class="collab-grid">
+        <ol class="steps steps-strong">
+          <li><strong>派发</strong>任务绑定专家与资料，明确交付要求与参与角色。</li>
+          <li><strong>协作</strong>项目空间承载计划、待办、任务与资产，成员在同一处交接。</li>
+          <li><strong>产出</strong>Word、PowerPoint、Excel、网页等产出落盘为真实文件，原件可在会话内预览。</li>
+          <li><strong>复用与留痕</strong>成果回到资料库，专家与技能按修订演进，过程与结果留痕可审计。</li>
+        </ol>
+        <figure class="collab-figure">
+          <picture>
+            <source type="image/webp" sizes="(min-width: 1160px) 520px, calc(100vw - 40px)" srcset="/portal/assets/team-720.webp 720w, /portal/assets/team-360.webp 360w">
+            <img src="/portal/assets/team.png" width="3006" height="1640" alt="WorkDSH 专家团队界面：查看团队定位、成员分工与任务入口。" loading="lazy">
+          </picture>
+          <figcaption>专家与团队：团队定位、成员分工与任务入口。</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="onprem">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow"><span class="eyebrow-num">04</span>私有化与联署定制</p>
         <h2>把智能体放进你的内网，按你的业务长出来。</h2>
         <p class="section-lead">我们提供三种交付形态，并在方案阶段逐项写清数据流向、账号接入方式与验收口径。</p>
       </div>
@@ -251,88 +319,53 @@
           <li>使用手册与管理员培训</li>
         </ul>
       </div>
+
+      <p class="section-cta"><a class="button button-primary" href="#cooperate">谈谈你的部署形态</a></p>
     </div>
   </section>
 
-  <section class="section section-alt" id="about">
+  <section class="section" id="foundation">
     <div class="shell">
       <div class="section-head">
-        <p class="eyebrow"><span class="eyebrow-num">04</span>企业介绍</p>
-        <h2>不做「交付即结束」的项目。</h2>
-        <p class="section-lead">10GE 是一家技术型企业。我们把每个客户的业务环境当作长期资产来经营：从企业 Agent 智能体的定制、技能安装与调优，到业务工作台的搭建与日常运维，全程由自有技术团队负责，交付过程对客户完全透明。</p>
+        <p class="eyebrow"><span class="eyebrow-num">05</span>平台底座</p>
+        <h2>不是一个套壳对话框。</h2>
+        <p class="section-lead">WorkDSH 站在 DeepSeek Harness 之上构建：执行循环、技能解析、插件装配、运行隔离与模型接入都由该底座提供，WorkDSH 负责企业业务对象、授权、修订与交付。</p>
       </div>
-
-      <ul class="tenets">
-        <li>
-          <h3>按需定制</h3>
-          <p>不堆砌功能，只解决客户真实业务里的问题。</p>
+      <ul class="cards cards-3 cards-indexed">
+        <li class="card">
+          <h3>官方执行循环与技能解析</h3>
+          <p>任务拆解、工具调用、长任务执行与上下文处理由 Harness 提供；不在外层再造第二套 Agent 循环。</p>
         </li>
-        <li>
-          <h3>联署共建</h3>
-          <p>方案由双方共同确认后落地，每一项能力上线前都经过客户验证。</p>
+        <li class="card">
+          <h3>原生插件机制</h3>
+          <p>专家、技能、连接器、资料库与办公能力都是可安装、可卸载的功能插件，通过公开契约与会话投影组合。</p>
         </li>
-        <li>
-          <h3>持续陪伴</h3>
-          <p>环境搭好只是起点，后续的迭代、排障与优化由同一支团队跟进，客户随时找得到人。</p>
+        <li class="card">
+          <h3>运行隔离与审批</h3>
+          <p>命令执行与文件写入走官方沙箱与审批管线；插件的可见范围不等于权限，实际操作仍需服务端检查。</p>
+        </li>
+        <li class="card">
+          <h3>模型可替换</h3>
+          <p>模型经官方适配器接入，凭据由企业侧提供，与业务数据和对话内容分离管理。</p>
+        </li>
+        <li class="card">
+          <h3>真实文件产出</h3>
+          <p>产物是可直接交付的文件，不是聊天记录里的代码块；原件可在会话内预览。</p>
+        </li>
+        <li class="card card-muted">
+          <h3>企业级能力<span class="badge">扩展中</span></h3>
+          <p>企业 SSO、组织与跨组织隔离、用量与统计正在推进，本页不作交付承诺。</p>
         </li>
       </ul>
-
-      <div class="split">
-        <div>
-          <h3 class="sub">我们提供的服务范围</h3>
-          <ul class="ticks ticks-labeled">
-            <li><strong>智能体定制</strong>按业务场景定义专家、技能与工具组合，交付可实际运行的智能体应用。</li>
-            <li><strong>技能安装与调优</strong>安装与导入技能资产，并按真实使用反馈持续打磨指令与产出质量。</li>
-            <li><strong>工作台搭建</strong>搭建业务工作台与业务页面，联接内部系统，并配置权限与审计。</li>
-            <li><strong>日常运维与迭代</strong>上线后的排障、优化与版本迭代由同一支团队负责，保留完整修订记录。</li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="sub">基本信息</h3>
-          <dl class="facts">
-            <div>
-              <dt>品牌与站点</dt>
-              <dd>10GE · 10ge.cn</dd>
-            </div>
-            <div>
-              <dt>产品</dt>
-              <dd>WorkDSH —— 企业级 AI 智能体工作台</dd>
-            </div>
-            <div>
-              <dt>技术底座</dt>
-              <dd>DeepSeek Harness 官方公开插件接口</dd>
-            </div>
-            <div>
-              <dt>交付形态</dt>
-              <dd>公网 SaaS、企业私有化部署、混合部署</dd>
-            </div>
-            <!-- TODO(部署前必须替换)：以下主体信息必须使用真实信息，不得留占位内容对外发布。 -->
-            <div>
-              <dt>运营主体</dt>
-              <dd>待配置</dd>
-            </div>
-            <div>
-              <dt>成立时间与团队规模</dt>
-              <dd>待配置</dd>
-            </div>
-            <div>
-              <dt>服务区域与响应方式</dt>
-              <dd>待配置</dd>
-            </div>
-          </dl>
-        </div>
-      </div>
-
-      <p class="about-quote">客户买的不是一套系统，而是一个越用越懂自己业务的智能体工作环境。</p>
     </div>
   </section>
 
-  <section class="section" id="proof">
+  <section class="section section-alt" id="proof">
     <div class="shell">
       <div class="section-head">
-        <p class="eyebrow"><span class="eyebrow-num">05</span>能力证明</p>
+        <p class="eyebrow"><span class="eyebrow-num">06</span>真实界面</p>
         <h2>先看真实界面。</h2>
-        <p class="section-lead">我们没有可以展示的客户案例，因此不展示客户 logo 与证言。以下是产品的真实界面截图，用于判断它是否符合你的场景；如需进一步验证，可申请试用实例。</p>
+        <p class="section-lead">以下是产品的真实界面截图，用于判断它是否符合你的场景。客户案例与证言在取得授权后再行补充，本页不作引用。</p>
       </div>
       <ul class="shots">
         <li class="shot-feature">
@@ -372,17 +405,17 @@
           </picture>
           <div class="shot-body">
             <h3>专家与团队</h3>
-            <p>查看团队定位、成员分工和任务入口。多专家协作仍在持续迭代。</p>
+            <p>查看团队定位、成员分工和任务入口，按部门职责划分使用范围。</p>
           </div>
         </li>
       </ul>
     </div>
   </section>
 
-  <section class="section section-alt" id="trust">
+  <section class="section" id="trust">
     <div class="shell">
       <div class="section-head">
-        <p class="eyebrow"><span class="eyebrow-num">06</span>信任与安全</p>
+        <p class="eyebrow"><span class="eyebrow-num">07</span>信任与安全</p>
         <h2>把边界说清楚。</h2>
       </div>
       <div class="split">
@@ -392,6 +425,7 @@
             <li><strong>运行隔离</strong>命令与写入受官方沙箱与审批约束，实际操作仍需服务端检查，不以界面隐藏代替鉴权。</li>
             <li><strong>数据边界</strong>是否出网由所选模型与连接器决定，逐项在方案中列明。</li>
             <li><strong>版本与发布</strong>已发布对象按修订演进，不原地改写历史；卸载默认保留用户数据。</li>
+            <li><strong>在建范围</strong>项目空间、定时自动化、专家团 SOP、企业后台与企业 SSO 仍在推进；部门岗位与能力边界已定义，逐域的强制生效随身份打通同步覆盖。</li>
           </ul>
         </div>
         <div>
@@ -413,38 +447,89 @@
               <summary>现在哪些能力可以直接用？</summary>
               <p>技能资产、连接器、资料库、办公文档产出与单专家绑定已在本版本运行；项目空间、定时自动化、专家团 SOP、企业后台与企业 SSO 仍在建设中。</p>
             </details>
+            <details>
+              <summary>不同部门看到的东西一样吗？</summary>
+              <p>不一样。系统按部门口径定义了岗位与能力边界，运营、管理、生产、服务、销售、市场推广与应用各自看到对应的任务面、资料面与管理面。</p>
+            </details>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="section section-contact" id="contact">
+  <section class="section section-contact" id="cooperate">
     <div class="shell contact-grid">
       <div>
-        <p class="eyebrow"><span class="eyebrow-num">07</span>联系我们</p>
-        <h2>聊聊你的场景。</h2>
-        <p class="section-lead">告诉我们业务场景、参与角色与数据边界，我们会给出部署形态建议与一份可执行的 POC 方案。</p>
-        <div class="contact-actions">
-          <a class="button button-primary" href="/login?next=%2F">进入工作台</a>
-          <a class="button button-quiet" href="#capabilities">先看能做到什么</a>
+        <p class="eyebrow"><span class="eyebrow-num">08</span>合作与签约</p>
+        <h2>从一次场景沟通开始。</h2>
+        <p class="section-lead">告诉我们你的业务场景、参与角色与数据边界，我们会给出部署形态建议与一份可执行的 POC 方案。</p>
+
+        <ul class="tenets tenets-compact">
+          <li>
+            <h3>按需定制</h3>
+            <p>不堆砌功能，只解决客户真实业务里的问题。</p>
+          </li>
+          <li>
+            <h3>联署共建</h3>
+            <p>方案由双方共同确认后落地，每一项能力上线前都经过客户验证。</p>
+          </li>
+          <li>
+            <h3>持续陪伴</h3>
+            <p>环境搭好只是起点，后续的迭代、排障与优化由同一支 10 人的自有技术团队跟进，客户随时找得到人。</p>
+          </li>
+        </ul>
+
+        <div class="coop-services">
+          <h3 class="sub">我们提供的服务范围</h3>
+          <ul class="ticks ticks-labeled">
+            <li><strong>智能体定制</strong>按业务场景定义专家、技能与工具组合，交付可实际运行的智能体应用。</li>
+            <li><strong>技能安装与调优</strong>安装与导入技能资产，并按真实使用反馈持续打磨产出质量。</li>
+            <li><strong>工作台搭建</strong>搭建业务工作台与业务页面，联接内部系统，并配置权限与审计。</li>
+            <li><strong>日常运维与迭代</strong>上线后的排障、优化与版本迭代由同一支团队负责，保留完整修订记录。</li>
+          </ul>
         </div>
+
+        <p class="coop-direct">也可以直接致电商务与合作：<a href="tel:19925299929">199 2529 9929</a></p>
       </div>
-      <!-- TODO(部署前必须替换)：以下联系方式与备案信息必须使用真实信息，不得留占位内容对外发布。 -->
-      <dl class="contact-list">
-        <div>
-          <dt>商务与合作</dt>
-          <dd>待配置</dd>
-        </div>
-        <div>
-          <dt>私有化与技术支持</dt>
-          <dd>待配置</dd>
-        </div>
-        <div>
-          <dt>微信</dt>
-          <dd>待配置</dd>
-        </div>
-      </dl>
+
+      <div class="coop-panel">
+        <h3 class="sub">留下合作意向</h3>
+        <!-- 提交到门户既有的需求单接口（/api/portal/orders），与产品页共用同一套校验、去重与限流。
+             无 JavaScript 时表单不会提交，请使用上方电话联系；页面已同时给出电话入口。 -->
+        <form class="coop-form" id="coopForm" novalidate>
+          <div class="field">
+            <label for="coop-org">单位名称 <span class="req">必填</span></label>
+            <input id="coop-org" name="org" type="text" maxlength="120" autocomplete="organization" required>
+          </div>
+          <div class="field">
+            <label for="coop-contact">联系人 <span class="req">必填</span></label>
+            <input id="coop-contact" name="contact" type="text" maxlength="60" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="coop-tel">联系电话 <span class="req">必填</span></label>
+            <input id="coop-tel" name="tel" type="tel" maxlength="40" inputmode="tel" autocomplete="tel" required pattern="[0-9+\-()\s]{6,40}" placeholder="例如 13800000000">
+          </div>
+          <fieldset class="field field-group">
+            <legend>想优先解决的场景 <span class="req">至少选一项</span></legend>
+            <div class="chips-check">
+              <label><input type="checkbox" name="domains" value="运营"><span>运营</span></label>
+              <label><input type="checkbox" name="domains" value="管理"><span>管理</span></label>
+              <label><input type="checkbox" name="domains" value="生产"><span>生产</span></label>
+              <label><input type="checkbox" name="domains" value="服务"><span>服务</span></label>
+              <label><input type="checkbox" name="domains" value="销售"><span>销售</span></label>
+              <label><input type="checkbox" name="domains" value="市场推广与应用"><span>市场推广与应用</span></label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="coop-note">补充说明 <span class="opt">选填</span></label>
+            <textarea id="coop-note" name="note" rows="3" maxlength="2000" placeholder="例如：希望对接收我们自建的 CRM，先在生产部门做一次 POC。"></textarea>
+          </div>
+          <p class="form-error" id="coopError" role="alert" hidden></p>
+          <p class="form-notice" id="coopNotice" hidden></p>
+          <button class="button button-primary button-block" type="submit" id="coopSubmit">提交合作意向</button>
+          <p class="coop-hint" id="coopHint">提交后客户经理将与你联系；我们只把信息用于本次沟通。</p>
+        </form>
+      </div>
     </div>
   </section>
 
@@ -494,17 +579,48 @@
         <rect x="187" y="73" width="48" height="12" fill="#2670DA"/>
       </svg>
     </div>
-    <p class="footer-copy">基于 DeepSeek Harness 构建的企业级 AI 智能体工作台。</p>
-    <nav class="footer-nav" aria-label="页脚导航">
-      <a href="#foundation">产品定位</a>
-      <a href="#capabilities">能做什么</a>
-      <a href="#onprem">私有化与定制</a>
-      <a href="#about">企业介绍</a>
-      <a href="#trust">信任与安全</a>
-      <a href="/login?next=%2F">进入工作台</a>
-    </nav>
-    <!-- TODO(部署前必须替换)：备案号与运营主体必须使用真实信息。 -->
-    <p class="footer-meta">运营主体与备案信息待配置。</p>
+    <p class="footer-copy">基于 DeepSeek Harness 构建的企业级 AI 智能体工作台。可私有化部署，面向运营、管理、生产、服务、销售、市场推广与应用提供场景化应用，支撑各部门团队协同任务。</p>
+
+    <div class="footer-cols">
+      <nav class="footer-nav" aria-label="页脚导航">
+        <a href="#domains">业务覆盖</a>
+        <a href="#scenes">应用场景</a>
+        <a href="#collab">团队协同</a>
+        <a href="#onprem">私有化部署</a>
+        <a href="#trust">信任与安全</a>
+        <a href="#cooperate">合作与签约</a>
+        <a href="/login?next=%2F">进入工作台</a>
+        <a href="/portal/products/2026Q3.html">产品页</a>
+        <!-- vas-products-entry：增值业务多页站点（总览+5产品详情+资费总表+需求登记）与其独立后台 -->
+        <a href="/portal/products/2026Q3-zengzhi.html">增值业务产品页</a>
+        <a href="/portal/zengzhi/admin">增值业务后台</a>
+        <!-- workbench-handbook-entry：企业工作台定制解决方案在线翻页书刊（纯静态单文件，无后端依赖） -->
+        <a href="/portal/products/2026Q4-qiye-gongzuotai-dingzhi.html">企业工作台定制解决方案</a>
+        <!-- grade4-study-entry：四年级学习平台（纯静态单文件，无后端依赖） -->
+        <a href="/portal/products/2026Q4-grade4-study-platform.html">四年级学习平台</a>
+        <!-- admin-console-entry：产品页管理后台入口（需登录） -->
+        <a href="/portal/admin">产品页管理后台</a>
+      </nav>
+
+      <dl class="footer-info">
+        <div>
+          <dt>商务与合作</dt>
+          <dd><a href="tel:19925299929">199 2529 9929</a></dd>
+        </div>
+        <div>
+          <dt>运营主体</dt>
+          <dd>云管端运维</dd>
+        </div>
+        <div>
+          <dt>成立时间</dt>
+          <dd>2018 年 8 月 30 日</dd>
+        </div>
+        <div>
+          <dt>备案号</dt>
+          <dd>粤ICP备88822166号</dd>
+        </div>
+      </dl>
+    </div>
   </div>
 </footer>
 

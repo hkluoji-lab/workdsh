@@ -14,13 +14,21 @@
 
 | 路径 | 内容 |
 | --- | --- |
-| `src/config.mjs` | 只读环境变量的配置装载 + 账号表装载；默认引用仓库内 `website/assets` 的真实截图 |
+| `src/config.mjs` | 只读环境变量的配置装载 + 用户/账号表装载；默认引用仓库内 `website/assets` 的真实截图 |
 | `src/session.mjs` | 凭据归一化、口令校验、签名会话、回跳白名单、失败限流（纯函数） |
-| `src/server.mjs` | HTTP 服务：路由、静态页、登录/退出、`/api/portal/auth` |
-| `site/` | `index.html`（企业首页）、`login.html`（登录页）、`styles.css`、`portal.js` |
+| `src/session-key.mjs` | 会话密钥派生与校验的唯一共享实现（门户 3083 / 产品页后台 3084 / 增值业务后台 3085 三进程共用同一 Cookie） |
+| `src/users.mjs` | 门户自己的用户真源：口令哈希（scrypt）+ 角色 + 状态，原子写盘 |
+| `src/roles.mjs` | 岗位角色与权限目录的单一真源（平台角色 `role` 与岗位角色 `jobRole` 分层） |
+| `src/login-info.mjs` | 登录信息台账：登录时间、来源 IP、次数与最近失败（独立于 `users.json`，避免登录即作废会话） |
+| `src/identity-bridge.mjs` | 身份桥共享密钥（P1）：门户签发、DSH 侧 `workdsh-identity-portal` 验签 |
+| `src/handbook.mjs` | 手册管理模块（`HANDBOOK_ADMIN_V1`）：草稿/已发布双文件 + 历史快照，挂在 `/portal/*` 免门禁前缀下自校验会话 |
+| `src/server.mjs` | HTTP 服务：路由、静态页、登录/退出、`/api/portal/auth`、用户/角色/授权/手册端点 |
+| `site/` | `index.html`（企业首页）、`login.html`（登录页）、`register.html`（注册页）、`styles.css`、`portal.js` |
 | `site/products/` | 公开产品资料页（单文件自包含 HTML），经 `/portal/products/<name>.html` 直出 |
-| `tools/publish-products.sh` | 部署侧脚本：把一份产品页拷到线上并验证（不需要重启、不改代码） |
-| `tests/session.test.mjs`、`tests/accounts.test.mjs` | 会话、凭据归一化与账号表契约测试，`node --test 'tests/*.test.mjs'`，无外部依赖 |
+| `admin/` | 2026Q3 产品页管理服务（后端 + 静态后台），复用门户会话鉴权，含公开订购单接收 |
+| `handbook/site/` | 手册阅读器与管理端静态站（`reader.html`、`admin.html`、`render.js` 等） |
+| `tools/publish-products.sh`、`tools/migrate-accounts.mjs`、`tools/preview-redesign.mjs`、`tools/patch-products-route.sh` | 部署/迁移侧脚本（产品页发布、旧账号表迁移、改版预览、路由补丁） |
+| `tests/` | `node --test 'tests/*.test.mjs'`：`session`/`roles`/`integration` 无外部依赖；`grants.test.mjs` 为端到端用例，需 `127.0.0.1:3099` 的 DSH 沙箱（无沙箱时自动跳过） |
 
 ## 账号表（α.4）
 

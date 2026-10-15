@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>中国电信 2026 年万兆宽带融合优惠 · 政企全光套餐选型与订购</title>
-<meta name="description" content="中国电信 2026 年万兆宽带融合优惠：2000M / 5000M / 10000M（万兆）政企全光融合（FTTR）10 档套餐，全光纤宽带、主推 FTTR 礼包、手机融合、多固话与从网关加装、调测费、合约补贴一页对比；附单位客户选型向导与订购需求单生成器。">
+<meta name="description" content="中国电信 2026 年万兆宽带融合优惠：2000M / 5000M / 10000M（万兆）政企全光融合（FTTR）10 档套餐，按企业办公场景（小微门店、成长型办公室、多楼层办公、外呼客服、生产园区、设计直播云桌面）逐档说明适用场景与痛点，全光纤宽带、主推 FTTR 礼包、手机融合、多固话与从网关加装、调测费、合约补贴一页对比；附单位客户选型向导与订购需求单生成器。">
 <meta name="theme-color" content="#0b3f8f">
 <meta property="og:type" content="website">
 <meta property="og:title" content="中国电信 2026 年万兆宽带融合优惠 · 政企全光套餐选型与订购">
-<meta property="og:description" content="10 档政企全光融合（2000M / 5000M / 万兆）套餐对比 + 场景选型向导 + 订购需求单一键生成。">
+<meta property="og:description" content="10 档政企全光融合（2000M / 5000M / 万兆）套餐对比 + 6 类企业办公场景选型 + 订购需求单一键生成。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57d0'/%3E%3Cpath d='M8 20c4-7 12-7 16 0' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='24' r='2' fill='%23fff'/%3E%3C/svg%3E">
 <style>
   :root{
     --brand:#0b57d0; --brand-d:#0b3f8f; --brand-l:#e8f0fe; --brand-xl:#f5f8ff;
-    --accent:#e8590c; --accent-l:#fff2e8; --gold:#b8860b; --gold-l:#fff8e1;
+    --accent:#c2410c; --accent-l:#fff2e8; --gold:#8a6508; --gold-l:#fff8e1;
     --ink:#111827; --ink-2:#374151; --ink-3:#6b7280; --line:#e3e8f0; --line-2:#cfd8e6;
     --bg:#f4f6fb; --card:#ffffff; --ok:#0f7b45; --ok-l:#e7f6ee;
     --radius:14px; --shadow:0 1px 2px rgba(16,32,64,.05),0 8px 24px rgba(16,32,64,.06);
@@ -138,7 +138,7 @@
   .tsub{font-size:12px; color:var(--ink-3); font-weight:400}
   .price{font-weight:800; color:var(--brand-d); font-size:15px; white-space:nowrap}
   .cell-hi{color:var(--accent); font-weight:700}
-  .dash{color:#b6bfcd}
+  .dash{color:#5b6472; font-weight:500}
   .sep{color:#c3ccd9; padding:0 3px}
 
   /* tags */
@@ -147,7 +147,7 @@
   .tag-green{background:var(--ok-l); color:var(--ok); border-color:#bfe6d1}
   .tag-orange{background:var(--accent-l); color:var(--accent); border-color:#ffd9bd}
   .tag-gold{background:var(--gold-l); color:var(--gold); border-color:#f0dfae}
-  .tag-gray{background:#eef1f6; color:var(--ink-3); border-color:#dfe4ec}
+  .tag-gray{background:#eef1f6; color:#5b6472; border-color:#dfe4ec}
 
   /* tier cards */
   .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px}
@@ -247,6 +247,284 @@
     table{min-width:0; font-size:10.5px}
     section{padding:14px 0; break-inside:avoid}
   }
+
+  /* ================================================================
+     v3 视觉与体验升级层（仅样式与展示层，不改动任何产品数据口径）
+     ================================================================ */
+  :root{
+    --brand:#0b57d0; --brand-d:#0a3572; --brand-l:#e7f0fe; --brand-xl:#f4f8ff;
+    --cyan:#12a8c4; --violet:#6d4de0;
+    --ink:#0f172a; --ink-2:#3b4759; --ink-3:#5b6472; --line:#e4e9f2; --line-2:#ccd6e5;
+    --shadow-s:0 1px 2px rgba(15,30,60,.05);
+    --shadow:0 2px 6px rgba(15,30,60,.05),0 14px 34px rgba(15,30,60,.08);
+    --shadow-l:0 8px 20px rgba(11,58,132,.10),0 30px 60px rgba(11,58,132,.14);
+    --maxw:1280px; --radius:16px;
+  }
+  body{background:
+    radial-gradient(1200px 520px at 12% -8%, #eaf1ff 0%, rgba(234,241,255,0) 62%),
+    radial-gradient(900px 420px at 92% 4%, #eafafd 0%, rgba(234,250,253,0) 60%),
+    var(--bg);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:var(--maxw); padding:0 22px}
+  ::selection{background:#cfe0ff}
+
+  /* ---------- 顶部导航 ---------- */
+  .topbar{background:rgba(255,255,255,.82); backdrop-filter:saturate(180%) blur(14px); border-bottom:1px solid rgba(226,232,242,.9); box-shadow:0 1px 0 rgba(15,30,60,.02)}
+  .topbar-in{min-height:68px; gap:18px}
+  .logo .dot{background:linear-gradient(140deg,var(--brand),#2f8cf0 60%,var(--cyan)); box-shadow:0 6px 14px rgba(11,87,208,.28)}
+  .logo>span{font-size:15px}
+  .nav a{position:relative; border-radius:10px; transition:background .16s,color .16s}
+  .nav a.active{background:var(--brand-l); color:var(--brand-d)}
+  .cartbtn{background:linear-gradient(135deg,var(--brand),#1f74e0); box-shadow:0 6px 16px rgba(11,87,208,.26); transition:transform .16s,box-shadow .16s}
+  .cartbtn:hover{transform:translateY(-1px); box-shadow:0 9px 22px rgba(11,87,208,.32)}
+  .progress{position:fixed; top:0; left:0; height:3px; width:0; z-index:80; background:linear-gradient(90deg,var(--brand),var(--cyan)); box-shadow:0 0 12px rgba(18,168,196,.5)}
+
+  /* ---------- 首屏 Hero ---------- */
+  .hero{padding:66px 0 88px; background:
+      radial-gradient(760px 380px at 88% 6%, rgba(47,140,240,.42), transparent 66%),
+      radial-gradient(620px 340px at 4% 96%, rgba(18,168,196,.30), transparent 68%),
+      linear-gradient(135deg,#04203f 0%,#08336e 46%,#0b57d0 100%);
+    border-bottom:1px solid rgba(255,255,255,.06)}
+  .hero::before{content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);
+    background-size:56px 56px; mask-image:radial-gradient(circle at 78% 22%,#000 0%,transparent 74%);
+    -webkit-mask-image:radial-gradient(circle at 78% 22%,#000 0%,transparent 74%)}
+  .hero::after{right:-160px; top:-190px; width:620px; height:620px; background:radial-gradient(circle,rgba(255,255,255,.20),transparent 66%)}
+  .hero-grid{gap:52px; align-items:start}
+  .kicker{background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.30); box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+  .kicker .pulse{width:7px; height:7px; border-radius:50%; background:#7ee0a4; box-shadow:0 0 0 0 rgba(126,224,164,.7); animation:pulse 2.4s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 9px rgba(126,224,164,0)}100%{box-shadow:0 0 0 0 rgba(126,224,164,0)}}
+  .hero h1{font-size:clamp(27px,4.3vw,52px); letter-spacing:-.8px; line-height:1.14; text-shadow:0 2px 22px rgba(0,0,0,.18)}
+  .hero h1 em{background:linear-gradient(100deg,#ffe6b8,#ffc46b 62%,#ffb347); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:#ffd9a8}
+  .hero p.lead{font-size:16.5px; color:rgba(255,255,255,.93); max-width:700px}
+  .hero-cta{margin-top:28px; gap:12px}
+  .btn{transition:transform .16s,box-shadow .16s,background .16s,border-color .16s}
+  .btn-primary{box-shadow:0 10px 24px rgba(0,0,0,.18)}
+  .btn-primary:hover{transform:translateY(-1px)}
+  .btn-ghost{backdrop-filter:blur(6px)}
+  .btn-ghost:hover{transform:translateY(-1px)}
+  .hero-meta{display:flex; flex-wrap:wrap; gap:8px 20px; margin-top:22px; font-size:13px; color:rgba(255,255,255,.80)}
+  .hero-meta span{display:inline-flex; align-items:center; gap:7px}
+  .hero-meta i{width:5px; height:5px; border-radius:50%; background:#7ee0a4; font-style:normal}
+
+  /* 首屏右侧：主视觉指标面板 */
+  .hero-panel{background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.20); border-radius:20px; padding:18px 18px 16px; backdrop-filter:blur(10px); box-shadow:0 24px 60px rgba(2,16,38,.28)}
+  .hp-head{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,.16)}
+  .hp-head b{font-size:14px; letter-spacing:.2px}
+  .hp-head span{font-size:11.5px; color:rgba(255,255,255,.72)}
+  .stats{grid-template-columns:1fr 1fr; gap:10px; margin-top:14px}
+  .stat{background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); border-radius:13px; padding:13px 15px; transition:background .18s,transform .18s}
+  .stat:hover{background:rgba(255,255,255,.17); transform:translateY(-2px)}
+  .stat b{font-size:22px; letter-spacing:-.5px}
+  .stat span{font-size:12px; color:rgba(255,255,255,.80); line-height:1.5}
+  .stat.wide{grid-column:1/-1; display:flex; align-items:baseline; gap:12px}
+  .stat.wide b{font-size:26px}
+  .stat.wide span{font-size:12.5px}
+
+  /* ---------- 三步引导（浮在首屏下沿） ---------- */
+  .guide{margin-top:-46px; gap:16px}
+  .guide .card{padding:18px 20px; border-radius:15px; box-shadow:var(--shadow); border-color:#e6ecf6; transition:transform .2s,box-shadow .2s}
+  .guide .card:hover{transform:translateY(-3px); box-shadow:var(--shadow-l)}
+  .step-no{flex:0 0 32px; height:32px; border-radius:11px; background:linear-gradient(140deg,var(--brand),#2f8cf0); color:#fff; box-shadow:0 6px 14px rgba(11,87,208,.26)}
+  .guide b{font-size:15.5px}
+
+  /* ---------- 区块标题 ---------- */
+  section{padding:62px 0}
+  section.tight{padding:48px 0}
+  .shead{margin-bottom:28px}
+  .shead h2{font-size:clamp(21px,2.6vw,29px); letter-spacing:-.3px}
+  .shead h2::before{width:5px; height:26px; background:linear-gradient(var(--brand),var(--cyan))}
+  .shead p{font-size:14.5px; max-width:960px}
+  .shead .eyebrow{display:inline-block; font-size:12px; font-weight:700; letter-spacing:1.6px; color:var(--brand); text-transform:uppercase; margin-bottom:8px}
+  .card{border-radius:var(--radius); border-color:#e7ecf5; transition:box-shadow .2s,transform .2s,border-color .2s}
+
+  /* ---------- 选型向导 ---------- */
+  .wizard{gap:24px}
+  .q>label{font-size:15px}
+  .opt span{padding:10px 15px; transition:all .16s}
+  .opt span:hover{border-color:var(--brand); color:var(--brand-d); background:#fbfdff}
+  .opt input:checked+span{background:linear-gradient(180deg,#eef5ff,#e3eefe); box-shadow:0 0 0 3px rgba(11,87,208,.10),0 4px 12px rgba(11,87,208,.10)}
+  .result{border-radius:14px; border-color:#d9e6fb; box-shadow:inset 0 1px 0 #fff}
+  .reco-item{border-radius:12px; transition:transform .18s,box-shadow .18s,border-color .18s}
+  .reco-item:hover{border-color:#c7dcfb; box-shadow:var(--shadow); transform:translateX(2px)}
+  .reco-item .rank{background:linear-gradient(140deg,var(--brand),#2f8cf0); box-shadow:0 4px 10px rgba(11,87,208,.24)}
+
+  /* ---------- 企业办公场景速览 ---------- */
+  .scene-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px}
+  @media (max-width:1080px){ .scene-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:720px){ .scene-grid{grid-template-columns:1fr} }
+  .scene{position:relative; background:#fff; border:1px solid #e7ecf5; border-radius:16px; padding:20px 20px 18px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; transition:transform .2s,box-shadow .2s}
+  .scene::before{content:""; position:absolute; left:0; top:0; height:4px; width:100%; background:linear-gradient(90deg,var(--sc,#0b57d0),transparent 88%)}
+  .scene:hover{transform:translateY(-4px); box-shadow:var(--shadow-l)}
+  .scene-top{display:flex; align-items:center; gap:12px; margin-bottom:12px}
+  .scene-ico{flex:0 0 42px; height:42px; border-radius:13px; display:grid; place-items:center; font-size:20px; background:#f2f7ff; border:1px solid #dbe7fa}
+  .scene-top h3{font-size:16.5px}
+  .scene-top .who{font-size:12px; color:var(--ink-3); font-weight:500; margin-top:2px}
+  .scene-need{font-size:13.5px; color:var(--ink-2); background:#f7f9fd; border:1px dashed #dde5f1; border-radius:11px; padding:10px 12px; margin-bottom:12px}
+  .scene-need b{color:var(--brand-d)}
+  .scene ul{margin:0 0 14px; padding-left:17px; font-size:13px; color:var(--ink-2)}
+  .scene ul li{margin:4px 0}
+  .scene-picks{margin-top:auto; padding-top:12px; border-top:1px solid var(--line)}
+  .scene-picks>span{display:block; font-size:11.5px; font-weight:700; letter-spacing:.4px; color:var(--ink-3); margin-bottom:7px}
+  .scene-picks .pills{display:flex; flex-wrap:wrap; gap:6px}
+  .pill{display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; color:var(--brand-d); background:var(--brand-l); border:1px solid #c9dcfb; border-radius:999px; padding:4px 11px; cursor:pointer; transition:all .15s}
+  .pill:hover{background:var(--brand); color:#fff; border-color:var(--brand)}
+  .pill.main{background:linear-gradient(135deg,var(--brand),#2f8cf0); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(11,87,208,.24)}
+  .pill .star{font-size:11px}
+  .scene-foot{margin-top:10px; font-size:12px; color:var(--ink-3); line-height:1.55}
+  .scene-next{margin-top:10px; width:100%; text-align:left; border:1px dashed var(--line-2); background:#fbfcfe; color:var(--ink-2); border-radius:10px; padding:8px 11px; font-size:12.5px; font-family:inherit; cursor:pointer; transition:all .16s}
+  .scene-next:hover{border-color:var(--brand); color:var(--brand-d); background:var(--brand-xl)}
+
+  /* ---------- 对比表 ---------- */
+  .tablewrap{border-radius:14px; border-color:#e2e8f3; box-shadow:var(--shadow); max-height:78vh}
+  table{font-size:13.5px}
+  thead th{background:linear-gradient(180deg,#eff4fc,#e8eefa); padding:12px; font-size:12.5px; letter-spacing:.2px}
+  thead th.scene-h{background:linear-gradient(180deg,#eaf7fa,#dff1f6); color:#0d6d7f}
+  tbody td{padding:12px}
+  tbody tr{transition:background .14s}
+  tbody tr:hover td{background:#f7fbff}
+  .tname{font-size:14.5px}
+  .scene-cell{min-width:210px; font-size:12.5px; line-height:1.6}
+  .scene-cell b{display:block; color:var(--brand-d); font-size:13px; margin-bottom:3px}
+  .scene-cell .flow{color:var(--ink-2)}
+  .chip-scene{border-color:#bfe4ec; color:#0d6d7f; background:#f1fbfd}
+  .chip-scene:hover{border-color:var(--cyan)}
+  .chip-scene.on{background:linear-gradient(135deg,#0d8ea6,#12a8c4); border-color:transparent; color:#fff}
+
+  /* ---------- 套餐卡 ---------- */
+  .cards{grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:18px}
+  .tier{border-radius:16px; border-color:#e6ecf6; transition:transform .2s,box-shadow .2s,border-color .2s}
+  .tier:hover{transform:translateY(-4px); box-shadow:var(--shadow-l)}
+  .tier-head{padding:18px 20px 15px; background:linear-gradient(180deg,#f5f9ff,#fff)}
+  .tier-head h3{font-size:17.5px}
+  .tier-price b{font-size:33px}
+  .tier-badge{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; border-radius:999px; padding:4px 11px; margin-top:10px; background:linear-gradient(135deg,#0b57d0,#12a8c4); color:#fff; box-shadow:0 5px 14px rgba(11,87,208,.24)}
+  .scene-box{margin:14px 0 2px; border:1px solid #d9ecf1; background:linear-gradient(180deg,#f3fbfd,#fff); border-radius:13px; padding:13px 15px}
+  .scene-box .sb-h{display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:800; color:#0b5f70; margin-bottom:7px}
+  .scene-box .sb-h i{font-style:normal}
+  .scene-box .sb-who{font-size:12px; font-weight:600; color:#0d6d7f; background:#e2f5f9; border-radius:999px; padding:2px 9px; margin-left:auto}
+  .scene-box .sb-pain{font-size:12.5px; color:var(--ink-2); margin-bottom:8px}
+  .scene-box ul{margin:0 0 9px; padding-left:16px; font-size:12.5px; color:var(--ink-2)}
+  .scene-box ul li{margin:3px 0}
+  .scene-box .sb-fit{font-size:12.5px; color:#0b5f70; background:#e8f7fa; border-radius:9px; padding:8px 10px; line-height:1.6}
+  .scene-box .sb-fit b{color:#084d5c}
+  .scene-box .sb-picks{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px}
+  .kv{grid-template-columns:86px 1fr}
+  .tier-foot{gap:10px}
+
+  /* ---------- 通用元素 ---------- */
+  .note{border-radius:12px; line-height:1.7}
+  .step{border-radius:14px; border-color:#e6ecf6; transition:transform .2s,box-shadow .2s}
+  .step:hover{transform:translateY(-3px); box-shadow:var(--shadow-l)}
+  .step .n{background:linear-gradient(140deg,var(--brand),#2f8cf0); border-radius:10px; box-shadow:0 6px 14px rgba(11,87,208,.24)}
+  details.faq{border-radius:14px; transition:box-shadow .2s,border-color .2s}
+  details.faq:hover{border-color:#cfdcf0; box-shadow:var(--shadow)}
+  details.faq summary::before{display:grid; place-items:center; width:20px; height:20px; border-radius:6px; background:var(--brand-l); color:var(--brand-d); font-size:13px; margin-top:1px}
+  details.faq[open]{border-color:#c9dcfb; box-shadow:var(--shadow)}
+  .toast{border-radius:12px; box-shadow:var(--shadow-l); font-weight:500}
+  footer{background:linear-gradient(180deg,#0a1e3d,#071628)}
+
+  /* ---------- 返回顶部 / 移动端底部操作条 ---------- */
+  .mobile-bar{display:none}
+  .totop{position:fixed; right:20px; bottom:26px; width:44px; height:44px; border-radius:50%; border:1px solid var(--line-2); background:rgba(255,255,255,.94); color:var(--brand-d); font-size:18px; cursor:pointer; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:70}
+  .totop.on{opacity:1; pointer-events:auto}
+  .totop:hover{transform:translateY(-3px)}
+
+  /* ---------- 入场动画 ---------- */
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity .6s cubic-bezier(.22,.7,.3,1),transform .6s cubic-bezier(.22,.7,.3,1)}
+  .reveal.in{opacity:1; transform:none}
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1 !important; transform:none !important; transition:none}
+    .kicker .pulse{animation:none}
+    html{scroll-behavior:auto}
+  }
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width:1080px){
+    .hero-grid{grid-template-columns:1fr; gap:30px}
+    .hero{padding:52px 0 78px}
+    .guide{margin-top:-38px}
+  }
+  @media (max-width:1000px){
+    .guide{grid-template-columns:1fr}
+    .wizard,.cols2,.form{grid-template-columns:1fr}
+    .cols3{grid-template-columns:1fr}
+    .steps{grid-template-columns:1fr 1fr}
+    .step:not(:last-child)::after{display:none}
+    section{padding:48px 0}
+  }
+  @media (max-width:640px){
+    .wrap{padding:0 16px}
+    .hero h1{font-size:26px}
+    .hero{padding:40px 0 66px}
+    .stats{grid-template-columns:1fr}
+    .stat.wide{grid-column:auto; display:block}
+    .steps{grid-template-columns:1fr}
+    .nav{display:none}
+    .kv{grid-template-columns:74px 1fr}
+    .cards{grid-template-columns:1fr}
+    .mini{grid-template-columns:1fr 1fr}
+    .topbar-in{min-height:60px}
+    .logo{min-width:0; flex:1}
+    .logo>span{font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; min-width:0}
+    .logo small{display:none}
+    .cartbtn{flex:0 0 auto; padding:9px 12px; font-size:13px}
+    section{padding:38px 0}
+    .guide{margin-top:-30px}
+    body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+    .mobile-bar{display:flex; position:fixed; left:0; right:0; bottom:0; z-index:75; gap:10px; padding:10px 14px calc(10px + env(safe-area-inset-bottom)); background:rgba(255,255,255,.96); backdrop-filter:blur(12px); border-top:1px solid var(--line); box-shadow:0 -6px 20px rgba(15,30,60,.08)}
+    .mobile-bar button{flex:1; min-width:0; border-radius:11px; padding:11px 4px; font-size:12.5px; font-weight:600; white-space:nowrap; border:1px solid var(--line-2); background:#fff; color:var(--ink-2); cursor:pointer}
+    .mobile-bar button.primary{background:linear-gradient(135deg,var(--brand),#2f8cf0); color:#fff; border-color:transparent}
+    .totop{bottom:76px; right:14px}
+    .toast{bottom:calc(88px + env(safe-area-inset-bottom))}
+  }
+  .out-print{display:none}
+  .submit-box{margin-top:16px; padding:14px 16px; border:1px dashed var(--line-2); border-radius:12px; background:#fbfcfe}
+  .submit-box .btn{width:100%}
+  @media print{
+    /* v3 样式层位于原打印规则之后，需在此逐项重申打印口径，
+       否则屏幕端的深色首屏与白色文字会落到白纸上（浏览器默认不打印背景色）。 */
+    body{background:#fff !important; background-image:none !important}
+    .hero{background:#fff !important; background-image:none !important; padding:0 0 12px !important; border:0}
+    .hero::before,.hero::after{display:none !important}
+    .hero h1{text-shadow:none !important}
+    .hero h1 em{background:none !important; -webkit-text-fill-color:#000 !important; color:#000 !important}
+    .hero p.lead,.kicker,.stat span,.hero-meta,.hero-meta i{color:#333 !important}
+    .kicker{background:#f2f5fa !important; border-color:#ccc !important}
+    .hero-panel{background:#f7f9fc !important; border-color:#ccc !important; box-shadow:none !important; backdrop-filter:none !important}
+    .hp-head{border-bottom-color:#ddd !important}
+    .hp-head b,.hp-head span{color:#333 !important}
+    .stat{background:#f2f5fa !important; border-color:#ccc !important}
+    .stat b{color:#000 !important}
+    table{font-size:10.5px !important}
+    .tablewrap{max-height:none !important; overflow:visible !important; box-shadow:none}
+    .scene,.scene-box,.tier,.guide .card{box-shadow:none !important; transform:none !important}
+    .scene-next{display:none !important}
+    .tier-badge{background:#e8eef8 !important; color:#123 !important; box-shadow:none !important}
+    .mobile-bar,.progress,.totop{display:none !important}
+    /* 页脚同样依赖深色底，打印时改为深字白底，避免浅字落白纸 */
+    footer{background:#fff !important; background-image:none !important; color:#333 !important; border-top:1px solid #ccc}
+    footer b{color:#000 !important}
+    footer a{color:#0b3f8f !important}
+    .progress,.totop,.mobile-bar{display:none !important}
+    .reveal{opacity:1 !important; transform:none !important}
+    .scene, .scene-box, .tier, .reco-item, .step{break-inside:avoid}
+    /* 需求单正文改用可完整分页的 pre，避免 textarea 被可视高度截断 */
+    #out{display:none !important}
+    .out-print{display:block !important; white-space:pre-wrap; word-break:break-word;
+      font-family:inherit; font-size:10.5pt; line-height:1.7; margin-top:10px; border:1px solid #ccc; border-radius:8px; padding:12px}
+    /* 对比表 19 列无法压进 A4，打印时只保留精简视图的 9 列 */
+    .tablewrap table th:nth-child(n+10), .tablewrap table td:nth-child(n+10){display:none !important}
+    /* 仅打印需求单模式 */
+    html.print-order .topbar, html.print-order .hero, html.print-order .guide,
+    html.print-order #scenes, html.print-order #pick, html.print-order #compare,
+    html.print-order #cards, html.print-order #subsidy, html.print-order #addon,
+    html.print-order #flow, html.print-order #faq, html.print-order footer{display:none !important}
+    html.print-order #order .shead p, html.print-order #order .form,
+    html.print-order #order .cols2 > .card:first-child{display:none !important}
+    html.print-order #order{padding:0}
+  }
 </style>
 </head>
 <body>
@@ -258,6 +536,7 @@
       <span>中国电信 2026 年万兆宽带融合优惠<small>政企全光融合（FTTR）套餐 · 2026 年三季度口径</small></span>
     </div>
     <nav class="nav" id="nav">
+      <a href="#scenes">办公场景</a>
       <a href="#pick">快速选型</a>
       <a href="#compare">套餐对比</a>
       <a href="#cards">套餐详情</a>
@@ -273,22 +552,31 @@
 <section class="hero" id="top">
   <div class="wrap hero-grid">
     <div>
-      <span class="kicker">中国电信 · 2026 年三季度产品口径 · 政企（单位）客户</span>
+      <span class="kicker"><span class="pulse" aria-hidden="true"></span>中国电信 · 2026 年三季度产品口径 · 政企（单位）客户</span>
       <h1>中国电信 2026 年<em>万兆宽带</em>融合优惠</h1>
-      <p class="lead">10 档政企全光融合套餐一次看清（<b>2000M / 5000M / 10000M 万兆</b>档）：全光纤宽带 + 主推 FTTR 礼包 + 手机融合 + 多固话/从网关加装 + 合约补贴。先按场景缩小到 2–3 档，再逐档核对带宽、流量、通话与调测费，最后生成订购需求单交给客户经理受理。</p>
+      <p class="lead">10 档政企全光融合套餐一次看清（<b>2000M / 5000M / 10000M 万兆</b>档）：全光纤宽带 + 主推 FTTR 礼包 + 手机融合 + 多固话 / 从网关加装 + 合约补贴。先按企业办公场景缩小到 2–3 档，再逐档核对带宽、流量、通话与调测费，最后生成订购需求单交给客户经理受理。</p>
       <div class="hero-cta">
-        <button class="btn btn-primary" data-jump="#pick">① 帮我选套餐</button>
-        <button class="btn btn-ghost" data-jump="#compare">② 直接看对比表</button>
-        <button class="btn btn-ghost" data-jump="#order">③ 生成订购需求单</button>
+        <button class="btn btn-primary" data-jump="#scenes">① 按办公场景选套餐</button>
+        <button class="btn btn-ghost" data-jump="#pick">② 3 问快速选型</button>
+        <button class="btn btn-ghost" data-jump="#compare">③ 直接看对比表</button>
+        <button class="btn btn-ghost" data-jump="#order">④ 生成需求单</button>
+      </div>
+      <div class="hero-meta">
+        <span><i></i>10 档套餐逐档场景化说明</span>
+        <span><i></i>补贴 / 预存 / 调测费口径单列</span>
+        <span><i></i>需求单可复制、可打印</span>
       </div>
     </div>
-    <div class="stats">
-      <div class="stat"><b>2000M – 10000M</b><span>全光纤宽带有线速率（上行 50M – 300M）</span></div>
-      <div class="stat"><b>9 张免 9 张</b><span>副卡权益；多卡最多 +3000 分钟 / +200GB</span></div>
-      <div class="stat"><b>最高 750GB</b><span>全国流量（10000M 融合档）</span></div>
-      <div class="stat"><b>最高 5500 分钟</b><span>全国通话（2000+3500 分钟档）</span></div>
-      <div class="stat"><b>最高 5800 元</b><span>补贴金额（全额预存 3 年期）</span></div>
-      <div class="stat"><b>1 路 / 1 路</b><span>标准配置固话与 IPTV 各 1 路</span></div>
+    <div class="hero-panel">
+      <div class="hp-head"><b>本季度产品要点</b><span>数据取自 2026 年三季度产品表</span></div>
+      <div class="stats">
+        <div class="stat wide"><b>2000M – 10000M</b><span>全光纤宽带有线速率，上行 50M – 300M</span></div>
+        <div class="stat"><b>10 档</b><span>机光 / 全光 / 融合可选档位</span></div>
+        <div class="stat"><b>最高 750GB</b><span>全国流量（10000M 融合档）</span></div>
+        <div class="stat"><b>最高 5500 分钟</b><span>全国通话（2000+3500 分钟档）</span></div>
+        <div class="stat"><b>最高 5800 元</b><span>补贴金额（全额预存 3 年期）</span></div>
+        <div class="stat"><b>9 张免 9 张</b><span>副卡权益；多卡最多 +3000 分钟 / +200GB</span></div>
+      </div>
     </div>
   </div>
 </section>
@@ -309,6 +597,20 @@
     </div>
   </div>
 </div>
+
+<section id="scenes">
+  <div class="wrap">
+    <div class="shead">
+      <span class="eyebrow">按办公场景找套餐</span>
+      <h2>6 类企业办公场景 · 每档套餐对应一个主场景</h2>
+      <p>同一个单位，办公形态不同，该选的档位差别很大：小门店要的是月租低、基础覆盖够用；多楼层办公要的是全屋无缝漫游；外呼团队要的是通话分钟与固话数量；生产园区与设计、直播类团队要的是上行带宽。下表按「典型办公形态 → 痛点 → 推荐档位」给出对应关系，点档位标签可直接跳到详情卡。</p>
+    </div>
+    <div class="scene-grid" id="sceneGrid"></div>
+    <div class="note blue" style="margin-top:18px">
+      <b>场景口径说明：</b>场景划分依据套餐可核对的字段（有线速率与上行、FTTR 礼包形态与话补、全国流量与通话分钟、多固话加装台数、是否标注公网 IP、调测费口径），属于<b>选型建议</b>，不是产品表原文。原表未对「机光 / 全光」作官方释义，涉及具体设备型号、组网方式、覆盖效果的部分，请以装维勘察与客户经理口径为准。
+    </div>
+  </div>
+</section>
 
 <section id="pick" class="tight">
   <div class="wrap">
@@ -348,6 +650,7 @@
       <div class="result">
         <h3>推荐候选档位 <span class="tag tag-blue" id="recoCount">—</span></h3>
         <p class="small muted" style="margin-top:6px">推荐结果只做初筛，最终以资源勘察与本地政策为准。可直接把候选加入需求单。</p>
+        <p class="small" id="recoNote" style="display:none; margin-top:6px; color:#8a4b06; background:#fff7ed; border:1px solid #fed7aa; border-radius:9px; padding:7px 10px">已按「需要公网 IP」过滤：仅保留原表标注公网 IP 的档位。若候选不足，可把 Q3 改为「暂不确定」查看全部档位。</p>
         <div class="reco" id="recoList"></div>
       </div>
     </div>
@@ -358,7 +661,7 @@
   <div class="wrap">
     <div class="shead">
       <h2>套餐总览对比表</h2>
-      <p>原表 19 个字段一页收纳：默认「精简视图」只留决策必需的 8 列，切换「完整视图」可看到副卡、副宽、固话 IPTV、多固话加装、从网关与补贴明细。表格首列与表头固定，横向滚动不迷路。</p>
+      <p>原表 19 个字段一页收纳：默认「精简视图」保留决策必需的 9 列（含<b>场景定位</b>），切换「完整视图」可看到副卡、副宽、固话 IPTV、多固话加装、从网关与补贴明细。表格首列与表头固定，横向滚动不迷路；点场景标签可只看某一类办公场景的档位。</p>
     </div>
     <div class="toolbar">
       <div class="seg" id="viewSeg">
@@ -372,6 +675,7 @@
         <button class="chip" data-group="C">C 高话务</button>
         <button class="chip" data-group="D">D 万兆大带宽</button>
       </div>
+      <div class="chips" id="sceneChips"></div>
       <button class="chip" id="onlySub">只看含补贴</button>
       <button class="chip" id="onlyIp">只看含公网 IP</button>
       <button class="chip" id="resetF">重置筛选</button>
@@ -390,7 +694,7 @@
   <div class="wrap">
     <div class="shead">
       <h2>10 档套餐详情卡</h2>
-      <p>每张卡把「花多少钱、得到什么、一次性费用多少、补贴多少」放在同一屏内，避免在长表格里来回找数。点「加入需求单」即可带入下单选型。</p>
+      <p>每张卡按「<b>适合什么办公场景 → 这个场景的痛点 → 本档怎么解决 → 一次性费用与补贴</b>」组织，把「花多少钱、得到什么、一次性费用多少、补贴多少」放在同一屏内，避免在长表格里来回找数。点「加入需求单」即可带入下单选型。</p>
     </div>
     <div class="cards" id="cardList"></div>
     <div class="note blue" style="margin-top:18px">
@@ -482,7 +786,7 @@
       </div>
     </div>
     <div class="note blue" style="margin-top:16px">
-      <b>关于「——」符号：</b>原表在「加装 1 台从网关」列的部分档位用「——」表示并列或延续的选项（如 699/739 机光、5000M 融合机光），本页按原表原样保留，具体可选项请与客户经理确认。
+      <b>关于「— / ——」符号：</b>原表在「加装 1 台从网关」列的部分档位用「——」表示并列或延续的选项（如 699/739 机光、5000M 融合机光），本页按原表原样保留，具体可选项请与客户经理确认。
     </div>
   </div>
 </section>
@@ -537,7 +841,7 @@
   <div class="wrap">
     <div class="shead">
       <h2>订购需求单生成器</h2>
-      <p>把选好的档位、预存方式与加装项填进来，页面会生成一份结构化需求单文本，可直接复制发微信 / 邮件，或打印后交客户经理受理。所有内容只在你的浏览器中生成，不会上传。</p>
+      <p>把选好的档位、预存方式与加装项填进来，页面会生成一份结构化需求单文本，可复制发微信 / 邮件、打印后交客户经理，也可<b>直接在线提交</b>（提交后由客户经理与您联系）。<b>本地生成、复制与打印不经过网络</b>；只有您主动点击「在线提交需求单」时，才会把表单内容发送到本站。</p>
     </div>
     <div class="cols2" style="align-items:start">
       <div class="card pad">
@@ -584,11 +888,16 @@
           <button class="btn btn-line" id="printBtn" type="button">打印 / 存 PDF</button>
           <button class="btn btn-line" id="clearBtn" type="button">清空</button>
         </div>
+        <div class="submit-box">
+          <button class="btn btn-primary" id="submitBtn" type="button" style="background:var(--brand); color:#fff">在线提交需求单</button>
+          <p class="small muted" id="submitHint" style="margin-top:8px">提交后将发送至本站并由客户经理跟进；不会发送给任何第三方。请先填好单位名称、联系人与联系电话。</p>
+        </div>
       </div>
       <div class="card pad">
         <h3 style="font-size:16px">需求单预览</h3>
         <p class="small muted" style="margin-top:6px">生成后可复制、打印或另存为 PDF。</p>
         <textarea id="out" style="margin-top:10px; min-height:430px" readonly placeholder="点击「生成需求单」后，这里会出现结构化文本。"></textarea>
+        <pre id="outPrint" class="out-print" aria-hidden="true"></pre>
       </div>
     </div>
   </div>
@@ -599,106 +908,466 @@
     <div style="max-width:640px">
       <b>中国电信 2026 年万兆宽带融合优惠 · 政企全光融合（FTTR）套餐简介</b>
       <p style="margin-top:8px">本页数据来源于同期套餐产品表，仅用于选型沟通与需求整理，不构成报价承诺。最终资费、可选档位、补贴金额、承保与发票口径以本地政策、系统受理结果及正式合同为准。</p>
-      <p style="margin-top:10px" class="small">原表未标注的事项（如第 8–10 档月租数字、299/399/439 与 10000M 融合档的公网 IP 标注、「机光 / 全光」的官方释义、调测费减免政策）在本页已如实标注为未说明。</p>
+      <p style="margin-top:10px" class="small">页面中的「企业办公场景」为选型建议层，依据套餐可核对字段归纳，不改变任何资费口径；场景划分与档位对应关系不构成产品承诺。</p>
+      <p style="margin-top:8px" class="small">原表未标注的事项（如第 8–10 档月租数字、299/399/439 与 10000M 融合档的公网 IP 标注、「机光 / 全光」的官方释义、调测费减免政策）在本页已如实标注为未说明。</p>
     </div>
     <div class="small">
       <p><b>快速跳转</b></p>
-      <p><a href="#pick">快速选型</a> · <a href="#compare">套餐对比</a> · <a href="#cards">套餐详情</a></p>
-      <p><a href="#subsidy">补贴与预存</a> · <a href="#addon">加装与调测</a> · <a href="#order">订购需求单</a></p>
+      <p><a href="#scenes">办公场景</a> · <a href="#pick">快速选型</a> · <a href="#compare">套餐对比</a></p>
+      <p><a href="#cards">套餐详情</a> · <a href="#subsidy">补贴与预存</a> · <a href="#addon">加装与调测</a></p>
+      <p><a href="#flow">订购流程</a> · <a href="#faq">常见问题</a> · <a href="#order">订购需求单</a></p>
     </div>
   </div>
 </footer>
 
 <div class="toast" id="toast"></div>
+<div class="progress" id="progress"></div>
+<button class="totop" id="totop" type="button" title="返回顶部" aria-label="返回顶部">↑</button>
+<div class="mobile-bar" id="mobileBar">
+  <button type="button" data-jump="#scenes">看场景</button>
+  <button type="button" data-jump="#pick">选型</button>
+  <button type="button" data-jump="#compare">对比</button>
+  <button type="button" data-jump="#subsidy">补贴</button>
+  <button type="button" class="primary" data-jump="#order">需求单 <span id="mobileCount">0</span></button>
+</div>
 
 <script>
-/* ============ 数据层：严格按原表逐格录入 ============ */
+/* ============ 数据层：由管理后台数据源渲染，请勿手工编辑此段 ============ */
+/* 数据源：data/products/2026Q3.json；渲染器：tools/render-product.mjs */
 const GROUPS = {
-  A:{name:'A 小微基础组网', color:'blue'},
-  B:{name:'B 组网增强',     color:'green'},
-  C:{name:'C 高话务移动办公', color:'violet'},
-  D:{name:'D 万兆大带宽',   color:'orange'}
+  A:{ name:"A 小微基础组网", color:"blue" },
+  B:{ name:"B 组网增强", color:"green" },
+  C:{ name:"C 高话务移动办公", color:"violet" },
+  D:{ name:"D 万兆大带宽", color:"orange" }
 };
 const UNIVERSAL = {
-  tv:'1 路 / 1 路',
-  subcard:'9 张免 9 张',
-  multi:'每多一张活跃副卡，主套餐增加 50GB 通用流量和 200 分钟语音。合计最多增加 3000 分钟和 200GB 通用流量。',
-  subwidth:['100 元 / 1000M（调测费 200）','150 元 / 2000M（FTTR，调测费 199）']
+  tv:"1 路 / 1 路",
+  subcard:"9 张免 9 张",
+  multi:"每多一张活跃副卡，主套餐增加 50GB 通用流量和 200 分钟语音。合计最多增加 3000 分钟和 200GB 通用流量。",
+  subwidth:["100 元 / 1000M（调测费 200）","150 元 / 2000M（FTTR，调测费 199）"]
 };
 /* monthly: 数组表示原表给出的价格档；null 表示原表未单列月租数字 */
 const TIERS = [
-  { id:'t299', name:'299 机光', monthly:[299], group:'A', speed:'2000M / 50M', ip:'', ipState:'', 
-    gift:'60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）', huabu:'60 元', flow:'150+60', voice:'1500',
-    talk:'+50 元 · 2 台 · 500 分钟', gw:'15 元/2 年 或 10 元/3 年｜调测费 199', test:'光猫 200 ／ FTTR 199',
-    full2:'1200', full3:'1800', z2:'1190（政企协议）/1200（中通承保）', z3:'1800（中通保险承保，本地库不提供发票）',
-    low:'299', tags:['入门首选','含补贴'] },
-  { id:'t399', name:'399 机光', monthly:[399], group:'A', speed:'2000M / 100M', ip:'', ipState:'',
-    gift:'60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）', huabu:'60 元', flow:'200+100', voice:'2000',
-    talk:'+100 元 · 8 台 · 1000 分钟', gw:'15 元/2 年 或 10 元/3 年｜调测费 199', test:'光猫 200 ／ FTTR 199',
-    full2:'2400', full3:'4000', z2:'2390（政企协议）/2400（中通承保）', z3:'3600（中通保险承保，本地库不提供发票）',
-    low:'399', tags:['含补贴','100M 上行'] },
-  { id:'t439', name:'439 B 版 FTTR 机光', monthly:[439], group:'A', speed:'2000M / 100M', ip:'', ipState:'',
-    gift:'100 元智企云包（FTTR-B + 企业云盘 1T + 来电名片 1500 条）', huabu:'60 元', flow:'200+100', voice:'2000',
-    talk:'+100 元 · 8 台 · 1000 分钟', gw:'40 元/2 年｜调测费 299', test:'299',
-    full2:'2400', full3:'4000', z2:'2390（政企协议）/2400（中通承保）', z3:'3600（中通保险承保，本地库不提供发票）',
-    low:'399', tags:['FTTR-B 组网','含企业云盘'] },
-  { id:'t699gj', name:'699 / 739 机光', monthly:[699,739], group:'B', speed:'2000M / 100M', ip:'公网 IP', ipState:'yes',
-    gift:'60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）／100 元智企云包※', huabu:'60 元', flow:'100+200', voice:'1500+3500',
-    talk:'+200 元 · 12 台 · 2000 分钟', gw:'15 元/2 年 或 10 元/3 年｜调测费 199 ——', test:'199 ／ 399',
-    full2:'2400', full3:'5800', z2:'2390（政企协议）/2400（中通承保）', z3:'5400（中通保险承保，本地库不提供发票）',
-    low:'699', tags:['公网 IP','含补贴','高通话'] },
-  { id:'t699qg', name:'699 全光', monthly:[699], group:'B', speed:'2000M / 100M', ip:'公网 IP', ipState:'yes',
-    gift:'100 元智企云包（FTTR-B（1+2）+ 企业云盘 1T + 来电名片 1500）', huabu:'100 元', flow:'100+200', voice:'1500+3500',
-    talk:'+200 元 · 12 台 · 2000 分钟', gw:'40 元/2 年｜调测费 299', test:'399',
-    full2:'—', full3:'—', z2:'—', z3:'—', low:'699', tags:['全光组网','公网 IP','无补贴'] },
-  { id:'t999gj', name:'999 / 1119 机光', monthly:[999,1119], group:'C', speed:'2000M / 100M', ip:'公网 IP', ipState:'yes',
-    gift:'60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）／180 元智企云包※', huabu:'60 元', flow:'150+200', voice:'2000+3500',
-    talk:'+200 元 · 12 台 · 2000 分钟', gw:'15 元/2 年 或 10 元/3 年｜调测费 199', test:'199 ／ 399',
-    full2:'2400', full3:'5800', z2:'2390（政企协议）/2400（中通承保）', z3:'5400（中通保险承保，本地库不提供发票）',
-    low:'999', tags:['公网 IP','含补贴','2000+3500 分钟'] },
-  { id:'t999qg', name:'999 全光', monthly:[999], group:'C', speed:'2000M / 100M', ip:'公网 IP', ipState:'yes',
-    gift:'180 元智企云包（FTTR-B（1+3）+ 企业云盘 2T + 来电名片※', huabu:'180 元', flow:'150+200', voice:'2000+3500',
-    talk:'+200 元 · 12 台 · 2000 分钟', gw:'40 元/2 年｜调测费 299', test:'399',
-    full2:'—', full3:'—', z2:'—', z3:'—', low:'999', tags:['全光组网','公网 IP','180 元智企云包'] },
-  { id:'t5000gj', name:'5000M 融合机光', monthly:null, group:'D', speed:'5000M / 200M', ip:'无公网 IP', ipState:'no',
-    gift:'60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）／180 元智企云包（FTTR-B（1+3）+ 企业云盘 2T + 来电名片 3000）', huabu:'60 元', flow:'150+200', voice:'2000+3500',
-    talk:'+200 元 · 12 台 · 2000 分钟', gw:'15 元/2 年 或 10 元/3 年｜调测费 199 —— 40 元/2 年｜调测费 299', test:'199 ／ 399',
-    full2:'2400', full3:'5800', z2:'2390（政企协议）/2400（中通承保）', z3:'5400（中通保险承保，本地库不提供发票）',
-    low:'999', tags:['5000M','含补贴','无公网 IP'] },
-  { id:'t5000qg', name:'5000M 融合全光', monthly:null, group:'D', speed:'5000M / 200M', ip:'无公网 IP', ipState:'no',
-    gift:'180 元智企云包（FTTR-B（1+3）+ 企业云盘 2T + 来电名片 3000）', huabu:'180 元', flow:'150+200', voice:'2000+3500',
-    talk:'+200 元 · 12 台 · 2000 分钟', gw:'—', test:'399',
-    full2:'—', full3:'—', z2:'—', z3:'—', low:'999', tags:['5000M','全光组网','无补贴'] },
-  { id:'t10000', name:'10000M 融合', monthly:null, group:'D', speed:'10000M / 300M', ip:'', ipState:'',
-    gift:'250 元智企云包（万兆 FTTR（1+1）+ 企业云盘 2T + 来电名片 5000）', huabu:'250 元', flow:'750', voice:'2000',
-    talk:'+200 元 · 12 台 · 2000 分钟', gw:'—', test:'299',
-    full2:'—', full3:'—', z2:'—', z3:'—', low:'999', tags:['万兆','750GB 流量','无补贴'] }
+  {
+    id:"t299",
+    name:"299 机光",
+    monthly:[299],
+    group:"A",
+    speed:"2000M / 50M",
+    ip:"",
+    ipState:"",
+    gift:"60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）",
+    huabu:"60 元",
+    flow:"150+60",
+    voice:"1500",
+    talk:"+50 元 · 2 台 · 500 分钟",
+    gw:"15 元/2 年 或 10 元/3 年｜调测费 199",
+    test:"光猫 200 ／ FTTR 199",
+    full2:"1200",
+    full3:"1800",
+    z2:"1190（政企协议）/1200（中通承保）",
+    z3:"1800（中通保险承保，本地库不提供发票）",
+    low:"299",
+    tags:["入门首选","含补贴"]
+  },
+  {
+    id:"t399",
+    name:"399 机光",
+    monthly:[399],
+    group:"A",
+    speed:"2000M / 100M",
+    ip:"",
+    ipState:"",
+    gift:"60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）",
+    huabu:"60 元",
+    flow:"200+100",
+    voice:"2000",
+    talk:"+100 元 · 8 台 · 1000 分钟",
+    gw:"15 元/2 年 或 10 元/3 年｜调测费 199",
+    test:"光猫 200 ／ FTTR 199",
+    full2:"2400",
+    full3:"4000",
+    z2:"2390（政企协议）/2400（中通承保）",
+    z3:"3600（中通保险承保，本地库不提供发票）",
+    low:"399",
+    tags:["含补贴","100M 上行"]
+  },
+  {
+    id:"t439",
+    name:"439 B 版 FTTR 机光",
+    monthly:[439],
+    group:"A",
+    speed:"2000M / 100M",
+    ip:"",
+    ipState:"",
+    gift:"100 元智企云包（FTTR-B + 企业云盘 1T + 来电名片 1500 条）",
+    huabu:"60 元",
+    flow:"200+100",
+    voice:"2000",
+    talk:"+100 元 · 8 台 · 1000 分钟",
+    gw:"40 元/2 年｜调测费 299",
+    test:"299",
+    full2:"2400",
+    full3:"4000",
+    z2:"2390（政企协议）/2400（中通承保）",
+    z3:"3600（中通保险承保，本地库不提供发票）",
+    low:"399",
+    tags:["FTTR-B 组网","含企业云盘"]
+  },
+  {
+    id:"t699gj",
+    name:"699 / 739 机光",
+    monthly:[699,739],
+    group:"B",
+    speed:"2000M / 100M",
+    ip:"公网 IP",
+    ipState:"yes",
+    gift:"60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）／100 元智企云包※",
+    huabu:"60 元",
+    flow:"100+200",
+    voice:"1500+3500",
+    talk:"+200 元 · 12 台 · 2000 分钟",
+    gw:"15 元/2 年 或 10 元/3 年｜调测费 199 ——",
+    test:"199 ／ 399",
+    full2:"2400",
+    full3:"5800",
+    z2:"2390（政企协议）/2400（中通承保）",
+    z3:"5400（中通保险承保，本地库不提供发票）",
+    low:"699",
+    tags:["公网 IP","含补贴","高通话"]
+  },
+  {
+    id:"t699qg",
+    name:"699 全光",
+    monthly:[699],
+    group:"B",
+    speed:"2000M / 100M",
+    ip:"公网 IP",
+    ipState:"yes",
+    gift:"100 元智企云包（FTTR-B（1+2）+ 企业云盘 1T + 来电名片 1500）",
+    huabu:"100 元",
+    flow:"100+200",
+    voice:"1500+3500",
+    talk:"+200 元 · 12 台 · 2000 分钟",
+    gw:"40 元/2 年｜调测费 299",
+    test:"399",
+    full2:"—",
+    full3:"—",
+    z2:"—",
+    z3:"—",
+    low:"699",
+    tags:["全光组网","公网 IP","无补贴"]
+  },
+  {
+    id:"t999gj",
+    name:"999 / 1119 机光",
+    monthly:[999,1119],
+    group:"C",
+    speed:"2000M / 100M",
+    ip:"公网 IP",
+    ipState:"yes",
+    gift:"60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）／180 元智企云包※",
+    huabu:"60 元",
+    flow:"150+200",
+    voice:"2000+3500",
+    talk:"+200 元 · 12 台 · 2000 分钟",
+    gw:"15 元/2 年 或 10 元/3 年｜调测费 199",
+    test:"199 ／ 399",
+    full2:"2400",
+    full3:"5800",
+    z2:"2390（政企协议）/2400（中通承保）",
+    z3:"5400（中通保险承保，本地库不提供发票）",
+    low:"999",
+    tags:["公网 IP","含补贴","2000+3500 分钟"]
+  },
+  {
+    id:"t999qg",
+    name:"999 全光",
+    monthly:[999],
+    group:"C",
+    speed:"2000M / 100M",
+    ip:"公网 IP",
+    ipState:"yes",
+    gift:"180 元智企云包（FTTR-B（1+3）+ 企业云盘 2T + 来电名片※",
+    huabu:"180 元",
+    flow:"150+200",
+    voice:"2000+3500",
+    talk:"+200 元 · 12 台 · 2000 分钟",
+    gw:"40 元/2 年｜调测费 299",
+    test:"399",
+    full2:"—",
+    full3:"—",
+    z2:"—",
+    z3:"—",
+    low:"999",
+    tags:["全光组网","公网 IP","180 元智企云包"]
+  },
+  {
+    id:"t5000gj",
+    name:"5000M 融合机光",
+    monthly:null,
+    group:"D",
+    speed:"5000M / 200M",
+    ip:"无公网 IP",
+    ipState:"no",
+    gift:"60 元智享云包（FTTR + 云盘 8T + 彩铃 + 定向流量 60G）／180 元智企云包（FTTR-B（1+3）+ 企业云盘 2T + 来电名片 3000）",
+    huabu:"60 元",
+    flow:"150+200",
+    voice:"2000+3500",
+    talk:"+200 元 · 12 台 · 2000 分钟",
+    gw:"15 元/2 年 或 10 元/3 年｜调测费 199 —— 40 元/2 年｜调测费 299",
+    test:"199 ／ 399",
+    full2:"2400",
+    full3:"5800",
+    z2:"2390（政企协议）/2400（中通承保）",
+    z3:"5400（中通保险承保，本地库不提供发票）",
+    low:"999",
+    tags:["5000M","含补贴","无公网 IP"]
+  },
+  {
+    id:"t5000qg",
+    name:"5000M 融合全光",
+    monthly:null,
+    group:"D",
+    speed:"5000M / 200M",
+    ip:"无公网 IP",
+    ipState:"no",
+    gift:"180 元智企云包（FTTR-B（1+3）+ 企业云盘 2T + 来电名片 3000）",
+    huabu:"180 元",
+    flow:"150+200",
+    voice:"2000+3500",
+    talk:"+200 元 · 12 台 · 2000 分钟",
+    gw:"—",
+    test:"399",
+    full2:"—",
+    full3:"—",
+    z2:"—",
+    z3:"—",
+    low:"999",
+    tags:["5000M","全光组网","无补贴"]
+  },
+  {
+    id:"t10000",
+    name:"10000M 融合",
+    monthly:null,
+    group:"D",
+    speed:"10000M / 300M",
+    ip:"",
+    ipState:"",
+    gift:"250 元智企云包（万兆 FTTR（1+1）+ 企业云盘 2T + 来电名片 5000）",
+    huabu:"250 元",
+    flow:"750",
+    voice:"2000",
+    talk:"+200 元 · 12 台 · 2000 分钟",
+    gw:"—",
+    test:"299",
+    full2:"—",
+    full3:"—",
+    z2:"—",
+    z3:"—",
+    low:"999",
+    tags:["万兆","750GB 流量","无补贴"]
+  }
 ];
+/* ============ 企业办公场景层（选型建议，不改变任何资费口径） ============ */
+const SCENES = [
+  {
+    key:"S1",
+    icon:"🏪",
+    color:"#0b57d0",
+    title:"小微门店 / 单点办公",
+    who:"10 人以内门店、单点办公",
+    need:"月租低 + 基础覆盖够用 + 收银与监控稳定",
+    points:["收银、扫码、监控、办公终端同时在线","无需复杂组网，一台设备覆盖即可","预算敏感，优先低月租与低调测费"],
+    tiers:["t299"],
+    main:"t299",
+    next:["S2","人数或上行要求上来后"],
+    foot:"对应 A 组 299 机光；终端或上行要求上来后，看「成长型办公室」的 399 / 439。"
+  },
+  {
+    key:"S2",
+    icon:"🏢",
+    color:"#0f7b45",
+    title:"成长型办公室",
+    who:"11–50 人、单点或多房间办公",
+    need:"多房间稳定覆盖 + 上行 100M + 固话 3–8 台",
+    points:["单台路由器穿墙差，会议室、财务室信号弱","上行 50M 对多工位并发可能偏紧（依实际终端规模评估）","固话数量与通话分钟同步上升"],
+    tiers:["t399","t439"],
+    main:"t439",
+    next:["S3","需要多楼层全光组网时"],
+    foot:"A 组 399 / 439；多房间组网需求更强时，可上探 S3 的全光档。"
+  },
+  {
+    key:"S3",
+    icon:"🏬",
+    color:"#6d4de0",
+    title:"多楼层 / 独栋办公",
+    who:"51–200 人、多楼层或独栋",
+    need:"全屋无缝漫游 + 高通话 + 公网 IP",
+    points:["楼层多、部门多，单点组网覆盖不到","外呼与回访占用大量通话分钟","需要远程访问门禁、监控与自建服务"],
+    tiers:["t699qg","t999qg"],
+    main:"t999qg",
+    next:["S4","话务与流量同时吃紧时"],
+    foot:"全光档：699 全光为 FTTR-B（1+2），999 全光为 FTTR-B（1+3）。"
+  },
+  {
+    key:"S4",
+    icon:"🎧",
+    color:"#e8590c",
+    title:"外呼 / 客服型团队",
+    who:"话务密集、坐席成排",
+    need:"最高通话分钟 + 多固话台数",
+    points:["坐席占线、外呼量大，分钟数最先不够","固话要 8–12 台并集中管理","客户回访需要稳定语音质量"],
+    tiers:["t699gj","t999gj"],
+    main:"t699gj",
+    next:["S5","带宽与监控回传需求更高时"],
+    foot:"机光档：699 / 739 机光为入门话务档，999 / 1119 机光分钟数与流量更高。"
+  },
+  {
+    key:"S5",
+    icon:"🏭",
+    color:"#12a8c4",
+    title:"生产园区 / 仓储物流",
+    who:"200 人以上、厂区或仓储",
+    need:"5000M 下行 + 200M 上行 + 监控回传",
+    points:["监控回传、扫码出入库、产线联网并发高","2000M 下行与 100M 上行对产线并发可能偏紧（依实际并发规模评估）","点位分散，需要级联组网"],
+    tiers:["t5000gj","t5000qg"],
+    main:"t5000gj",
+    next:["S6","需要最高上行与大流量时"],
+    foot:"原表该档月租未单列，且标注「无公网 IP」；机光 / 全光按组网形态选。"
+  },
+  {
+    key:"S6",
+    icon:"🎬",
+    color:"#b8860b",
+    title:"设计 / 直播 / 云桌面",
+    who:"大文件、云桌面、推流密集型",
+    need:"万兆带宽 + 最高上行 + 大流量",
+    points:["素材上传下载、云桌面、直播推流占满带宽","10000M 档上行 300M，为全部 10 档最高","本地存储压力大，需要企业云盘"],
+    tiers:["t10000"],
+    main:"t10000",
+    next:["S1","预算优先、想回看入门档时"],
+    foot:"10000M 融合为本季最高档：750GB 流量、万兆 FTTR。"
+  }
+];
+const SCENE_MAP = SCENES.reduce((m, s) => (m[s.key] = s, m), {});
+/* 逐档场景定义：与 TIERS 的 id 一一对应 */
+const TIER_SCENE = {
+  t299: {
+    key:"S1",
+    who:"10 人以内门店 / 单点办公",
+    pain:"收银、扫码、监控与办公电脑同时在线，月租预算敏感，不希望一次性投入太多。",
+    solve:["2000M 下行 / 50M 上行，流量 150+60G，通话 1500 分钟，覆盖日常经营","60 元智享云包已含 FTTR 组网设备 + 云盘 8T + 彩铃","调测费为最低口径：光猫 200 / FTTR 199","可加 2 台固话（+50 元，500 分钟）"],
+    fit:"入门首选。单点、终端少、以基础上网与监控安防为主时优先看这档。"
+  },
+  t399: {
+    key:"S2",
+    who:"10–50 人单点办公室",
+    pain:"人数与终端上来了，50M 上行不够用，固话需要 3–8 台，通话分钟也要跟上。",
+    solve:["上行从 50M 提到 100M，适合多工位并发","流量 200+100G，通话 2000 分钟","多固话升级到 8 台 / 1000 分钟（+100 元）","2 年期补贴 2400 元、3 年期 4000 元"],
+    fit:"单点办公室从入门往上一步的首选；对上行有要求时，优先 399 而不是 299。"
+  },
+  t439: {
+    key:"S2",
+    who:"11–50 人多房间 / 多隔间办公",
+    pain:"单台路由器穿墙差，会议室、财务室、库房等房间信号弱，需要稳定的多点覆盖。",
+    solve:["100 元智企云包：FTTR-B 组网 + 企业云盘 1T + 来电名片 1500 条","支持加装从网关（40 元/2 年）扩展到更多房间","调测费 299 元，B 版 FTTR 组网形态","流量 200+100G，通话 2000 分钟"],
+    fit:"需要「多房间稳定覆盖 + 来电名片 + 企业云盘」时优先；比 399 多约 40 元/月，换的是组网形态与企业云盘。"
+  },
+  t699gj: {
+    key:"S4",
+    who:"51–200 人、话务量大或移动办公多",
+    pain:"坐席占线与外呼量大，通话分钟最先不够；固话台数不足；还要远程访问门禁与监控。",
+    solve:["全国通话 1500+3500 分钟（合计 5000 分钟），为 B 组档位口径","主推礼包在原表止于「100 元智企云包」未显示完整（※），可对照 5000M 同系列口径","多固话可加到 12 台 / 2000 分钟（+200 元）","标注公网 IP；全额预存 3 年期补贴 5800 元"],
+    fit:"话务密集型团队的主力档；公网 IP 是它与 299 / 399 / 439 三档的关键差别。"
+  },
+  t699qg: {
+    key:"S3",
+    who:"多房间 / 多楼层，看重组网形态",
+    pain:"想要全光组网与更完整的 FTTR-B 配置，但不走预存补贴方案。",
+    solve:["100 元智企云包：FTTR-B（1+2）+ 企业云盘 1T + 来电名片 1500","调测费 399 元，全光组网形态","标注公网 IP，可做远程访问","从网关 40 元/2 年，调测费 299"],
+    fit:"原表该档补贴列均为「—」，适合不需要补贴、只比组网能力与月租的单位。"
+  },
+  t999gj: {
+    key:"S4",
+    who:"坐席多、话务与流量双高",
+    pain:"坐席数量多，既要 2000+3500 分钟通话，也要更大的全国流量支撑移动办公。",
+    solve:["全国通话 2000+3500 分钟（合计 5500 分钟，为本季最高通话口径）","主推礼包在原表止于「180 元智企云包」未显示完整（※），可对照 5000M 同系列口径","全国流量 150+200G","多固话 12 台 / 2000 分钟（+200 元）"],
+    fit:"相比 699 / 739 机光档，主要差别是全国通话与流量额度更高，适合话务与流量同时吃紧的坐席型团队。"
+  },
+  t999qg: {
+    key:"S3",
+    who:"51–200 人多楼层，要求组网规格最高",
+    pain:"楼层多、点位多，需要 FTTR-B（1+3）级联组网与更大的企业云盘空间。",
+    solve:["180 元智企云包：FTTR-B（1+3）+ 企业云盘 2T + 来电名片※（原表文字未显示完整）","调测费 399 元","标注公网 IP，适合远程访问与多点位管理","通话 2000+3500 分钟、流量 150+200G"],
+    fit:"全光档里的高配组网选项；原表补贴列为「—」，选它通常是为组网与云盘，而非补贴。"
+  },
+  t5000gj: {
+    key:"S5",
+    who:"200 人以上厂区 / 仓储，需要大上行",
+    pain:"监控回传、扫码出入库、多条产线同时联网；2000M 下行与 100M 上行对产线并发可能偏紧，需按实际并发规模评估。",
+    solve:["5000M 下行 / 200M 上行","通话 2000+3500 分钟，多固话 12 台 / 2000 分钟","全额预存 3 年期补贴 5800 元","从网关两种口径可选（199 档 / 299 档）"],
+    fit:"原表该档「套餐月租」列只写产品名、未单列月租数字（对应低消包 999 元），月租需与客户经理确认；原表标注「无公网 IP」。"
+  },
+  t5000qg: {
+    key:"S5",
+    who:"200 人以上园区，需要大带宽 + 全光组网",
+    pain:"厂区与园区点位分散，需要 5000M 带宽，同时要用 FTTR-B（1+3）级联覆盖。",
+    solve:["5000M 下行 / 200M 上行","180 元智企云包：FTTR-B（1+3）+ 企业云盘 2T + 来电名片 3000","调测费 399 元","通话 2000+3500 分钟、多固话 12 台 / 2000 分钟"],
+    fit:"原表该档月租未单列（对应低消包 999 元）、补贴列为「—」、标注「无公网 IP」，月租与补贴均需与客户经理确认；适合自建服务不在本地、更看重带宽与组网形态的单位。"
+  },
+  t10000: {
+    key:"S6",
+    who:"200 人以上，大文件 / 云桌面 / 推流密集",
+    pain:"素材上传下载、云桌面、直播推流对带宽与上行占用高，本地存储压力大。",
+    solve:["本季最高 10000M 下行 / 300M 上行","全国流量 750GB，为本季最高流量档","250 元智企云包：万兆 FTTR（1+1）+ 企业云盘 2T + 来电名片 5000","调测费 299 元"],
+    fit:"原表该档月租未单列（对应低消包 999 元），且未标注公网 IP，需单独确认；追求极致带宽与云盘容量时优先。"
+  }
+};
 const FAQ = [
-  { q:'「机光」和「全光」有什么区别？',
-    a:'原表未对这两个名称作官方释义。从可核对字段看：全光档（699 全光、999 全光、5000M 融合全光）的调测费均为 399 元、FTTR 礼包均为 FTTR-B 或万兆 FTTR 形态；机光档则出现「199／399」两种调测费或「光猫 200／FTTR 199」。具体设备型号、组网方案请以装维勘察与客户经理口径为准。' },
-  { q:'礼包名称后带 ※ 是什么意思？',
-    a:'表示原表该单元格的文字没有显示完整：699/739 机光与 999/1119 机光的礼包格分别止于「/100 元智企云包」「/180 元智企云包」，999 全光的礼包格止于「来电名片」。本页不替原表补写内容，仅在同样配置的 5000M 融合档文字中给出对照（180 元智企云包（FTTR-B（1+3）+ 企业云盘 2T + 来电名片 3000）），具体请以客户经理口径为准。' },
-  { q:'哪些档位含公网 IP？',
-    a:'原表标注「公网 IP」的有 4 档：699/739 机光、699 全光、999/1119 机光、999 全光；标注「无公网 IP」的有 2 档：5000M 融合机光、5000M 融合全光。299 机光、399 机光、439 B 版 FTTR 机光、10000M 融合四档在原表中未标注，请单独确认。' },
-  { q:'补贴怎么算？两种预存方式有什么区别？',
-    a:'补贴按「全额预存 / 银行预存」与「0 预存」两类分列，各含 2 年期与 3 年期金额，并注明「低消向上兼容」。全额预存 3 年期补贴最高（699/739 机光及以上为 5800 元）；0 预存 3 年期最高为 5400 元，且标注为「中通保险承保，本地库不提供发票」。' },
-  { q:'「本地库不提供发票」是什么意思？',
-    a:'原文出现在 299/399/439 三档的 0 预存 3 年期（金额 1800／3600／3600）与 699/739 及以上档位的 0 预存 3 年期（5400）说明中。原表未解释开票主体与替代凭证，涉及报销与入账时请务必提前与客户经理确认。' },
-  { q:'第 8–10 档（5000M 融合机光/全光、10000M 融合）月租是多少？',
-    a:'原表「套餐月租」列在这三档只写了产品名（5000M 融合机光、5000M 融合全光、10000M 融合），没有单列月租数字；可对应的是「低消包（商企版）」999 元。本页不推测月租金额，请在受理前与客户经理确认。' },
-  { q:'副卡与多卡权益怎么用？',
-    a:'副卡权益为「9 张免 9 张」，适用于全部 10 档。多卡权益包：每多一张活跃副卡，主套餐增加 50GB 通用流量和 200 分钟语音，合计最多增加 3000 分钟和 200GB 通用流量。' },
-  { q:'固话和 IPTV 要另外收费吗？能加多少台固话？',
-    a:'固话、IPTV 标准配置为各 1 路。多固话加装按档位分三档：+50 元/2 台/500 分钟（299 机光）、+100 元/8 台/1000 分钟（399 机光、439 B 版）、+200 元/12 台/2000 分钟（699/739 机光 至 10000M 融合共 7 档）。原表注明「新装需另行订购调测费出设备」。' },
-  { q:'调测费可以减免吗？',
-    a:'原表未标注调测费的减免或优惠政策，本页不推测。调测费按档位为：光猫 200／FTTR 199、299、199／399、399 四种口径，详见「加装项与一次性费用」小节。' },
-  { q:'副宽是什么？能装几条？',
-    a:'「副宽」为可选加装线路，原表在该列合并展示两个方案：100 元/1000M（调测费 200）与 150 元/2000M（FTTR，调测费 199），未逐档拆分适用范围，可装条数与适用范围请与客户经理确认。' },
-  { q:'合约期内可以变更套餐或退订吗？',
-    a:'原表未说明变更、退订与违约金条款，请以正式合同与本地政策为准。选择 2 年期或 3 年期预存方案时，建议在签约前明确变更与退订规则。' },
-  { q:'这份价格会变吗？',
-    a:'本页为 2026 年第三季度产品口径，仅用于选型沟通。产品资费、可选档位与补贴政策可能随季度调整，最终以本地政策与系统受理结果为准。' }
+  {
+    q:"页面里的「企业办公场景」是怎么划分的？和原表是什么关系？",
+    a:"场景划分是本页新增的选型建议层，依据原表可核对的字段（有线速率与上行、FTTR 礼包形态与话补、全国流量与通话分钟、多固话加装台数与分钟、是否标注公网 IP、调测费口径、补贴与低消）归纳而来，用于帮助单位客户快速定位候选档位。它不是产品表原文，也不改变任何资费、补贴与费用口径；每档套餐的原表字段仍完整保留在对比表与详情卡中，最终以客户经理口径为准。"
+  },
+  {
+    q:"「机光」和「全光」有什么区别？",
+    a:"原表未对这两个名称作官方释义。从可核对字段看：全光档（699 全光、999 全光、5000M 融合全光）的调测费均为 399 元、FTTR 礼包均为 FTTR-B 或万兆 FTTR 形态；机光档则出现「199／399」两种调测费或「光猫 200／FTTR 199」。具体设备型号、组网方案请以装维勘察与客户经理口径为准。"
+  },
+  {
+    q:"礼包名称后带 ※ 是什么意思？",
+    a:"表示原表该单元格的文字没有显示完整：699/739 机光与 999/1119 机光的礼包格分别止于「/100 元智企云包」「/180 元智企云包」，999 全光的礼包格止于「来电名片」。本页不替原表补写内容，仅在同样配置的 5000M 融合档文字中给出对照（180 元智企云包（FTTR-B（1+3）+ 企业云盘 2T + 来电名片 3000）），具体请以客户经理口径为准。"
+  },
+  {
+    q:"哪些档位含公网 IP？",
+    a:"原表标注「公网 IP」的有 4 档：699/739 机光、699 全光、999/1119 机光、999 全光；标注「无公网 IP」的有 2 档：5000M 融合机光、5000M 融合全光。299 机光、399 机光、439 B 版 FTTR 机光、10000M 融合四档在原表中未标注，请单独确认。"
+  },
+  {
+    q:"补贴怎么算？两种预存方式有什么区别？",
+    a:"补贴按「全额预存 / 银行预存」与「0 预存」两类分列，各含 2 年期与 3 年期金额，并注明「低消向上兼容」。全额预存 3 年期补贴最高（699/739 机光及以上为 5800 元）；0 预存 3 年期最高为 5400 元，且标注为「中通保险承保，本地库不提供发票」。"
+  },
+  {
+    q:"「本地库不提供发票」是什么意思？",
+    a:"原文出现在 299/399/439 三档的 0 预存 3 年期（金额 1800／3600／3600）与 699/739 及以上档位的 0 预存 3 年期（5400）说明中。原表未解释开票主体与替代凭证，涉及报销与入账时请务必提前与客户经理确认。"
+  },
+  {
+    q:"第 8–10 档（5000M 融合机光/全光、10000M 融合）月租是多少？",
+    a:"原表「套餐月租」列在这三档只写了产品名（5000M 融合机光、5000M 融合全光、10000M 融合），没有单列月租数字；可对应的是「低消包（商企版）」999 元。本页不推测月租金额，请在受理前与客户经理确认。"
+  },
+  {
+    q:"副卡与多卡权益怎么用？",
+    a:"副卡权益为「9 张免 9 张」，适用于全部 10 档。多卡权益包：每多一张活跃副卡，主套餐增加 50GB 通用流量和 200 分钟语音，合计最多增加 3000 分钟和 200GB 通用流量。"
+  },
+  {
+    q:"固话和 IPTV 要另外收费吗？能加多少台固话？",
+    a:"固话、IPTV 标准配置为各 1 路。多固话加装按档位分三档：+50 元/2 台/500 分钟（299 机光）、+100 元/8 台/1000 分钟（399 机光、439 B 版）、+200 元/12 台/2000 分钟（699/739 机光 至 10000M 融合共 7 档）。原表注明「新装需另行订购调测费出设备」。"
+  },
+  { q:"调测费可以减免吗？", a:"原表未标注调测费的减免或优惠政策，本页不推测。调测费按档位为：光猫 200／FTTR 199、299、199／399、399 四种口径，详见「加装项与一次性费用」小节。" },
+  {
+    q:"副宽是什么？能装几条？",
+    a:"「副宽」为可选加装线路，原表在该列合并展示两个方案：100 元/1000M（调测费 200）与 150 元/2000M（FTTR，调测费 199），未逐档拆分适用范围，可装条数与适用范围请与客户经理确认。"
+  },
+  { q:"合约期内可以变更套餐或退订吗？", a:"原表未说明变更、退订与违约金条款，请以正式合同与本地政策为准。选择 2 年期或 3 年期预存方案时，建议在签约前明确变更与退订规则。" },
+  { q:"这份价格会变吗？", a:"本页为 2026 年第三季度产品口径，仅用于选型沟通。产品资费、可选档位与补贴政策可能随季度调整，最终以本地政策与系统受理结果为准。" }
 ];
 
 /* ============ 工具函数 ============ */
@@ -710,7 +1379,6 @@ const hasSub = t => !(t.full2 === '—' && t.full3 === '—' && t.z2 === '—' &
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function tag(text, kind){ return '<span class="tag tag-' + kind + '">' + esc(text) + '</span>'; }
 function tierTags(t){
-  const map = {yes:'green', no:'gray'};
   let h = '';
   t.tags.forEach(x => {
     let k = 'blue';
@@ -725,10 +1393,20 @@ function toast(msg){
   const t = $('#toast'); t.textContent = msg; t.classList.add('on');
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 1900);
 }
+/* 平滑滚动：尊重「减少动态效果」偏好，并对不支持 scrollIntoView 的环境降级 */
+function reduceMotion(){ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+function scrollToEl(el, opts){
+  if(!el) return;
+  const o = Object.assign({ behavior: reduceMotion() ? 'auto' : 'smooth' }, opts || {});
+  if(reduceMotion()) o.behavior = 'auto'; // 偏好优先，覆盖调用方传入值
+  if(typeof el.scrollIntoView === 'function'){ try{ el.scrollIntoView(o); return; }catch(e){} }
+  if(typeof el.offsetTop === 'number') window.scrollTo(0, Math.max(0, el.offsetTop - 90));
+}
 
 /* ============ 对比表 ============ */
 const COLS = [
   { key:'name',   label:'套餐档位', simple:1, sticky:1 },
+  { key:'scene',  label:'企业办公场景定位', simple:1, scene:1 },
   { key:'monthly',label:'月租',     simple:1, render:t => '<span class="price">' + priceNum(t) + '</span>' + (t.monthly ? '<div class="tsub">元/月</div>' : '<div class="tsub">原表未标注</div>') },
   { key:'speed',  label:'全光纤宽带（下行/上行）', simple:1, render:t => esc(t.speed) + (t.ip ? '<div class="tsub">' + esc(t.ip) + '</div>' : '') },
   { key:'gift',   label:'主推 FTTR 礼包', simple:1, render:t => esc(t.gift) },
@@ -747,28 +1425,73 @@ const COLS = [
   { key:'z3',     label:'补贴·0 预存 3 年', render:t => t.z3 === '—' ? '<span class="dash">—</span>' : esc(t.z3) },
   { key:'act',    label:'操作', render:t => '<button class="btn btn-soft sm" data-add="' + t.id + '" type="button">加入需求单</button>' }
 ];
-let view = 'simple', filterGroup = 'all', onlySub = false, onlyIp = false;
+let view = 'simple', filterGroup = 'all', filterScene = 'all', onlySub = false, onlyIp = false;
+
+function sceneCell(t){
+  const sc = TIER_SCENE[t.id]; if(!sc) return '';
+  const s = SCENE_MAP[sc.key]; if(!s) return '';
+  return '<div class="scene-cell"><b>' + s.icon + ' ' + esc(s.title) + '</b>' +
+    '<div class="flow">' + esc(sc.who) + '</div>' +
+    '<div class="flow muted">' + esc(s.need) + '</div></div>';
+}
 
 function renderTable(){
   const cols = COLS.filter(c => view === 'full' || c.simple);
   $('#cmpHead').innerHTML = '<tr>' + cols.map(c =>
-    '<th class="' + (c.sticky ? 'sticky-col ' : '') + (c.sub ? 'sub' : '') + '">' + esc(c.label) + '</th>').join('') + '</tr>';
-  const rows = TIERS.filter(t => (filterGroup === 'all' || t.group === filterGroup) && (!onlySub || hasSub(t)) && (!onlyIp || t.ipState === 'yes'));
+    '<th class="' + (c.sticky ? 'sticky-col ' : '') + (c.sub ? 'sub ' : '') + (c.scene ? 'scene-h' : '') + '">' + esc(c.label) + '</th>').join('') + '</tr>';
+  const rows = TIERS.filter(t => (filterGroup === 'all' || t.group === filterGroup)
+    && (filterScene === 'all' || (TIER_SCENE[t.id] && TIER_SCENE[t.id].key === filterScene))
+    && (!onlySub || hasSub(t)) && (!onlyIp || t.ipState === 'yes'));
   if(!rows.length){
     $('#cmpBody').innerHTML = '<tr><td colspan="' + cols.length + '" style="padding:24px; text-align:center" class="muted">当前筛选条件下没有匹配的档位，请调整筛选。</td></tr>';
     return;
   }
   $('#cmpBody').innerHTML = rows.map(t => '<tr class="g' + t.group + '">' + cols.map(c => {
     if(c.key === 'name') return '<td class="sticky-col"><div class="tname">' + esc(t.name) + '</div><div class="tsub">' + GROUPS[t.group].name + '</div></td>';
+    if(c.key === 'scene') return '<td>' + sceneCell(t) + '</td>';
     const v = c.render ? c.render(t) : esc(t[c.key]);
     return '<td>' + v + '</td>';
   }).join('') + '</tr>').join('');
 }
 
+/* ============ 场景速览与场景筛选 ============ */
+/* 场景筛选统一入口：scroll=false 用于场景间导航（幂等设置，不 toggle、不二次滚动） */
+function setSceneFilter(key, scroll){
+  filterScene = key;
+  $$('#sceneChips .chip').forEach(x => x.classList.toggle('on', x.dataset.scene === filterScene));
+  renderTable();
+  if(scroll && filterScene !== 'all') scrollToEl($('#compare'), { block:'start' });
+}
+
+function renderScenes(){
+  $('#sceneGrid').innerHTML = SCENES.map(s => {
+    const pills = s.tiers.map(id => {
+      const t = TIERS.find(x => x.id === id);
+      return '<button class="pill' + (id === s.main ? ' main' : '') + '" data-scroll="card-' + id + '" type="button">' +
+        (id === s.main ? '<span class="star">★</span>' : '') + esc(t.name) + '</button>';
+    }).join('');
+    return '<article class="scene" style="--sc:' + s.color + '">' +
+      '<div class="scene-top"><span class="scene-ico">' + s.icon + '</span>' +
+        '<div><h3>' + esc(s.title) + '</h3><div class="who">' + esc(s.who) + '</div></div></div>' +
+      '<div class="scene-need">核心诉求：<b>' + esc(s.need) + '</b></div>' +
+      '<ul>' + s.points.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul>' +
+      '<div class="scene-picks"><span>推荐档位（★ 主推）</span><div class="pills">' + pills + '</div></div>' +
+      '<div class="scene-foot">' + esc(s.foot) + '</div>' +
+      (s.next && SCENE_MAP[s.next[0]] ? '<button class="scene-next" type="button" data-scene-jump="' + s.next[0] + '">' + esc(s.next[1]) + ' → ' + SCENE_MAP[s.next[0]].icon + ' ' + esc(SCENE_MAP[s.next[0]].title) + '</button>' : '') +
+      '</article>';
+  }).join('');
+  const chips = SCENES.map(s =>
+    '<button class="chip chip-scene" data-scene="' + s.key + '" type="button">' + s.icon + ' ' + esc(s.title.split(' / ')[0]) + '</button>').join('');
+  $('#sceneChips').innerHTML = chips;
+  $$('#sceneChips .chip').forEach(b => b.addEventListener('click', () => {
+    setSceneFilter(filterScene === b.dataset.scene ? 'all' : b.dataset.scene, true);
+  }));
+}
+
 /* ============ 补贴表 ============ */
 function renderSubsidy(){
   const cols = ['套餐档位','全额预存 2 年','全额预存 3 年','0 预存 2 年','0 预存 3 年','低消包（商企版）','补贴状态'];
-  $('#subHead').innerHTML = '<tr>' + cols.map(l => '<th>' + l + '</th>').join('') + '</tr>';
+  $('#subHead').innerHTML = '<tr>' + cols.map((l, i) => '<th' + (i === 0 ? ' class="sticky-col"' : '') + '>' + l + '</th>').join('') + '</tr>';
   $('#subBody').innerHTML = TIERS.map(t => '<tr class="g' + t.group + '">' +
     '<td class="sticky-col"><div class="tname">' + esc(t.name) + '</div><div class="tsub">' + priceText(t) + '</div></td>' +
     '<td>' + (t.full2 === '—' ? '<span class="dash">—</span>' : t.full2 + ' 元') + '</td>' +
@@ -781,6 +1504,16 @@ function renderSubsidy(){
 }
 
 /* ============ 套餐卡 ============ */
+function sceneBox(t){
+  const sc = TIER_SCENE[t.id]; if(!sc) return '';
+  const s = SCENE_MAP[sc.key]; if(!s) return '';
+  return '<div class="scene-box">' +
+    '<div class="sb-h"><i>' + s.icon + '</i>适用办公场景：' + esc(s.title) + '<span class="sb-who">' + esc(sc.who) + '</span></div>' +
+    '<div class="sb-pain">场景痛点：' + esc(sc.pain) + '</div>' +
+    '<ul>' + sc.solve.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
+    '<div class="sb-fit"><b>选型提示：</b>' + esc(sc.fit) + '</div>' +
+    '</div>';
+}
 function renderCards(){
   $('#cardList').innerHTML = TIERS.map(t => {
     const mini = [
@@ -789,13 +1522,16 @@ function renderCards(){
     const subs = hasSub(t)
       ? '<div class="sub-box"><b>合约补贴（低消向上兼容）</b><br>全额预存：2 年 ' + esc(t.full2) + ' 元 · 3 年 ' + esc(t.full3) + ' 元<br>0 预存：2 年 ' + esc(t.z2) + '<br>0 预存：3 年 ' + esc(t.z3) + '<br>低消包（商企版）：' + esc(t.low) + ' 元</div>'
       : '<div class="sub-box"><b>原表该档位补贴列均标「—」</b><br>低消包（商企版）：' + esc(t.low) + ' 元。如需补贴方案请单独咨询。</div>';
+    const sc = TIER_SCENE[t.id], sm = sc ? (SCENE_MAP[sc.key] || null) : null;
     return '<article class="tier" id="card-' + t.id + '">' +
       '<div class="tier-head">' +
         '<div class="row1"><div><h3>' + esc(t.name) + '</h3><div class="grp">' + GROUPS[t.group].name + '</div></div><div style="text-align:right">' + tierTags(t) + '</div></div>' +
         '<div class="tier-price"><b>' + (t.monthly ? t.monthly.join(' / ') : '—') + '</b><i>' + (t.monthly ? '元/月' : '月租未标注，见下方说明') + '</i></div>' +
+        (sm ? '<div class="tier-badge">' + sm.icon + ' 主场景：' + esc(sm.title) + '</div>' : '') +
       '</div>' +
       '<div class="tier-body">' +
         '<div class="mini">' + mini + '</div>' +
+        sceneBox(t) +
         '<dl class="kv">' +
           '<dt>全光纤宽带</dt><dd>' + esc(t.speed) + (t.ip ? ' <span class="tag tag-' + (t.ipState === 'yes' ? 'green' : 'gray') + '">' + esc(t.ip) + '</span>' : '') + '</dd>' +
           '<dt>主推礼包</dt><dd>' + esc(t.gift) + '</dd>' +
@@ -823,15 +1559,17 @@ function recommend(){
   (SIZE_MAP[size] || []).forEach((id, i) => { score[id] = (score[id] || 0) + (4 - i); });
   (NEED_MAP[need] || []).forEach((id, i) => { score[id] = (score[id] || 0) + (6 - i); });
   let list = Object.keys(score).map(id => ({ id, s:score[id] })).sort((a,b) => b.s - a.s);
-  if(ip === 'yes') list = list.filter(x => { const t = TIERS.find(t => t.id === x.id); return t.ipState === 'yes'; });
+  let ipFiltered = false;
+  if(ip === 'yes'){ const before = list.length; list = list.filter(x => { const t = TIERS.find(t => t.id === x.id); return t.ipState === 'yes'; }); ipFiltered = before > list.length; }
   if(!list.length) list = [{ id:'t699gj', s:0 }, { id:'t999gj', s:0 }];
   const top = list.slice(0, 3).map(x => TIERS.find(t => t.id === x.id));
   $('#recoCount').textContent = '推荐 ' + top.length + ' 档';
+  $('#recoNote').style.display = ipFiltered ? 'block' : 'none';
   $('#recoList').innerHTML = top.map((t, i) =>
     '<div class="reco-item">' +
       '<span class="rank">' + (i + 1) + '</span>' +
       '<div class="meta"><b>' + esc(t.name) + '　' + priceText(t) + '</b>' +
-      '<span>' + esc(t.speed) + (t.ip ? ' · ' + esc(t.ip) : '') + ' · 流量 ' + esc(t.flow) + 'G · 通话 ' + esc(t.voice) + ' 分钟 · 调测费 ' + esc(t.test) + (t.ipState === 'yes' ? '' : '') + '</span></div>' +
+      '<span>' + esc(t.speed) + (t.ip ? ' · ' + esc(t.ip) : '') + ' · 流量 ' + esc(t.flow) + 'G · 通话 ' + esc(t.voice) + ' 分钟 · 调测费 ' + esc(t.test) + '</span></div>' +
       '<button class="btn btn-soft sm" data-add="' + t.id + '" type="button">加入</button>' +
     '</div>').join('');
 }
@@ -846,6 +1584,7 @@ function renderFaq(){
 let picked = [];
 function syncPicked(){
   $('#cartCount').textContent = picked.length;
+  const mc = $('#mobileCount'); if(mc) mc.textContent = picked.length;
   const box = $('#pickedList');
   if(!picked.length){ box.innerHTML = '<span class="muted small">尚未选择档位</span>'; return; }
   box.innerHTML = picked.map(id => {
@@ -924,17 +1663,32 @@ function buildOrder(){
   lines.push('');
   lines.push('（本需求单由选型页面生成，最终以本地政策与系统受理为准。）');
   $('#out').value = lines.join('\n');
+  const op = $('#outPrint'); if(op) op.textContent = lines.join('\n');
   toast('需求单已生成');
 }
 
 /* ============ 事件绑定 ============ */
 document.addEventListener('click', e => {
   const jump = e.target.closest('[data-jump]');
-  if(jump){ document.querySelector(jump.dataset.jump).scrollIntoView({ behavior:'smooth' }); return; }
+  if(jump){ scrollToEl(document.querySelector(jump.dataset.jump)); return; }
   const add = e.target.closest('[data-add]');
   if(add){ addTier(add.dataset.add); return; }
   const rm = e.target.closest('[data-remove]');
   if(rm){ removeTier(rm.dataset.remove); return; }
+  const sj = e.target.closest('[data-scene-jump]');
+  if(sj){
+    const key = sj.dataset.sceneJump;
+    scrollToEl(document.getElementById('scenes'), { block:'start' });
+    /* 幂等：重复点击同一相邻场景不会取消筛选，仅切换到目标场景 */
+    if(SCENE_MAP[key]) setSceneFilter(key, false);
+    return;
+  }
+  const scr = e.target.closest('[data-scroll]');
+  if(scr){
+    const el = document.getElementById(scr.dataset.scroll);
+    if(el){ scrollToEl(el, { block:'center' }); el.classList.add('picked'); setTimeout(() => markPicked(), 1400); }
+    return;
+  }
 });
 $$('#viewSeg button').forEach(b => b.addEventListener('click', () => {
   view = b.dataset.view;
@@ -949,31 +1703,91 @@ $$('#groupChips .chip').forEach(b => b.addEventListener('click', () => {
 $('#onlySub').addEventListener('click', e => { onlySub = !onlySub; e.target.classList.toggle('on', onlySub); renderTable(); });
 $('#onlyIp').addEventListener('click', e => { onlyIp = !onlyIp; e.target.classList.toggle('on', onlyIp); renderTable(); });
 $('#resetF').addEventListener('click', () => {
-  filterGroup = 'all'; onlySub = false; onlyIp = false;
+  filterGroup = 'all'; filterScene = 'all'; onlySub = false; onlyIp = false;
   $$('#groupChips .chip').forEach(x => x.classList.toggle('on', x.dataset.group === 'all'));
+  $$('#sceneChips .chip').forEach(x => x.classList.remove('on'));
   $('#onlySub').classList.remove('on'); $('#onlyIp').classList.remove('on');
   renderTable(); toast('筛选已重置');
 });
 $$('input[name=size], input[name=need], input[name=ip]').forEach(r => r.addEventListener('change', recommend));
-$('#cartJump').addEventListener('click', () => $('#order').scrollIntoView({ behavior:'smooth' }));
+$('#cartJump').addEventListener('click', () => scrollToEl($('#order')));
 $('#f-addBtn').addEventListener('click', () => { const v = $('#f-addTier').value; if(!v){ toast('请先选择档位'); return; } addTier(v); $('#f-addTier').value = ''; });
 $('#buildBtn').addEventListener('click', buildOrder);
 $('#copyBtn').addEventListener('click', () => {
   const ta = $('#out');
   if(!ta.value) buildOrder();
   ta.select(); ta.setSelectionRange(0, 99999);
-  const ok = document.execCommand && document.execCommand('copy');
-  if(navigator.clipboard && !ok) navigator.clipboard.writeText(ta.value).catch(() => {});
-  toast('需求单文本已复制');
+  const done = () => toast('需求单文本已复制');
+  const fail = () => toast('复制失败，请手动选中文本后按 Ctrl/Cmd + C');
+  let ok = false;
+  try{ ok = !!(document.execCommand && document.execCommand('copy')); }catch(e){ ok = false; }
+  if(ok){ done(); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value).then(done).catch(fail);
+  } else { fail(); }
 });
-$('#printBtn').addEventListener('click', () => { if(!$('#out').value) buildOrder(); window.print(); });
+$('#printBtn').addEventListener('click', () => {
+  if(!$('#out').value) buildOrder();
+  document.documentElement.classList.add('print-order');
+  const cleanup = () => document.documentElement.classList.remove('print-order');
+  window.addEventListener('afterprint', cleanup, { once:true });
+  try{ window.print(); }catch(e){ cleanup(); }
+  setTimeout(cleanup, 1500);
+});
 $('#clearBtn').addEventListener('click', () => {
   ['f-org','f-contact','f-tel','f-addr','f-note'].forEach(id => $('#' + id).value = '');
-  picked = []; syncPicked(); markPicked(); $('#out').value = ''; toast('已清空');
+  $('#f-pay').selectedIndex = 0; $('#f-term').selectedIndex = 0;
+  $$('.addon').forEach(cb => cb.checked = false);
+  picked = []; syncPicked(); markPicked();
+  $('#out').value = ''; const op = $('#outPrint'); if(op) op.textContent = '';
+  toast('已清空');
+});
+
+/* 在线提交需求单：仅在用户主动点击时发送；本地生成/复制/打印不经过网络 */
+$('#submitBtn').addEventListener('click', async () => {
+  const btn = $('#submitBtn');
+  const org = $('#f-org').value.trim(), contact = $('#f-contact').value.trim(), tel = $('#f-tel').value.trim();
+  const miss = [];
+  if(!org) miss.push('单位名称');
+  if(!contact) miss.push('联系人');
+  if(!tel) miss.push('联系电话');
+  if(!picked.length) miss.push('意向档位（请在套餐卡点「加入需求单」）');
+  if(miss.length){ toast('请先填写：' + miss.join('、')); return; }
+  if(!/^[0-9+\-()\s]{6,40}$/.test(tel)){ toast('联系电话格式不正确'); return; }
+
+  btn.disabled = true; btn.textContent = '提交中…';
+  try{
+    const res = await fetch('/api/portal/orders', {
+      method:'POST', credentials:'same-origin',
+      headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+      body: JSON.stringify({
+        org, contact, tel,
+        addr: $('#f-addr').value.trim(),
+        pay: $('#f-pay').value, term: $('#f-term').value,
+        addons: $$('.addon:checked').map(x => x.value),
+        tiers: picked.slice(),
+        note: $('#f-note').value.trim(),
+      }),
+    });
+    let j = null; try{ j = await res.json(); }catch(e){}
+    if(res.ok && j && j.ok){
+      toast('需求单已提交，客户经理将与您联系');
+      const h = $('#submitHint');
+      h.innerHTML = '<b style="color:var(--ok)">✓ 已提交</b>（受理编号 ' + esc(String(j.id).slice(0,8)) + '）。我们已收到您的需求，客户经理会尽快联系您。您也可以继续复制或打印留档。';
+    } else if(res.status === 429){
+      toast('提交过于频繁，请稍后再试或直接联系客户经理');
+    } else {
+      const msg = (j && j.errors && j.errors.length) ? j.errors.join('；') : ('提交失败（HTTP ' + res.status + '）');
+      toast(msg);
+    }
+  }catch(e){
+    toast('网络异常，提交失败。可改用「复制文本」或「打印」后线下提交');
+  }finally{
+    btn.disabled = false; btn.textContent = '在线提交需求单';
+  }
 });
 
 /* 导航高亮 */
-const secs = $$('main section, section[id]');
 const navLinks = $$('#nav a');
 const io = ('IntersectionObserver' in window) ? new IntersectionObserver(es => {
   es.forEach(en => {
@@ -988,10 +1802,32 @@ if(io) $$('section[id]').forEach(s => io.observe(s));
 renderTable();
 renderSubsidy();
 renderCards();
+renderScenes();
 renderFaq();
 $('#f-addTier').innerHTML = '<option value="">— 选择要添加的档位 —</option>' + TIERS.map(t => '<option value="' + t.id + '">' + esc(t.name) + '（' + priceText(t) + '）</option>').join('');
 syncPicked();
 recommend();
+
+/* 阅读进度 / 返回顶部 / 入场动画 */
+const prog = $('#progress'), topBtn = $('#totop');
+function onScroll(){
+  const h = document.documentElement;
+  const max = h.scrollHeight - h.clientHeight;
+  prog.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  topBtn.classList.toggle('on', h.scrollTop > 620);
+}
+document.addEventListener('scroll', onScroll, { passive:true });
+onScroll();
+topBtn.addEventListener('click', () => { try{ window.scrollTo({ top:0, behavior: reduceMotion() ? 'auto' : 'smooth' }); }catch(e){ window.scrollTo(0,0); } });
+(function revealInit(){
+  const els = $$('.shead, .scene, .tier, .step, .card, details.faq, .scene-box');
+  if(!('IntersectionObserver' in window)){ els.forEach(el => el.classList.add('reveal','in')); return; }
+  const ro = new IntersectionObserver(entries => {
+    entries.forEach(en => { if(en.isIntersecting){ en.target.classList.add('reveal','in'); ro.unobserve(en.target); } });
+  }, { rootMargin:'0px 0px -8% 0px', threshold:.06 });
+  els.forEach((el, i) => { el.classList.add('reveal'); el.style.transitionDelay = Math.min(i % 4, 3) * 45 + 'ms'; ro.observe(el); });
+  setTimeout(() => els.forEach(el => el.classList.add('in')), 2600);
+})();
 </script>
 </body>
 </html>

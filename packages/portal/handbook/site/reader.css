@@ -1,0 +1,826 @@
+:root{
+  /* ---- 品牌 ---- */
+  --brand:#0b4ea2;--brand-deep:#06306b;--brand-mid:#1868c0;
+  --brand-soft:#eef4fc;--brand-tint:#f7fafd;--brand-line:#cfe0f2;--brand-line2:#e2ecf8;
+  --accent:#e8722c;--accent-soft:#fdf1e7;--accent-line:#f2d3b8;
+  /* ---- 文本 ---- */
+  --ink:#0f1f36;--ink2:#3f5470;--ink3:#75879f;--ink4:#9aabc0;
+  /* ---- 面/线 ---- */
+  --line:#e6edf6;--line-soft:#f1f5fa;--paper:#ffffff;--bg:#eef2f8;
+  --ok:#0a7d3c;--ok-soft:#e9f6ee;
+  /* ---- 空间节奏（4 的倍数） ---- */
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;
+  /* ---- 版心 ---- */
+  --pad-x:40px;--pad-t:44px;--pad-b:34px;
+  /* ---- 字阶 ---- */
+  --fs-h1:1.72em;--lh-h1:1.24;
+  --fs-h2:1.34em;--lh-h2:1.3;
+  --fs-h3:1.06em;--lh-h3:1.42;
+  --lh-body:1.78;
+  /* ---- 动效 ---- */
+  --ease-book:cubic-bezier(.3,.02,.18,1);--dur-turn:.82s;
+  --font:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC","WenQuanYi Micro Hei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --num:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  --pw:400px;--ph:566px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);color:var(--ink);background:
+    radial-gradient(1200px 600px at 50% -10%,#dde8f7 0%,transparent 62%),
+    linear-gradient(180deg,#f3f7fc 0%,#e7eef7 100%);
+  min-height:100vh;overflow-x:hidden;
+  display:flex;flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+/* ================= 顶栏 ================= */
+.topbar{
+  height:56px;flex:0 0 56px;display:flex;align-items:center;gap:12px;
+  padding:0 14px;background:rgba(255,255,255,.88);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);position:relative;z-index:60;
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .mark{
+  width:30px;height:30px;border-radius:8px;background:linear-gradient(140deg,var(--brand),var(--brand-mid));
+  display:grid;place-items:center;flex:0 0 auto;
+}
+.brand .mark svg{width:20px;height:20px;display:block}
+.brand .tt{font-weight:700;font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .tt small{display:block;font-weight:400;font-size:11px;color:var(--ink3);letter-spacing:.2px}
+.spacer{flex:1}
+.tools{display:flex;align-items:center;gap:6px}
+.tb{
+  border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:9px;
+  height:34px;min-width:34px;padding:0 10px;font-size:13px;font-family:inherit;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.18s;
+}
+.tb:hover{border-color:var(--brand-line);color:var(--brand);background:var(--brand-soft)}
+.tb:disabled{opacity:.4;cursor:default}
+.tb:disabled:hover{border-color:var(--line);color:var(--ink2);background:#fff}
+.tb .lbl{white-space:nowrap}
+@media(max-width:880px){.tb .lbl{display:none}.brand .tt small{display:none}}
+@media(max-width:520px){.brand .tt{font-size:13px}.tools{gap:4px}.tb{padding:0 8px}}
+/* ================= 阅读区 ================= */
+.reader{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:22px 16px;overflow:hidden;position:relative;
+}
+.stage{perspective:2600px;perspective-origin:50% 46%;position:relative}
+.book{
+  position:relative;width:calc(var(--pw) * 2);height:var(--ph);
+  transform-style:preserve-3d;
+  transition:transform var(--dur-turn) var(--ease-book);
+}
+.book.closed{transform:translateX(calc(var(--pw) / -2))}
+.book.single{width:var(--pw)}
+.book.single.closed{transform:none}
+/* 书脊：多层渐变给出圆脊的受光与转折，翻开后渐显 */
+.spine{
+  position:absolute;left:50%;top:-2px;bottom:-2px;width:68px;transform:translateX(-50%);
+  pointer-events:none;z-index:40;opacity:0;
+  transition:opacity .5s ease;
+  background:
+    linear-gradient(90deg,
+      rgba(12,30,58,0) 0%,
+      rgba(12,30,58,.05) 26%,
+      rgba(12,30,58,.15) 42%,
+      rgba(12,30,58,.24) 50%,
+      rgba(12,30,58,.15) 58%,
+      rgba(12,30,58,.05) 74%,
+      rgba(12,30,58,0) 100%);
+}
+.book.open .spine{opacity:1}
+.book.single .spine{display:none}
+/* 纸张：绕左边缘旋转；缓动用带轻微过冲的曲线，接近真实书页落下的手感 */
+.sheet{
+  position:absolute;top:0;left:50%;width:var(--pw);height:var(--ph);
+  transform-origin:left center;transform-style:preserve-3d;
+  transform:rotateY(0deg);
+  transition:transform var(--dur-turn) var(--ease-book);
+}
+.book.single .sheet{left:0}
+.sheet.flipped{transform:rotateY(-180deg)}
+/* 拖拽跟手：关闭过渡 */
+.book.dragging .sheet{transition:none}
+.book.dragging .book,.book.dragging{transition:none}
+.sheet .face{
+  position:absolute;inset:0;overflow:hidden;background:var(--paper);
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  box-shadow:0 12px 34px rgba(15,36,66,.15),0 2px 7px rgba(15,36,66,.08);
+  border-radius:2px;
+}
+.sheet .face.back{transform:rotateY(180deg)}
+/* 多张纸依次叠放时，下层纸的投影会透过上层纸显影，看起来像页边有多余的框。
+   只保留当前可见的两张面有投影（.flat = 被盖住的面）。 */
+.sheet .face.flat{box-shadow:none}
+/* ---- 纸页弧度：随转动角度的受光带 + 页根阴影 ---- */
+/* 高光带：贴在翻动面上，位置随旋转推进（由 turning 的 0→1 动画驱动） */
+.sheet .face::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:5;
+  opacity:0;background:
+    linear-gradient(100deg,
+      rgba(255,255,255,0) 34%,
+      rgba(255,255,255,.5) 48%,
+      rgba(255,255,255,.86) 52%,
+      rgba(255,255,255,.4) 57%,
+      rgba(255,255,255,0) 72%);
+  transform:translateX(-26%);
+}
+/* 页根压暗：越靠近书脊越暗，模拟纸面弯折的受光衰减 */
+.sheet .face::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;
+  background:linear-gradient(90deg,rgba(8,20,40,.22) 0%,rgba(8,20,40,.06) 12%,rgba(255,255,255,0) 34%);
+}
+.sheet .face.back::before{background:linear-gradient(270deg,rgba(8,20,40,.22) 0%,rgba(8,20,40,.06) 12%,rgba(255,255,255,0) 34%)}
+.sheet.turning .face::after{animation:curlGlint var(--dur-turn) var(--ease-book) both}
+.sheet.turning .face::before{opacity:1;transition:opacity .18s}
+@keyframes curlGlint{
+  0%{opacity:.12;transform:translateX(-30%)}
+  46%{opacity:.95;transform:translateX(14%)}
+  100%{opacity:.10;transform:translateX(62%)}
+}
+/* 整张纸在翻转中段略微"鼓起"的投影（用外层阴影近似） */
+.sheet.turning{filter:drop-shadow(0 26px 42px rgba(10,24,48,.22))}
+/* 纸叠边缘：贴在最外侧的横向细纹，增加厚度感 */
+.sheet .edge{
+  position:absolute;top:0;right:0;width:12px;height:100%;pointer-events:none;opacity:.45;z-index:6;
+  background:repeating-linear-gradient(180deg,#f9fbfe 0 2px,#e4ebf4 2px 3px);
+}
+/* 单页模式的纸张略厚 */
+.book.single .sheet .face{box-shadow:0 16px 44px rgba(15,36,66,.22),0 3px 9px rgba(15,36,66,.10)}
+.book.single .sheet .face.flat{box-shadow:none}
+/* ---- 可翻页提示：右下折角 ---- */
+.corner{
+  position:absolute;right:0;bottom:0;width:86px;height:86px;z-index:7;
+  pointer-events:none;opacity:0;transition:opacity .28s ease;
+  background:linear-gradient(315deg,rgba(15,36,66,.10) 0%,rgba(15,36,66,.04) 34%,rgba(255,255,255,0) 52%);
+}
+/* 只在"当前可翻的那张纸"上显示折角：对开模式是 L 号纸，单页模式是 L 号纸 */
+.book .sheet .corner{opacity:0}
+.book.can-turn .sheet.now .face.front .corner{opacity:1}
+@media(hover:hover){
+  .book.can-turn .sheet.now:hover .face.front .corner{
+    opacity:1;
+    background:linear-gradient(315deg,rgba(15,36,66,.17) 0%,rgba(15,36,66,.06) 40%,rgba(255,255,255,0) 58%);
+  }
+}
+/* 允许横向拖拽（纵向仍可滚动） */
+.stage{touch-action:pan-y}
+.book.locked .sheet{transition:none!important}
+/* ================= 页 ================= */
+.page{
+  position:absolute;inset:0;background:var(--paper);display:flex;flex-direction:column;
+  font-size:var(--pfs,13.5px);line-height:var(--lh-body);color:var(--ink2);
+}
+.page.blank{background:linear-gradient(180deg,#fbfcfe,#f4f7fb)}
+/* 版心：内容不足时用 margin-bottom:auto 把富余空间全部沉到页脚之上，
+   形成稳定的「上紧下松」页脚基线；只有真正溢出的页才走 scrollable 兜底。 */
+.pbody{
+  flex:1;min-height:0;padding:var(--pad-t) var(--pad-x) var(--pad-b);
+  overflow:hidden;position:relative;
+  display:flex;flex-direction:column;
+}
+.pbody>*{flex:0 0 auto}
+.pbody>*:last-child{margin-bottom:auto}
+/* 正文内嵌图（方案总览页的产品截图）：必须显式限宽 + height:auto。
+   否则 img 的 height 属性会参与布局，1600px 视口下被拉成竖长条并撑出页面。 */
+.pbody img{max-width:100%;height:auto;border-radius:6px;box-shadow:0 3px 14px rgba(15,36,66,.12);display:block;margin:0 auto;cursor:zoom-in}
+.pbody.scrollable{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.pbody.scrollable>*:last-child{margin-bottom:var(--s5)}
+.pbody.scrollable::-webkit-scrollbar{width:6px}
+.pbody.scrollable::-webkit-scrollbar-thumb{background:var(--brand-line);border-radius:3px}
+/* 内容仍超页时的兜底：明确提示本页可继续滚动，避免被固定页脚截断而看不出还有内容 */
+.scrollhint{
+  position:absolute;left:0;right:0;bottom:0;height:26px;display:none;
+  align-items:flex-end;justify-content:center;pointer-events:none;
+  font-size:10.5px;color:var(--brand);letter-spacing:.5px;
+  background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.96) 62%);
+}
+.page.has-scroll .scrollhint{display:flex}
+.pfoot{
+  position:relative;flex:0 0 auto;height:38px;padding:0 var(--pad-x);gap:var(--s4);
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);
+}
+.pfoot::before{content:"";position:absolute;top:0;left:var(--pad-x);right:var(--pad-x);height:1px;background:var(--line)}
+.pfoot>*{position:relative}
+.pfoot .t{justify-self:start}
+.pfoot .no{
+  justify-self:center;font-family:var(--num);font-size:11px;font-weight:700;letter-spacing:.06em;
+  color:var(--brand);font-variant-numeric:tabular-nums;text-transform:none;
+}
+/* 页边章：像纸书页眉，弱化但可辨 */
+.pfoot .mk{justify-self:end;color:var(--brand-line);letter-spacing:0}
+/* ================= 封面 ================= */
+.cover{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:var(--pad-t) var(--pad-x) var(--pad-b);color:#fff;overflow:hidden;
+  background:
+    radial-gradient(620px 420px at 84% 4%,rgba(232,114,44,.45) 0%,transparent 60%),
+    radial-gradient(700px 520px at 0% 100%,rgba(24,104,192,.60) 0%,transparent 62%),
+    linear-gradient(158deg,#062a5e 0%,#0b4ea2 48%,#083a7c 100%);
+}
+/* 极细网格 + 右上角方向的光：避免大面积纯色发闷，同时给出"工程感" */
+.cover::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.55;
+  background-image:
+    linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px),
+    linear-gradient(180deg,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:34px 34px;
+  -webkit-mask-image:radial-gradient(125% 95% at 86% 4%,#000 0%,transparent 70%);
+  mask-image:radial-gradient(125% 95% at 86% 4%,#000 0%,transparent 70%);
+}
+.cover>*{position:relative}
+.cover .cv-top{
+  display:flex;align-items:center;gap:9px;
+  font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;opacity:.92;
+}
+.cover .cv-top .dot{width:7px;height:7px;background:var(--accent);border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 4px rgba(232,114,44,.22)}
+.cover .cv-mid{margin:auto 0;padding:var(--s4) 0}
+.cover .cv-eyebrow{
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(255,255,255,.64);margin-bottom:var(--s4);
+  display:flex;align-items:center;gap:var(--s2);
+}
+.cover .cv-eyebrow::after{content:"";width:34px;height:1px;background:rgba(255,255,255,.38)}
+.cover h1{
+  font-size:2.62em;line-height:1.13;margin:0 0 var(--s4);font-weight:800;
+  letter-spacing:.01em;text-shadow:0 2px 24px rgba(4,20,48,.3);
+}
+.cover .cv-sub{font-size:1.02em;line-height:1.78;color:rgba(255,255,255,.9);max-width:20em}
+.cover .cv-tags{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s5)}
+.cover .cv-tag{
+  border:1px solid rgba(255,255,255,.38);border-radius:999px;padding:4px 12px;
+  font-size:11.5px;letter-spacing:.04em;background:rgba(255,255,255,.10);
+  backdrop-filter:blur(2px);
+}
+.cover .cv-foot{
+  border-top:1px solid rgba(255,255,255,.28);padding-top:var(--s4);
+  display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s4);
+  font-size:11px;color:rgba(255,255,255,.84);letter-spacing:.04em;line-height:1.6;
+}
+.cover .cv-foot b{display:block;font-size:13px;font-weight:700;margin-bottom:4px;letter-spacing:.06em}
+.cover .cv-badge{
+  flex:0 0 auto;width:66px;height:66px;border-radius:16px;
+  background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.34);
+  display:grid;place-items:center;font-family:var(--num);
+  font-size:18px;font-weight:800;letter-spacing:.06em;
+}
+/* ================= 章节页 ================= */
+.sec{
+  position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  padding:var(--pad-t) var(--pad-x);color:#fff;overflow:hidden;
+  background:linear-gradient(150deg,#083671 0%,#0b4ea2 56%,#1566b8 100%);
+}
+.sec::before{
+  content:"";position:absolute;right:-90px;bottom:-120px;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle,rgba(232,114,44,.34) 0%,transparent 66%);pointer-events:none;
+}
+.sec>*{position:relative}
+.sec .sec-no{
+  font-family:var(--num);font-size:3.4em;font-weight:800;line-height:1;
+  color:rgba(255,255,255,.24);letter-spacing:-.02em;
+}
+.sec h2{font-size:1.86em;line-height:1.28;margin:var(--s3) 0 var(--s4);font-weight:800;letter-spacing:.02em}
+.sec .sec-lead{font-size:1em;line-height:1.8;color:rgba(255,255,255,.88);max-width:22em}
+.sec .sec-rule{width:48px;height:3px;background:var(--accent);border-radius:2px;margin:var(--s5) 0 0}
+.sec .sec-points{margin-top:var(--s5);display:flex;flex-direction:column;gap:var(--s2)}
+.sec .sec-points span{font-size:.9em;color:rgba(255,255,255,.9);display:flex;gap:9px;align-items:flex-start;line-height:1.6}
+.sec .sec-points span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);flex:0 0 auto;margin-top:.6em}
+/* ================= 正文排版 ================= */
+/* 页首组：kicker + 标题 + 导语，与正文之间用固定节奏分隔 */
+.pbody .kicker{
+  display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+  font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--brand);
+  background:var(--brand-soft);border:1px solid var(--brand-line);border-radius:999px;
+  padding:3px 11px 3px 9px;margin-bottom:var(--s4);
+}
+.pbody .kicker::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.pbody h3{
+  font-size:var(--fs-h2);line-height:var(--lh-h2);margin:0 0 var(--s3);
+  color:var(--ink);font-weight:800;letter-spacing:-.01em;
+}
+.pbody h3 .bar{display:none}
+.pbody h3::after{
+  content:"";display:block;width:38px;height:3px;border-radius:2px;
+  background:linear-gradient(90deg,var(--accent),rgba(232,114,44,0));margin-top:var(--s3);
+}
+.pbody .lead{
+  font-size:1.03em;line-height:1.72;color:var(--ink2);margin:0 0 var(--s5);
+  max-width:30em;text-wrap:pretty;
+}
+/* 分节小标题：用于一页内两个主题的分隔 */
+.pbody h4{
+  font-size:var(--fs-h3);line-height:var(--lh-h3);font-weight:700;color:var(--brand-deep);
+  margin:var(--s5) 0 var(--s3);letter-spacing:.01em;display:flex;align-items:center;gap:var(--s2);
+}
+.pbody h4::before{content:"";width:3px;height:1em;border-radius:2px;background:var(--brand);flex:0 0 auto}
+.pbody>*:first-child{margin-top:0}
+.pbody p{margin:0 0 var(--s3);max-width:30em}
+.pbody p:last-child{margin-bottom:0}
+.pbody ul,.pbody ol{margin:0 0 var(--s4);padding-left:1.1em;max-width:30em}
+.pbody li{margin-bottom:var(--s2);padding-left:var(--s1)}
+.pbody li::marker{color:var(--brand-line2);font-weight:700}
+.pbody strong{color:var(--brand-deep);font-weight:700}
+.pbody .muted{color:var(--ink3);font-size:.9em;line-height:1.66}
+.pbody .card .cd,.pbody .mini .md,.pbody .io .txt{line-height:1.6}
+/* 超窄屏兜底档（9.6–10.2px）收一档行高，换取更多整页放得下 */
+.pbody[style*="9.6px"] .card .cd,.pbody[style*="10.2px"] .card .cd{line-height:1.48}
+.pbody[style*="9.6px"] .step .sd,.pbody[style*="10.2px"] .step .sd{line-height:1.5}
+.pbody[style*="9.6px"] .lead,.pbody[style*="10.2px"] .lead{line-height:1.62;margin-bottom:var(--s4)}
+
+/* ================= 目录页 ================= */
+.toc-wrap{display:flex;flex-direction:column;gap:var(--s5);margin-top:clamp(var(--s4),3.2vh,var(--s7))}
+.toc-group{display:flex;flex-direction:column;gap:var(--s1)}
+.toc-cap{
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);
+  font-weight:700;display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2);
+}
+.toc-cap::after{content:"";flex:1;height:1px;background:var(--line)}
+/* 卷首：给一组轻底块，与正文章节形成"弱-强"对比 */
+.toc-front{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s2)}
+.toc-front .fi{
+  display:flex;align-items:baseline;gap:var(--s2);padding:7px 10px;
+  background:var(--brand-tint);border:1px solid var(--brand-line2);border-radius:8px;
+  font-size:.92em;color:var(--ink2);
+}
+.toc-front .fi .fp{margin-left:auto;font-family:var(--num);font-size:.82em;color:var(--brand);font-weight:700}
+/* 章节：章节号 + 标题 …… 页码（导点用 grid + 点线边界实现，比 flex 更稳） */
+.toc-sec-list{display:flex;flex-direction:column}
+.toc-sec{
+  display:grid;grid-template-columns:34px 1fr auto;align-items:baseline;
+  column-gap:var(--s2);padding:8px 0;border-bottom:1px solid var(--line-soft);
+  text-decoration:none;color:inherit;cursor:pointer;
+  background:none;border-left:0;border-right:0;border-top:0;font-family:inherit;width:100%;text-align:left;
+}
+.toc-sec:last-child{border-bottom:0}
+.toc-sec .sn{
+  font-family:var(--num);font-size:.86em;font-weight:700;color:var(--accent);
+  letter-spacing:.04em;font-variant-numeric:tabular-nums;
+}
+.toc-sec .st{
+  font-size:1.0em;font-weight:700;color:var(--ink);letter-spacing:.01em;
+  display:flex;align-items:baseline;gap:var(--s2);min-width:0;
+}
+.toc-sec .st .dots{
+  flex:1;min-width:12px;border-bottom:1px dotted var(--brand-line);transform:translateY(-.28em);
+}
+.toc-sec .sp{
+  font-family:var(--num);font-size:.86em;font-weight:700;color:var(--brand);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.toc-sec:hover{background:var(--brand-tint)}
+.toc-sec:hover .st{color:var(--brand)}
+.toc-foot{
+  display:flex;align-items:baseline;gap:var(--s2);padding-top:var(--s4);margin-top:var(--s1);
+  border-top:1.5px solid var(--brand-line2);font-size:.95em;
+}
+.toc-foot .sn{font-family:var(--num);font-weight:700;color:var(--accent);font-size:.86em}
+.toc-foot .st{font-weight:700;color:var(--ink)}
+.toc-foot .sp{margin-left:auto;font-family:var(--num);font-weight:700;color:var(--brand);font-size:.86em}
+.toc-note{font-size:.84em;color:var(--ink3);line-height:1.7;margin-top:var(--s4)}
+/* 超窄屏（落入 9.6px 兜底档）时，目录条目最多，单独再收一档间距 */
+.narrow .toc-wrap{gap:var(--s4);margin-top:var(--s3)}
+.narrow .toc-sec{padding:6px 0}
+.narrow .toc-front .fi{padding:5px 8px}
+.narrow .toc-note{margin-top:var(--s3)}
+/* 超窄屏兜底档（9.6px）下目录条目最多，整组再密排一次；
+   实测 430×932 时目录组 451px、需 390px，故 gap 与行内边距都要收。 */
+.pbody[style*="9.6px"] .toc-wrap{gap:7px;margin-top:2px}
+.pbody[style*="9.6px"] .toc-group{gap:0}
+.pbody[style*="9.6px"] .toc-sec{padding:2px 0}
+.pbody[style*="9.6px"] .toc-cap{margin-bottom:3px;font-size:9px}
+.pbody[style*="9.6px"] .toc-front{gap:3px}
+.pbody[style*="9.6px"] .toc-front .fi{padding:3px 6px}
+.pbody[style*="9.6px"] .toc-note{display:none}
+.pbody[style*="9.6px"] .kicker{padding:2px 8px;margin-bottom:6px}
+.pbody[style*="9.6px"] h3::after{margin-top:5px}
+.pbody[style*="9.6px"] h3{margin-bottom:6px}
+.toc-note kbd{
+  font-family:var(--num);font-size:.92em;background:var(--brand-soft);color:var(--brand);
+  border:1px solid var(--brand-line);border-radius:4px;padding:0 5px;
+}
+
+/* ================= 卡片 ================= */
+.cards{display:flex;flex-direction:column;gap:var(--s3)}
+.card{
+  border:1px solid var(--line);border-radius:11px;padding:var(--s3) var(--s4);
+  background:var(--paper);box-shadow:0 1px 2px rgba(15,36,66,.04);
+}
+.card .ct{
+  font-weight:700;color:var(--ink);font-size:1.0em;margin-bottom:var(--s2);
+  display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;line-height:1.45;
+}
+.card .ct .num{
+  flex:0 0 auto;width:21px;height:21px;border-radius:7px;
+  background:var(--brand-soft);color:var(--brand);border:1px solid var(--brand-line2);
+  font-size:11px;display:grid;place-items:center;font-weight:800;font-family:var(--num);
+}
+.card .cd{color:var(--ink2);font-size:.94em;line-height:1.65}
+.card.acc{border-left:3px solid var(--accent);background:var(--accent-soft);border-color:var(--accent-line)}
+.card.tint{background:var(--brand-tint);border-color:var(--brand-line2)}
+/* 网格 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+@media(max-width:520px){ .grid3{grid-template-columns:1fr} }
+@media(min-width:521px) and (max-width:820px){ .grid3{grid-template-columns:1fr 1fr} }
+/* 三栏等宽卡：文字长度需要接近，否则会出现一格两行、一格一行的锯齿 */
+.grid3 .md{min-height:2.4em}
+.mini{
+  border:1px solid var(--line);border-radius:10px;padding:var(--s3);
+  background:var(--paper);display:flex;flex-direction:column;gap:var(--s1);
+}
+.mini .mt{
+  font-weight:700;color:var(--brand-deep);font-size:.96em;line-height:1.4;
+  display:flex;align-items:baseline;gap:6px;
+}
+.mini .mt::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);flex:0 0 auto;transform:translateY(-2px)}
+.mini .md{font-size:.86em;color:var(--ink2);line-height:1.62}
+/* 清单：名称在左、说明在右，适合"短名 + 一行描述"的场景，避免窄列里断成两三个字一行 */
+.deflist{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.def{
+  display:grid;grid-template-columns:118px 1fr;gap:var(--s4);align-items:baseline;
+  padding:var(--s3) 0;border-bottom:1px solid var(--line-soft);
+}
+.def .dt{
+  font-weight:700;color:var(--ink);font-size:.97em;line-height:1.5;
+  display:flex;align-items:baseline;gap:var(--s2);
+}
+.def .dt::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);flex:0 0 auto;transform:translateY(-2px)}
+.def .dd{font-size:.92em;color:var(--ink2);line-height:1.66}
+.def:last-child{border-bottom:0}
+@media(max-width:640px){ .def{grid-template-columns:1fr;gap:var(--s1)} }
+
+/* ================= 输入 → 过程 → 交付物 ================= */
+.io{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s1)}
+.io .row{display:grid;grid-template-columns:46px 1fr;gap:var(--s2);align-items:start}
+.io .tag{
+  text-align:center;font-size:10px;font-weight:700;letter-spacing:.08em;
+  padding:3px 0;border-radius:6px;
+  background:var(--brand-soft);color:var(--brand);border:1px solid var(--brand-line2);
+}
+.io .tag.proc{background:var(--line-soft);color:#4a6b93;border-color:var(--line)}
+.io .tag.out{background:var(--accent-soft);color:#b8541a;border-color:var(--accent-line)}
+.io .txt{font-size:.92em;color:var(--ink2);line-height:1.62;padding-top:1px}
+
+/* ================= 步骤 ================= */
+.steps{display:flex;flex-direction:column;margin-top:var(--s2)}
+.step{display:grid;grid-template-columns:26px 1fr;gap:var(--s3);position:relative;padding-bottom:var(--s4)}
+.step:last-child{padding-bottom:0}
+.step .sn{
+  width:26px;height:26px;border-radius:50%;background:var(--paper);color:var(--brand);
+  border:1.5px solid var(--brand-line);font-size:11.5px;font-weight:800;font-family:var(--num);
+  display:grid;place-items:center;z-index:1;
+}
+.step:not(:last-child)::before{
+  content:"";position:absolute;left:12.5px;top:28px;bottom:2px;width:1px;
+  background:linear-gradient(180deg,var(--brand-line),var(--brand-line2));
+}
+.step .st{font-weight:700;color:var(--ink);font-size:1.0em;line-height:1.45;margin-bottom:2px}
+.step .sd{font-size:.92em;color:var(--ink2);line-height:1.64}
+
+/* ================= 徽标 / 提示块 ================= */
+.pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10.5px;font-weight:700;letter-spacing:.02em;
+  padding:2px 9px;border-radius:999px;white-space:nowrap;
+  background:var(--ok-soft);color:var(--ok);
+}
+.pill::before{content:"";width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.7}
+.pill.warn{background:var(--accent-soft);color:#b8541a}
+.pill.info{background:var(--brand-soft);color:var(--brand)}
+.callout{
+  border-radius:11px;padding:var(--s3) var(--s4);
+  background:var(--brand-tint);border:1px solid var(--brand-line2);
+  font-size:.92em;color:var(--ink2);line-height:1.68;
+}
+.callout b,.callout strong{color:var(--brand-deep)}
+.callout.acc{background:var(--accent-soft);border-color:var(--accent-line);color:#7a3c10}
+.callout.acc b{color:#8f4514}
+/* 要点清单 */
+.keylist{margin:0;padding:0;list-style:none}
+.keylist li{position:relative;padding-left:var(--s5);margin-bottom:var(--s3);font-size:.95em;color:var(--ink2);line-height:1.66}
+.keylist li:last-child{margin-bottom:0}
+.keylist li::before{
+  content:"";position:absolute;left:2px;top:.52em;width:9px;height:9px;border-radius:2.5px;
+  background:var(--brand-soft);border:1.5px solid var(--brand);
+}
+.keylist.warn li::before{background:var(--accent-soft);border-color:var(--accent)}
+
+/* ================= 指标 ================= */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+.kpi{
+  border:1px solid var(--line);border-radius:11px;padding:var(--s3) var(--s2) var(--s3);
+  text-align:center;background:var(--paper);
+  display:flex;flex-direction:column;gap:2px;
+}
+.kpi .kv{font-size:1.62em;font-weight:800;color:var(--brand);line-height:1.05;font-family:var(--num);letter-spacing:-.02em}
+.kpi .kl{font-size:10.5px;color:var(--ink3);line-height:1.4;letter-spacing:.02em}
+
+/* ================= 表格 ================= */
+table.tb2{width:100%;border-collapse:collapse;font-size:.9em}
+table.tb2 th,table.tb2 td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;line-height:1.6}
+table.tb2 th{background:var(--brand-tint);color:var(--brand-deep);font-weight:700;white-space:nowrap}
+table.tb2 tr:not(:last-child) td{border-bottom-color:var(--line-soft)}
+table.tb2 td{color:var(--ink2)}
+/* 要点清单 */
+.keylist{margin:0;padding:0;list-style:none}
+.keylist li{
+  position:relative;padding-left:20px;margin-bottom:7px;font-size:.95em;color:var(--ink2);line-height:1.58;
+}
+.keylist li::before{
+  content:"";position:absolute;left:2px;top:.55em;width:8px;height:8px;border-radius:2px;
+  background:var(--brand-soft);border:1.5px solid var(--brand);
+}
+.keylist.warn li::before{background:#fdf3e7;border-color:var(--accent)}
+/* ================= 图片页 ================= */
+/* 页面比例 1:1.414 与截图 1.84:1 不同，按可用宽度等比展示，绝不裁切。 */
+.imgpage{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--paper)}
+.imgpage .ibar{
+  flex:0 0 auto;padding:var(--pad-t) var(--pad-x) var(--s4);
+  border-bottom:1px solid var(--line);
+}
+.imgpage .ibar b{
+  display:flex;align-items:baseline;gap:var(--s2);
+  font-size:var(--fs-h2);color:var(--ink);font-weight:800;line-height:var(--lh-h2);letter-spacing:-.01em;
+}
+.imgpage .ibar span{display:block;font-size:.92em;color:var(--ink2);line-height:1.66;margin-top:var(--s2);max-width:32em}
+.imgpage .iimg{
+  flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;
+  gap:var(--s4);padding:var(--s5) var(--pad-x);min-height:0;overflow:hidden;
+}
+.imgpage .iimg .shot{width:100%;margin:0;text-align:center}
+.imgpage .iimg .shot img{max-height:calc(var(--ph, 566px) - 250px)}
+@media(max-width:640px){ .imgpage .iimg .shot img{max-height:calc(var(--ph, 566px) - 200px)} }
+.imgpage .iimg img{
+  display:block;width:100%;height:auto;object-fit:contain;
+  border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 6px 24px rgba(15,36,66,.13),0 1px 3px rgba(15,36,66,.06);
+  cursor:zoom-in;background:var(--paper);
+}
+.imgpage .iimg .shot figcaption{
+  font-size:11px;color:var(--ink3);margin-top:var(--s3);line-height:1.55;text-align:center;
+}
+.imgpage .ifoot{
+  flex:0 0 auto;padding:0 var(--pad-x) var(--s4);
+  font-size:10px;color:var(--ink4);text-align:right;line-height:1.5;letter-spacing:.04em;
+}
+.imgpage .ifoot::before{content:"";display:block;height:1px;background:var(--line);margin-bottom:var(--s3)}
+/* 落款页 */
+.signature{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.sig-row{display:flex;gap:10px;align-items:baseline;font-size:.95em;color:var(--ink2)}
+.sig-row .sk{flex:0 0 72px;color:var(--ink3);font-size:.88em}
+.sig-row .sv{font-weight:600;color:var(--brand-deep)}
+/* 合作意向表单（内联于手册页，提交门户同源的 /api/portal/orders） */
+.f-form{display:flex;flex-direction:column;gap:6px}
+.f-row{display:flex;flex-direction:column;gap:2px}
+.f-row>span{font-size:.85em;color:var(--ink2);font-weight:600}
+.f-row .req{color:#c0392b;font-style:normal;font-weight:400}
+.f-row .opt{color:var(--ink3);font-style:normal;font-weight:400}
+.f-row input[type=text],.f-row input[type=tel],.f-row textarea{
+  width:100%;border:1px solid var(--line);border-radius:7px;padding:4px 8px;
+  font-size:.9em;font-family:inherit;color:var(--ink);background:#fff;
+}
+.f-row input:focus,.f-row textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft)}
+.f-row textarea{resize:none}
+.f-chips{display:flex;flex-wrap:wrap;gap:5px}
+.f-chips label{
+  display:inline-flex;align-items:center;gap:4px;font-size:.84em;color:var(--ink2);
+  border:1px solid var(--line);border-radius:999px;padding:2px 8px;cursor:pointer;background:#fff;
+}
+.f-chips label.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-deep);font-weight:600}
+.f-chips input{margin:0;vertical-align:middle}
+.f-submit{
+  border:0;border-radius:8px;background:linear-gradient(140deg,var(--brand),var(--brand-mid));color:#fff;
+  font-size:.94em;font-weight:700;padding:7px 12px;cursor:pointer;font-family:inherit;letter-spacing:.5px;
+}
+.f-submit:disabled{opacity:.6;cursor:default}
+.f-msg{font-size:.84em;line-height:1.45;min-height:1.2em}
+.f-msg.err{color:#c0392b}
+.f-msg.ok{color:var(--ok)}
+.f-hint{font-size:.78em;color:var(--ink3);line-height:1.45}
+/* 联系方式块 */
+.contact{
+  border-radius:10px;padding:13px 15px;background:linear-gradient(140deg,#07306b,#0b4ea2);
+  color:#fff;display:flex;align-items:center;gap:14px;
+}
+.contact .cl{flex:1}
+.contact .cl b{display:block;font-size:1.5em;font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums}
+.contact .cl span{display:block;font-size:11px;color:rgba(255,255,255,.82);margin-top:2px}
+.contact .cqr{flex:0 0 auto;width:74px;height:74px;background:#fff;border-radius:8px;padding:5px;display:grid;place-items:center}
+.contact .cqr svg{width:100%;height:100%;display:block}
+/* 目录抽屉 */
+.mask{
+  position:fixed;inset:0;background:rgba(10,22,40,.42);backdrop-filter:blur(2px);
+  opacity:0;pointer-events:none;transition:.25s;z-index:80;
+}
+.mask.on{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;height:100%;width:min(430px,92vw);background:#fff;z-index:90;
+  transform:translateX(105%);transition:transform .3s cubic-bezier(.4,.05,.2,1);
+  display:flex;flex-direction:column;box-shadow:-14px 0 44px rgba(10,22,40,.22);
+}
+.drawer.on{transform:translateX(0)}
+.drawer .dh{
+  flex:0 0 auto;padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;
+}
+.drawer .dh b{font-size:15px;color:var(--brand-deep)}
+.drawer .dh .dc{
+  margin-left:auto;border:0;background:var(--line-soft);color:var(--ink2);width:30px;height:30px;
+  border-radius:8px;cursor:pointer;font-size:15px;line-height:1;font-family:inherit;
+}
+.drawer .db{flex:1;overflow-y:auto;padding:15px 18px 24px}
+.toc-l{margin:0;padding:0;list-style:none}
+.toc-l li{margin-bottom:6px}
+.toc-a{
+  width:100%;display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:#fff;
+  border-radius:9px;padding:8px 10px;cursor:pointer;font-family:inherit;text-align:left;transition:.16s;
+}
+.toc-a:hover{background:var(--brand-soft);border-color:var(--brand-line);transform:translateX(2px)}
+.toc-a .n{font-size:11px;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.toc-a .t{flex:1;font-size:13px;color:var(--ink);line-height:1.4}
+.toc-a .p{font-size:11px;color:var(--ink3);flex:0 0 auto;font-variant-numeric:tabular-nums}
+.toc-sec .t{font-weight:700;color:var(--brand-deep)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:9px}
+.th{
+  border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px;cursor:pointer;
+  font-family:inherit;text-align:left;transition:.16s;
+}
+.th:hover{border-color:var(--brand-line);background:var(--brand-soft)}
+.th.cur{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 1px var(--brand) inset}
+.th .tn{display:block;font-size:10.5px;color:var(--brand);font-weight:700;font-variant-numeric:tabular-nums;margin-top:6px}
+.th .tt2{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px;line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 缩略图箱：用 overflow:hidden 裁掉缩放后的溢出，只显示一张"纸" */
+.thbox{
+  display:block;position:relative;width:100%;aspect-ratio:1 / 1.414;
+  overflow:hidden;border-radius:6px;border:1px solid var(--line);
+  background:#fff;box-shadow:0 1px 3px rgba(15,36,66,.06);
+}
+.thpage{
+  position:absolute;left:0;top:0;transform-origin:0 0;
+  display:block;pointer-events:none;
+}
+/* 缩略图里的纸页：保留原始像素尺寸（由内联样式给出），只靠 transform:scale 缩小，
+   因此绝不能用 width:100% 去覆盖它，否则内层绝对定位的 .pbody 会塌成 0 高。 */
+.thpage .sheet{position:relative !important;top:auto !important;left:auto !important;
+  width:100% !important;height:100% !important;transform:none !important}
+.thpage .sheet .face{box-shadow:none !important;border-radius:0 !important}
+.thpage .face.back{display:none !important}
+.thpage .page{position:absolute !important;inset:0 !important}
+.thpage .edge,.thpage .corner,.thpage .scrollhint{display:none !important}
+.thpage .pbody{overflow:hidden !important}
+/* 灯箱 */
+.lightbox{
+  position:fixed;inset:0;background:rgba(6,14,26,.9);z-index:100;display:none;
+  align-items:center;justify-content:center;padding:24px;cursor:zoom-out;
+}
+.lightbox.on{display:flex}
+.lightbox img{max-width:100%;max-height:100%;box-shadow:0 20px 60px rgba(0,0,0,.5);border-radius:4px}
+/* 底栏 */
+.bottombar{
+  flex:0 0 46px;height:46px;display:flex;align-items:center;gap:12px;padding:0 16px;
+  background:rgba(255,255,255,.88);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  position:relative;z-index:55;
+}
+.progress{flex:1;height:5px;background:var(--line-soft);border-radius:4px;overflow:hidden;cursor:pointer;position:relative}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),#1780d0);border-radius:4px;transition:width .3s}
+.pageno{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pageno b{color:var(--brand);font-size:14px}
+.hint{
+  position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+  background:rgba(10,22,40,.82);color:#fff;font-size:12px;padding:7px 14px;border-radius:999px;
+  white-space:nowrap;pointer-events:none;transition:opacity .6s;z-index:50;
+}
+@media(max-width:900px){.hint{display:none}}
+/* 提示条 */
+.toast{
+  position:fixed;left:50%;bottom:70px;transform:translate(-50%,10px);background:rgba(10,22,40,.9);
+  color:#fff;font-size:12.5px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:110;max-width:86vw;text-align:center;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+/* 移动端 */
+@media(max-width:640px){
+  .reader{padding:10px 8px}
+  .pbody{padding:18px 18px 6px}
+  .pfoot{padding:0 18px}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  .cover{padding:26px 22px}
+  .cover h1{font-size:2.05em}
+  .sec{padding:28px 24px}
+  .imgpage .ibar{padding:16px 18px 8px}
+  .imgpage .iimg{padding:8px 12px}
+  .imgpage .ifoot{padding:6px 18px 10px}
+}
+
+/* ===== OPCBOOK_ADDITIVE_BEGIN ===== */
+/* ============================================================
+   《OPC 公司生存指南》在线翻页电子书刊 —— 增量样式
+   基础版式完全来自参考模板 /portal/book/zhengqi 的 reader.css（未改动一个字节），
+   本文件只做两件事：
+     1) 封面的品牌标识与顶栏标识；
+     2) 为白皮书的排版单元（章标题 / 篇标题 / 目录行 / 落款 / 运行小节）补样式，
+        并针对"纯文字白皮书"的密度做少量收紧。
+        这些规则全部沿用模板既有的设计令牌（--brand / --accent / --s* / 字阶 / 圆角），
+        因此观感与模板一致，不引入第二套视觉语言。
+
+   ⚠️ 作用域约定（重要）：
+   本文件会被并入**门户共享的** handbook/site/reader.css，zhengqi / aiie 两本书
+   共用同一份样式表。因此第 2 部分的每一条规则都收在 `.opcbook` 之下 ——
+   这个容器类名只由《OPC 公司生存指南》的页数据产生（每页正文外层包一层
+   <div class="opcbook">）。其余两本书的页面里不存在该类名，
+   于是这些"收紧密度"的规则在数学上不可能命中它们。
+   （用"与既有书页面里的类名零交集"来证明是非破坏性的，见 regress.mjs。）
+   ============================================================ */
+
+/* ---------- 1. 品牌标识 ---------- */
+.brand .mark.logo{background:#fff;border:1px solid var(--line);padding:3px;border-radius:8px}
+.brand .mark.logo img{width:100%;height:100%;object-fit:contain;display:block;border-radius:5px}
+.cover .cv-logo{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#fff;border-radius:12px;padding:9px 14px;margin-bottom:var(--s5);
+  box-shadow:0 10px 30px rgba(3,18,44,.34);
+}
+.cover .cv-logo img{display:block;height:38px;width:auto}
+
+/* ---------- 2. 白皮书排版单元（全部限定在 .opcbook 内） ---------- */
+/* 运行小节：本页不以标题开篇时的一行位置提示（弱化，不与页首大标题重复）。
+   字号用 em，跟随模板的自动缩排档位一起收放 —— 否则正文收到 9.6px 时运行标题反而更大。 */
+.opcbook .running{
+  display:flex;align-items:flex-start;gap:9px;
+  font-size:.92em;font-weight:600;color:var(--ink3);letter-spacing:.01em;line-height:1.55;
+  margin:0 0 var(--s3);
+}
+.opcbook .running::before{
+  content:"";width:14px;height:2px;border-radius:1px;background:var(--brand-line);
+  flex:0 0 auto;margin-top:.72em;
+}
+
+/* 文档标题（序 言 / 版 权 声 明 / 目 录）：页首最重的一级 */
+.opcbook h3.doc-title{font-size:var(--fs-h1);line-height:var(--lh-h1);color:var(--brand-deep);margin-bottom:10px}
+
+/* 章标题（第 X 章）：整章的门面，配蓝色下划线以区别于小节标题的橙色 */
+.opcbook h3.chap-title{
+  font-size:var(--fs-h1);line-height:var(--lh-h1);font-weight:800;
+  color:var(--brand-deep);margin:0 0 10px;letter-spacing:-.005em;
+}
+.opcbook h3.chap-title::after{
+  width:52px;height:4px;background:linear-gradient(90deg,var(--brand),rgba(11,78,162,0));
+}
+
+/* 篇标题（摘 要 / 后 记 / 诚邀合作 / —— 全书完 ——）：居中分隔式 */
+.opcbook h3.part-title{
+  text-align:center;font-size:var(--fs-h2);line-height:var(--lh-h2);
+  color:var(--brand);font-weight:800;letter-spacing:.06em;margin:var(--s4) 0 var(--s4);
+}
+.opcbook h3.part-title::after{
+  margin:var(--s3) auto 0;width:64px;
+  background:linear-gradient(90deg,rgba(232,114,44,0),var(--accent),rgba(232,114,44,0));
+}
+/* 「—— 全书完 ——」紧跟「后 记」时收一档，避免两行居中标题之间空太多 */
+.opcbook h3.part-title + h3.part-title{margin-top:calc(var(--s3) * -1)}
+
+/* 目录行（PDF 第 4–6 页的目录跨页）：单页 19 条以上，
+   按「列表」而不是按「正文段落」给行距与内边距。 */
+.opcbook .toc-line{
+  display:flex;align-items:baseline;gap:8px;
+  padding:1px 0 1px 12px;font-size:.95em;color:var(--ink2);line-height:1.44;
+  border-bottom:1px dashed var(--line);
+}
+.opcbook .toc-line::before{content:"·";color:var(--brand-line);font-weight:700;flex:0 0 auto}
+.opcbook .toc-line.toc-ch{
+  padding:0 0 2px;margin-top:var(--s2);font-weight:800;font-size:1.02em;
+  color:var(--brand-deep);border-bottom:0;align-items:center;gap:9px;
+}
+.opcbook .toc-line.toc-ch::before{
+  content:"";width:3px;height:1.05em;border-radius:2px;background:var(--brand);flex:0 0 auto;
+}
+
+/* 落款（序言 / 版权页 / 结语）：右对齐，行距略松 */
+.opcbook .sig{text-align:right;color:var(--ink2);font-size:.95em;line-height:1.95;margin:0;letter-spacing:.02em}
+.opcbook .sig:first-of-type{margin-top:var(--s5)}
+
+/* 文本密度调优（只作用于本书，不改模板基准）
+   本书是纯文字白皮书，每页 1 个 PDF 页 ≈ 420–620 字，段落数多（最多 8 段/页）。
+   模板的阅读页按「一页一个设计单元」（图 + 短段落）设计，段间距 12px 在长文里
+   会累计吃掉 100px 以上版心高度，逼着自动缩排一路降到 9.6px 下限。
+   这里把几处固定间距各收一档，并把段落量度放开到版心宽度：
+   观感仍是模板的版式，但整页放得下的字号档位明显上移。 */
+.opcbook p,.opcbook ul,.opcbook ol,.opcbook .lead{max-width:100%}
+.opcbook p{margin-bottom:8px}
+.opcbook .kicker{margin-bottom:var(--s3)}
+.opcbook h3{margin-bottom:10px}
+/* 页内小节标题：白皮书一节之内常有多个小标题，24px 的上间距会累计吃掉整页高度 */
+.opcbook h4{margin:var(--s4) 0 var(--s2)}
+
+/* ---------- 3. 窄屏微调 ---------- */
+@media(max-width:640px){
+  .opcbook .running{font-size:.88em}
+  .opcbook h3.chap-title,.opcbook h3.doc-title{font-size:1.45em}
+}
+/* 超窄屏兜底档：与模板一致地收紧行距，换取整页放得下 */
+.pbody[style*="9.6px"] .opcbook .sig,.pbody[style*="10.2px"] .opcbook .sig{line-height:1.7}
+.pbody[style*="9.6px"] .opcbook .running,.pbody[style*="10.2px"] .opcbook .running{margin-bottom:var(--s2)}
+/* ===== OPCBOOK_ADDITIVE_END ===== */

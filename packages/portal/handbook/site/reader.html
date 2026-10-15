@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title><!--@TITLE@--></title>
+<meta name="description" content="<!--@DESC@-->">
+<meta name="theme-color" content="#0b4ea2">
+<link rel="icon" href="/portal/assets/mark.svg" type="image/svg+xml">
+
+<link rel="stylesheet" href="/portal/handbook/asset/reader.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" fill="none"><path d="M16 4.6 23.4 14h-4.6v5.2h-5.6V14H8.6L16 4.6Z" fill="#fff"/><rect x="12.4" y="20.4" width="7.2" height="3" rx="1" fill="#e8722c"/></svg>
+    </span>
+    <span class="tt">企业工作台定制解决方案<small>WorkDSH · 企业级 AI 智能体工作台</small></span>
+  </div>
+  <span class="spacer"></span>
+  <div class="tools">
+    <button class="tb" id="btnFirst" title="回到封面">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 5v14L8 12l10-7Z"/><path d="M6 5v14"/></svg>
+    </button>
+    <button class="tb" id="btnToc" title="目录"><span class="lbl">目录</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </button>
+    <button class="tb" id="btnThumb" title="缩略图"><span class="lbl">缩略图</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+    </button>
+    <button class="tb" id="btnMode" title="切换单页 / 双页"><span class="lbl">双页</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5.5C10 4 7.4 3.6 4 3.8v14c3.4-.2 6 .2 8 1.7 2-1.5 4.6-1.9 8-1.7v-14c-3.4-.2-6 .2-8 1.7Z"/><path d="M12 5.5v14"/></svg>
+    </button>
+    <button class="tb" id="btnShare" title="复制本页链接"><span class="lbl">分享</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></svg>
+    </button>
+    <a class="tb" id="btnEdit" href="#" title="打开这本书的管理后台" style="display:none;text-decoration:none">
+      <span class="lbl">编辑此书</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="M13.5 6.5 17.5 10.5"/></svg>
+    </a>
+    <button class="tb" id="btnFull" title="全屏">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="reader" id="reader">
+  <div class="stage" id="stage">
+    <div class="book closed" id="book"></div>
+  </div>
+  <div class="hint" id="hint">点击页面右侧翻页 ｜ ← → 键翻页 ｜ 滚轮 / 左右滑动也可以</div>
+</main>
+
+<footer class="bottombar">
+  <button class="tb" id="btnPrev" title="上一页">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+  </button>
+  <button class="tb" id="btnNext" title="下一页">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+  </button>
+  <span class="pageno"><b id="curNo">1</b> / <span id="totNo">1</span></span>
+  <div class="progress" id="progress" title="点击跳转"><i id="progressBar"></i></div>
+</footer>
+
+<div class="mask" id="mask"></div>
+<aside class="drawer" id="drawer" aria-label="目录与缩略图">
+  <div class="dh"><b id="drawerTitle">目录</b><button class="dc" id="drawerClose" title="关闭">✕</button></div>
+  <div class="db" id="drawerBody"></div>
+</aside>
+<div class="lightbox" id="lightbox"><img id="lightboxImg" alt="界面截图放大"></div>
+<div class="toast" id="toast"></div>
+<script>window.__BOOK__ = /*@CFG@*/;</script>
+<script src="/portal/handbook/asset/reader.js"></script>
+<script src="/portal/handbook/asset/reader-boot.js"></script>
+</body>
+</html>

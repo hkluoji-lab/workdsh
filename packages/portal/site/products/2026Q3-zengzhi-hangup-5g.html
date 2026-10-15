@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>挂机 5G 消息 · 中国电信增值业务 · 挂机 / 来电 / 商彩 / 5G消息</title>
+<meta name="description" content="挂机 5G 消息：从一条短信，升级成一张可点击的卡片。 月租 39–100 元/线/月。通话结束后向对方下发 5G 消息/卡片消息，未成功展示时回落为文本短信。除按线/月包月的条数套餐外，另提供一次性制作服务，包含富媒体卡片、H5 页面、图文模板设">
+<meta property="og:title" content="挂机 5G 消息 · 中国电信增值业务 · 挂机 / 来电 / 商彩 / 5G消息">
+<meta property="og:description" content="挂机 5G 消息：从一条短信，升级成一张可点击的卡片。 月租 39–100 元/线/月。通话结束后向对方下发 5G 消息/卡片消息，未成功展示时回落为文本短信。除按线/月包月的条数套餐外，另提供一次性制作服务，包含富媒体卡片、H5 页面、图文模板设">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0a4ea3">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a4ea3'/%3E%3Cpath d='M16 5.6 22.6 14h-4.2v4.6h-4.8V14H9.4L16 5.6Z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --brand:#0a4ea3;--brand-deep:#062f66;--brand-soft:#eaf1fb;--brand-line:#c3d5ec;
+  --accent:#e8722c;--accent-soft:#fdf1e7;--accent-line:#f3d6bf;
+  --ink:#15243a;--ink2:#40536e;--ink3:#7386a0;
+  --line:#dde5ef;--line-soft:#eef3f9;--bg:#fff;--bg-tint:#f5f8fc;
+  --ok:#1c7a4a;--err:#c0392b;--warn:#8a6100;
+  --font:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC","WenQuanYi Micro Hei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"SF Mono","JetBrains Mono","DejaVu Sans Mono",Consolas,monospace;
+  --display:"Impact","Arial Black","Helvetica Neue",Arial,"PingFang SC",sans-serif;
+  --shell:1180px;--r:10px;--r-lg:16px;
+  --sh1:0 1px 2px rgba(16,38,68,.06),0 1px 3px rgba(16,38,68,.05);
+  --sh2:0 6px 20px rgba(16,38,68,.09);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.65 var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0 0 .6rem;line-height:1.28;font-weight:700;letter-spacing:-.01em}
+p{margin:0 0 .75rem}
+a{color:var(--brand);text-underline-offset:3px}
+a:hover{color:var(--brand-deep)}
+b,strong{font-weight:700}
+[hidden]{display:none!important}
+:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(10,78,163,.3);border-radius:6px}
+.shell{width:100%;max-width:var(--shell);margin-inline:auto;padding-inline:24px}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip{position:absolute;left:-9999px;top:0;z-index:99;background:var(--brand);color:#fff;padding:10px 16px}
+.skip:focus{left:16px;top:12px;color:#fff}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-weight:600;line-height:1.2;
+  padding:11px 19px;border-radius:8px;border:1px solid transparent;cursor:pointer;text-decoration:none;
+  transition:background .16s,border-color .16s,color .16s}
+.btn--primary{background:var(--brand);color:#fff}
+.btn--primary:hover{background:var(--brand-deep);color:#fff}
+.btn--ghost{background:transparent;color:var(--brand);border-color:var(--brand-line)}
+.btn--ghost:hover{background:var(--brand-soft)}
+.btn--quiet{background:#fff;color:var(--ink2);border-color:var(--line)}
+.btn--quiet:hover{border-color:var(--brand-line);color:var(--brand)}
+.btn--sm{padding:7px 13px;font-size:14px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+
+.hdr{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.95);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--line)}
+.hdr__in{display:flex;align-items:center;gap:14px;min-height:64px;flex-wrap:wrap}
+.hdr__brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);flex:0 0 auto}
+.hdr__mark{width:30px;height:30px;border-radius:8px;background:var(--brand);display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px;flex:0 0 auto}
+.hdr__txt{display:flex;flex-direction:column;line-height:1.2}
+.hdr__txt b{font-size:15px;letter-spacing:.02em}
+.hdr__txt span{font-size:12px;color:var(--ink3)}
+.nav{display:flex;align-items:center;gap:2px;margin-left:auto;flex-wrap:wrap}
+.nav a{white-space:nowrap;text-decoration:none;color:var(--ink2);font-size:14px;font-weight:600;padding:7px 11px;border-radius:7px}
+.nav a:hover{background:var(--brand-soft);color:var(--brand)}
+.nav a.on{background:var(--brand-soft);color:var(--brand)}
+.nav__toggle{display:none;margin-left:auto;font:inherit;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer;color:var(--ink2)}
+.crumbs{font-size:13px;color:var(--ink3);padding:14px 0 0}
+.crumbs a{color:var(--ink3)}
+.crumbs a:hover{color:var(--brand)}
+.crumbs span{margin:0 6px}
+
+.phead{background:radial-gradient(1000px 380px at 86% -20%,#dbe8fa 0,rgba(219,232,250,0) 62%),linear-gradient(180deg,#f7fafd,#fff);border-bottom:1px solid var(--line-soft);padding:32px 0 28px}
+.phead h1{font-size:clamp(23px,17px+1.6vw,34px);margin:0 0 8px}
+.phead__cat{display:inline-block;font-size:12px;font-weight:700;color:var(--brand);background:var(--brand-soft);padding:4px 10px;border-radius:999px;margin-bottom:12px}
+.phead__tag{color:var(--accent);font-weight:600;font-size:16px;margin:0 0 10px}
+.phead__lead{color:var(--ink2);font-size:15px;max-width:66ch;margin:0}
+.phead__acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:22px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;box-shadow:var(--sh1);min-width:0}
+.kpi dt{font-size:12px;color:var(--ink3);margin-bottom:3px}
+.kpi dd{margin:0;font-size:21px;font-weight:700;color:var(--brand-deep);font-family:var(--mono);letter-spacing:-.02em}
+.kpi dd small{font-size:12px;font-family:var(--font);color:var(--ink3);font-weight:600;margin-left:2px}
+.kpi--empty dd{font-size:16px;font-family:var(--font);color:var(--ink3)}
+.kpi--empty dd small{display:block;margin:2px 0 0;font-weight:500}
+
+.sec{padding:42px 0;scroll-margin-top:78px}
+.sec--tint{background:var(--bg-tint);border-block:1px solid var(--line-soft)}
+.sec__hd{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px}
+.sec__hd h2{font-size:clamp(20px,16px+1vw,27px);margin:0 0 6px}
+.sec__hd p{color:var(--ink2);margin:0;max-width:66ch;font-size:15px}
+.note{font-size:13.5px;color:var(--ink3);margin-top:12px}
+.foot-note{font-size:13px;color:var(--ink3);background:#fff;border:1px dashed var(--line);border-radius:var(--r);padding:12px 15px;margin-top:14px}
+
+.tw{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh1)}
+table{border-collapse:collapse;width:100%}
+th,td{padding:12px 14px;text-align:left;vertical-align:top;font-size:14px;border-bottom:1px solid var(--line-soft)}
+thead th{background:var(--bg-tint);font-size:12.5px;font-weight:700;color:var(--ink2);white-space:nowrap;position:sticky;top:0;z-index:1;border-bottom:1px solid var(--line)}
+tbody tr:hover{background:#fafcff}
+tbody tr:last-child td{border-bottom:0}
+.bizt{min-width:940px}
+.bizt th[scope=row]{font-weight:600;background:#fcfdff;white-space:nowrap}
+.bizt .pname{font-weight:700;font-size:15px}
+.bizt .pname a{text-decoration:none}
+.bizt .pname a:hover{text-decoration:underline}
+.rent{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--brand-deep);white-space:nowrap;line-height:1.4}
+.rent small{display:block;font-family:var(--font);font-size:12px;font-weight:600;color:var(--ink3);white-space:normal}
+.rent--empty{font-family:var(--font);font-size:14px;color:var(--ink3);font-weight:600}
+.rent--empty small{color:var(--warn);font-weight:500}
+.tiers{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.tiers li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:baseline}
+.tiers .amt{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--brand-deep);white-space:nowrap}
+.tiers .inc{color:var(--ink2);font-size:13.5px}
+.q{color:var(--ink3);font-size:12px;font-family:var(--mono);word-break:break-word}
+.bdg{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.bdg--m{background:var(--brand-soft);color:var(--brand)}
+.bdg--o{background:var(--accent-soft);color:var(--accent)}
+.bdg--na{background:#f0f2f5;color:var(--ink3)}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:12px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+
+.blocks{display:grid;gap:18px}
+.blk{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;box-shadow:var(--sh1)}
+.blk h2{font-size:17px;margin:0 0 12px;padding-bottom:9px;border-bottom:1px solid var(--line-soft);color:var(--brand)}
+.plan{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;
+  border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;margin-bottom:9px;background:#fff}
+.plan:hover{border-color:var(--brand-line);background:#fcfdff}
+.plan__amt{font-family:var(--mono);font-size:21px;font-weight:700;color:var(--brand-deep);white-space:nowrap}
+.plan__amt small{font-family:var(--font);font-size:12px;color:var(--ink3);font-weight:600;margin-left:3px}
+.plan__inc{font-size:13.5px;color:var(--ink2);min-width:0}
+.plan__inc b{display:block;color:var(--ink);font-size:14px;margin-bottom:1px}
+.plan__q{grid-column:1/-1;font-size:12px;color:var(--ink3);font-family:var(--mono);border-top:1px dashed var(--line);padding-top:7px;margin-top:2px}
+.plan--empty{border-style:dashed;background:var(--bg-tint)}
+.plan--empty .plan__amt{font-family:var(--font);font-size:14px;color:var(--ink3)}
+.dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;margin:0;font-size:14px}
+.dl dt{color:var(--ink3);white-space:nowrap}
+.dl dd{margin:0;color:var(--ink2)}
+.plist{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.plist li{font-size:14px;color:var(--ink2);padding-left:17px;position:relative}
+.plist li::before{content:"";position:absolute;left:3px;top:.6em;width:5px;height:5px;border-radius:50%;background:var(--brand-line)}
+.quotes{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.quotes li{font-size:12.5px;color:var(--ink2);background:var(--bg-tint);border-left:3px solid var(--brand-line);padding:8px 12px;border-radius:0 6px 6px 0}
+
+.filters{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:18px;box-shadow:var(--sh1)}
+.frow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.frow+.frow{margin-top:13px;padding-top:13px;border-top:1px dashed var(--line);align-items:center}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0;flex:0 1 184px}
+.f--grow{flex:1 1 260px}
+.f label{font-size:12px;font-weight:600;color:var(--ink2)}
+.f label b{color:var(--brand);font-family:var(--mono)}
+.f input,.f select{font:inherit;font-size:14px;color:var(--ink);padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%;min-width:0}
+.f input:focus,.f select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(10,78,163,.18);outline:none}
+.empty{text-align:center;color:var(--ink3);padding:42px 20px;border:1px dashed var(--line);border-radius:var(--r-lg);background:#fff}
+
+.form{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;box-shadow:var(--sh1)}
+.form fieldset{border:0;margin:0 0 18px;padding:0}
+.form legend{font-size:14px;font-weight:700;padding:0;margin-bottom:11px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink2);border:1px solid var(--line);
+  border-radius:999px;padding:6px 13px;cursor:pointer;background:#fff;transition:border-color .15s,background .15s,color .15s}
+.chip:hover{border-color:var(--brand-line)}
+.chip input{accent-color:var(--brand)}
+.chip.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand);font-weight:600}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.fd{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fd--full{grid-column:1/-1}
+.fd label{font-size:13px;font-weight:600;color:var(--ink2)}
+.fd label b{color:var(--err)}
+.fd input,.fd select,.fd textarea{font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%;min-width:0}
+.fd textarea{resize:vertical}
+.fd input:focus,.fd select:focus,.fd textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(10,78,163,.18);outline:none}
+.fd input[aria-invalid=true],.fd textarea[aria-invalid=true]{border-color:var(--err)}
+.err{color:var(--err);font-size:12.5px;margin:2px 0 0}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--ink2);margin-top:13px}
+.chk input{margin-top:4px;accent-color:var(--brand);flex:0 0 auto}
+.act{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px}
+.hint{font-size:12.5px;color:var(--ink3)}
+.alert{margin-top:15px;border-radius:var(--r);padding:14px;font-size:14px;border:1px solid}
+.alert--ok{background:#eefaf3;border-color:#bde5cf;color:var(--ok)}
+.alert--err{background:#fdf0ee;border-color:#f2c9c3;color:var(--err)}
+.alert b{display:block;margin-bottom:2px}
+.alert code{font-family:var(--mono);background:rgba(255,255,255,.75);padding:1px 6px;border-radius:4px}
+.reg{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:34px;align-items:start}
+.steps{list-style:none;margin:16px 0;padding:0;display:grid;gap:11px}
+.steps li{border-left:2px solid var(--line);padding-left:15px;display:grid;gap:1px}
+.steps b{font-size:14px;color:var(--brand)}
+.steps span{font-size:14px;color:var(--ink2)}
+.contact{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:15px;font-size:14px}
+.contact p{margin:0 0 8px}
+.contact p:last-child{margin:0}
+.contact a{font-family:var(--mono);font-weight:700;font-size:17px}
+
+.faq{display:grid;gap:8px}
+.faq details{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.faq summary{cursor:pointer;padding:14px 19px;font-weight:600;font-size:15px;list-style:none;display:flex;align-items:center;gap:11px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::before{content:"?";flex:0 0 auto;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
+  background:var(--brand-soft);color:var(--brand);font-family:var(--mono);font-size:12px}
+.faq details[open] summary{border-bottom:1px solid var(--line-soft)}
+.faq p{padding:13px 19px;margin:0;color:var(--ink2);font-size:14px}
+.ftr{background:var(--brand-deep);color:#c7d7ec;padding:42px 0 26px;font-size:14px;margin-top:8px}
+.ftr__in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:30px}
+.ftr__b{color:#fff;font-weight:700;margin-bottom:8px}
+.ftr__n{color:#9fb8d8;max-width:48ch;font-size:12.5px}
+.ftr h3{color:#fff;font-size:14px;margin-bottom:11px}
+.ftr ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.ftr a{color:#c7d7ec}
+.ftr a:hover{color:#fff}
+.ftr__src{max-width:var(--shell);margin:26px auto 0;padding:15px 24px 0;border-top:1px solid rgba(255,255,255,.14);color:#8ba6c8;font-size:12px}
+
+.modal{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px}
+.modal__sc{position:absolute;inset:0;background:rgba(10,26,48,.5)}
+.modal__pn{position:relative;background:#fff;border-radius:var(--r-lg);box-shadow:0 18px 48px rgba(10,40,80,.28);
+  width:min(760px,100%);max-height:86vh;overflow:auto;padding:22px 24px 24px}
+.modal__hd{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px}
+.modal__hd h2{margin:0;font-size:19px}
+.x{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:20px;line-height:1;cursor:pointer;color:var(--ink2);flex:0 0 auto}
+.x:hover{background:var(--bg-tint)}
+pre.doc{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word;
+  background:var(--bg-tint);border:1px solid var(--line);border-radius:var(--r);padding:15px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:80;background:#12304f;color:#fff;
+  border-radius:10px;padding:12px 20px;font-size:14px;box-shadow:0 10px 30px rgba(10,40,80,.3);max-width:min(560px,92vw)}
+.toast--err{background:#7d2419}
+
+@media (max-width:1040px){
+  .reg{grid-template-columns:minmax(0,1fr);gap:24px}
+  .ftr__in{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:860px){
+  .nav__toggle{display:block}
+  .nav{display:none;width:100%;margin-left:0;padding-bottom:12px;flex-direction:column;align-items:stretch;gap:2px}
+  .nav.open{display:flex}
+  .nav a{padding:10px 12px}
+  .cards{grid-template-columns:minmax(0,1fr)}
+  .sec{padding:32px 0}
+}
+@media (max-width:560px){
+  .shell{padding-inline:16px}
+  .f,.f--grow{flex:1 1 100%}
+  .form{padding:17px}
+  .plan{grid-template-columns:minmax(0,1fr);gap:8px}
+  .toast{left:16px;right:16px;transform:none;max-width:none}
+}
+@media print{
+  .hdr,.ftr,.toast,.modal,.act,.filters,.phead__acts{display:none!important}
+  body{background:#fff}
+  .sec{padding:14px 0;break-inside:avoid}
+  .tw{box-shadow:none}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到主要内容</a>
+<header class="hdr">
+  <div class="shell hdr__in">
+    <a class="hdr__brand" href="2026Q3-zengzhi.html">
+      <span class="hdr__mark" aria-hidden="true">增</span>
+      <span class="hdr__txt"><b>中国电信</b><span>增值业务产品页</span></span>
+    </a>
+    <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="nav">目录</button>
+    <nav class="nav" id="nav" aria-label="站内导航"><a href="2026Q3-zengzhi.html">产品总览</a><a href="2026Q3-zengzhi-ringback.html">商务彩铃</a><a href="2026Q3-zengzhi-hangup-sms.html">挂机短信</a><a href="2026Q3-zengzhi-caller-id.html">来电名片</a><a href="2026Q3-zengzhi-caller-id-terminal.html">来电名片终端版</a><a href="2026Q3-zengzhi-hangup-5g.html" class="on" aria-current="page">挂机5G消息</a><a href="2026Q3-zengzhi-pricing.html">资费总表</a><a href="2026Q3-zengzhi-order.html">需求登记</a></nav>
+  </div>
+</header>
+<main id="main">
+
+<div class="crumbs"><div class="shell"><a href="2026Q3-zengzhi.html">产品总览</a><span>/</span>挂机 5G 消息</div></div>
+<div class="phead">
+  <div class="shell">
+    <span class="phead__cat">5G 消息类</span>
+    <h1>挂机 5G 消息</h1>
+    <p class="phead__tag">从一条短信，升级成一张可点击的卡片。</p>
+    <p class="phead__lead">通话结束后向对方下发 5G 消息/卡片消息，未成功展示时回落为文本短信。除按线/月包月的条数套餐外，另提供一次性制作服务，包含富媒体卡片、H5 页面、图文模板设计与 ChatbotID 开通。</p>
+    <dl class="kpis"><div class="kpi"><dt>月租</dt><dd>39–100 元/线/月<small>3 档可选</small></dd></div><div class="kpi"><dt>月租档位</dt><dd>3<small>档</small></dd></div><div class="kpi"><dt>一次性费用</dt><dd>1<small>项</small></dd></div><div class="kpi"><dt>计价单位</dt><dd>元/线/月<small></small></dd></div></dl>
+    <div class="phead__acts">
+      <a class="btn btn--primary" href="2026Q3-zengzhi-order.html?p=vas-hangup-5g">登记该产品需求</a>
+      <a class="btn btn--ghost" href="2026Q3-zengzhi-pricing.html">查看全部资费</a>
+    </div>
+  </div>
+</div>
+
+<section class="sec">
+  <div class="shell">
+    <div class="blocks">
+      <div class="blk">
+        <h2>月租与套餐内容</h2>
+        <div class="plan">
+    <div class="plan__amt">39 元<small>/线/月</small></div>
+    <div class="plan__inc"><b>39 元档</b>含 5G 消息/卡片消息 90 条，回落文本短信 360 条</div>
+    <span class="bdg bdg--m">包月</span>
+    <div class="plan__q">原文：□39元/线/月（包含5G消息/卡片消息90条，回落文本短信360条）</div>
+  </div><div class="plan">
+    <div class="plan__amt">69 元<small>/线/月</small></div>
+    <div class="plan__inc"><b>69 元档</b>含 5G 消息/卡片消息 140 条，回落文本短信 560 条</div>
+    <span class="bdg bdg--m">包月</span>
+    <div class="plan__q">原文：□69元/线/月（包含5G消息/卡片消息140条，回落文本短信560条）</div>
+  </div><div class="plan">
+    <div class="plan__amt">100 元<small>/月</small></div>
+    <div class="plan__inc"><b>100 元档</b>含 5G 消息/卡片消息 350 条，回落文本短信 1000 条，可 5 个号码共用</div>
+    <span class="bdg bdg--m">包月</span>
+    <div class="plan__q">原文：□100元/月（包含5G消息/卡片消息350条，回落文本短信1000条，可5个号码共用）</div>
+  </div>
+        <p class="note">100 元档为按号码共用计费的月度套餐，原文标注「可5个号码共用」。</p>
+        <p class="note">续约与计费：月租型功能费按月收取。</p>
+        
+      </div>
+
+      <div class="blk">
+        <h2>一次性费用</h2>
+        <div class="plan">
+    <div class="plan__amt">500 元<small>/次</small></div>
+    <div class="plan__inc"><b>制作服务</b>富媒体卡片 + H5 页面 + 图文模板设计 + ChatbotID 开通</div>
+    <span class="bdg bdg--o">一次性</span>
+    <div class="plan__q">原文：□500元/次（包含：富媒体卡片+H5页面+图文模板设计+ChatbotID开通）</div>
+  </div>
+      </div>
+
+      
+
+      <div class="blk">
+        <h2>适用场景</h2>
+        <ul class="plist"><li>活动领券与核销入口</li><li>产品详情与报价卡片</li><li>预约与留资表单</li><li>客服通话后的自助服务入口</li></ul>
+      </div>
+
+      <div class="blk">
+        <h2>对企业的帮助</h2>
+        <p style="color:var(--ink2);font-size:14px">挂机 5G 消息把通话结束后的触达从纯文本升级为富媒体卡片与 H5 页面：客户收到的是一张可点击的卡片，能直接进入活动页、产品页或留资表单，通话因此不再止于一句语音，而是沉淀为可跟踪的业务入口；未成功展示时自动回落文本短信，保证触达不落空。</p>
+        <p class="note">价值维度：被动触达 · 品牌曝光 · 转化承接 · 双向互动</p>
+      </div>
+
+      <div class="blk">
+        <h2>受理与登记要求</h2>
+        <dl class="dl"><dt>受理类型</dt><dd>业务开户 / 业务变更 / 业务退订</dd><dt>受理号码</dt><dd>最多可登记 3 个号码，更多号码需另行补充说明并加盖公章</dd><dt>内容</dt><dd>可附页，挂机短信与挂机 5G 消息共用受理号码与内容登记区</dd></dl>
+      </div>
+
+      <div class="blk">
+        <h2>受理登记表原文依据</h2>
+        <ul class="quotes"><li>□39元/线/月（包含5G消息/卡片消息90条，回落文本短信360条）</li><li>□100元/月（包含5G消息/卡片消息350条，回落文本短信1000条，可5个号码共用）</li><li>□500元/次（包含：富媒体卡片+H5页面+图文模板设计+ChatbotID开通）</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="ftr">
+  <div class="shell ftr__in">
+    <div>
+      <p class="ftr__b">中国电信股份有限公司 · 增值业务产品页</p>
+      <p class="ftr__n">所有产品、资费、产品特征与应用场景均来自受理登记表原文；原文未给定的量化信息一律标注为「受理时填写」或「待补充」，不做任何推算。</p>
+    </div>
+    <div>
+      <h3>服务条款摘要</h3>
+      <ul><li>客户提供的客户资料、号码信息必须真实；否则，电信公司有权暂停或终止向您提供相关服务。</li><li>凡商、企客户在登记使用本业务、签订本协议时，需加盖单位印章。</li><li>本业务受理登记表是服务协议的组成部分，具备同等法律效力。</li><li>本受理表所有内容及说明解释权属中国电信股份有限公司。</li></ul>
+    </div>
+  </div>
+  <p class="ftr__src">数据来源：信息服务业务受理登记表（挂机、来电、商彩、5G消息业务本地整理版） · 更新：2026-09-27 · 客服热线 10000</p>
+</footer>
+<script>
+(function(){
+'use strict';
+var t=document.getElementById('navToggle'),n=document.getElementById('nav');
+if(t&&n){t.addEventListener('click',function(){var o=n.classList.toggle('open');t.setAttribute('aria-expanded',String(o));});}
+
+})();
+</script>
+</body>
+</html>

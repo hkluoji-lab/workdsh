@@ -1,5 +1,36 @@
+/* ============================================================================
+   设计令牌（2026-10-01 升级）
+
+   一、品牌色收敛到门户自有资产，不再各自取色。改版前页面同时存在三个蓝：
+       界面强调色 #377dff、产品标记 #176BFF、企业字标 #2670DA。
+       现统一为：
+         --brand      #176BFF  ← assets/mark.svg（WorkDSH mark 的折线 W）
+         --spark      #18CFE7  ← assets/mark.svg（mark 的智能火花）
+         --brand-ink  #2670DA  ← 10GE 内联字标，仅 Logo 使用，不参与界面取色
+
+   二、同时修掉一处对比度缺陷：白字配旧强调色 #377dff 实测 3.79:1，
+       不满足 WCAG AA 对普通正文的 4.5:1；改用 #176BFF 后为 4.58:1，达标。
+       hover 取更深一档（--brand-hover），保证悬停态对比度只升不降。
+
+   三、语义分工，避免"什么蓝都用同一个"：
+       --brand  只做填充（按钮底色、菱形符号、进度、光晕）
+       --ice    只做深色底上的文字型强调（链接、eyebrow），实测 9.81:1
+       --spark  只做状态点缀（"已可用"徽标）
+
+   正式 VI 若指定了别的色值，只改本块即可全站生效。
+   ============================================================================ */
 :root {
   color-scheme: dark;
+
+  --brand: #176bff;
+  --brand-hover: #0f5ee8;
+  --brand-ink: #2670da;
+  --spark: #18cfe7;
+  --ice: #8bb8ff;
+
+  --ok: #4ade80;
+  --danger: #ff6b6b;
+
   --bg: #070a10;
   --surface: #0e131e;
   --surface-2: #101725;
@@ -7,12 +38,10 @@
   --line-strong: #ffffff26;
   --text: #eef2fa;
   --muted: #8792a6;
-  --blue: #377dff;
-  --ice: #8bb8ff;
-  --mint: #6fddce;
   --display: 'Avenir Next', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --body: 'Avenir Next', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --radius: 16px;
+  --shell: 1120px;
 }
 
 * { box-sizing: border-box; }
@@ -33,19 +62,21 @@ button { font: inherit; cursor: pointer; }
 input { font: inherit; }
 
 h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.25; }
-h1 { font-size: clamp(30px, 4.2vw, 48px); letter-spacing: -0.01em; }
+/* 首屏主标题：1440 档实测原 48px 会在左栏（约 553px）断成 4 行且末行只剩「务与市场推广。」，
+   视觉节奏碎。降到 42px 并把标题写成三行可控断句，1440/1120/900/390 四档均无孤行。 */
+h1 { font-size: clamp(28px, 3.2vw, 42px); letter-spacing: -0.01em; }
 h2 { font-size: clamp(24px, 3vw, 34px); letter-spacing: -0.01em; }
 h3 { font-size: 17px; }
 
 :focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; }
-::selection { background: #377dff55; }
+::selection { background: #176bff55; }
 
-.shell { width: min(1120px, 100% - 40px); margin-inline: auto; }
+.shell { width: min(var(--shell), 100% - 40px); margin-inline: auto; }
 
 .skip-link {
   position: absolute; left: 12px; top: -48px;
   padding: 8px 14px; border-radius: 8px;
-  background: var(--blue); color: #fff; z-index: 20;
+  background: var(--brand); color: #fff; z-index: 20;
 }
 .skip-link:focus { top: 12px; }
 
@@ -62,6 +93,18 @@ h3 { font-size: 17px; }
 .brand { display: inline-flex; align-items: center; }
 .brand svg { flex: none; }
 
+/* 2026-10-01 新增：顶部 logo 后的方案名「企业AI工作台解决方案」。
+   2026-10-01 调整 字号 14px → 16px、间距 12px → 14px。
+   依据：左侧 logo 渲染尺寸为 87×26px（<svg width="87" height="26">，无 CSS 缩放）；
+   中文 16px 时字面高约 13.8px ≈ logo 高度的 53%，落在「标识 + 描述语」锁合常见的
+   50–65% 区间内；改前 14px 仅约 46%，低于区间下沿，读起来像另一段小字。
+   字号层级：导航 14px → 本行 16px（＝正文）→ h3 17–18px，不再与导航同级。
+   间距按同比例调整（原 12px 配 14px 字号 ≈ 0.86em，16px 下取 14px）。
+   字重保持 400（不与之及右侧主 CTA 争抢注意力）、行高沿用继承值（该元素行盒
+   不是 .header-inner 这一行的最高项，不影响头部高度）、颜色保持 --ice（9.81:1，AA）。
+   仍不加 white-space:nowrap —— 放不下时自然换行，而不是撑破布局。 */
+.brand-slogan { margin-left: 14px; font-size: 16px; color: var(--ice); }
+
 .site-nav { display: flex; align-items: center; gap: 24px; margin-left: auto; font-size: 14px; color: var(--muted); }
 .site-nav a { position: relative; padding: 6px 0; }
 .site-nav a:hover { color: var(--text); }
@@ -69,7 +112,7 @@ h3 { font-size: 17px; }
 .site-nav a.is-active { color: var(--text); }
 .site-nav a.is-active::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: 0;
-  height: 2px; border-radius: 2px; background: var(--blue);
+  height: 2px; border-radius: 2px; background: var(--brand);
 }
 
 /* ---------- buttons ---------- */
@@ -81,8 +124,9 @@ h3 { font-size: 17px; }
   font-size: 15px; font-weight: 500; white-space: nowrap;
   transition: background-color .15s, border-color .15s, color .15s;
 }
-.button-primary { background: var(--blue); color: #fff; box-shadow: 0 10px 30px -14px #377dffcc; }
-.button-primary:hover { background: #4c8bff; }
+.button-primary { background: var(--brand); color: #fff; box-shadow: 0 10px 30px -14px #176bffcc; }
+/* hover 取更深一档而非更亮：白字在 --brand 上 4.58:1，若提亮会掉到 4.5 以下。 */
+.button-primary:hover { background: var(--brand-hover); }
 .button-quiet { border-color: var(--line-strong); color: var(--text); }
 .button-quiet:hover { border-color: var(--ice); color: var(--ice); }
 .button-compact { height: 36px; padding: 0 16px; font-size: 14px; }
@@ -94,7 +138,7 @@ h3 { font-size: 17px; }
    overflow: hidden 是为了裁掉 .hero-figure::before 向外溢出的光晕（窄屏会顶出横向滚动条）。 */
 .hero {
   padding: clamp(48px, 7vw, 96px) 0 clamp(40px, 5vw, 72px);
-  background: radial-gradient(680px 420px at 14% -80px, #377dff26, transparent 72%);
+  background: radial-gradient(680px 420px at 14% -80px, #176bff26, transparent 72%);
   overflow: hidden;
 }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 64px); align-items: center; }
@@ -124,7 +168,7 @@ h3 { font-size: 17px; }
 /* 截图背后垫一层品牌色，让暗色界面在深色页面上浮起来。 */
 .hero-figure::before {
   content: ''; position: absolute; inset: -18% -12%; z-index: -1;
-  background: radial-gradient(58% 58% at 52% 46%, #377dff30, transparent 72%);
+  background: radial-gradient(58% 58% at 52% 46%, #176bff30, transparent 72%);
 }
 /* picture 只是选择器容器：显式 block 才能让内部 img 的 width:100% 按预期解析。 */
 .hero-figure picture { display: block; }
@@ -139,16 +183,19 @@ h3 { font-size: 17px; }
 .trustbar p { display: inline-flex; align-items: center; gap: 9px; }
 .trustbar p::before {
   content: ''; flex: none; width: 6px; height: 6px;
-  border-radius: 1px; background: var(--blue); transform: rotate(45deg);
+  border-radius: 1px; background: var(--brand); transform: rotate(45deg);
 }
 
 /* ---------- sections ---------- */
 
 .section { padding: clamp(56px, 7vw, 104px) 0; }
 .section-alt { background: var(--surface); border-block: 1px solid var(--line); }
-.section-head { max-width: 62ch; margin-bottom: clamp(28px, 4vw, 48px); }
-.section-head h2 { margin-bottom: 14px; }
-.section-lead { color: var(--muted); font-size: 16px; }
+/* 限宽加在正文上而不是整个 head 上：62ch 是按 16px 正文字号算的（约 550px），
+   套在父级会把 34px 的 h2 一起卡窄，实测「任务在部门之间交接，不靠转发聊天记录。」
+   被断成两行、第二行只剩「录。」。标题按自身字号限宽（26em），正文保留 62ch 的舒适行宽。 */
+.section-head { margin-bottom: clamp(28px, 4vw, 48px); }
+.section-head h2 { margin-bottom: 14px; max-width: 26em; }
+.section-lead { color: var(--muted); font-size: 16px; max-width: 62ch; }
 
 .cards { display: grid; gap: 20px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .card {
@@ -183,7 +230,7 @@ h3 { font-size: 17px; }
   font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: .02em;
 }
 .badge::before { content: ''; width: 6px; height: 6px; border-radius: 999px; border: 1px solid currentColor; }
-.badge-ok { border-style: solid; border-color: #6fddce66; background: #6fddce1f; color: var(--mint); }
+.badge-ok { border-style: solid; border-color: #18cfe766; background: #18cfe71f; color: var(--spark); }
 .badge-ok::before { border: 0; background: currentColor; }
 
 /* 私有化与联署定制：三种交付形态用分段对照，去掉卡片边框改用竖线分区，与能力卡网格区分开。 */
@@ -209,7 +256,7 @@ h3 { font-size: 17px; }
 .ticks li::before {
   content: ''; position: absolute; left: 0; top: .62em;
   width: 8px; height: 8px; border-radius: 2px;
-  background: var(--blue); transform: rotate(45deg);
+  background: var(--brand); transform: rotate(45deg);
 }
 .ticks strong { color: var(--text); font-weight: 600; }
 /* 以标签起首的条目（企业介绍「我们提供的服务范围」、登录页、信任与安全）需要与后接正文断开，同 .steps strong。
@@ -224,12 +271,12 @@ h3 { font-size: 17px; }
   position: absolute; left: 0; top: 2px;
   width: 22px; height: 22px; border-radius: 6px;
   display: grid; place-items: center;
-  background: #377dff22; color: var(--ice); font-size: 12px; font-weight: 600;
+  background: #176bff22; color: var(--ice); font-size: 12px; font-weight: 600;
 }
 /* 序号之间连成一条渐隐的竖线，让六步读起来是一条流程而不是六个孤立条目。 */
 .steps li:not(:last-child)::after {
   content: ''; position: absolute; left: 11px; top: 27px; bottom: -14px; width: 1px;
-  background: linear-gradient(#377dff77, #377dff33);
+  background: linear-gradient(#176bff77, #176bff33);
 }
 .steps strong { color: var(--text); font-weight: 600; margin-right: 6px; }
 
@@ -246,7 +293,7 @@ h3 { font-size: 17px; }
 .about-quote {
   margin-top: clamp(36px, 5vw, 56px);
   padding: 4px 0 4px 24px;
-  border-left: 2px solid var(--blue);
+  border-left: 2px solid var(--brand);
   font-family: var(--display); font-size: clamp(18px, 2.2vw, 22px); line-height: 1.55;
   color: var(--text); max-width: 46ch;
 }
@@ -298,7 +345,7 @@ details p { color: var(--muted); font-size: 14px; padding-top: 10px; }
 .section-contact {
   border-top: 1px solid var(--line);
   background:
-    radial-gradient(760px 320px at 12% 0%, #377dff1f, transparent 70%),
+    radial-gradient(760px 320px at 12% 0%, #176bff1f, transparent 70%),
     linear-gradient(#0f1523, #090d15);
 }
 .contact-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: clamp(28px, 4vw, 56px); align-items: start; }
@@ -333,7 +380,17 @@ details p { color: var(--muted); font-size: 14px; padding-top: 10px; }
 .auth-sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
 
 .form-error {
-  border: 1px solid #ff6b6b55; background: #ff6b6b14; color: #ffb3b3;
+  border: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: #ffb3b3;
+  border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-bottom: 20px;
+}
+
+/* 成功/中性提示：与红色错误样式区分，避免用错误样式报「注册成功」。 */
+.form-notice {
+  border: 1px solid color-mix(in srgb, var(--ok) 34%, transparent);
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+  color: #a7f3c4;
   border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-bottom: 20px;
 }
 
@@ -402,4 +459,197 @@ details p { color: var(--muted); font-size: 14px; padding-top: 10px; }
 @media (prefers-reduced-motion: reduce) {
   .card { transition: border-color .18s ease; }
   .card:hover { transform: none; }
+  .nav-toggle-bars span { transition: none; }
+}
+
+/* ============================================================================
+   2026-10-01 首页改版新增组件
+   对应版块：五域覆盖带 / 场景卡 / 团队协同 / 合作意向表单 / 窄屏导航 / 页脚信息栏
+   ============================================================================ */
+
+/* ---------- 窄屏导航 ----------
+   改版前 900px 以下只有 .site-nav { display: none }，手机端因此没有任何导航入口，
+   只剩品牌与一个按钮。这里补一个可展开面板，并把"进入工作台"收进面板内，
+   避免头部同时出现两个按钮争抢注意力。 */
+
+.nav-toggle {
+  display: none;
+  margin-left: auto;
+  width: 40px; height: 40px; padding: 0;
+  background: transparent;
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  color: var(--text);
+}
+.nav-toggle:hover { border-color: var(--ice); }
+.nav-toggle-bars { display: grid; gap: 4px; place-items: center; }
+.nav-toggle-bars span {
+  display: block; width: 16px; height: 2px; border-radius: 2px; background: currentColor;
+  transition: transform .18s ease, opacity .18s ease;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars span:nth-child(2) { opacity: 0; }
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* 该入口只在窄屏面板内出现；宽屏由首屏次按钮与页脚承担。 */
+.site-nav-signin { display: none; }
+
+/* ---------- 首屏五域扫描带 ---------- */
+
+.domain-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.domain-chips li {
+  padding: 5px 13px;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  background: #ffffff0a;
+  font-size: 13px; color: var(--text);
+}
+
+/* ---------- 五域覆盖带 ----------
+   不用卡片：改用顶部品牌色描边 + 大字号标题，与前后两处卡片网格形成节奏区分，
+   避免连续多屏"功能卡墙"。 */
+
+/* 六域一排（含销售）。6 在该断点组的每一档都能整除：
+   6 列 → 3 列（≤1000，2 行）→ 2 列（≤900，3 行）→ 1 列（≤720），不会出现落单卡片。 */
+.domains { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(18px, 2.4vw, 30px); }
+.domains li { padding-top: 18px; border-top: 2px solid var(--brand); }
+.domains h3 { margin-bottom: 8px; font-size: 19px; }
+.domains p { color: var(--muted); font-size: 14px; }
+
+/* ---------- 场景卡：卡内固定"输入 / 过程 / 交付物"三段 ---------- */
+
+.scene-rows { display: grid; gap: 8px; }
+.scene-rows > div { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.scene-rows dt { color: var(--ice); font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+.scene-rows dd { color: var(--muted); font-size: 14px; }
+
+/* ---------- 团队协同 ---------- */
+
+.collab-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: clamp(28px, 4vw, 56px); align-items: center;
+}
+/* 协同链路比"六步定制流程"更短更重，字号与节点同步放大，读起来是一条链路而非清单。 */
+.steps-strong { gap: 20px; }
+.steps-strong li { font-size: 15px; padding-left: 40px; }
+.steps-strong li::before { width: 26px; height: 26px; border-radius: 8px; font-size: 13px; }
+.steps-strong li:not(:last-child)::after { left: 13px; top: 31px; bottom: -20px; }
+.steps-strong strong { display: block; margin: 0 0 2px; font-size: 16px; }
+
+.collab-figure {
+  border: 1px solid var(--line-strong); border-radius: var(--radius);
+  background: var(--surface); padding: 10px;
+}
+.collab-figure picture { display: block; }
+.collab-figure img { border-radius: 10px; width: 100%; height: auto; }
+.collab-figure figcaption { color: var(--muted); font-size: 12px; padding: 10px 4px 2px; }
+
+/* ---------- 分区内收口 CTA ---------- */
+
+.section-cta { margin-top: clamp(32px, 4vw, 48px); }
+
+/* ---------- 合作与签约 ---------- */
+
+.tenets-compact { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 30px 0 0; gap: clamp(18px, 2.4vw, 30px); }
+.tenets-compact li { padding-top: 14px; }
+.tenets-compact h3 { font-size: 17px; }
+
+.coop-services { margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--line); }
+.coop-direct { margin-top: 22px; font-size: 14px; color: var(--muted); }
+.coop-direct a { color: var(--ice); font-weight: 600; }
+.coop-direct a:hover { text-decoration: underline; }
+
+.coop-panel {
+  border: 1px solid var(--line-strong); border-radius: var(--radius);
+  background: #ffffff08; padding: clamp(20px, 2.6vw, 28px);
+}
+.coop-form { display: grid; gap: 16px; }
+.coop-form .field label,
+.coop-form .field legend { font-size: 14px; color: var(--muted); }
+.coop-form .req { color: var(--ice); font-size: 12px; margin-left: 4px; }
+.coop-form .opt { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.coop-form textarea {
+  width: 100%; padding: 12px 14px; min-height: 84px;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  font: inherit; resize: vertical;
+}
+.coop-form textarea:focus-visible { border-color: var(--ice); }
+.coop-form .field-group { border: 0; padding: 0; margin: 0; }
+.coop-form .field-group legend { padding: 0; margin-bottom: 8px; }
+
+.chips-check { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips-check label { position: relative; display: inline-flex; }
+/* 视觉隐藏原生勾选框，但保留在无障碍树与键盘焦点中；焦点环转交给相邻 span。 */
+.chips-check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chips-check span {
+  display: inline-block; padding: 6px 14px;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  font-size: 13px; color: var(--muted);
+  transition: border-color .15s, color .15s, background-color .15s;
+}
+.chips-check label:hover span { border-color: var(--ice); color: var(--text); }
+.chips-check input:checked + span { border-color: var(--brand); background: #176bff26; color: var(--text); }
+.chips-check input:focus-visible + span { outline: 2px solid var(--ice); outline-offset: 3px; }
+
+.coop-hint { color: var(--muted); font-size: 13px; }
+.coop-form .form-error[hidden],
+.coop-form .form-notice[hidden] { display: none; }
+.coop-form .form-error,
+.coop-form .form-notice { margin-bottom: 0; }
+.coop-form .button[disabled] { opacity: .6; cursor: progress; }
+
+/* ---------- 页脚：导航与主体信息分栏 ---------- */
+
+.footer-cols {
+  display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: clamp(24px, 4vw, 56px);
+}
+.footer-info { display: grid; gap: 10px; }
+.footer-info > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.footer-info dt { color: var(--muted); font-size: 13px; }
+.footer-info dd { font-size: 13px; }
+.footer-info a { color: var(--ice); }
+.footer-info a:hover { text-decoration: underline; }
+
+/* ============================================================================
+   响应式：沿用现有 1000 / 900 / 720 / 560 四档，只补新版块
+   （不能把断点写进自定义属性——媒体查询不解析 var()）
+   ============================================================================ */
+
+@media (max-width: 1000px) {
+  .domains { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .collab-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .nav-toggle { display: inline-grid; place-items: center; }
+  .header-cta { display: none; }
+  .site-nav {
+    display: none;
+    position: absolute; left: 0; right: 0; top: 100%;
+    flex-direction: column; align-items: stretch; gap: 0; margin-left: 0;
+    padding: 8px 20px 14px;
+    /* 必须完全不透明：实测半透明（#070a10f7 + backdrop-filter）时，
+       背后首屏标题会透出来压在导航文字上，手机端几乎读不清。 */
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+    font-size: 15px;
+  }
+  .site-nav.is-open { display: flex; }
+  .site-nav a { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .site-nav a:last-child { border-bottom: 0; }
+  .site-nav a.is-active::after { display: none; }
+  .site-nav-signin { display: block; color: var(--ice); }
+  .domains { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tenets-compact { grid-template-columns: minmax(0, 1fr); }
+  .footer-cols { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 720px) {
+  .domains { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .scene-rows > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .footer-info > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 }

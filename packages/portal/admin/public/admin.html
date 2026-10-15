@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>产品页管理后台 · 中国电信 2026 年万兆宽带融合优惠</title>
+<link rel="stylesheet" href="/portal/admin/admin.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap bar">
+    <div class="brand">
+      <span class="logo">管</span>
+      <span>
+        <b>产品页管理后台</b>
+        <small>中国电信 2026 年万兆宽带融合优惠 · 政企全光融合（FTTR）</small>
+      </span>
+    </div>
+    <div class="who">
+      <span class="user">已登录：{{USER}}</span>
+      <a class="btn ghost" id="viewSite" href="/portal/products/2026Q3.html" target="_blank" rel="noopener">查看线上页</a>
+      <a class="btn ghost" href="/logout">退出</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="notice" id="notice" hidden></div>
+
+  <section class="card">
+    <div class="cardhead">
+      <h2>1 · 产品数据</h2>
+      <div class="actions">
+        <button class="btn" id="btnReload">重新载入</button>
+        <button class="btn" id="btnValidate">校验</button>
+        <button class="btn primary" id="btnPublish">保存并发布</button>
+      </div>
+    </div>
+    <p class="hint">数据源：<code id="dataPath">data/products/2026Q3.json</code>。保存会先校验，再归档旧版本，最后原子写入并重新渲染发布线上页。</p>
+    <div class="stats" id="stats"></div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-tab="tiers">套餐档位 <span id="cntTiers"></span></button>
+      <button class="tab" data-tab="scenes">办公场景 <span id="cntScenes"></span></button>
+      <button class="tab" data-tab="tierScene">逐档场景 <span id="cntTs"></span></button>
+      <button class="tab" data-tab="faq">常见问题 <span id="cntFaq"></span></button>
+      <button class="tab" data-tab="orders">客户需求单 <span id="cntOrders">0</span></button>
+      <button class="tab" data-tab="meta">页面元信息</button>
+      <button class="tab" data-tab="json">原始 JSON</button>
+    </div>
+
+    <div class="pane" id="pane-tiers"></div>
+    <div class="pane" id="pane-scenes" hidden></div>
+    <div class="pane" id="pane-tierScene" hidden></div>
+    <div class="pane" id="pane-faq" hidden></div>
+    <div class="pane" id="pane-orders" hidden></div>
+    <div class="pane" id="pane-meta" hidden></div>
+    <div class="pane" id="pane-json" hidden>
+      <p class="hint">直接编辑完整 JSON（高级用法）。保存前会做同样的结构校验。</p>
+      <textarea id="jsonArea" spellcheck="false"></textarea>
+      <div class="actions"><button class="btn" id="btnApplyJson">应用 JSON 到表单</button></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="cardhead">
+      <h2>2 · 发布结果</h2>
+      <div class="actions">
+        <button class="btn" id="btnPreview">渲染预览（不发布）</button>
+      </div>
+    </div>
+    <div id="result" class="result">尚未执行发布。</div>
+  </section>
+
+  <section class="card">
+    <div class="cardhead">
+      <h2>3 · 历史版本</h2>
+      <div class="actions"><button class="btn" id="btnHistory">刷新历史</button></div>
+    </div>
+    <div id="history" class="history">尚未载入。</div>
+  </section>
+
+  <footer class="foot">
+    <p>公开地址：<a href="https://dsh.10ge.cn/portal/products/2026Q3.html" target="_blank" rel="noopener">https://dsh.10ge.cn/portal/products/2026Q3.html</a></p>
+    <p>管理地址：<a href="https://dsh.10ge.cn/portal/admin">https://dsh.10ge.cn/portal/admin</a>（需登录）</p>
+  </footer>
+</div>
+
+<script>window.__CSRF__ = "{{CSRF}}";</script>
+<script src="/portal/admin/admin.js"></script>
+</body>
+</html>
