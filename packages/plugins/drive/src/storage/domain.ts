@@ -2,6 +2,9 @@ import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain';
 import { z } from 'zod';
 
 const id = z.string().min(1).max(256);
+/** 全文索引单条上限（字符）：与写入侧 drive-manager 的降采样上限保持同一真源。 */
+export const MAX_INDEX_CHARS = 128 * 1024;
+const indexText = z.string().max(MAX_INDEX_CHARS);
 const iso = z.string().datetime();
 const owner = z.object({
   organizationId: id,
@@ -34,7 +37,7 @@ export const driveStateSchema = z.object({
   revisions: z.record(id, revision),
   receipts: z.record(id, receipt).default({}),
   /** 全文内容索引：revisionId → 降采样 UTF-8 文本（仅供内容搜索，非权威数据）。 */
-  textIndex: z.record(id, id).default({}),
+  textIndex: z.record(id, indexText).default({}),
 });
 
 export type DriveState = z.infer<typeof driveStateSchema>;

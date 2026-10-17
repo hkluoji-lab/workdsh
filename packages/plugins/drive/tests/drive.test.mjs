@@ -208,6 +208,22 @@ test('drive remote endpoint forwards whitelisted sources and exposes sessions', 
   } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
 });
 
+test('drive accepts index text longer than the id limit and reloads it from storage', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workdsh-drive-index-')); let ctx;
+  try {
+    ctx = await boot(root);
+    const body = `# 长文\n\n${'填充内容。'.repeat(500)}\n独特词 LongIndexAlpha`;
+    assert.ok(body.length > 256, 'index payload exceeds the id limit');
+    await ctx.workdshDrive.save(actor, { name: '长文.md', bytes: text(body), mediaType: 'text/markdown', source: 'ai-generated', operationId: 'long-index-1' });
+    await ctx.fiber.dispose(); ctx = undefined;
+    // 重启后由存储层按 schema 校验既有记录；旧实现把 id 上限复用到索引值，会在这一步拒绝加载。
+    ctx = await boot(root);
+    const hit = await ctx.workdshDrive.search(actor, 'LongIndexAlpha');
+    assert.equal(hit.length, 1);
+    assert.equal(hit[0].name, '长文.md');
+  } finally { if (ctx) await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }); }
+});
+
 async function waitFor(check, timeout = 3000) {
   const started = Date.now();
   for (;;) {

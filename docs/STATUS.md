@@ -1,5 +1,51 @@
 # 当前进度
 
+## 2026-10-17（续五十三）：网盘插件 `0.1.0-alpha.3`——全文索引 schema 上限修复 + 线上存量记录处置
+
+承接续五十二遗留缺陷：`workdsh_drive` 域因存量记录校验失败不激活（`1 entry did not activate`）。本节含仓库修复、回归用例与线上部署。
+
+- **根因**：`packages/plugins/drive/src/storage/domain.ts` 把标识符 schema `id = z.string().max(256)` 复用到 `textIndex` 的**值**（`z.record(id, id)`），而写入侧 `drive-manager.ts` 允许 `MAX_INDEX_CHARS = 128 * 1024`。记录 `local-personal_portal-18938845688` 的 `textIndex` 有 2870 字符值，重载即整条失败。旧树与 rc.2 的 `dsh-storage-domain` 逐行一致，**与版本升级无关**。
+- **修复（α.2→α.3）**：`MAX_INDEX_CHARS` 抽到 `domain.ts` 并导出，新增 `indexText = z.string().max(MAX_INDEX_CHARS)`，`textIndex: z.record(id, indexText)`；`drive-manager.ts` 改为导入同一常量。`schemaVersion` 保持 1，无迁移。新增回归用例「长正文索引经重启仍可加载并支持正文搜索」。
+- **门禁**：`corepack pnpm --filter workdsh-plugin-drive test` **5/5 pass，0 fail**；制品 `workdsh-plugin-drive-0.1.0-alpha.3.tgz`（43779 B，sha256 `b3b4e944…f7ea`），包内 `dist/storage/domain.js` 含 `MAX_INDEX_CHARS` 且语法检查通过。
+- **存量记录处置**：备份 `/home/luoji/drive-a3-backup-20261017130020/drive-state.json`（原 sha256 `b5df8ae7…4a7c`）；预检 `files 3 / revisions 3 / textIndex 2（37、2870 字符）`、`too_long=[]`、`orphan=[]` ⇒ 属写入侧合法产物，**原样保留、无需截断**。
+- **线上部署（`dsh.10ge.cn`）**：制品上传 `wd-upload-022`（sha256 两端一致）→ profile 指针 `alpha.2 → alpha.3` → 容器内 `pnpm install`（`Done in 2s`）→ `docker compose up -d --force-recreate`。约 10s `healthy`、`RestartCount=0`；CLI `0.2.1-rc.2`；容器 3080 `200`、`https://` `302 → /portal`；启动日志 `did not activate` **0 条**、无 `workdsh_drive` schema 错误；entrypoint 双份 auth-proxy 补丁仍为已打状态。
+- **只读 API 复验**：`space` 200（usedBytes 9682 / 5 GiB）、`list` 200（1）、`list-archived` 200（2）、`errors=NONE`；`search("根因")` / `search("插件市场")` 命中 `rootowned-swap-README.md`，excerpt 来自 2870 字符索引，证明原失败记录已加载并参与内容搜索。
+- **观察项**：首次 `pnpm install` 被 pnpm 11 的 `minimumReleaseAge` 策略拒绝（rc.2 官方包发布于 24h 内，lockfile 复检不通过），改用一次性 `--config.minimumReleaseAge=0` 完成；未改 profile 持久配置。
+- **回退锚点**：旧制品仍在 `wd-upload-022/workdsh-plugin-drive-0.1.0-alpha.2.tgz`；配置备份 `/home/luoji/drive-a3-backup-20261017130020/`。
+- **未验证**：浏览器端网盘 UI 逐页人工交互未执行；存量文件索引回填（alpha.1 期归档文本文件无 `textIndex`）仍属既有范围。
+- **边界**：未提交、未推送；证据见 [drive-plugin-alpha3](evidence/drive-plugin-alpha3.md)。
+
+## 2026-10-17（续五十二）：DSH `0.2.1-alpha.2 → 0.2.1-rc.2` 升级落地（仓库真源 + 本地全量验证 + 线上部署）
+
+承接用户「全面分析并完整升级到官方最新发布版本」的指令，先出证据文档再执行。目标版本判定为 **`0.2.1-rc.2`**（npm `next`；`latest` 仍是 `0.2.0-rc.2`，**按 latest 执行等于降级**），依据与风险见 [dsh-0.2.1-rc.2-upgrade.md](evidence/dsh-0.2.1-rc.2-upgrade.md)。本节含**仓库侧收尾**与**阶段 D 线上部署（2026-10-17 已完成）**。
+
+- **锁定面**：根 `package.json` 官方 dsh/cordis devDep **26 条**、`pnpm.overrides` **308 条**（dsh 300 + 非 dsh 8），其中 dsh 300/300 = `0.2.1-rc.2`、非 rc.2 残留 **0**；`pnpm-lock.yaml` 锁定 **598 条**（`check:versions` PASS）。`deploy/profile` 同步：4 个官方依赖 + 294 条 override + `compatibility.json` + README。补齐 8 条「锁里有、override 里没有」的包，删除 1 条已脱闭包的 override（`dsh-client-ui-primitives`）。
+- **闭包差异**：新增 `dsh-experimental-plugin-market-bundle`；`dsh-experimental-schedule-bundle` 与 `@deepseek-ai/dsh-webhook` 退出 0.2.1-rc 基础闭包（后者仍单独发布）。cordis 族由 alpha 通道回到**正式版**（`cordis 4.0.5` / `plugin-group 1.0.5` / `plugin-include 1.0.10` / `plugin-loader 1.0.6` / `plugin-timer 1.1.7` / `schemastery 3.18.5`）。
+- **rc.2 破坏性变更适配（A1–A8，共 8 处）**：A1 `dsh-tool-skill` 的 `inject` 新增 `workingDirectory` → 官方探针宿主补装 `dsh-fs-local` + `dsh-working-directory`（顺序照 `dsh-sdk-minimal/cordis.patch.yml`）；A2 `dsh-session-persistence-jsonl` 取消 default export → 改命名导出 `apply`；A3 rc.2 新增「Get started」阻断弹层（`role="dialog"`）→ 5 个 UI 探针统一走弹层自带 `Close` 按钮关闭；A4 `agentTeams.remoteView()` 移除 → 改公开 `listMembers(agent)`；A5 侧栏不再显示 cwd basename → 探针改点真实会话行；A6 主题词元 `--dsw-alias-state-info-tertiary` 移除 → `packages/plugins/drive` 改为 `color-mix(... var(--dsw-alias-brand-primary) 12%, transparent)`；A7 `dsh-webhook` 脱闭包 → `scripts/install-preview.mjs` 在 preview Profile 显式安装；A8 官方探针脚本硬编码 `0.2.0-rc.2` → 改从已安装 CLI 读版本。
+- **验证矩阵（本地）**：`check:versions` / `check:plan`（34 模块 / 50 文档）/ `check:env` / `typecheck` / `build` 全 PASS；`test:integration` **111/111**、`test:identity` 12/12、`test:activity` 14/14、`test:planning` 2/2、`test:library` 6/6、`test:projects` 10/10、`test:skill-quality` 3/3；探针 `install` / `presets` / `activity` / `settings`（21 命名空间）/ `theme`（959 引用、311 文件、403 词元）/ `skills`（9）/ `experts`（13）/ `experts:official`（9，含冷启动恢复）/ `experts:professional` / `connectors` / `automations`（P-AU-1..4）/ `library` / `headless`（`dshVersion 0.2.1-rc.2`）全部 PASS。逐条输出见证据文档第十二节。
+- **阶段 D 线上部署（`dsh.10ge.cn` / `192.168.11.205`，2026-10-17 已执行）**：沿用镜像 `1panel/deepseek-harness:0.2.0-rc.2`，靠 `standalone` 挂载树换版。新树自检通过（873M、属主 1000）；Gate A `resolved 87 packages (78 @deepseek-ai/dsh)` + cordis 族全正式版 ⇒ `RESOLUTION_ALL_OK`；Gate B CLI `0.2.1-rc.2`；Gate C 双层 auth marker=1。profile 升位后 `pnpm install` 17.4s，顶层 `@deepseek-ai/dsh*` **236 个全 rc.2**（`VERSION_DISTRIBUTION_OK`），13 个 workdsh 包实装版本校验通过。补丁重放：`patch-auth-bypass.mjs` 改为 rc.2/legacy 双锚点（`PATCHED:rc2`）；`workdsh-fix-profile-reload.sh` 目标块改为同缩进正则以兼容 rc.2 多包一层 `try`；dream-skin `--check` = 已是补丁状态。豁免：`agent-teams@0.1.22` 追加 `0.2.1-rc.2`，`compatibility.json` 同时保留 alpha.2 / rc.2。`docker compose up -d --force-recreate` 后约 10s `healthy`，`RestartCount=0`。三层健康：容器内 3080 = `200`、宿主 3080 = `400`（缺 Host 头，正常）、`https://dsh.10ge.cn/` = `302 → /portal`。启动日志兼容闸门全零（bundle skip / incompatible / disabled 均 0）。数据基线前后一致：sessions **327**、storages **120317**。业务只读 API（HMAC 门户头）：experts 22 / projects 0 + templates 15 / library space 1 + list 14 / skills 54 / connectors 1 / assistant 0。导航：「自动化任务」由 `dsh-client-ui-schedule@0.2.1-rc.2` 的 `sidebar.panellist` 注入，不依赖已移除的 `dsh-experimental-schedule-bundle`。仓库真源同步修正 `deploy/profile/pnpm-workspace.yaml` 的 `schemastery` 由 `3.18.5-alpha.1` → `3.18.5`。
+- **回退锚点**：旧树 `…/data/dsh/global-dsh/standalone.rc2old.20261017124556`（549M）、旧 profile 依赖 `…/profiles/web/node_modules.pre-rc2p2.20261017124350`，配置与记录备份 `/home/luoji/dsh-backup-rc2p2-20261017124350/`、`/home/luoji/dsh-backup-rc2p4-20261017124556/`。回退 = 反向 `mv` + `docker compose up -d --force-recreate`。
+- **遗留缺陷（既有，非本次引入）**：`workdsh-drive` 未激活（`1 entry did not activate`）。存量记录 `…/storages/workdsh_drive/states/local-personal_portal-18938845688.json`（mtime `2026-10-11 12:09`）的 `textIndex` 值 2870 字符超限；根因在仓库 `packages/plugins/drive/src/storage/domain.ts:4` 的 `id = z.string().max(256)` 被 `textIndex: z.record(id, id)` 复用作值约束，而写入侧 `drive-manager.ts:17` 允许 `128 * 1024`。旧树与 rc.2 的 `dsh-storage-domain` 逐行一致，**与版本升级无关**，待单独决策修复与存量记录处置。
+- **未验证（不得据本节推断通过）**：浏览器端逐页人工交互未执行。官方文档镜像 `docs/dsh-v0.2.1-rc.2/` **尚未落盘**，`docs/dsh-v0.1.7-rc.2/` 路径继续暂留。真实模型验收与 `engines.dsh` 声明未做。
+- **边界**：本次只动基线、lock、`deploy/profile`、三条产品代码/测试宿主与探针脚本；P1-15 批 2（identity 域）未提交改动保持原状。未提交、未推送（按 AGENTS.md 需用户授权）。
+
+## 2026-10-15（续五十一）：P1-15 批 2 落码——identity 域收敛 + 门户签名去重（线上两件 → 1 个模块）
+
+承接续五十，按用户裁决「进入批 2」执行批 2（**identity 域 2 件收敛 + 门户 `identity-bridge.mjs` 去重**）。本批**只改仓库、不触线上**，且**明确不改 `deploy/profile`**。
+
+- **并入范围**：`deploy/tools/workdsh-identity-portal` 与 `workdsh-portal-auth` 两件 → `packages/plugins/identity`（**不新建 npm 包**），模块由 planned 首次变为 0.1 实现。
+- **服务语义**：新增 `PortalIdentityService`（`src/index.ts`），以 `workdshIdentity` 服务提供方运行，`static inject = ['storageDomain','webServer']`；解析顺序 **① 会话归属绑定（`workdsh_runtime_binding`，只 `get` 不 `open`，不与 access 抢所有权）→ ② 请求作用域已验签门户身份（官方 `connection/request` waterfall + `AsyncLocalStorage`）→ ③ 兜底主账号**。失败一律降级、**不抛错不阻断请求**（宿主插件加载期抛错会让整棵插件树失败）。
+- **签名唯一化**：契约真源为批 1 已建立的 `workdsh-contracts/portal-identity`（本批未新增子路径）；identity 侧持 [ADR-0019](adr/0019-installable-host-self-containment-and-governance-assembly.md) 内建副本 `src/host/portal-signature.ts`，由 `tests/portal-signature.test.mjs` 逐向量交叉校验；**门户侧**把 `src/portal-identity.mjs` 作为**逐字节副本**（md5 `a7bc05c5af4a9afccf5acf5d72db584e` 两端一致），`src/identity-bridge.mjs` 删掉自持的 `signaturePayload`/`computeSignature`/`verifySignature` 三份重复算法，只保留门户独有职责（签发身份头 + 0600 原子创建共享密钥）。
+- **门户接线修正**：`src/server.mjs` 的 `computeSignature` 导入随之改为 `computePortalSignature`（从 `./portal-identity.mjs`），否则门户启动即失败。
+- **为什么门户只能持副本（本次 SSH 实证）**：线上 `/data/dsh/portal/src/` 是仓库 `packages/portal/src/` 的原样拷贝，目录里只有 `.mjs`、**没有 `node_modules`**，裸导入 workspace 包会直接解析失败——与 ADR-0019 同一条约束。故新增 `tests/portal-identity-sync.test.mjs` 守护逐字节一致，避免算法静默漂移。
+- **接线**：`cordis.patch.yml` 由 `dsh.bundle.patch` 声明 `insert` 1 条；依赖含 `@deepseek-ai/dsh-host-webserver` / `dsh-client-connection`（peer `optional: true` + devDep 精确 `0.2.1-alpha.2`）、`dsh-storage-domain`、`@deepseek-ai/schemastery` devDep。
+- **测试**：新增 2 个文件 12 条用例——`portal-signature`（4）两端同值；`identity-resolution`（8）覆盖三种解析来源顺序、激活闸门 fail-closed、花名册跨重启、诊断端点、密钥晚到 reload 与告警路径。**踩坑记录**：cordis 的 logger 是 `Context` 构造时的内建 callable 服务，用 `ctx.provide('logger', …)` 打桩**无效**；改用官方 `ctx.logger.exporter({ levels: { default: 3 } })`，且**必须显式放宽到 DEBUG**——默认阈值 1（INFO）会把 WARN(2) 吞掉。
+- **门禁实测**：`pnpm install --no-frozen-lockfile` 退出码 0（22 workspace，Already up to date）；`typecheck` 退出码 **0**（聚合脚本已补 `workdsh-plugin-identity`）；`build` 退出码 **0**；`test:identity` **12/12 pass，0 fail**；`packages/portal` 的 `node --test 'tests/*.test.mjs'` 退出码 **0、0 fail**（含新增同步用例 2 条，门户既有测试不回归）；`node scripts/check-plan.mjs` **PASS**（34 模块 / 50 文档）；`check:versions` **PASS**（578 条锁定 `0.2.1-alpha.2`）。
+- **登记**：`docs/modules.json` 的 identity `planned → in_progress` + `moduleVersion: 0.1` + `acceptanceNote`；`docs/MODULE-VERSIONS.md` 新增 identity 行 `0.1.0-alpha.1`、portal α.4→**α.5**（并回填表中滞后的 α.2）；根 `package.json` 新增 `test:identity` 并把 identity 补进 `build`/`typecheck` 聚合；`packages/plugins/identity/{README,CHANGELOG}.md` 新建/改写；`packages/portal/README.md` 补去重说明；官方能力复用记录（6 字段）落 [ONLINE-PLUGIN-CONSOLIDATION.md](design/ONLINE-PLUGIN-CONSOLIDATION.md) 第 8 节。
+- **未验证（不得据本批推断通过）**：本服务**未在真实 Loader/Profile 下加载与路由可达性验证**（`connection/request` 桥接只到进程内 waterfall 级别）；`workdsh-grant-admin` 面板链路未在归一后的服务标识下端到端跑过；门户去重**未启动门户进程**验证导入路径；**未部署**，`deploy/tools/` 两件**尚未删除**（删除前置＝线上引用已切换）；企业多组织与外部 SSO **未执行**。
+- **风险（切流时处理）**：服务标识由线上 `workdsh-identity-portal` 归一为 `workdsh-identity`，`ActorContext.resolvedBy` 随之变化，依赖旧值的诊断断言与探针需同步；`packages/plugins/identity` 与 `packages/providers/identity-local` 提供**同一服务名** `workdshIdentity`，互斥，线上切换写法是 `disabled: true` + `insert`，属**另一次授权部署**；切主体前必须先跑批 1 的 grant 基线，否则既有资源被拒。
+- **下一步**：批 3（automations 域收敛：补 `src/client.tsx` 与 `dist/client.browser.js`，删 `workdsh-bundle` 占位导航行与 priority 遮蔽）。未提交未推送（按 AGENTS.md 需用户授权）。
+
 ## 2026-10-15（续五十）：P1-15 批 1 落码——access 域收敛（线上四件 → 1 个模块）
 
 承接续四十九的 D19 分批方案，按用户裁决「先落台账，再开始批 1」执行批 1（**access 域 4 件收敛**）。本批**只改仓库、不触线上**。

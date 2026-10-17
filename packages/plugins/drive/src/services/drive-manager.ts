@@ -7,14 +7,13 @@ import type {
   ActorContext, DriveFile, DriveFileKind, DriveNode, DriveRevision, DriveSaveInput, DriveSearchFilters, DriveSearchHit, DriveService, DriveSessionRef, DriveSource, DriveSpace, DriveTreeEntry, ResourceOwner,
 } from 'workdsh-contracts';
 import type { IdentityService } from 'workdsh-contracts';
-import { driveDomainSpec, stateKey, type DriveState } from '../storage/domain.js';
+import { driveDomainSpec, MAX_INDEX_CHARS, stateKey, type DriveState } from '../storage/domain.js';
 
 declare module '@deepseek-ai/cordis' { interface Context { workdshDrive: DriveManager; workdshIdentity: IdentityService; } }
 
 const MAX_BYTES = 100 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 5 * 1024 * 1024 * 1024;
 const MAX_INDEX_BYTES = 256 * 1024;
-const MAX_INDEX_CHARS = 128 * 1024;
 const TEXT_MEDIA = /^(text\/|application\/(json|x-yaml|yml|xml|javascript|typescript|csv|x-www-form-urlencoded)(;|$))/i;
 const sha256 = (value: Uint8Array | string): string => createHash('sha256').update(value).digest('hex');
 const now = (): string => new Date().toISOString();
