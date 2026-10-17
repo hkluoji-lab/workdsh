@@ -177,22 +177,22 @@ WorkDSH **不 fork 官方源码**，差异全部在装配与锁定层：
 ## 十、回退锚点
 
 - 仓库：本批改动集中且可枚举，`git checkout -- <files>` 或 `git revert` 即可；`pnpm-lock.yaml` 由重装重建。
-- 线上（未执行）：保留 `standalone.rc2-old.<date>` 整树与 profile 配置备份，回退 = 换回旧树 + 恢复配置 + `--force-recreate`。
+- 线上（已执行，回退锚点见 12.5）：保留 `standalone.rc2-old.<date>` 整树与 profile 配置备份，回退 = 换回旧树 + 恢复配置 + `--force-recreate`。
 
 ## 十一、未覆盖项与边界
 
 | 项 | 说明 |
 | --- | --- |
-| 线上实时复验 / 部署 | 未执行。SSH `Permission denied`，无可用凭据；线上步骤见阶段 D，需单独授权与访问方式 |
+| 线上实时复验 / 部署 | 评估时未执行（SSH 无可用凭据）；2026-10-17 已授权执行，结果见 12.5 |
 | 真实模型验收 | 未执行；本批为版本对齐与本地回归 |
 | 官方文档镜像 | `docs/dsh-v0.2.1-rc.2/` 未落盘；版本判定以 npm registry 与 GitHub Releases 为准 |
 | `engines.dsh` 声明 | 本批未给 WorkDSH 插件补 `engines.dsh`；作为后续建议记录 |
-| 第三方 bundle 升级 | `agent-teams` 未改；线上部署前处理 |
-| git commit / push | 未执行（需用户授权） |
+| 第三方 bundle 升级 | `agent-teams` 未升级，改用 `0.2.1-rc.2` 精确版本豁免（见 12.5） |
+| git commit / push | **已执行**（2026-10-17 用户授权）：`0d84bcd2cb` / `bccedf47ab` / `578051b3bd` 已推送 `fork` 与 `mygitee` |
 
 ## 十二、执行结果（2026-10-17 本地）
 
-阶段 A、B、C 已执行；阶段 D（线上）未执行。
+阶段 A、B、C、D 已执行；阶段 D（线上）结果见 12.5。
 
 ### 12.1 版本与锁定
 
@@ -202,7 +202,7 @@ WorkDSH **不 fork 官方源码**，差异全部在装配与锁定层：
 | cordis 族 | `@deepseek-ai/cordis 4.0.5`、`cordis-plugin-group 1.0.5`、`cordis-plugin-include 1.0.10`、`cordis-plugin-loader 1.0.6`、`cordis-plugin-timer 1.1.7`、`schemastery 3.18.5`（全正式版） |
 | `pnpm-lock.yaml` | `pnpm install --no-frozen-lockfile` 退出码 0（+313 / −304）；`check-published-versions` 断言 **598 条**锁定 `0.2.1-rc.2` |
 | `deploy/profile/package.json` | 4 个官方依赖全部 `0.2.1-rc.2` |
-| `deploy/profile/pnpm-workspace.yaml` | **294 条**官方包 override 全部对齐；已含 `dsh-experimental-plugin-market-bundle`，已移除 `dsh-experimental-schedule-bundle` |
+| `deploy/profile/pnpm-workspace.yaml` | **296 条** override（官方 `@deepseek-ai/*` **294** 条 + prosemirror 2 条）；官方条目中 dsh **288** 条全部 `0.2.1-rc.2`，cordis 族 5 条与 schemastery 为正式版；已含 `dsh-experimental-plugin-market-bundle`，已移除 `dsh-experimental-schedule-bundle` |
 | `deploy/profile/compatibility.json` | `agent-teams@0.1.22` 豁免接受 `0.2.1-alpha.2` 与 `0.2.1-rc.2` |
 
 执行中修正的锁定缺口：
@@ -268,7 +268,7 @@ WorkDSH **不 fork 官方源码**，差异全部在装配与锁定层：
 | 浏览器端逐页交互 | 未执行；线上仅验证 HTTP / 只读业务 API 层 |
 | `docs/dsh-v0.2.1-rc.2/` 镜像 | 未落盘；版本判定仍以 registry / GitHub Releases / 发布包实测为准 |
 | `engines.dsh` | WorkDSH 插件仍未声明；兼容判断继续走 peer 校验 |
-| git commit / push | 未执行（需用户授权） |
+| git commit / push | **已执行**（2026-10-17 用户授权）：`0d84bcd2cb` / `bccedf47ab` / `578051b3bd` 已推送 `fork` 与 `mygitee` |
 
 ### 12.5 阶段 D：线上部署执行结果（2026-10-17）
 
