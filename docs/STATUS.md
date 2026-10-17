@@ -1,5 +1,13 @@
 # 当前进度
 
+## 2026-10-17（续五十七）：dsh-mcp-connector 线上升级 `0.2.73 → 0.2.75`
+
+- 升级前先落证据 [dsh-mcp-connector-0.2.75-upgrade](evidence/dsh-mcp-connector-0.2.75-upgrade.md)：依赖/peer 与 0.2.73 完全一致，`lib/client.js` 未变（首屏不受影响），仅 `lib/index.js`、`lib/tools.js`、`cordis.patch.yml` 变化；包体 -57KB。
+- 执行：备份三件套 → `dsh plugin --profile web add dsh-mcp-connector@0.2.75 --config.minimumReleaseAge=0`（15.4s）→ 豁免表补 `0.2.75` → `docker restart dsh`。
+- 验证：`healthy`、`RestartCount=0`、启动日志 `error` / `did not activate` 0 条；`node_modules`、profile、lock 三处均 `0.2.75`；`GET /mcp-connector/ui` 200（154KB，`frame-ancestors 'self'`），`POST /mcp-connector/api status` 200 并读出 7 条连接；其它第三方插件仍在位。
+- 仓库真源已同步 `0.2.75`；回退锚点 `/home/luoji/mcp-connector-0273-backup-20261017/`。
+- 未执行：`compactManagementTools` 开关（默认 false）、模型调用验收（无业务变更）。
+
 ## 2026-10-17（续五十六）：dsh-mcp-connector 真源对齐 `0.2.72 → 0.2.73`
 
 线上早已是 `0.2.73`，仓库 `deploy/profile` 仍停在 `0.2.72`。本次只对齐仓库指针，未改线上、未重启。
