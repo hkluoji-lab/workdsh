@@ -1,35 +1,21 @@
-// 身份桥共享密钥（P1）：门户签发、DSH 侧 Host 插件验签。
+// 身份桥（P1）：门户签发、DSH 侧 Host 插件验签。
 //
 // 为什么需要签名而不是只发一个 `X-Portal-User` 头：
 // 容器内 `127.0.0.1:3080` 是可达的，任何本机进程都能直接对着 DSH 发一个头。
 // 头本身只能证明"有人这么写"，不能证明"门户认过这个账号"。签名把信任锚放回门户。
 //
-// 载荷与验签实现必须与 `/data/dsh/tools/workdsh-identity-portal/dist/index.js`
-// 的 `signaturePayload` / `computeSignature` **逐字节一致**，否则会静默退回兜底身份。
-import { createHmac, randomBytes } from 'node:crypto';
+// 签名算法只有一份，在 `workdsh-contracts/portal-identity`（ADR-0035 第 4 条：门户与
+// identity 模块引用同一实现，不再各写一份）。本目录的 `portal-identity.mjs` 是它的
+// **逐字节副本**，不是另写一份实现——门户在部署态是 `/data/dsh/portal/src` 的原样拷贝，
+// 容器里没有 node_modules，裸导入 workspace 包会直接解析失败（与 ADR-0019 同一条约束）。
+// 刷新方式：`cp packages/contracts/dist/portal-identity.js packages/portal/src/portal-identity.mjs`；
+// `tests/portal-identity-sync.test.mjs` 在两者不一致时失败，避免算法静默漂移。
+//
+// 本文件只保留门户独有、契约里没有的两件事：签发身份头、创建/读取共享密钥。
+import { computePortalSignature } from './portal-identity.mjs';
+import { randomBytes } from 'node:crypto';
 import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-
-/**
- * 载荷：账号、平台角色、岗位角色、会话过期时间。
- *
- * 用 JSON 数组而不是 `\n` 拼接：换行拼接在"字段本身能含分隔符"时会产生歧义
- * （`{user:'a\nb'}` 与 `{user:'a', role:'b'}` 会拼出同一串），从而让签名可被搬移字段伪造。
- * JSON 会转义控制字符，字段边界无歧义。当前门户已把用户名限制在 `[A-Za-z0-9._-]`，
- * 这里是**第二道**防线：载荷编码本身就不该依赖上游的输入校验。
- */
-export function signaturePayload(fields) {
-  return JSON.stringify([
-    String(fields?.username ?? ''),
-    String(fields?.role ?? ''),
-    String(fields?.jobRole ?? ''),
-    String(fields?.expires ?? ''),
-  ]);
-}
-
-export function computeSignature(secret, fields) {
-  return createHmac('sha256', secret).update(signaturePayload(fields)).digest('hex');
-}
 
 /**
  * 为某个会话生成**已签名**的身份头。
@@ -46,7 +32,7 @@ export function signedIdentityHeaders(secret, { user, role, jobRole, expires }) 
     'X-Portal-Role': String(role ?? ''),
     'X-Portal-Job-Role': String(jobRole ?? ''),
     'X-Portal-Expires': String(expires ?? ''),
-    'X-Portal-Sig': `v1=${computeSignature(secret, fields)}`,
+    'X-Portal-Sig': `v1=${computePortalSignature(secret, fields)}`,
   };
 }
 

@@ -1,0 +1,21 @@
+# identity 域模块补丁层：把身份服务插进插件树。
+#
+# 与 profile 层的 `- id: …` 定向覆盖不同，这里是 insert；不要在 profile 层重复 insert
+# 同一个 id，否则 loader 会抛 "duplicate loader entry id" 并让容器进入崩溃循环。
+#
+# 本模块与 `workdsh-provider-identity-local` 提供**同一个服务名** `workdshIdentity`，
+# 二者互斥：线上切换的写法是 `- id: workdsh-identity-local` + `disabled: true`，
+# 再 insert 本条。切换属部署动作（另一次授权），不在本批范围内。
+#
+# organizationId / fallbackPrincipalId 必须与既有会话归属绑定（`workdsh_runtime_binding`）
+# 一致，否则老会话的绑定与新主体对不上，历史会话里的工具调用会被拒。
+# 环境相关路径（密钥、花名册、授权就绪标记）由部署侧 profile 补丁层按 id 覆盖。
+- insert:
+    - id: workdsh-identity
+      name: workdsh-plugin-identity
+      config:
+        organizationId: local-personal
+        organizationName: 本地个人空间
+        fallbackPrincipalId: local-user
+        secretFile: /data/dsh/portal/identity-bridge.key
+        rosterFile: /data/dsh/storages/workdsh_identity_portal/principals.json

@@ -1,6 +1,6 @@
 # packages/portal — 企业门户与登录门禁
 
-模块版本线：`0.1`（`workdsh-portal@0.1.0-alpha.4`）。任务 ID：`P1-13`。决策依据：[ADR-0034](../../docs/adr/0034-enterprise-portal-and-edge-authentication.md)。
+模块版本线：`0.1`（`workdsh-portal@0.1.0-alpha.5`）。任务 ID：`P1-13`。决策依据：[ADR-0034](../../docs/adr/0034-enterprise-portal-and-edge-authentication.md)。
 
 ## 定位与所有权
 
@@ -20,7 +20,8 @@
 | `src/users.mjs` | 门户自己的用户真源：口令哈希（scrypt）+ 角色 + 状态，原子写盘 |
 | `src/roles.mjs` | 岗位角色与权限目录的单一真源（平台角色 `role` 与岗位角色 `jobRole` 分层） |
 | `src/login-info.mjs` | 登录信息台账：登录时间、来源 IP、次数与最近失败（独立于 `users.json`，避免登录即作废会话） |
-| `src/identity-bridge.mjs` | 身份桥共享密钥（P1）：门户签发、DSH 侧 `workdsh-identity-portal` 验签 |
+| `src/identity-bridge.mjs` | 身份桥共享密钥（P1）：门户签发、DSH 侧身份模块验签；签名算法自 `portal-identity.mjs` 复用，本文件不再自持一份 |
+| `src/portal-identity.mjs` | 门户身份签名协议的**逐字节副本**（唯一真源 `workdsh-contracts/portal-identity`）。部署态 `/data/dsh/portal/src` 无 `node_modules`，裸导入 workspace 包会解析失败（同 ADR-0019），故只能持副本；`tests/portal-identity-sync.test.mjs` 在两者不一致时失败 |
 | `src/handbook.mjs` | 手册管理模块（`HANDBOOK_ADMIN_V1`）：草稿/已发布双文件 + 历史快照，挂在 `/portal/*` 免门禁前缀下自校验会话 |
 | `src/server.mjs` | HTTP 服务：路由、静态页、登录/退出、`/api/portal/auth`、用户/角色/授权/手册端点 |
 | `site/` | `index.html`（企业首页）、`login.html`（登录页）、`register.html`（注册页）、`styles.css`、`portal.js` |
@@ -28,7 +29,19 @@
 | `admin/` | 2026Q3 产品页管理服务（后端 + 静态后台），复用门户会话鉴权，含公开订购单接收 |
 | `handbook/site/` | 手册阅读器与管理端静态站（`reader.html`、`admin.html`、`render.js` 等） |
 | `tools/publish-products.sh`、`tools/migrate-accounts.mjs`、`tools/preview-redesign.mjs`、`tools/patch-products-route.sh` | 部署/迁移侧脚本（产品页发布、旧账号表迁移、改版预览、路由补丁） |
-| `tests/` | `node --test 'tests/*.test.mjs'`：`session`/`roles`/`integration` 无外部依赖；`grants.test.mjs` 为端到端用例，需 `127.0.0.1:3099` 的 DSH 沙箱（无沙箱时自动跳过） |
+| `tests/` | `node --test 'tests/*.test.mjs'`：`session`/`roles`/`integration`/`portal-identity-sync` 无外部依赖；`grants.test.mjs` 为端到端用例，需 `127.0.0.1:3099` 的 DSH 沙箱（无沙箱时自动跳过） |
+
+## 身份签名去重（α.5，P1-15 批 2）
+
+门户签发的身份头由 DSH 侧身份模块验签，两端必须**逐字节同算法**：载荷是字段数组 JSON，任何字段顺序或分隔方式不同都会让验签**静默恒失败**（不报错，只是所有门户身份都不被承认）。
+
+因此签名实现只有一份，真源在 `workdsh-contracts/portal-identity`：
+
+- 本模块 `src/portal-identity.mjs` 是它的逐字节副本（部署态无 `node_modules`，不能裸导入 workspace 包）；
+- `src/identity-bridge.mjs` 删掉了自持的 `signaturePayload` / `computeSignature` / `verifySignature`，只保留门户独有职责（签发身份头、创建/读取共享密钥 0600 原子写）；
+- 刷新副本：`cp packages/contracts/dist/portal-identity.js packages/portal/src/portal-identity.mjs`，`tests/portal-identity-sync.test.mjs` 会守护一致性。
+
+**未验证**：只做了测试层校验（副本逐字节一致 + 算法往返自洽），**未启动门户进程**验证导入路径；线上仍是旧写法，替换属部署动作。
 
 ## 账号表（α.4）
 

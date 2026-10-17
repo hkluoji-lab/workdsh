@@ -19,7 +19,7 @@
   - `workdsh-remote-shell` + `webruntime-patches/*.patch` → **新建模块 `packages/plugins/web-runtime`**。
 - 门槛：TypeScript 源码 + `tsconfig.json` + `build`/`typecheck`；`workdsh-contracts` 契约；仓库内测试；`modules.json` 登记与 `moduleVersion`；官方能力复用记录；依赖重钉基线 `0.2.1-alpha.2`（含 `zod 4.4.3`）。**禁止直接把 `dist/*.js` 复制进 `packages/plugins/`**。
 - 边界：**不改线上部署**；`deploy/tools/` 与 `packages/plugins/` 并存期**禁止双写**；删除 `deploy/tools` 侧前必须确认线上引用已切换（profile 的 13 条 `file:` 依赖需重打包，属另一次授权部署）。
-- 状态：批 1（access 域 4 件收敛）**已落码并通过仓库门禁**（access `0.1.0-alpha.6`；`typecheck`/`build` 退出码 0，`test:access` 21/21，`check-plan`/`check:versions` PASS；官方能力复用记录见方案第 7 节），**未部署、未在真实 Loader 下加载**；`deploy/tools/` 四件尚未删除。批 2～5 尚未开始。`currentStep` 保留 `D04`，不因本专项跳步。
+- 状态：批 1（access 域 4 件收敛）与批 2（identity 域 2 件收敛 + 门户签名去重）**均已落码并通过仓库门禁**（access `0.1.0-alpha.6`；identity 新建 `0.1.0-alpha.1`，portal `0.1.0-alpha.5`。`typecheck`/`build` 退出码 0，`test:access` 21/21、`test:identity` 12/12、`packages/portal` 测试不回归，`check-plan`/`check:versions` PASS；官方能力复用记录见方案第 7、8 节），**未部署、未在真实 Loader 下加载**；`deploy/tools/` 六件尚未删除（批 1 四件 + 批 2 两件）；批 2 **不改 `deploy/profile`**，切流另议。批 3～5 尚未开始。`currentStep` 保留 `D04`，不因本专项跳步。
 
 # 逐插件开发顺序与版本交付
 

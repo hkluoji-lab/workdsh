@@ -1,0 +1,53 @@
+{
+  "name": "workdsh-plugin-identity",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "身份与组织：以 workdshIdentity 提供方身份运行，按「会话绑定优先 → 请求作用域门户身份 → 兜底主账号」解析 ActorContext，把门户登录账号变成 DSH 内各自独立的主体。",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "cordis.patch.yml",
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "corepack pnpm --filter workdsh-contracts build && corepack pnpm build && node --test tests/*.test.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh-client-connection": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-host-webserver": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-storage-domain": "^0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.5"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-client-connection": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-host-webserver": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-client-connection": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-host-webserver": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-storage-domain": "0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "3.18.5",
+    "@types/node": "22.19.0",
+    "workdsh-contracts": "workspace:*"
+  }
+}

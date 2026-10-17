@@ -18,7 +18,9 @@ import {
 } from './session.mjs';
 import { authenticate, sessionKeyFor } from './session-key.mjs';
 import { loginView, readLoginInfo, recordLogin } from './login-info.mjs';
-import { computeSignature, loadOrCreateBridgeSecret, signedIdentityHeaders } from './identity-bridge.mjs';
+import { loadOrCreateBridgeSecret, signedIdentityHeaders } from './identity-bridge.mjs';
+// 签名算法只有一份：门户与 `workdsh-contracts/portal-identity` 同源（见 identity-bridge.mjs 顶部说明）。
+import { computePortalSignature } from './portal-identity.mjs';
 import {
   MIN_PASSWORD_LENGTH,
   ROLES,
@@ -929,7 +931,7 @@ async function route(req, res) {
     if (bridgeSecret !== null) {
       headers['X-Portal-Role'] = role;
       headers['X-Portal-Job-Role'] = jobRole;
-      headers['X-Portal-Sig'] = `v1=${computeSignature(bridgeSecret, { username: session.user, role, jobRole, expires })}`;
+      headers['X-Portal-Sig'] = `v1=${computePortalSignature(bridgeSecret, { username: session.user, role, jobRole, expires })}`;
     }
     return send(res, 204, headers, '');
   }
