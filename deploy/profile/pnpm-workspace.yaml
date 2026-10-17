@@ -251,6 +251,7 @@ minimumReleaseAgeExclude:
   - dsh-client-auto-continue@0.12.2
   - dsh-prompt@0.2.10 || 0.4.12 || 0.4.13
   - dsh-mcp-connector@0.2.72
+  - dsh-mcp-connector@0.2.73
 allowBuilds:
   '@deepseek-ai/dsh-subprocess-local': true
   '@google/genai': false

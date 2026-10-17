@@ -1,5 +1,15 @@
 # 当前进度
 
+## 2026-10-17（续五十六）：dsh-mcp-connector 真源对齐 `0.2.72 → 0.2.73`
+
+线上早已是 `0.2.73`，仓库 `deploy/profile` 仍停在 `0.2.72`。本次只对齐仓库指针，未改线上、未重启。
+
+- `deploy/profile/package.json` 依赖改 `0.2.73`；`pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude` 保留 `0.2.72` 并新增 `0.2.73`（与线上文件一致）。
+- 依赖闭包无变化（`cross-spawn ^7.0.6`、`undici ^6.29.0`，peer 未变，`0.2.1-rc.2` 在 `dsh-mcp-client` 允许范围内，无需兼容豁免）；包体 +1,494B。
+- 上游 0.2.73 修复 `0.2.1-alpha.1+` 宿主 `webStartup` 兼容（面板正文/API 路由未挂载空白，#151），与当前基线方向一致。
+- 核验：线上 `node_modules`、profile `package.json`、`pnpm-lock.yaml` 三处均 `0.2.73`，bundles 仍装配；近 3 小时日志无相关 error，容器 `healthy`。
+- 未执行：未升级到 npm 最新 `0.2.75`，未执行 `pnpm install`。证据见 [dsh-mcp-connector-0.2.73-alignment](evidence/dsh-mcp-connector-0.2.73-alignment.md)。
+
 ## 2026-10-17（续五十五）：`dsh.10ge.cn` 打开慢修复——登录单跳、深链保留、精简俄语包
 
 用户报 `https://dsh.10ge.cn/?workdsh-view=conversation` 打开慢并要求继续排查修复，选定「本机 hosts 切香港节点 / 精简插件 / 登录少一次往返」三项。
