@@ -72,11 +72,26 @@
 - 门户脚本：`git checkout -- packages/portal/site/portal.js` 后重新 scp 到 `/data/dsh/portal/site/portal.js`。
 - 容器：`docker restart dsh`（约 25s 恢复 healthy）。
 
-## 6. 未执行 / 边界
+## 6. 本机 hosts 切换香港节点（已执行）
 
-- **本机 hosts 切香港节点未由代理执行**：本机 `sudo` 需要密码。命令与撤销方式：
-  - 生效：`echo '104.16.0.1 dsh.10ge.cn' | sudo tee -a /etc/hosts`
-  - 撤销：`sudo sed -i '' '/104.16.0.1 dsh.10ge.cn/d' /etc/hosts`
+2026-10-17 经 macOS 管理员授权写入本机 `/etc/hosts`（IPv4 + IPv6 双栈，避免浏览器 Happy Eyeballs 仍走旧 AAAA）：
+
+```
+104.16.0.1 dsh.10ge.cn
+2606:4700::6810:1 dsh.10ge.cn
+```
+
+- 选择依据：`104.16.0.1` 与 `2606:4700::6810:1` 实测 TTFB 0.77–1.10s；DNS 原 AAAA（`2606:4700:3030::6815:3693`）为 1.66–2.35s。
+- 撤销：
+
+```bash
+sudo sed -i '' '/dsh\.10ge\.cn/d' /etc/hosts
+```
+
+- 验证：`dscacheutil -q host -a name dsh.10ge.cn` 仅返回上述两个地址；`curl -4` / `curl -6` 均为 `302` 且 TTFB 稳定在 1s 左右。
+
+## 7. 未执行 / 边界
+
 - 未移除官方包：`@deepseek-ai/dsh-client-ui-settings-account`（3338KB）与 `dsh-api-remotes`（1059KB）属官方必需面，不能删。
 - 未处理已有真源漂移：线上 `dsh-mcp-connector` 为 `0.2.73`，`deploy/profile/package.json` 仍为 `0.2.72`（本次之前即存在，未擅自升级）。
 - 容器内 curl 不带 `--resolve` 时 DNS/IPv6 回退会引入 1–2s（Node `dns.lookup` 仅 5ms），不影响隧道与 Caddy（上游均走 `127.0.0.1`）。

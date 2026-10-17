@@ -9,7 +9,8 @@
 - **首屏精简（已上线）**：用户确认仅移除 `@goodandready/dsh-russian-lang@0.3.42`（180KB，中文站点无用）。线上 `dsh plugin remove … --config.minimumReleaseAge=0`（首次被 pnpm 11 策略拒绝，无副作用），dependency 与 bundles 条目自动清除；仓库同步 `deploy/profile/{package.json,pnpm-workspace.yaml}`。client 体积 14.3MB → 14.1MB，7 条重复注册 warn 消失。
 - **附带修复深链丢失（已上线）**：线上 Caddyfile 的 `(portal_gate)` 改用 `{http.request.uri}`（原 `...path` 丢查询串）；`(portal_gate_root)` 对带查询串的根路径回登录并带回跳，无查询串仍回门户首页。`caddy validate` 通过；实测 `/?workdsh-view=conversation` → `/login?next=/?workdsh-view=conversation`，登录后回到原视图。已知限制：原查询串含 `&` 时第二参数截断（Caddy 无法编码占位符）。
 - **验证**：`docker restart dsh` 后 `healthy`、`RestartCount=0`、`error`/`did not activate` 0 条；JSON 登录 `200` 且 `redirect` 保留深链；浏览器实测登录按钮「登录中…」→ 无 303 直跳、最终 URL 保留查询串、工作台正常渲染、控制台 error 0；服务端 HTML 已无 `russian-lang` 引用。
-- **未执行**：本机 hosts 改写未由代理执行（本机 sudo 需密码），已给出可撤销命令；未动官方大包（settings-account 3338KB、api-remotes 1059KB）；线上 `dsh-mcp-connector@0.2.73` 与仓库 `0.2.72` 的既有漂移未处理。
+- **本机 hosts 已切香港节点**：经 macOS 管理员授权写入 `104.16.0.1` + `2606:4700::6810:1`（双栈，避免浏览器仍走旧 AAAA）；实测 TTFB 0.77–1.10s，原 AAAA 为 1.66–2.35s。撤销 `sudo sed -i '' '/dsh\.10ge\.cn/d' /etc/hosts`。
+- **未执行**：未动官方大包（settings-account 3338KB、api-remotes 1059KB）；线上 `dsh-mcp-connector@0.2.73` 与仓库 `0.2.72` 的既有漂移未处理。
 - **回退锚点**：Caddyfile `/data/dsh/tmp/Caddyfile.bak-20261017`；插件重新 `add @goodandready/dsh-russian-lang@0.3.42`；门户脚本 `git checkout` 后重传。证据见 [dsh-web-performance-20261017](evidence/dsh-web-performance-20261017.md)。
 
 ## 2026-10-17（续五十四）：AgentTeams 插件 `0.1.22 → 0.1.23`（仓库真源 + 线上部署已完成）
