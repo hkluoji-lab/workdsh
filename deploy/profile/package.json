@@ -7,7 +7,6 @@
     "@deepseek-ai/dsh-time-context": "0.2.1-rc.2",
     "@deepseek-ai/dsh-web-app": "0.2.1-rc.2",
     "@furongjun1999/dsh-memory": "0.8.1",
-    "@goodandready/dsh-russian-lang": "0.3.42",
     "@liustack/modlens": "3.26.6",
     "@nanmicoder/dsh-agent-teams": "0.1.23",
     "@openviking/dsh-memory-plugin": "0.5.20",
@@ -61,7 +60,6 @@
         "dsh-dream-skin",
         "dsh-prompt-enhance",
         "dsh-cost-meter",
-        "@goodandready/dsh-russian-lang",
         "dsh-client-auto-continue",
         "dsh-prompt",
         "workdsh-plugin-drive"

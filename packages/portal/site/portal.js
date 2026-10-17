@@ -17,11 +17,27 @@ if (reveal && password) {
 // 提交期防重复提交 + 失败自愈。只禁用不复位会留下死路：这一次提交若没能跳转（网络中断、
 // 边缘 502、或页面被 bfcache 恢复），按钮会永久停在禁用态，之后怎么点都不发请求、不跳转、
 // 也不报错——现场表现就是「输入账号密码点了完全没反应」。
+//
+// 2026-10-17：改为 fetch 提交 JSON。原生表单会先 POST、再 303、再 GET 目标页，跨洋链路上
+// 每次跳转都要多一个往返；改为读取 JSON 后直接 location.assign 可少一次重定向往返。
+// 无 JavaScript 时仍走 login.html 的原生 form 提交，服务端照常渲染错误与回跳。
 const form = document.querySelector('.auth-form');
 if (form) {
   const submit = form.querySelector('button[type="submit"]');
   const label = submit ? submit.textContent : '';
   let watchdog;
+
+  // 与服务端 LOGIN_ERRORS 保持同一口径；只覆盖 fetch 路径，原生提交仍由服务端渲染。
+  const LOGIN_ERRORS = {
+    credentials: '用户名或密码不正确。',
+    missing: '请填写用户名和密码。',
+    throttled: '尝试次数过多，请稍后再试。',
+    unconfigured: '本站尚未完成登录配置，请联系管理员。',
+    malformed: '请求格式不正确，请重试。',
+    disabled: '该账号已被停用，请联系管理员。',
+    pending: '该账号正在等待管理员审核。',
+    forbidden: '当前账号没有执行该操作的权限。',
+  };
 
   const resetSubmit = (note) => {
     clearTimeout(watchdog);
@@ -42,13 +58,40 @@ if (form) {
     alert.textContent = note;
   };
 
-  form.addEventListener('submit', () => {
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
     if (!submit) return;
     submit.disabled = true;
     submit.textContent = '登录中…';
     // 12 秒仍未跳转即视为本次提交已失败，复位并给出可见提示，让用户能直接重试。
     clearTimeout(watchdog);
     watchdog = setTimeout(() => resetSubmit('网络无响应，请重试。'), 12000);
+
+    const data = new FormData(form);
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          username: String(data.get('username') ?? ''),
+          password: String(data.get('password') ?? ''),
+          next: String(data.get('next') ?? '/'),
+        }),
+      });
+      let payload = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload && payload.ok) {
+        clearTimeout(watchdog);
+        // redirect 由服务端按 safeNext 校验后给出，不在客户端拼接。
+        const target = typeof payload.redirect === 'string' && payload.redirect !== '' ? payload.redirect : '/';
+        window.location.assign(target);
+        return;
+      }
+      resetSubmit(LOGIN_ERRORS[payload && payload.error] ?? `登录失败（HTTP ${response.status}），请重试。`);
+    } catch {
+      resetSubmit('网络异常，登录失败，请重试。');
+    }
   });
 
   // 从 bfcache 恢复旧页面时按钮会带着「登录中…」的禁用态回来，同样复位。
