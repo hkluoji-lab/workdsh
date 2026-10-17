@@ -72,7 +72,9 @@ await run('@deepseek-ai/dsh/lib/bin.js', ['plugin', '--profile', 'preview', 'add
 // separately installed Profile packages splits that state and every settings
 // write is rejected. Profiles disable automatic peer installation, so the
 // platform account adapter's declared native account peer is added explicitly.
-await run('pnpm/bin/pnpm.cjs', ['--dir', join(home, 'profiles/preview'), 'add', '--save-exact', `@deepseek-ai/dsh@${cliVersion}`, `@deepseek-ai/dsh-deepseek-account@${cliVersion}`]);
+// `dsh-webhook` left the 0.2.1-rc base closure but remains a published official
+// base the automations acceptance probe imports from this same Profile graph.
+await run('pnpm/bin/pnpm.cjs', ['--dir', join(home, 'profiles/preview'), 'add', '--save-exact', `@deepseek-ai/dsh@${cliVersion}`, `@deepseek-ai/dsh-deepseek-account@${cliVersion}`, `@deepseek-ai/dsh-webhook@${cliVersion}`]);
 const installedBase = JSON.parse(await readFile(join(home, 'profiles/preview/node_modules/@deepseek-ai/dsh-base/package.json'), 'utf8'));
 if (installedBase.version !== baseVersion) throw new Error(`Installed @deepseek-ai/dsh-base ${installedBase.version} does not match pinned ${baseVersion}.`);
 const installedWebApp = JSON.parse(await readFile(join(home, 'profiles/preview/node_modules/@deepseek-ai/dsh-web-app/package.json'), 'utf8'));

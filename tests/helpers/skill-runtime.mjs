@@ -9,6 +9,8 @@ import Llm, { LlmAdapter, createMessage } from '@deepseek-ai/dsh-llm';
 import Skills from '@deepseek-ai/dsh-skill';
 import * as filesystem from '@deepseek-ai/dsh-skill-filesystem';
 import * as skillTool from '@deepseek-ai/dsh-tool-skill';
+import LocalFileSystem from '@deepseek-ai/dsh-fs-local';
+import WorkingDirectory from '@deepseek-ai/dsh-working-directory';
 
 // Deterministic test double for model I/O only. The official loop executes the tool.
 export class SkillRequestAdapter extends LlmAdapter {
@@ -28,4 +30,4 @@ export class SkillRequestAdapter extends LlmAdapter {
   }
 }
 
-export { createMessage, Context, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Tools, Llm, Skills, filesystem, skillTool };
+export { createMessage, Context, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Tools, Llm, Skills, filesystem, skillTool, LocalFileSystem, WorkingDirectory };

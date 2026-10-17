@@ -84,6 +84,11 @@ async function pageFor({ address, cookie }) {
   await page.context().addCookies(cookie.split('; ').map(pair => { const at = pair.indexOf('='); return { name: pair.slice(0, at), value: pair.slice(at + 1), url: address }; }));
   await page.goto(address);
   for (const name of ['Continue', 'Configure later']) await page.getByRole('button', { name, exact: true }).waitFor({ state: 'visible', timeout: 4000 }).then(() => page.getByRole('button', { name, exact: true }).click()).catch(() => {});
+  // rc.2 blocks a credential-less profile with a "Get started" dialog; dismiss it
+  // through its own Close button so the probe can drive the real UI.
+  const getStarted = page.getByRole('dialog', { name: /Get started|开始使用/i });
+  await getStarted.waitFor({ state: 'visible', timeout: 4000 }).then(() => getStarted.getByRole('button', { name: /Close|关闭/i }).click()).catch(() => {});
+  await getStarted.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
   return page;
 }
 async function api(host, endpoint, payload = {}) {

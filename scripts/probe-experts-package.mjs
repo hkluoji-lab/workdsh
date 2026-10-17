@@ -36,6 +36,13 @@ let server, browser, log = '';
 const browserErrors = [];
 const checks = [];
 const pass = text => { checks.push(text); console.log(`PASS: ${text}`); };
+// rc.2 blocks a credential-less profile with a "Get started" dialog; dismiss it
+// through its own Close button before driving the real UI.
+async function dismissGetStarted(page) {
+  const dialog = page.getByRole('dialog', { name: /Get started|开始使用/i });
+  await dialog.waitFor({ state: 'visible', timeout: 4000 }).then(() => dialog.getByRole('button', { name: /Close|关闭/i }).click()).catch(() => {});
+  await dialog.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
+}
 async function start() {
   log = '';
   server = spawn(process.execPath, [dsh, '--profile', 'experts', '--host', '127.0.0.1', '--port', '0', '--no-open'], { cwd: home, env, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -104,6 +111,7 @@ try {
   await page.context().addCookies(host.cookie.split('; ').map(pair => { const at = pair.indexOf('='); return { name: pair.slice(0, at), value: pair.slice(at + 1), url: host.address }; }));
   await page.goto(host.address);
   for (const name of ['Continue', 'Configure later']) await page.getByRole('button', { name, exact: true }).click({ timeout: 4000 }).catch(() => {});
+  await dismissGetStarted(page);
   await page.getByRole('button', { name: '专家 · 技能 · 连接器', exact: true }).click();
   await page.getByRole('button', { name: '专家', exact: true }).click();
   await expect(page.getByTestId('workdsh-experts')).toBeVisible();
@@ -257,6 +265,7 @@ try {
   await api(host, 'update-draft', { expertId: drafted.expertId, patch: { skillRequirements: [] }, operationId: 'unpublished-skill-removal', expectedRevision: published.expert.revision });
   await page.goto(`${host.address}/?workdsh-view=experts`);
   await page.getByRole('button', { name: 'Configure later', exact: true }).click({ timeout: 4000 }).catch(() => {});
+  await dismissGetStarted(page);
   await page.getByRole('button', { name: '查看专家 待发布验收专家', exact: true }).click();
   const publishedDetail = page.getByRole('dialog', { name: '专家详情', exact: true });
   await expect(publishedDetail.getByText('草稿有修改，尚未发布', { exact: true })).toBeVisible();

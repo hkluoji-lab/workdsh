@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, writeFile, symlink } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
@@ -19,11 +20,12 @@ await mkdir(artifacts, { recursive: true });
 await mkdir(join(root, '.test-runtime'), { recursive: true });
 const resumeHome = process.argv.includes('--resume') ? process.argv[process.argv.indexOf('--resume') + 1] : undefined;
 const home = resumeHome ?? await mkdtemp(join(root, '.test-runtime/official-expert-'));
-const version = '0.2.0-rc.2';
 process.env.DSH_HOME = join(home, 'dsh');
 process.env.DSH_AGENTS_HOME = join(home, 'agents');
 const requireRoot = createRequire(import.meta.url);
 const requireDsh = createRequire(requireRoot.resolve('@deepseek-ai/dsh/package.json'));
+// Follow the pinned Harness baseline so this probe never drifts from package.json.
+const version = JSON.parse(readFileSync(requireDsh.resolve('@deepseek-ai/dsh/package.json'), 'utf8')).version;
 const baseUrl = pathToFileURL(dirname(requireRoot.resolve('@deepseek-ai/dsh/package.json')) + '/').href;
 const report = { version, home, mode: resumeHome ? 'cold-resume' : 'fresh', checks: [], packages: [], requests: [], initialization: [], observedIssues: [], notRun: ['production expert migration', 'immutable version publication', 'real model', 'file-system authorization', 'Web UI', 'SOP acceptance', 'composition plugin hot unload', 'full Web Profile fork query'] };
 const pass = (name, evidence) => { report.checks.push({ name, status: 'passed', evidence }); console.log(`PASS ${name}`); };
@@ -158,7 +160,7 @@ try {
   const SkillFiles = await import(pathToFileURL(requireDsh.resolve('@deepseek-ai/dsh-skill-filesystem')).href);
   const { default: Loader } = await import(pathToFileURL(requireDsh.resolve('@deepseek-ai/cordis-plugin-loader')).href);
   await ctx.plugin(Loader, { baseUrl });
-  for (const name of ['dsh-session', 'dsh-session-projection', 'dsh-system-prompt', 'dsh-tools', 'dsh-llm', 'dsh-agent', 'dsh-agent-loop', 'dsh-subagent', 'dsh-invariants']) await load(`@deepseek-ai/${name}`);
+  for (const name of ['dsh-session', 'dsh-session-projection', 'dsh-system-prompt', 'dsh-fs-local', 'dsh-working-directory', 'dsh-tools', 'dsh-llm', 'dsh-agent', 'dsh-agent-loop', 'dsh-subagent', 'dsh-invariants']) await load(`@deepseek-ai/${name}`);
   await load('@deepseek-ai/dsh-session-persistence-jsonl', { root: join(home, 'sessions'), compression: 'none' });
   await load('@deepseek-ai/dsh-session-query-sqlite', { path: join(home, 'session-search.sqlite'), openAt: 'never' });
   await load('@deepseek-ai/dsh-subagent-spawn-in-process', { providerName: 'spawn' });
@@ -257,7 +259,7 @@ try {
 
     await writeFile(join(home, 'members.json'), JSON.stringify(ids));
     await writeFile(join(home, 'requests.json'), JSON.stringify(report.requests, null, 2));
-    pass('native-team-view-and-persistence-available', { members: ctx.agentTeams.remoteView(lead).members.length });
+    pass('native-team-view-and-persistence-available', { members: ctx.agentTeams.listMembers(lead).length });
   }
 } catch (error) {
   report.error = { message: error.message, stack: error.stack };

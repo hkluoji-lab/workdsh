@@ -131,6 +131,18 @@ async function startHost(initialize = false) {
   return { address, cookie: await authenticate(address) };
 }
 
+/**
+ * rc.2 greets a credential-less profile with a blocking "Get started" dialog
+ * (Add API Key / Sign in). The probe intentionally runs without credentials, so
+ * dismiss it the way a user would: the dialog's own Close button.
+ */
+async function dismissGetStarted(page) {
+  const dialog = page.getByRole('dialog', { name: /Get started|开始使用/i });
+  await dialog.waitFor({ state: 'visible', timeout: 5_000 })
+    .then(() => dialog.getByRole('button', { name: /Close|关闭/i }).click()).catch(() => {});
+  await dialog.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+}
+
 async function listSkills(address, cookie, sessionId) {
   const response = await fetch(`${address}/api/skills/list`, {
     method: 'POST',
@@ -184,6 +196,11 @@ try {
       .then(() => page.getByRole('button', { name: 'Continue', exact: true }).click()).catch(() => {});
     await page.getByRole('button', { name: 'Configure later', exact: true }).waitFor({ state: 'visible', timeout: 5_000 })
       .then(() => page.getByRole('button', { name: 'Configure later', exact: true }).click()).catch(() => {});
+
+    // rc.2 shows a blocking "Get started" dialog (Add API Key / Sign in) in a
+    // credential-less profile. The probe intentionally runs without credentials,
+    // so dismiss it the way a user would: the dialog's own Close button.
+    await dismissGetStarted(page);
 
     await expect(page.getByRole('button', { name: /Standard mode|标准模式/i })).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: /Standard mode|标准模式/i }).click();
@@ -267,9 +284,11 @@ try {
         .then(() => secondPage.getByRole('button', { name: 'Continue', exact: true }).click()).catch(() => {});
       await secondPage.getByRole('button', { name: 'Configure later', exact: true }).waitFor({ state: 'visible', timeout: 5_000 })
         .then(() => secondPage.getByRole('button', { name: 'Configure later', exact: true }).click()).catch(() => {});
+      await dismissGetStarted(secondPage);
       await secondPage.getByRole('button', { name: /New session|新会话/i }).first().click();
       await secondPage.getByRole('button', { name: 'Configure later', exact: true }).waitFor({ state: 'visible', timeout: 5_000 })
         .then(() => secondPage.getByRole('button', { name: 'Configure later', exact: true }).click()).catch(() => {});
+      await dismissGetStarted(secondPage);
       await secondPage.getByRole('button', { name: /Choose workspace|选择工作区/i }).click();
       await secondPage.getByText('WorkDSH Probe', { exact: true }).last().click();
       await secondPage.getByRole('button', { name: /Standard mode|标准模式|WorkDSH Skills/i }).click();

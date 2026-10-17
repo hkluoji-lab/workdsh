@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { Context } from '@deepseek-ai/cordis';
 import Tools from '@deepseek-ai/dsh-tools';
 import { registerExpertManagementTools } from '../../packages/plugins/experts/dist/tools/management-tools.js';
-import { createMessage, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Llm, skillTool, SkillRequestAdapter } from '../helpers/skill-runtime.mjs';
+import { createMessage, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Llm, skillTool, LocalFileSystem, WorkingDirectory, SkillRequestAdapter } from '../helpers/skill-runtime.mjs';
 import Storage from '@deepseek-ai/dsh-storage';
 import * as JsonStorage from '@deepseek-ai/dsh-storage-json';
 import * as StorageDomain from '@deepseek-ai/dsh-storage-domain';
@@ -723,7 +723,7 @@ test('published expert persona and frozen Skill reach the official Agent Loop wi
     const personaConfig = rows.find(row => row.name === '@deepseek-ai/dsh-persona').config;
     const skillConfig = rows.find(row => row.name === '@deepseek-ai/dsh-skill-filesystem').config;
     const persona = await import(pathToFileURL(packageRequire.resolve('@deepseek-ai/dsh-persona')).href);
-    for (const plugin of [Sessions, Projections, SystemPrompt, Tools, Llm, Agents, AgentLoop]) await h.ctx.plugin(plugin);
+    for (const plugin of [LocalFileSystem, Sessions, Projections, SystemPrompt, WorkingDirectory, Tools, Llm, Agents, AgentLoop]) await h.ctx.plugin(plugin);
     // Alter the dynamic source after publication: the expert must consume its snapshot.
     await writeFile(join(h.agentsHome, 'skills/sample-skill/SKILL.md'), '---\nname: sample-skill\ndescription: Changed dynamic fixture\n---\nDYNAMIC_SOURCE_AFTER_PUBLISH\n');
     class PublishedSkillAdapter extends SkillRequestAdapter {
