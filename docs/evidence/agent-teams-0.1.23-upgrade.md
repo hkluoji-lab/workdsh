@@ -60,8 +60,9 @@
 | 健康检查 | 容器内 `127.0.0.1:3080` = `200`；`https://dsh.10ge.cn/` = `302 → /portal` |
 | 启动日志 | `did not activate` / `incompatible` / bundle skip 均 0 条；agent-teams 无报错 |
 | 补丁层 | `rc2-auth-proxy: ok (already patched)` 双份（standalone 树 + profile） |
-| 本地安装/激活 | 未执行（`deploy/profile` 不是仓库 workspace，线上已覆盖该路径） |
-| 真实团队任务 | 未执行 |
+| 团队面板 UI（浏览器实测） | 门户密码登录成功，工作台正常渲染；会话头「智能体团队」弹窗可打开，显示成员 `lead`（未运行，模型 `deepseek-flash`）与「暂无共享任务」；插件 `client.js` 已加载，`GET /plugins/dsh-agent-teams/state` 与 `?archived=1` 正常；控制台无 `error`、无 agent-teams 报错、无 5xx |
+| 控制台其余噪声 | 7 条 `warn` 均为 `dsh-russian-lang` 重复注册语言包；`GET /@vite/client` 被 `ERR_ABORTED`（开发探针请求，不影响页面） |
+| 真实团队任务 | 未执行（验证过程未新建会话、未发送消息） |
 
 备份：`/home/luoji/agent-teams-0123-backup-20261017132821/`（`package.json`、`compatibility.json`、`pnpm-lock.yaml`）。安装后已删除线上 `compatibility.json` 中过期的 `0.1.22` 条目，与仓库真源保持一致。
 
@@ -100,5 +101,5 @@ docker compose -f /opt/1panel/apps/deepseek-harness/deepseek-harness/docker-comp
 ## 九、边界
 
 - 0.1.23 声明的宿主上限仍是 `0.2.0-rc.2`，在 `0.2.1-rc.2` 上运行属**豁免接受**，不等于上游验收。
-- 未执行真实团队任务、浏览器端团队面板逐页交互与冷启动恢复验证；线上仅验证插件激活与 HTTP 层健康。
+- 团队面板已做浏览器实测（登录、弹窗、插件接口），但未创建多成员团队、未执行真实团队任务，也未覆盖冷启动恢复。
 - 线上已升级到 `0.1.23`；回滚需重新安装 `0.1.22` 并补回其豁免条目。

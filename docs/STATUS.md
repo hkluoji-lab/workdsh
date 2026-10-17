@@ -10,7 +10,8 @@
 - **线上部署（`dsh.10ge.cn`）**：备份 `/home/luoji/agent-teams-0123-backup-20261017132821/`（`package.json` / `compatibility.json` / `pnpm-lock.yaml`）→ 首次 `add` 被兼容闸门拒绝（预期）→ `allow-version 0.1.23 --dsh-version 0.2.1-rc.2 --accept-risk` → 重试 `add` 成功（`Done in 10.4s using pnpm v11.7.0`）→ `docker compose up -d --force-recreate`。清理线上 `compatibility.json` 中过期的 `0.1.22` 条目，与仓库真源一致。
 - **线上复验**：`healthy`、`RestartCount=0`、`Started=2026-10-17T13:28:48Z`；CLI `0.2.1-rc.2`；容器内 3080 `200`、`https://dsh.10ge.cn/` `302 → /portal`；`dsh plugin list` 与 `node_modules` 均为 `0.1.23`；启动日志 `did not activate` / `incompatible` / bundle skip 均 0 条，agent-teams 无报错；`rc2-auth-proxy: ok (already patched)` 双份保留。
 - **门禁**：两个 JSON 解析通过；`check-plan` PASS（34 modules / 50 documents）。
-- **未执行**：真实团队任务、浏览器端团队面板逐页交互与冷启动恢复验证。
+- **团队面板 UI 实测（2026-10-17）**：门户密码登录成功，工作台正常渲染；会话头「智能体团队」弹窗可打开，显示成员 `lead`（未运行，`deepseek-flash`）与「暂无共享任务」；`client.js` 已加载，`/plugins/dsh-agent-teams/state` 与 `?archived=1` 正常；控制台无 `error`、无 agent-teams 报错、无 5xx。7 条 `warn` 均为 `dsh-russian-lang` 重复注册，`/@vite/client` 的 `ERR_ABORTED` 为开发探针请求。
+- **未执行**：多成员团队创建、真实团队任务、冷启动恢复验证（UI 验证未新建会话、未发送消息）。
 - **回退锚点**：仓库 `git revert`；线上重新安装 `0.1.22` 并补回其豁免条目，再 `pnpm install` + `--force-recreate`。
 - **边界**：未提交、未推送；证据见 [agent-teams-0.1.23-upgrade](evidence/agent-teams-0.1.23-upgrade.md)。
 
