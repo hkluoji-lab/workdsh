@@ -12,7 +12,7 @@
 | `package.json` | profile 依赖 + `dsh.profile.bundles`（28 项 bundle 装配顺序）与 `patchReload: live` |
 | `cordis.patch.yml` | 补丁层：`disabled` 开关（computer-use 系列、`ui-plugin-manager`）、`insert` 条目（`time-context`、`workdsh-remote-shell`）、`llm-pi-ai` 的 `jhpt` provider 与模型 ID、身份桥 `secretFile` 引用等 |
 | `cordis.yml` | profile 根条目列表（空 `[]`，树完全由 bundles + patch 组合） |
-| `compatibility.json` | 版本兼容豁免表（当前 1 条：`@nanmicoder/dsh-agent-teams@0.1.22` 接受 `0.2.1-alpha.2` 与 `0.2.1-rc.2`） |
+| `compatibility.json` | 版本兼容豁免表（当前 1 条：`@nanmicoder/dsh-agent-teams@0.1.23` 接受 `0.2.1-rc.2`） |
 | `pnpm-workspace.yaml` | profile workspace 配置：`overrides`（决定实际解析版本，**压过 package.json**）、`allowBuilds`、`minimumReleaseAgeExclude`、`nodeLinker: hoisted`、`storeDir` |
 
 ## 不含密钥

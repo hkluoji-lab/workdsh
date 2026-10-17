@@ -1,5 +1,19 @@
 # 当前进度
 
+## 2026-10-17（续五十四）：AgentTeams 插件 `0.1.22 → 0.1.23`（仓库真源 + 线上部署已完成）
+
+用户指令「只升级 agent-teams 插件」。目标取 npm `latest` = `0.1.23`（2026-10-11 发布）；`next` 的 `0.1.24-rc.1` 属预发布且仍不声明 `0.2.1-rc.2`，未采用。
+
+- **兼容判定**：`0.1.23` 的 peer 矩阵与 0.1.22 完全一致，上限仍为 `0.2.0-rc.2`；包内 `compatibility.json` 的 `recommendedHost` 亦为 `0.2.0-rc.2`。`0.2.1-rc.2` 仍需精确版本豁免。
+- **仓库改动**：`deploy/profile/package.json` 固定 `0.1.23`；`compatibility.json` 改为 `@nanmicoder/dsh-agent-teams@0.1.23 → ["0.2.1-rc.2"]`；README 豁免说明同步。`pnpm-workspace.yaml` 无该包 override，无需同改。
+- **制品核对**：`npm pack` sha256 `53d40ce9…66e9`；`dsh.bundle.patch = ./cordis.patch.yml`，client inject 8 项与旧版一致。
+- **线上部署（`dsh.10ge.cn`）**：备份 `/home/luoji/agent-teams-0123-backup-20261017132821/`（`package.json` / `compatibility.json` / `pnpm-lock.yaml`）→ 首次 `add` 被兼容闸门拒绝（预期）→ `allow-version 0.1.23 --dsh-version 0.2.1-rc.2 --accept-risk` → 重试 `add` 成功（`Done in 10.4s using pnpm v11.7.0`）→ `docker compose up -d --force-recreate`。清理线上 `compatibility.json` 中过期的 `0.1.22` 条目，与仓库真源一致。
+- **线上复验**：`healthy`、`RestartCount=0`、`Started=2026-10-17T13:28:48Z`；CLI `0.2.1-rc.2`；容器内 3080 `200`、`https://dsh.10ge.cn/` `302 → /portal`；`dsh plugin list` 与 `node_modules` 均为 `0.1.23`；启动日志 `did not activate` / `incompatible` / bundle skip 均 0 条，agent-teams 无报错；`rc2-auth-proxy: ok (already patched)` 双份保留。
+- **门禁**：两个 JSON 解析通过；`check-plan` PASS（34 modules / 50 documents）。
+- **未执行**：真实团队任务、浏览器端团队面板逐页交互与冷启动恢复验证。
+- **回退锚点**：仓库 `git revert`；线上重新安装 `0.1.22` 并补回其豁免条目，再 `pnpm install` + `--force-recreate`。
+- **边界**：未提交、未推送；证据见 [agent-teams-0.1.23-upgrade](evidence/agent-teams-0.1.23-upgrade.md)。
+
 ## 2026-10-17（续五十三）：网盘插件 `0.1.0-alpha.3`——全文索引 schema 上限修复 + 线上存量记录处置
 
 承接续五十二遗留缺陷：`workdsh_drive` 域因存量记录校验失败不激活（`1 entry did not activate`）。本节含仓库修复、回归用例与线上部署。
