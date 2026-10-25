@@ -1,5 +1,57 @@
 # 当前进度
 
+## 2026-10-25（续六十）：Gate A/B/C/E/H 补齐 + 白屏报错复发核查（未复发）
+
+本机回到 `192.168.11.0/24`（en0 = `192.168.11.243`）后 SSH 恢复（`ping` 0% 丢包），补齐上一轮因断网阻塞的计数项；并核查用户再次贴出的白屏报错。
+
+- **用户报错**：`Failed to load plugins / web boot: 1 entry did not activate / @deepseek-ai/dsh-client-ui-entry-customization: pending (waiting for service: pluginNavigation)`。三处独立核查判定为**修复前启动或未刷新标签页的陈旧客户端，未复发**：① 新标签冷加载两次（`?__fresh=20261025a/b`）页面正常渲染（body 5112 字，历史会话可见，`hasFail=false`）；② 控制台四关键词 0 命中；③ `docker logs dsh` 同四词 0 命中、`grep -c "did not activate"` = 0；④ `RestartCount=0`、`StartedAt=2026-10-24T23:28:53Z`、`healthy`；⑤ profile 两条禁用块（`entry-customization` + `ui-plugin-manager`）成对完好；⑥ 唯一实例（3080），本机无 3031 预览进程。处置：无需改动，用户硬刷新即可。
+- **Gate A 通过**：profile `@deepseek-ai` 下 245 个含 `package.json` 目录中 **237 个 = `0.2.1-rc.3`**；8 个非 rc.3 全为第三方（`cordis-plugin-loader@1.0.6`、`cordis-plugin-timer@1.1.7`、`cosmokit@1.8.6`、`libreoffice-kit@0.1.5`、`libreoffice-kit-wasm@0.1.5`、`node-addon-system@0.1.2`、`node-addon-system-linux-x64@0.1.2`、`schemastery@3.18.5`）。
+- **Gate B 通过**：`docker exec dsh dsh --version` → `0.2.1-rc.3`。
+- **Gate C 通过**：profile `dsh-base` / `dsh-schedule` / `dsh-time-context` / `dsh-web-app` 均 `0.2.1-rc.3`；`dsh.profile.bundles` 27 项在册；与 CLI、挂载树三处一致。
+- **Gate E 通过**：`ONEPANEL_DSH_AUTH_PROXY` marker 两份各 1；`workdshRootIncludeEntry` 两份 `dsh-app-boot/lib/*.js` 各 2；`workdsh-fix-webruntime-routes.sh --check` → `OK dsh-dream-skin: 已是补丁状态`（mcp-connector 补丁已随上游 0.2.73 自修退役）；entrypoint `reapply_profile_reload_fix` ×3（定义 + 两处调用）。
+- **Gate H 部分通过**：`healthy`、`RestartCount=0`、内部 `https://127.0.0.1:3080/` = 200（ttfb 3.6ms）、公网 `302 /portal`（ttfb 1.494s）、唯一实例；首屏 ttfb 335ms / DCL 381ms / load 708ms / FCP 400ms，但阶段 0 基线未采集，`≤ 基线 × 1.1` **未判定**。
+- **Gate F 部分通过**：`/data/dsh/sessions` 条目 = 1、`/data/dsh/storages` 条目 = 19；阶段 0 的 S0 / T0 未留存，**差值未判定**；历史会话可读。
+- **仍未执行**：阶段 0 基线（当时未留存，不可回溯，故 F/H 的差值项不判定）。
+- **观察窗口（T0 = `2026-10-24T23:28:53Z`，CST 10-25 07:28）**：T+62min 单点采样已归档 → `healthy`、`RestartCount=0`、日志 200 行中 `ERROR` / `did not activate` / `Unhandled|FATAL|panic` 全 0，CPU 8.87%、内存 1.746GiB/8GiB。2 小时节点**未到点**（需再采一次真实会话发送）；24 小时决策节点已提前裁决为保留 rc.3。
+- 证据已回填：[runbook Gate 表 + 第四～六节](evidence/dsh-0.2.1-rc.3-runbook.md#执行记录2026-10-25)、[upgrade 第十二节](evidence/dsh-0.2.1-rc.3-upgrade.md)。未提交（AGENTS.md 约束）。
+- **用户裁决（2026-10-25）：保留 `0.2.1-rc.3`**，不回滚 rc.2（24 小时决策节点提前裁决）。依据：A/B/C/D/E 通过、G 仅 1 项既有差异、F/H 无回归证据、T+62min 0 错误 0 重启。
+- **回滚锚点已清理（2026-10-25，用户授权）**：删除 `standalone.rc3old.20261024175710`（873M）、`node_modules.pre-rc3.20261025015343`（1.3G）、`package.json` / `pnpm-workspace.yaml` / `compatibility.json` 的 `.bak.rc3.20261025015343`（52K）、`cordis.patch.yml.bak.rc3entry.20261024232846`（20K），磁盘 176G → **174G**。删除前核对容器挂载仅指向当前 `standalone`；删除后 6 目标残留 0、当前树仍在、`dsh --version` = `0.2.1-rc.3`、`healthy`、`RestartCount=0`、`StartedAt` 未变、日志 0 错误、内部 3080 = 200（ttfb 5.9ms）。**影响：回滚已无本机一键路径，须从 npm 重装 rc.2**；runbook 回滚预案已加此前提说明。
+- **下一步**：2 小时节点的真实会话发送复验未执行（用户未要求）；如需 F/H 比值判定，须先明确基线采集口径（本次无历史基线）。
+
+## 2026-10-25（续五十九）：线上 DSH 升级 `0.2.1-rc.2 → 0.2.1-rc.3` 与 Gate G 验证
+
+经用户「好的，执行吧」授权执行线上升级，随后按 runbook 逐 Gate 验证。
+
+- **执行**：仓库基线同步（6 处真源 + `deploy/profile`）→ 本地 install / check:versions / typecheck / build → 影子实例灰度 → 线上备份、profile 升位重装、原子换树、派生补丁重放。
+- **白屏与修复（Gate D）**：首启 `Failed to load plugins web boot: 1 entry did not activate`，明细 `@deepseek-ai/dsh-client-ui-entry-customization: pending (waiting for service: pluginNavigation)`。根因是 rc.3 新包把 `pluginNavigation` 唯一 provide 点放在 `ctx.slots.inject("main", …)` 内。处置：`profiles/web/cordis.patch.yml` 追加 `- id: entry-customization / disabled: true`（与既有 `ui-plugin-manager` 成对），备份 `cordis.patch.yml.bak.rc3entry.20261024232846`。修复后启动无 boot error。
+- **Gate G（浏览器实测，通过；1 项不符合预期）**：门户 `302 /portal`；9 个左导航入口可点；新建会话「只回复两个字：收到」→ 回复「收到」（4 秒 / 1 轮 1 步 / 62K tok）；专家页「查看专家 高级全栈交付工程师」（可用 / 已启用 / 3 项技能）→「召唤专家」进入新会话且不自动发送 → 回复「专家已就绪」（5 秒 / 64.5K tok）；projects / skills / library / drive / automation 五视图 `innerText` 无 error 关键词（技能 54 个、专家 22+18 均可用）；右栏 conversation 视图 对话 / 轨迹 / 开始 三页签正常。**不符合预期**：library / drive 视图点「打开侧边栏」只切换左侧会话栏，右栏无 tab。
+- **Gate F（部分）**：抽 3 个历史会话可打开（4667 字 / 4 轮 64 步；2034 字 / 14 轮 253 步；5252 字 / 5 轮 283 步），无加载错误；sessions / storages 计数比对未执行。
+- **控制台**：无 `did not activate` / `Failed to load plugins`；`ERR_ABORTED` 与 `connection lost, retry` 经对照实验确认属切视图/重连噪声，非回归。首屏 ttfb 335ms / FCP 400ms / load 708ms。
+- **未执行（阻塞，已由续六十补齐）**：Gate A/B/C/E 复跑、Gate F 计数、Gate H、15 分钟–24 小时观察窗口。原因：本机 `192.168.1.38`（网关 `192.168.1.1`）已离开 `192.168.11.0/24`，`192.168.11.205:22` 全超时、ping 100% 丢包。
+- 证据已回填：[runbook 执行记录](evidence/dsh-0.2.1-rc.3-runbook.md#执行记录2026-10-25)、[upgrade 第十二节](evidence/dsh-0.2.1-rc.3-upgrade.md)。未提交（AGENTS.md 约束）。
+- 用户裁决（2026-10-25）：① library / drive 右栏无 tab **记为既有实现差异，暂不动**（本次 5 个变化包均无右栏 tab 装配改动）；② `deploy/tools/workdsh-fix-profile-reload.sh`、`workdsh-fix-webruntime-routes.sh` **已回写仓库**（与服务器副本 diff 为空，`bash -n` 通过；前者为「同缩进多行块正则」兼容 rc.2 起的两代布局，后者注释掉已退役的 mcp-connector 补丁项）；③ Gate H 待网络恢复后由本机执行 `/tmp/g_h.sh`。
+
+## 2026-10-25（续五十八）：DSH `0.2.1-rc.2 → 0.2.1-rc.3` 版本对比与升级方案
+
+**本轮只做分析出方案，未对线上做任何写入。**
+
+- 前提纠偏：线上 `dsh.10ge.cn` 实际版本 `0.2.1-rc.2`，**恰好等于 npm `latest`**（CLI / 挂载树 / profile / `pnpm-lock` 四处一致），与官网最新发布**零落差**。真正可升的只有 `next` 通道预发布候选 `0.2.1-rc.3`（`2026-10-23T07:54:30Z`）；`alpha = 0.2.1-alpha.5` 更旧。
+- 制品级 diff（tarball 逐文件 md5，版本串归一化后）：78 个 `@deepseek-ai/dsh-*` 中 **5 包真实变化**、**1 个新增包**，其余 73 包仅版本串。运行时增量约 **+11.2 KB**，新包解包 **64 KB**（`lib/client.js` 6239 B / gzip 2141 B）。
+  - `dsh-cordis-client-runner` `lib/client.js` 402285→411698：新增 3 个 `kind:"list"` 的 actions slot（`conversation.session.header.views.actions`、`sidebar.panellist.actions`、`sidebar.right.tab.guide.actions`）、`DraftInitializationOptions`。
+  - `dsh-client-ui-agent-preset` 6 文件：`select()/apply()` 返回类型改为 `AgentPresetApplyOutcome` 三态（**唯一破坏性变更 B1，WorkDSH 未使用**）、`startCreatorDraft`、`agent_preset_switch` 埋点。
+  - `dsh-web-app`：`cordis.patch.yml` 插入 `entry-customization` 装配项 + 新增依赖。
+  - 新包 `dsh-client-ui-entry-customization`：左导航/会话头/右栏「浏览更多插件」「创建你的插件」三段式入口。
+  - `dsh-agent-preset`（文档）、`dsh-tool-cordis`（类型目录）仅非执行文件。
+- 无会话/存储包改动 → **未发现数据迁移**；无鉴权/校验/凭据/沙箱改动 → **未发现安全补丁**；官方无 changelog，以上均为逐文件实测结论。
+- 风险 R1–R12 已登记，重点：**R1 官方「更多」入口插入左导航/会话头/右栏（与 WorkDSH 信息架构冲突，中）**、**R4 13 个第三方插件需补兼容闸门（中）**、**R5 4 处线上派生补丁锚点可能漂移（中）**、**R8 pnpm 11 `minimumReleaseAge`（中）**、R9 仓库/线上单向漂移（中）。边界：镜像 `0.2.1-rc.3` 截至今日预期 404，仍走「挂载树原子换树」而非换镜像 tag。
+- 灰度等价方案：本环境单容器单入口 + Caddy 主机级门禁，无法百分比切流，落地为 **3a 影子实例（端口 3090 + profile 副本）** + **3b 主体灰度（管理员账号优先）**。
+- 交付：
+  - 对比分析报告 [dsh-0.2.1-rc.3-upgrade](evidence/dsh-0.2.1-rc.3-upgrade.md)（12 节：结论 / 版本盘点 / 官方定位 / 变更清单 / 依赖闭包 / 代码差异 / 风险 / 阶段方案 / Gate A–H / 回退锚点 / 边界 / 执行结果）
+  - 运维操作指南 [dsh-0.2.1-rc.3-runbook](evidence/dsh-0.2.1-rc.3-runbook.md)（阶段 0 预检 → 1 仓库基线 → 2 本地验证 → 3 灰度 → 4 上线 → 5 验证 + 回滚预案 + 附录 A/B/C）
+- 建议：rc.3 属 `next` 候选版，收益（更多菜单 / 创建插件草稿）对 WorkDSH 非必需且有 R1 冲突，**建议优先暂缓**，等 rc.3 转 `latest` 或 `0.2.2` 再评估；若确有诉求，按 runbook 影子实例验证后再定。
+- **未执行**：仓库 `0.2.1-rc.3` 升位、`pnpm install`/`check:versions`、`deploy/profile` 变更、影子容器、线上换树、Gate A–H 全部验证、`compatibility.json` 豁免补录。runbook 附录 B 另列 5 项沿用 rc.2 口径推导、未实测的步骤。
+- 阻塞项：① 线上写入需用户单独授权；② 需用户确认是否接受官方「更多」入口对现有导航的改动；③ `docs/dsh-v0.2.1-rc.3/` 官方文档镜像尚未落盘，接口结论以发布包实测为准。
+
 ## 2026-10-17（续五十七）：dsh-mcp-connector 线上升级 `0.2.73 → 0.2.75`
 
 - 升级前先落证据 [dsh-mcp-connector-0.2.75-upgrade](evidence/dsh-mcp-connector-0.2.75-upgrade.md)：依赖/peer 与 0.2.73 完全一致，`lib/client.js` 未变（首屏不受影响），仅 `lib/index.js`、`lib/tools.js`、`cordis.patch.yml` 变化；包体 -57KB。
