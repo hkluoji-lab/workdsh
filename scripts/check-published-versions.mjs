@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const lock = readFileSync(new URL('../pnpm-lock.yaml', import.meta.url), 'utf8');
-const expected = '0.2.1-rc.2';
-// No exceptions: every dsh-scope package published 0.2.1-rc.2 (verified on the
+const expected = '0.2.1-rc.3';
+// No exceptions: every dsh-scope package published 0.2.1-rc.3 (verified on the
 // registry), including dsh-typert-generator which was pinned to 0.2.0-rc.1
 // in the previous baseline because 0.2.0-rc.2 was never published for it.
 const exceptions = {};
@@ -18,8 +18,8 @@ const resolved = new Set(entries.map(([, name]) => name));
 for (const name of Object.keys(pkg.pnpm.overrides).filter(name => name.startsWith('@deepseek-ai/dsh'))) {
   assert.ok(resolved.has(name), `${name} override has no resolved lock entry (retired or renamed package)`);
 }
-// Cordis and the companion packages the 0.2.1-rc.2 family ships against must stay
-// on the release that dsh 0.2.1-rc.2 was published with. The 0.2.1-rc cycle moved
+// Cordis and the companion packages the 0.2.1-rc.3 family ships against must stay
+// on the release that dsh 0.2.1-rc.3 was published with. The 0.2.1-rc cycle moved
 // these back off the alpha channel onto stable releases (4.0.5, 1.0.5, 1.0.10,
 // 1.0.6, 1.1.7, 3.18.5), so a floating range would silently resolve to a set this
 // baseline was never verified against.

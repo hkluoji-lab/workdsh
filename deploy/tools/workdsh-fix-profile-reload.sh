@@ -49,10 +49,9 @@ PROFILE="${DSH_PROFILE_DIR:-/data/dsh/profiles/web}"
 FILE="$PROFILE/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js"
 MARK='workdsh-root-include-fallback'
 ANCHOR='const bootstrapIncludes = /* @__PURE__ */ new WeakMap();'
-TARGET='	const entry = bootstrapIncludes.get(ctx);
-	if (entry === void 0) throw new Error(`${binName}: profile reload requires the root Include entry`);'
-PATCHED='	const entry = bootstrapIncludes.get(ctx) ?? workdshRootIncludeEntry(ctx);
-	if (entry === void 0) throw new Error(`${binName}: profile reload requires the root Include entry`);'
+# 0.2.1-rc.2 起该块缩进由 1 个 tab 变为 2 个 tab（recompose 内多包了一层 try）；
+# 用「同缩进多行块」正则匹配，兼容两代布局，且只命中 reconcileProfilePatches 那处。
+TARGET_RE='^([ \t]*)const entry = bootstrapIncludes\.get\(ctx\);\n\1if \(entry === void 0\) throw new Error\(`\$\{binName\}: profile reload requires the root Include entry`\);'
 HELPER='/**
 * workdsh 修复（'"$MARK"'）：profile 与全局安装各有一份本包，bootstrapIncludes 的
 * 模块级 WeakMap 不跨副本共享；回退到 Loader 里实际登记的根 Include 条目。
@@ -85,23 +84,26 @@ if grep -q "$MARK" "$FILE"; then
 fi
 
 [[ "$(grep -c -F "$ANCHOR" "$FILE")" == "1" ]] || die "WeakMap 声明行出现次数不为 1，版本可能已变"
-# 多行块必须用 node 计数：grep -F 会把多行 pattern 拆成多个 pattern 分别计数
-TARGET="$TARGET" node -e '
+# 多行块必须用 node 计数/替换：grep -F 会把多行 pattern 拆成多个 pattern 分别计数
+TARGET_RE="$TARGET_RE" node -e '
 const fs = require("node:fs");
 const src = fs.readFileSync(process.argv[1], "utf8");
-const n = src.split(process.env.TARGET).length - 1;
+const re = new RegExp(process.env.TARGET_RE, "m");
+const n = (src.match(new RegExp(process.env.TARGET_RE, "gm")) || []).length;
 if (n !== 1) { console.error(`目标块出现 ${n} 次（期望 1）`); process.exit(2); }
 ' "$FILE" || die "reconcileProfilePatches 目标块校验失败，版本可能已变"
 
 backup="$FILE.bak.$MARK.$(date +%Y%m%d%H%M%S)"
 cp -p "$FILE" "$backup"
 
-ANCHOR="$ANCHOR" HELPER="$HELPER" TARGET="$TARGET" PATCHED="$PATCHED" node -e '
+ANCHOR="$ANCHOR" HELPER="$HELPER" TARGET_RE="$TARGET_RE" node -e '
 const fs = require("node:fs");
 const file = process.argv[1];
 let src = fs.readFileSync(file, "utf8");
 src = src.replace(process.env.ANCHOR, process.env.ANCHOR + "\n" + process.env.HELPER);
-src = src.replace(process.env.TARGET, process.env.PATCHED);
+src = src.replace(new RegExp(process.env.TARGET_RE, "m"), (m, indent) =>
+  `${indent}const entry = bootstrapIncludes.get(ctx) ?? workdshRootIncludeEntry(ctx);\n` +
+  `${indent}if (entry === void 0) throw new Error(\`\${binName}: profile reload requires the root Include entry\`);`);
 fs.writeFileSync(file, src);
 ' "$FILE"
 

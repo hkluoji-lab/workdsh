@@ -18,8 +18,15 @@
 import { readFileSync, writeFileSync, copyFileSync, existsSync, renameSync, chmodSync } from 'node:fs';
 
 const MARK = 'ONEPANEL_DSH_AUTH_PROXY';
-const ANCHOR = '\tisAuthenticated(request) {';
 const INSERT = '\n\t\tif (process.env.ONEPANEL_DSH_AUTH_PROXY === "1") return true;';
+
+// 按版本新旧依次尝试；每个锚点都必须在文件里恰好出现 1 次才动手。
+// 0.2.1-rc.2 / rc.3 实测形态（rc.3 已核对：rc2 锚点命中 1 次，legacy 命中 0 次）。
+const ANCHORS = [
+  '\tisAuthenticated(request, secure = false) {',
+  // 0.1.x 早期形态，保留以兼容历史树
+  '\tisAuthenticated(request) {',
+];
 
 const targets = [
   // web profile 实际加载的副本（pnpm install 会覆盖的就是这一份）
@@ -39,9 +46,10 @@ for (const file of targets) {
     console.log(`rc2-auth-proxy: ok (already patched) ${file}`);
     continue;
   }
-  const anchors = source.split(ANCHOR).length - 1;
-  if (anchors !== 1) {
-    console.error(`rc2-auth-proxy: FAIL anchor found ${anchors}x in ${file}; file left untouched`);
+  const anchor = ANCHORS.find((candidate) => source.split(candidate).length - 1 === 1);
+  if (!anchor) {
+    const counts = ANCHORS.map((candidate) => `${JSON.stringify(candidate)}=${source.split(candidate).length - 1}`).join(', ');
+    console.error(`rc2-auth-proxy: FAIL no unique anchor in ${file} (${counts}); file left untouched`);
     failures += 1;
     continue;
   }
@@ -50,7 +58,7 @@ for (const file of targets) {
     console.log(`rc2-auth-proxy: backup written ${file}.orig`);
   }
   const temporary = `${file}.tmp.rc2auth`;
-  writeFileSync(temporary, source.replace(ANCHOR, ANCHOR + INSERT));
+  writeFileSync(temporary, source.replace(anchor, anchor + INSERT));
   chmodSync(temporary, 0o644);
   renameSync(temporary, file);
   console.log(`rc2-auth-proxy: patched ${file}`);

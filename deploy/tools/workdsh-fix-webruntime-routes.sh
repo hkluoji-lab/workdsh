@@ -41,7 +41,12 @@ MODE="${1:-apply}"
 
 # 目标：<package 相对路径>|<补丁文件名>
 TARGETS=(
-  "node_modules/dsh-mcp-connector|mcp-connector.patch"
+  # dsh-mcp-connector 已于 2026-10-15 退役：上游 0.2.73 自行修复了本问题
+  # （lib/web.js 新增 injectWebRoutes()，用两次独立 inject 实现 webStartup/webRuntime 的逻辑或）。
+  # 本机已升级到 0.2.73，不再需要本地补丁。补丁文件与基线备份保留在
+  # /data/dsh/home/dsh/mcp-connector-fix/ 与 lib/*.bak.* 中，仅作存档。
+  # 如需回退到 0.2.72，把下面这行注释放开即可。
+  # "node_modules/dsh-mcp-connector|mcp-connector.patch"
   "node_modules/dsh-dream-skin|dream-skin.patch"
 )
 
