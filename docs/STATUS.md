@@ -7,10 +7,11 @@
 - **背景**：同一宿主的提示词插件在线上已由 `dsh-prompt-enhance@0.2.7` 换成 `dsh-prompt-optimize@0.1.0`（后端复用官方 `ctx.llm`，provider `gxw` / model `deepseek-v4.1-flash`），`deploy/profile` 快照仍停在旧插件名。
 - **改动（3 文件 4 处，逐字对齐线上）**：`deploy/profile/package.json` 依赖 `dsh-prompt-enhance: 0.2.7` → `dsh-prompt-optimize: 0.1.0`、`dsh.profile.bundles` 条目同名替换；`deploy/profile/cordis.patch.yml` 补丁条目 `- id: prompt-enhance`（含 `maxOutputTokens: 8192` / `timeoutMs: 120000`）→ `- id: prompt-optimize`（`config: {provider: gxw, model: deepseek-v4.1-flash}`）；`deploy/profile/pnpm-workspace.yaml` 删除失效的 `minimumReleaseAgeExclude` 条目 `dsh-prompt-enhance@0.2.2 || 0.2.7`（线上无对应行）。
 - **验证**：`package.json` `node -e require` 解析通过（30 依赖 / 27 bundles，`dsh-prompt-enhance` 引用为 0）；`cordis.patch.yml` 新块形态与线上逐行 `diff` 一致（`PATCH MATCH`）；三文件 `prompt-enhance` 残留 0。
-- **未执行**：快照其余漂移（`package.json` 125 行、`cordis.patch.yml` 1674 行、`pnpm-workspace.yaml` 450 行）**按用户裁决只对齐提示词插件，其余未动**；`compatibility.json` 线上已不存在但仓库保留；git commit / push；线上写入。
+- **未执行**：快照其余漂移（`package.json` 125 行、`cordis.patch.yml` 1674 行、`pnpm-workspace.yaml` 450 行）**按用户裁决只对齐提示词插件，其余未动**；`compatibility.json` 线上已不存在但仓库保留；git push；线上写入。
 - **孤儿派生器清理**：`deploy/ops/derived/add-prompt-enhance-caddy.py` 已失效（线上 `/etc/caddy/Caddyfile` 无 `/prompt-enhance/*` 路由，服务器 `/data/dsh/tmp/` 无该派生器，仓库内零引用），经用户指令删除；删除前全仓库 `grep add-prompt-enhance-caddy` 仅命中其自身用法行，无调用方。
 - **插件源码纳入仓库（用户指令）**：`dsh-prompt-optimize` 原仅存在于仓库外 `/Users/apple/Documents/Trae-CN/default/dsh-prompt-optimize/`（非 git 仓库），含本轮修复的 `client.js`。已复制 5 个文件到 `deploy/tools/dsh-prompt-optimize/`（`index.js` / `client.js` / `cordis.patch.yml` / `package.json` / `README.md`），与 `workdsh-remote-shell` 等「线上自建插件仓库副本」同构——`deploy/tools/**` 不声明 workspace 成员、不进 `docs/modules.json`。副本 md5 与线上 `node_modules/dsh-prompt-optimize/` 逐一相同（`client.js 469e6a32…`、`index.js 9e2629fd…`、`package.json 338ea5ae…`）。
 - **重要发现（待另行处置）**：线上该插件**不是 npm 安装**——`node_modules/dsh-prompt-optimize/` 为目录直投（无 `.pnpm` 条目，`pnpm-lock.yaml` 零引用），npm 上的 `dsh-prompt-optimize@0.1.0` 是**另一份第三方移植实现**（`main: lib/index.js` + `dsh.plugin.json`，与本插件同名不同物）。当前 profile 依赖写 `"dsh-prompt-optimize": "0.1.0"` 只是与线上显示一致；若日后真从 registry 重装会拉到错误制品。命名冲突与依赖形态需单独决策。
+- **已提交（用户指令「一次性全部提交」/「把插件源码纳入 workdsh 仓库」）**：commit `1be6f3bf31`「chore: 基线升位 0.2.2-rc.1 并对齐 profile 提示词插件真源」，31 文件 / +7010 −6038，含版本线对齐 22 文件 + 提示词插件对齐 3 文件 + 删除孤儿派生器 + `deploy/tools/dsh-prompt-optimize/` 5 个新文件 + `deploy/README.md` 与 STATUS。**未 push、未发布 npm、未改线上。**
 
 ## 2026-11-10（续一）：仓库开发基线版本线对齐 `0.2.1-rc.3 → 0.2.2-rc.1`
 
