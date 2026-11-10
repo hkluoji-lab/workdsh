@@ -364,11 +364,10 @@
         adminJobRoles: management,operations
 
 # <<< P1 身份打通 + 资源授权 END <<<
-- id: prompt-enhance
-  disabled: false
+- id: prompt-optimize
   config:
-    maxOutputTokens: 8192
-    timeoutMs: 120000
+    provider: gxw
+    model: deepseek-v4.1-flash
 
 # 市场一键重启反向规避（2026-10-02）：本宿主统一由容器级脚本 dsh-restart-web.sh 重启，
 # 不启用市场自带 self-restart（其 detached helper 会与 entrypoint 运行期看护争抢 3080 端口，

@@ -1,0 +1,40 @@
+{
+  "name": "dsh-prompt-optimize",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "提示词优化（Prompt Optimize）— DeepSeek Harness 插件：输入框右侧星标按钮，一键调用 LLM 改写输入框草稿，可撤销。",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "./index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "prompt-optimize",
+    "prompt",
+    "deepseek"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  }
+}

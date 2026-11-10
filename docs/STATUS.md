@@ -1,5 +1,31 @@
 # 当前进度
 
+## 2026-11-10（续二）：`deploy/profile` 提示词插件漂移对齐（prompt-enhance → prompt-optimize）
+
+用户指令「仓库 `deploy/profile` 里引用的仍是 `dsh-prompt-enhance@0.2.7`，与线上实际使用的 `dsh-prompt-optimize@0.1.0` 不一致，决定要一并对齐」。**仅改仓库快照的三处引用，未改线上、未提交、未推送。**
+
+- **背景**：同一宿主的提示词插件在线上已由 `dsh-prompt-enhance@0.2.7` 换成 `dsh-prompt-optimize@0.1.0`（后端复用官方 `ctx.llm`，provider `gxw` / model `deepseek-v4.1-flash`），`deploy/profile` 快照仍停在旧插件名。
+- **改动（3 文件 4 处，逐字对齐线上）**：`deploy/profile/package.json` 依赖 `dsh-prompt-enhance: 0.2.7` → `dsh-prompt-optimize: 0.1.0`、`dsh.profile.bundles` 条目同名替换；`deploy/profile/cordis.patch.yml` 补丁条目 `- id: prompt-enhance`（含 `maxOutputTokens: 8192` / `timeoutMs: 120000`）→ `- id: prompt-optimize`（`config: {provider: gxw, model: deepseek-v4.1-flash}`）；`deploy/profile/pnpm-workspace.yaml` 删除失效的 `minimumReleaseAgeExclude` 条目 `dsh-prompt-enhance@0.2.2 || 0.2.7`（线上无对应行）。
+- **验证**：`package.json` `node -e require` 解析通过（30 依赖 / 27 bundles，`dsh-prompt-enhance` 引用为 0）；`cordis.patch.yml` 新块形态与线上逐行 `diff` 一致（`PATCH MATCH`）；三文件 `prompt-enhance` 残留 0。
+- **未执行**：快照其余漂移（`package.json` 125 行、`cordis.patch.yml` 1674 行、`pnpm-workspace.yaml` 450 行）**按用户裁决只对齐提示词插件，其余未动**；`compatibility.json` 线上已不存在但仓库保留；git commit / push；线上写入。
+- **孤儿派生器清理**：`deploy/ops/derived/add-prompt-enhance-caddy.py` 已失效（线上 `/etc/caddy/Caddyfile` 无 `/prompt-enhance/*` 路由，服务器 `/data/dsh/tmp/` 无该派生器，仓库内零引用），经用户指令删除；删除前全仓库 `grep add-prompt-enhance-caddy` 仅命中其自身用法行，无调用方。
+- **插件源码纳入仓库（用户指令）**：`dsh-prompt-optimize` 原仅存在于仓库外 `/Users/apple/Documents/Trae-CN/default/dsh-prompt-optimize/`（非 git 仓库），含本轮修复的 `client.js`。已复制 5 个文件到 `deploy/tools/dsh-prompt-optimize/`（`index.js` / `client.js` / `cordis.patch.yml` / `package.json` / `README.md`），与 `workdsh-remote-shell` 等「线上自建插件仓库副本」同构——`deploy/tools/**` 不声明 workspace 成员、不进 `docs/modules.json`。副本 md5 与线上 `node_modules/dsh-prompt-optimize/` 逐一相同（`client.js 469e6a32…`、`index.js 9e2629fd…`、`package.json 338ea5ae…`）。
+- **重要发现（待另行处置）**：线上该插件**不是 npm 安装**——`node_modules/dsh-prompt-optimize/` 为目录直投（无 `.pnpm` 条目，`pnpm-lock.yaml` 零引用），npm 上的 `dsh-prompt-optimize@0.1.0` 是**另一份第三方移植实现**（`main: lib/index.js` + `dsh.plugin.json`，与本插件同名不同物）。当前 profile 依赖写 `"dsh-prompt-optimize": "0.1.0"` 只是与线上显示一致；若日后真从 registry 重装会拉到错误制品。命名冲突与依赖形态需单独决策。
+
+## 2026-11-10（续一）：仓库开发基线版本线对齐 `0.2.1-rc.3 → 0.2.2-rc.1`
+
+用户指令「先对齐 profile 版本线」→「继续上述任务」。目标是把仓库开发基线（根 `package.json` + 16 个 `packages/**/package.json` + `deploy/profile/*`）从 `0.2.1-rc.3` 对齐到线上 `dsh.10ge.cn` 已在运行的 `0.2.2-rc.1`。**仅改版本真源，未发布 npm、未提交、未推送、未部署。**
+
+- **性质（收敛非追新）**：线上容器与 profile 自 2026-11-08 起已运行 `0.2.2-rc.1`（挂载树实测 + profile 39 条依赖中 23 个 `@deepseek-ai/dsh*` 全为 `0.2.2-rc.1`；392 条 node_modules，完整安装形态）。npm `latest`+`next` 均为 `0.2.2-rc.1`（发布于 2026-11-04T09:20:32Z），`alpha=0.2.2-alpha.3`。**纠正**：上一轮 rc.3 evidence 记录的「线上是裸重建、无 node_modules」已不成立。
+- **闭包差异（双方法交叉确认）**：根 overrides dsh 条目 **301 → 325**（+25 新增、-1 退役）。新增 25 条：`dsh-action-cards`、`dsh-client-ui-{action-cards,context-menu,creation-recommendations,file-actions,file-drag,plugin-recommendations}`、`dsh-creation-recommendations`、`dsh-deliverable-file-references`、`dsh-experimental-{client-ui-forge,client-ui-stats,forge,forge-bundle,forge-github,forge-session,liveshare,liveshare-protocol}`、`dsh-fs-patch`、`dsh-message-quotes`、`dsh-official-bundles`、`dsh-personalized-recommendations`、`dsh-plugin-{detail,recommendations}`、`dsh-tool-executor-{native,ptc}`。退役 1 条 `dsh-client-ui-deepseek-model-label-1017`（npm 仅到 `0.2.1-rc.5`）。331 目标包 registry 核验 `bad 0`。
+- **Cordis 族跨次版本（本次唯一结构性依赖变化）**：`cordis 4.0.5→4.1.0`、`plugin-group 1.0.5→1.1.0`、`plugin-include 1.0.10→1.1.0`、`plugin-loader 1.0.6→1.1.0`、`plugin-timer 1.1.7→1.2.0`、`schemastery 3.18.5→3.19.0`；根与 profile 两处同步，`cordis@4.1.0` `dependencies` 为空。
+- **改动清单（22 个文件）**：根 `package.json`（326 处版本串 + cordis 族 6 条 + 删退役 1017 + 补 25 条 override，`pnpm.overrides` 合计 333 条、dsh 325 条）；`packages/**/package.json` 16 个（dependencies 精确、peer 保留 `^`，共 119 条 `^0.2.2-rc.1`；automations 的 `cordis-plugin-timer→1.2.0`、experts 的 `cordis-plugin-loader→1.1.0`）；`scripts/check-published-versions.mjs`（`expected→'0.2.2-rc.1'`、companions 6 条→4.1.0 族）；`deploy/profile/package.json`（官方 4 条）；`deploy/profile/pnpm-workspace.yaml`（289 条 dsh override 全量改版、cordis 族 6 条改版、删 3 条不可解析孤儿 `dsh-invariants` / `dsh-subagent-in-process-driver` / 1017；dsh override 最终 286 条；`minimumReleaseAgeExclude` 227 条 `@deepseek-ai/*@0.2.0-rc.2` 死条目与 `storeDir` **未动**）；`deploy/profile/compatibility.json`（`agent-teams@0.1.23` 追加 `0.2.2-rc.1`，保留 `0.2.1-rc.3` 便于回滚）；`pnpm-lock.yaml` 重装。
+- **门禁实测（全 PASS）**：`corepack pnpm install --no-frozen-lockfile` 退出码 0（7.5s，pnpm 10.34.5）；`check:versions` **PASS：649 DSH lock entries pinned to 0.2.2-rc.1；Cordis 4.1.0 family only**；`check:plan` **PASS：34 modules; 50 documents**；`package.json` / profile 两文件 / `packages/**` 中 `0.2.1-rc.3` 残留全 0；锁文件 dsh 版本唯一值 `0.2.2-rc.1`。
+> 注：649 条为锁文件中 dsh 锁条目去重前计数（325 条 override 在多版本上下文含 peer 解析下被引用），断言的是「每个 dsh 锁条目版本 == `0.2.2-rc.1`」且「每个 override 都有对应锁条目」。
+- **未执行**：`build` / `typecheck` / 真实模型 e2e（本轮仅版本真源对齐，不涉及业务代码）；线上写入与 profile 换版（无需换版）；git commit / push；npm 发布；`docs/dsh-v0.2.2-rc.1/` 官方文档镜像未落盘；AGENTS.md 规则 2 的基线版本号仍写 `0.2.0-rc.2`（历史遗留，待用户确认后同步）。
+- 证据：[dsh-0.2.2-rc.1-upgrade](evidence/dsh-0.2.2-rc.1-upgrade.md)（12 节：结论摘要 / 版本盘点 / 官方定位 / 闭包差异 / 代码差异点 / 兼容性风险 / 分阶段方案 / 未覆盖项与边界 / 执行结果 / 阶段 1 改动清单 / 阶段 2 验证记录）。
+- **下一步**：①用户授权后 git 提交本轮版本线对齐 ②产品层（`deploy/profile/*`）部署到线上 ③如需，同步 AGENTS.md 规则 2 与官方文档镜像重锚。`currentStep` 仍为 `D04`。
+
 ## 2026-10-25（续七十）：office α.12 线上部署与真机验收 + drive α.9 容器宽度修复
 
 用户指令「office α.12 部署到 `dsh.10ge.cn` 做线上真机验收」。首轮线上验收发现网盘 DOCX 编辑容器宽度溢出（编辑器 1445 px > 预览区 912 px，工具栏两端控件被裁切），用户确认「修 drive 并重新部署（推荐）」。**未发布 npm、未提交、未推送。**
