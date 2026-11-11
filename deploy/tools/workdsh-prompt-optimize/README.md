@@ -1,4 +1,4 @@
-# dsh-prompt-optimize
+# workdsh-prompt-optimize
 
 提示词优化（Prompt Optimize）— DeepSeek Harness 插件。
 
@@ -25,9 +25,9 @@
 ## 安装 / 卸载
 
 ```bash
-dsh plugin --profile web add dsh-prompt-optimize-0.1.0.tgz --offline
+dsh plugin --profile web add workdsh-prompt-optimize-0.1.0.tgz --offline
 # 重启 dsh web 生效
-dsh plugin --profile web remove dsh-prompt-optimize
+dsh plugin --profile web remove workdsh-prompt-optimize
 ```
 
 ## 排障

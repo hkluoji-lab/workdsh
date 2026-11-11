@@ -1,4 +1,4 @@
-// dsh-prompt-optimize — Host 半身（Node，运行在 DSH Host 的插件容器里）。
+// workdsh-prompt-optimize — Host 半身（Node，运行在 DSH Host 的插件容器里）。
 //
 // 职责：注册 POST /prompt-optimize/optimize 路由，把浏览器半身传来的输入框草稿
 // 交给 ctx.llm（复用 DSH 已配置的 DeepSeek 路由，无需单独 API Key）做提示词改写，
@@ -77,7 +77,7 @@ export function apply(ctx, config = {}) {
             id: randomUUID(),
             role: 'user',
             content: [{ type: 'text', text }],
-            source: { kind: 'dsh-prompt-optimize' },
+            source: { kind: 'workdsh-prompt-optimize' },
           },
         ],
         sessionId: `prompt-optimize-${randomUUID()}`,
@@ -108,7 +108,7 @@ export function apply(ctx, config = {}) {
 
   ctx.effect(() =>
     ctx.webServer.register({ kind: 'prefix', path: API_PREFIX, handler }),
-    'dsh-prompt-optimize: prompt optimize API',
+    'workdsh-prompt-optimize: prompt optimize API',
   );
 }
 

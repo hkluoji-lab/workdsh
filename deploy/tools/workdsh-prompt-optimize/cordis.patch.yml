@@ -1,10 +1,10 @@
-# dsh-prompt-optimize bundle patch（profile 层）。
+# workdsh-prompt-optimize bundle patch（profile 层）。
 # 一行 insert 把本包挂成 profile 的一个组合层；浏览器半身由 package.json 的
 # dsh.client 声明，只绑定在「name 为裸包名」的这一行上。
 # config 全部字段均可事后在 profile 的 cordis.patch.yml 用同 id 行覆盖（无需重装）。
 - insert:
     - id: prompt-optimize
-      name: 'dsh-prompt-optimize'
+      name: 'workdsh-prompt-optimize'
       config:
         # 本站默认路由：gxw（aimodel.szhtp.com 自定义 provider，agent-default-model 同款）。
         # 注意：deepseek-official 是 api-key provider（本机 key 已失效会 401），

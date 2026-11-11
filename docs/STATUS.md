@@ -1,5 +1,14 @@
 # 当前进度
 
+## 2026-11-11：提示词优化插件改名去冲突（`dsh-prompt-optimize` → `workdsh-prompt-optimize`）
+
+用户指令「按这个方案处理包名冲突」→ 选定「换包名，彻底去冲突」。起因是 2026-11-10 复核发现：本站自研提示词插件与 npm registry 上第三方移植包 `dsh-prompt-optimize@0.1.0` **同名不同物**，且线上 profile 实际安装的正是后者（`main: lib/index.js` + `dsh.plugin.json`）。**仅改仓库，未改线上、未发布 npm、未 push。**
+
+- **改名范围（6 文件）**：`deploy/tools/dsh-prompt-optimize/` → `deploy/tools/workdsh-prompt-optimize/`（`git mv`，5 文件）；其中 `package.json` `name`、`client.js` loader `id`、`cordis.patch.yml` `name`（`- id: prompt-optimize` 保持不动，避免改变补丁覆盖 key）、`index.js` L1 注释 / `source.kind` / `ctx.effect` label、`README.md` 标题与安装卸载命令同步改名。
+- **profile 快照**：`deploy/profile/package.json` 依赖键 `dsh-prompt-optimize: 0.1.0` → `workdsh-prompt-optimize: file:/workspace/wd-upload-019/workdsh-prompt-optimize-0.1.0.tgz`、`dsh.profile.bundles` 条目同名替换。改名后 registry 无此包，故按站点既有 `file:` tgz 形态引用（与其余 12 个 `workdsh-*` 依赖一致）。
+- **未决 / 未执行**：该插件 **tgz 制品尚未产出**，profile 里的 `file:` 路径为**占位**；线上 profile 仍指向旧名 registry 包 `dsh-prompt-optimize@0.1.0`，**线上切换需另行授权**（产出 tgz → 改线上 profile → `pnpm install` → `force-recreate`）。`deploy/README.md` 与 STATUS 的「目录直投、lock 零引用」旧结论已更正为「registry 第三方包同名冲突」。
+- **验证**：`deploy/profile/package.json` `node -e` 解析通过（30 依赖 / 27 bundles）；`deploy/tools/**` 与 `deploy/profile/package.json` 中旧包名残留为 0（`deploy/ops/bin/dsh-fix-po.sh` 里的 `dsh-prompt-optimizer` 属另一无关第三方包，未动）。
+
 ## 2026-11-10（续二）：`deploy/profile` 提示词插件漂移对齐（prompt-enhance → prompt-optimize）
 
 用户指令「仓库 `deploy/profile` 里引用的仍是 `dsh-prompt-enhance@0.2.7`，与线上实际使用的 `dsh-prompt-optimize@0.1.0` 不一致，决定要一并对齐」。**仅改仓库快照的三处引用，未改线上、未提交、未推送。**
@@ -10,7 +19,7 @@
 - **未执行**：快照其余漂移（`package.json` 125 行、`cordis.patch.yml` 1674 行、`pnpm-workspace.yaml` 450 行）**按用户裁决只对齐提示词插件，其余未动**；`compatibility.json` 线上已不存在但仓库保留；git push；线上写入。
 - **孤儿派生器清理**：`deploy/ops/derived/add-prompt-enhance-caddy.py` 已失效（线上 `/etc/caddy/Caddyfile` 无 `/prompt-enhance/*` 路由，服务器 `/data/dsh/tmp/` 无该派生器，仓库内零引用），经用户指令删除；删除前全仓库 `grep add-prompt-enhance-caddy` 仅命中其自身用法行，无调用方。
 - **插件源码纳入仓库（用户指令）**：`dsh-prompt-optimize` 原仅存在于仓库外 `/Users/apple/Documents/Trae-CN/default/dsh-prompt-optimize/`（非 git 仓库），含本轮修复的 `client.js`。已复制 5 个文件到 `deploy/tools/dsh-prompt-optimize/`（`index.js` / `client.js` / `cordis.patch.yml` / `package.json` / `README.md`），与 `workdsh-remote-shell` 等「线上自建插件仓库副本」同构——`deploy/tools/**` 不声明 workspace 成员、不进 `docs/modules.json`。副本 md5 与线上 `node_modules/dsh-prompt-optimize/` 逐一相同（`client.js 469e6a32…`、`index.js 9e2629fd…`、`package.json 338ea5ae…`）。
-- **重要发现（待另行处置）**：线上该插件**不是 npm 安装**——`node_modules/dsh-prompt-optimize/` 为目录直投（无 `.pnpm` 条目，`pnpm-lock.yaml` 零引用），npm 上的 `dsh-prompt-optimize@0.1.0` 是**另一份第三方移植实现**（`main: lib/index.js` + `dsh.plugin.json`，与本插件同名不同物）。当前 profile 依赖写 `"dsh-prompt-optimize": "0.1.0"` 只是与线上显示一致；若日后真从 registry 重装会拉到错误制品。命名冲突与依赖形态需单独决策。
+- **重要发现（后经复核更正）**：当时判断「线上该插件是目录直投、`pnpm-lock.yaml` 零引用」**有误**。2026-11-11 复核线上 `node_modules/dsh-prompt-optimize/` 确为 registry 安装形态（`package.json` `main: lib/index.js` + `dsh.plugin.json` + `lib/index.js` + `lib/client.js`，`pnpm-lock.yaml` L418-420 / L4367-4373 有 specifier `0.1.0` 与 `resolution.integrity`），即 npm 上的同名第三方移植包——站点自研插件与之**同名已实际冲突**，线上跑的很可能是第三方制品而非本站副本。命名冲突已按「换包名」处理，见下节。
 - **已提交（用户指令「一次性全部提交」/「把插件源码纳入 workdsh 仓库」）**：commit `1be6f3bf31`「chore: 基线升位 0.2.2-rc.1 并对齐 profile 提示词插件真源」，31 文件 / +7010 −6038，含版本线对齐 22 文件 + 提示词插件对齐 3 文件 + 删除孤儿派生器 + `deploy/tools/dsh-prompt-optimize/` 5 个新文件 + `deploy/README.md` 与 STATUS。**未 push、未发布 npm、未改线上。**
 
 ## 2026-11-10（续一）：仓库开发基线版本线对齐 `0.2.1-rc.3 → 0.2.2-rc.1`

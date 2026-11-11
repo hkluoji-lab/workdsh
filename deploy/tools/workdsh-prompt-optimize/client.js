@@ -1,4 +1,4 @@
-// dsh-prompt-optimize — 浏览器半身（web）。
+// workdsh-prompt-optimize — 浏览器半身（web）。
 //
 // 在 conversation.input.right 槽位挂一个星标按钮：点击后把当前输入框草稿
 // POST 给宿主半身 /prompt-optimize/optimize，拿回改写结果后整体替换草稿，
@@ -11,7 +11,7 @@
 //   - 样式一律内联，不注入 <style> 标签（避免污染宿主样式表）。
 
 window.__ModuleLoader__.load({
-  id: 'dsh-prompt-optimize',
+  id: 'workdsh-prompt-optimize',
   // 加载器契约：factory 只注入 require；exports/module 需自行创建并 return module.exports
   factory: require => {
     'use strict';

@@ -1,5 +1,5 @@
 {
-  "name": "dsh-prompt-optimize",
+  "name": "workdsh-prompt-optimize",
   "version": "0.1.0",
   "type": "module",
   "description": "提示词优化（Prompt Optimize）— DeepSeek Harness 插件：输入框右侧星标按钮，一键调用 LLM 改写输入框草稿，可撤销。",

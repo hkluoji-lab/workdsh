@@ -13,7 +13,7 @@ pnpm workspace 打包，而是直接在服务器上执行、或被容器挂载�
 ## 约定
 
 - **只保留编译产物**：`tools/workdsh-*` 是线上就地构建并部署的插件，仓库只保留 `dist/` 与 `package.json`；`.gitignore` 已对 `deploy/tools/**/dist/` 显式豁免 `**/dist/`。它们不是 `packages/plugins/*` 的源码模块，也不进 `docs/modules.json`。
-- **`tools/dsh-prompt-optimize/`**：提示词优化插件（输入框星标）的仓库副本，原只存在于仓库外，2026-11-10 纳入。线上该插件为**目录直投**进 profile 的 `node_modules/`（非 pnpm 安装、`pnpm-lock.yaml` 零引用）；npm registry 上的同名 `dsh-prompt-optimize@0.1.0` 是**另一份第三方移植实现**，同名不同物——不要从 registry 重装覆盖线上目录。
+- **`tools/workdsh-prompt-optimize/`**：提示词优化插件（输入框星标）的仓库副本，原只存在于仓库外，2026-11-10 纳入，2026-11-11 由 `dsh-prompt-optimize` **改名去冲突**。包名与 npm registry 上同名第三方移植包 `dsh-prompt-optimize@0.1.0`（`main: lib/index.js` + `dsh.plugin.json`）不同物：线上 profile 实际安装的正是后者，本站自研实现与之撞名。改名后 registry 无 `workdsh-prompt-optimize`，`deploy/profile/package.json` 因此改用站点既有的 `file:` tgz 形态引用（**该 tgz 制品尚未产出，为占位路径**；线上切换前 profile 仍指向旧名 registry 包）。
 - **不含密钥与运行数据**：告警 webhook、隧道凭据、账号表、令牌、日志与运行报告一律不入库。`profile/` 只保存配置**引用**（`apiKeyEnv`、`secretFile` 路径），密钥本体留在服务器。
 - **`profile/` 是快照不是模块**：不声明 npm 包、不进 `docs/modules.json`、不参与仓库 pnpm workspace。
 - **生效方式**：`ops/bin/` 脚本以 root 在宿主机执行；`ops/derived/` 改动的是容器内被只读挂载的派生副本，改后需 `docker compose up -d --force-recreate`（bind mount 换 inode 必须重建）。
