@@ -2,7 +2,7 @@
 
 ## 2026-11-13（续）：activity 完整 UI 制品重建并上线（`0.1.0-alpha.7`）
 
-用户指令「按第二条路线推进，重新构建并产出包含完整 UI 的新制品」。承接上一条「仅翻转 `disabled` 只提供服务、不产生可见面板」的边界。**已改仓库、已改线上 profile、已重启、已真机核验。未发布 npm、未 push。**
+用户指令「按第二条路线推进，重新构建并产出包含完整 UI 的新制品」。承接上一条「仅翻转 `disabled` 只提供服务、不产生可见面板」的边界。**已改仓库、已改线上 profile、已重启、已真机核验、已 commit 并 push `mygitee/main`。未发布 npm。**
 
 - **动作**：用仓库源码 `packages/plugins/activity` 重新构建含完整 UI 的客户端制品，替换线上官方 α.6 桩（桩 `client.browser.js` 2726 B、无 UI）。
 - **版本重定**：仓库 α.5 → **α.7**（官方桩占用 α.6，按「撞号必须重新定版」跳过）。制品形态对齐官方：`exports` 增补 `./package.json` 与 `./locale/*.json`，`files` 增补 `locale/*.json`，新增 `locale/zh.json` / `locale/en.json`，`description` 对齐官方。
@@ -10,7 +10,8 @@
 - **投递方式（外科式内容寻址替换，规避 502 根因）**：`pnpm pack` → tgz（**28,800 B**，`sha256=78eb22a6…a13`，`integrity=sha512-r/qYqrFc…`）→ 复制到 `profiles/web/workdsh-package-assets/<sha>.tgz` → 备份并替换 `node_modules/workdsh-plugin-activity/`（旧存 `.bak-activity-alpha6`）→ 文本更新 `package.json`（1 处指针）+ `pnpm-lock.yaml`（sha 5 处 / integrity 1 处 / version 1 处）→ `docker compose restart`。**未跑 profile 级 `pnpm install`，未跑 guard**（软链未受影响）。
 - **核验（PASS）**：容器 `Restarts=0 / running / healthy`；容器内 3080=`200`、公网=`302`；模块图 `symlinks=330 realdirs=7`；安装件 21,370 B / 38 处；声明指针与 lockfile 块键均指向 `78eb22a6…a13`；client manifest activity `rev` 由桩变为 **`5771af5da1bb`**；下发 bundle `200` / **21,450 B** / 含槽位 key；启动日志两条 `did not activate` 仍为既有无关项，**activity 不在其中**；独立 browser-agent 真机验收 **PASS**（`section.wd-activity` 存在、DOM 内 10 个 `wd-activity` 元素、`<span class="wd-activity-title">工作动态</span>` 可见、无 activity 相关控制台错误）。
 - **边界**：① 该制品**只在 dsh.10ge.cn 单台 profile 生效**，官方发布线 activity 仍为 α.6 桩（已分叉），后续若跑官方安装器 `--with activity` 会退回桩，须按证据 7.3 重投；② 登录后逐页业务点测未执行（无凭据）；③ 与另一台背靠的既有告警（`workdsh-browser-session` 缺 Electron、`workdsh-connectors` 后端未就绪）无关。
-- **未执行**：npm 发布、git commit/push（AGENTS.md 约束，须单独授权）；线上备份 `.bak-activity-alpha6` 与 `.bak.act-a7.*` 暂留未清理。
+- **未执行**：npm 发布（项目政策：制品为代码托管资产，不发布到 npm registry）；线上备份 `.bak-activity-alpha6` 与 `.bak.act-a7.*` 暂留未清理。
+- **提交**：`987f68f59a`（8 文件，+376/−5）已 push `mygitee/main`（`f7abf774e6..987f68f59a`）。github `fork` 远程当时不可达（HTTP2 framing），未推。
 - **证据**：[online-feature-parity-2026-11-12](evidence/online-feature-parity-2026-11-12.md) 第七节。
 
 ## 2026-11-13：启用 activity 模块（覆盖官方出厂 `disabled: true`）

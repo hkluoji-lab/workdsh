@@ -270,7 +270,9 @@ node /data/dsh/workdsh-release/install-workdsh.mjs \
 
 ### 7.5 未执行 / 边界
 
-- **npm 发布未执行**（AGENTS.md 约束，须单独授权）；**git commit / push 未执行**（同前）。
+- **npm 发布未执行**（项目政策：制品为代码托管资产，不发布到 npm registry；本机亦无 `npmjs.org` token、默认 registry 为只读镜像 `npmmirror.com`）。
+- **git 已提交并推送**：commit `987f68f59a`（8 文件，+376/−5）→ push `mygitee/main`（`f7abf774e6..987f68f59a`）；
+  github `fork` 远程当时不可达（`HTTP2 framing layer`），未推。
 - `workdsh-plugin-activity@0.1.0-alpha.7` 目前**只在 dsh.10ge.cn 这一台 profile 生效**；
   官方发布线 `workdsh-release` 的 activity 仍为 α.6 桩，二者已分叉——后续若跑官方安装器覆盖
   `--with activity`，会退回 α.6 桩，需重新按 7.3 投递。
