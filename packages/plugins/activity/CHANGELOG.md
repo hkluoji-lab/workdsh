@@ -1,3 +1,10 @@
+## 0.1.0-alpha.7 — 2026-11-13
+
+- 以仓库源码重建并产出**含完整 UI** 的客户端制品：`conversation.session.header.utilities` 槽位条带（活动/协作进度、展开详情、动效开关），`client.browser.js` 21,370 B。
+- 基线随升 `0.2.2-rc.1`：`typecheck` 通过（`tsconfig` 未改），客户端 bundle 运行时 `require` 面仅 `react`，`dsh-client-ui-slots` / `dsh-client-store` 等 peer 均为 `import type`（构建后消失）。
+- 版本号重定：`0.1.0-alpha.6` 已被官方发行制品占用（该制品客户端半侧为 registry 桩，仅 `ctx.provide('activityPresentation', …)`），按本项目「撞号必须重新定版」规则本批递增为 `alpha.7`。
+- 官方复用记录：锁定 Harness `0.2.2-rc.1`；`conversation.session.header.utilities` 槽位在官方 `dsh-client-ui-conversation` 中存在（实测命中 4 处）。本插件只拥有展示、动效与偏好；Session 事实由 Harness 拥有。
+
 ## 0.1.0-alpha.5 — 2026-09-25
 
 - 适配 DeepSeek Harness 0.1.7-alpha.1：事件投影改按 Session 格式 V4 读取——`tool/result` 改读一等 tool 消息的 `message.toolCallId` / `message.isError`（官方 `ContentBlockMap` 已移除 `tool-result` 块）；子代理观测从已移除的 `subagentsByParent` / `refreshSubagents` 改读 `SessionListState.projectionsBySession[root].values.subagentCatalog` 配合 `sessions.refreshProjections`。

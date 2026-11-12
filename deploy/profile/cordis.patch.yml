@@ -386,3 +386,15 @@
 # AGENT_LOOP_CONCURRENCY_5 (2026-10-02): 对标官方 issue #699（8 子代理并发触发崩溃），
 # 把 agent-loop 的并行工具/子代理池上限从默认 10 收紧到 5，降低 GC 压力触发面。
 # 回滚：删除本块，
+
+# 2026-11-13：启用 activity 模块（用户指令「解决 activity 模块的启用问题」）。
+# 官方制品 workdsh-plugin-activity 0.1.0-alpha.6 的 bundle 层 cordis.patch.yml 出厂即
+#   - insert: [{ id: workdsh-activity, name: workdsh-plugin-activity, disabled: true }]
+# 注释原文「Native Conversation owns work-process presentation in DSH 0.1.7.」。
+# profile 补丁层在所有 bundle 层之后应用，可对同一 id 反向覆盖该标志；先例见上方
+# workdsh-browser-session 的 disabled: false。
+# 注意：alpha.6 的客户端半侧按官方设计为 registry 桩（dist/client.browser.js 2726 B，
+# 仅 ctx.provide('activityPresentation', …)，不含活动/过程 UI）；experts / skills 通过
+# ctx.inject(['activityPresentation']) 消费该服务（registerIdentity / registerSkillLabels）。
+- id: workdsh-activity
+  disabled: false

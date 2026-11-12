@@ -1,5 +1,61 @@
 # 当前进度
 
+## 2026-11-13（续）：activity 完整 UI 制品重建并上线（`0.1.0-alpha.7`）
+
+用户指令「按第二条路线推进，重新构建并产出包含完整 UI 的新制品」。承接上一条「仅翻转 `disabled` 只提供服务、不产生可见面板」的边界。**已改仓库、已改线上 profile、已重启、已真机核验。未发布 npm、未 push。**
+
+- **动作**：用仓库源码 `packages/plugins/activity` 重新构建含完整 UI 的客户端制品，替换线上官方 α.6 桩（桩 `client.browser.js` 2726 B、无 UI）。
+- **版本重定**：仓库 α.5 → **α.7**（官方桩占用 α.6，按「撞号必须重新定版」跳过）。制品形态对齐官方：`exports` 增补 `./package.json` 与 `./locale/*.json`，`files` 增补 `locale/*.json`，新增 `locale/zh.json` / `locale/en.json`，`description` 对齐官方。
+- **构建与测试**：基线 `0.2.2-rc.1`；`typecheck` 通过（`tsconfig` 未改）；客户端 bundle 运行时 `require` 面**仅 `react`**（其余 peer 均为 `import type`）；槽位 `conversation.session.header.utilities` 官方实测命中；`build` 通过；`tests` **14/14**；产物 `dist/client.browser.js` = **21,370 B**、`wd-activity` ×38。
+- **投递方式（外科式内容寻址替换，规避 502 根因）**：`pnpm pack` → tgz（**28,800 B**，`sha256=78eb22a6…a13`，`integrity=sha512-r/qYqrFc…`）→ 复制到 `profiles/web/workdsh-package-assets/<sha>.tgz` → 备份并替换 `node_modules/workdsh-plugin-activity/`（旧存 `.bak-activity-alpha6`）→ 文本更新 `package.json`（1 处指针）+ `pnpm-lock.yaml`（sha 5 处 / integrity 1 处 / version 1 处）→ `docker compose restart`。**未跑 profile 级 `pnpm install`，未跑 guard**（软链未受影响）。
+- **核验（PASS）**：容器 `Restarts=0 / running / healthy`；容器内 3080=`200`、公网=`302`；模块图 `symlinks=330 realdirs=7`；安装件 21,370 B / 38 处；声明指针与 lockfile 块键均指向 `78eb22a6…a13`；client manifest activity `rev` 由桩变为 **`5771af5da1bb`**；下发 bundle `200` / **21,450 B** / 含槽位 key；启动日志两条 `did not activate` 仍为既有无关项，**activity 不在其中**；独立 browser-agent 真机验收 **PASS**（`section.wd-activity` 存在、DOM 内 10 个 `wd-activity` 元素、`<span class="wd-activity-title">工作动态</span>` 可见、无 activity 相关控制台错误）。
+- **边界**：① 该制品**只在 dsh.10ge.cn 单台 profile 生效**，官方发布线 activity 仍为 α.6 桩（已分叉），后续若跑官方安装器 `--with activity` 会退回桩，须按证据 7.3 重投；② 登录后逐页业务点测未执行（无凭据）；③ 与另一台背靠的既有告警（`workdsh-browser-session` 缺 Electron、`workdsh-connectors` 后端未就绪）无关。
+- **未执行**：npm 发布、git commit/push（AGENTS.md 约束，须单独授权）；线上备份 `.bak-activity-alpha6` 与 `.bak.act-a7.*` 暂留未清理。
+- **证据**：[online-feature-parity-2026-11-12](evidence/online-feature-parity-2026-11-12.md) 第七节。
+
+## 2026-11-13：启用 activity 模块（覆盖官方出厂 `disabled: true`）
+
+用户指令「先帮我解决 activity 模块的启用问题」。承接 2026-11-12 上线时 activity 被官方出厂停用的遗留项。**已改线上 profile、已重启、已核验。未发布 npm、未 push。**
+
+- **停用根因（官方设计，非故障）**：官方制品 `workdsh-plugin-activity@0.1.0-alpha.6` 的 bundle 层 `cordis.patch.yml` 出厂即 `disabled: true`，注释原文「Native Conversation owns work-process presentation in DSH 0.1.7.」；`CHANGELOG` alpha.5 记录「默认停用重复工作过程界面，交由原生 Conversation/Team 展示；保留轻量身份兼容服务」。
+- **启用入口**：live `profiles/web/cordis.patch.yml` 追加 `- id: workdsh-activity / disabled: false`。profile 补丁层**在所有 bundle 层之后应用**，可对同一 id 反向覆盖；同类先例为本文件既有的 `workdsh-browser-session / disabled: false`。编辑前已备份 `cordis.patch.yml.bak.activity.<ts>`。
+- **核验（PASS）**：① 编辑后容器内用 `yaml` 解析该文件 → `parse OK`、`activity entries=[{id:workdsh-activity,disabled:false}]`；② 重启后 `Restarts=0 / running / healthy / 3080=200 / 公网=302`；③ 首页 client manifest 的 workdsh 条目由 8 → **9**，新增 `workdsh-plugin-activity/client.js`；④ 该 bundle 实际下发 HTTP `200`（2806 B，`window.__ModuleLoader__.load({id:"workdsh-plugin-activity"…})`）；⑤ 启动日志两条 `did not activate` 仍为既有无关项（`computer-use-cua-driver-native` 缺 libX11、`workdsh-browser-session` 缺 Electron），**activity 不在其中**；⑥ 真实浏览器加载 `https://dsh.10ge.cn/` 进入应用外壳，无 502/白屏。
+- **边界（关键，避免误解「启用」含义）**：alpha.6 客户端半侧按官方设计为 **registry 桩** —— `dist/client.browser.js` 仅 2726 B，唯一副作用是 `ctx.provide('activityPresentation', createPresentationRegistry())`，`slots.inject` / `createElement` / `useEffect` 命中数均为 **0**，即**不含任何活动/过程 UI**。已用官方 tarball 交叉验证：`workdsh-plugin-activity-0.1.0-alpha.6.tgz` 内同文件 sha256 = 安装件 sha256 = `a4ab8ef9…74e1`，**桩就是官方制品本身**。其服务消费方为 `workdsh-plugin-experts`（`registerIdentity`）与 `workdsh-plugin-skills`（`registerSkillLabels`）。仓库源码 `packages/plugins/activity`（α.5）的 dist 才是含 UI 的完整构建（`client.browser.js` 21370 B、`wd-activity` 38 处），但该版本未发布为线上制品。
+- **未执行（已被上一条更新）**：① ~~若要**可见的活动/团队过程界面**，需以仓库源码重新构建并产出 ≥ α.6 的新制品~~ → **已于本条上方完成**（α.7，2026-11-13）；② 登录后逐页业务点测（无凭据）；③ 仓库快照 `deploy/profile/cordis.patch.yml` 已同步追加同一条覆盖；④ npm 发布、git commit/push。
+- **既有告警（非本轮引入）**：浏览器控制台 `[connection] connection lost, retry #1/#2`、`/api/workdsh-connectors` 与 `/api/workdsh-browser-session` 返回 `ERR_ABORTED` —— 对应 `workdsh-browser-session` 缺 Electron、`workdsh-connectors` 后端未就绪，与 activity 启用无关。
+
+## 2026-11-12（续）：官方 4 可选特性全量补齐上线（office / projects / activity / quality-analysis）
+
+用户指令「对照 dsh.10ge.cn 补齐 WorkDSH 缺失功能模块」。裁决：对齐目标 = **官方发布线**（复用官方制品，不打包、不写新代码）；上线范围 = **office(P0) + projects(P0) + activity(P1) + quality-analysis(P2) 四项全选**。**已上线、已真机验收。未发布 npm、未 push。**
+
+- **缺口定性**：线上 = 官方 `defaultInstallOrder` 默认集；缺口即 `release-manifest.json`（`workdsh-release 3.0.0-alpha.1`）的 4 个 `--with` 可选特性。属「启用官方现成制品」，非从零建功能。证据见 [online-feature-parity-2026-11-12](evidence/online-feature-parity-2026-11-12.md)。
+- **执行**：官方 `install-workdsh.mjs --profile web --with office,projects,activity,quality-analysis` 一次原子安装；随后按 502 护栏跑 `dsh-module-guard.sh` 重统一软链 → `docker compose restart` → 核验 → 恢复 watchdog。
+- **结果**：`bundles=31`；4 包全部落盘并注册（office α.10 / projects α.4 / activity α.6 / quality-analysis 3.0.0-α.57）；首页 client manifest 已下发 office/projects/quality-analysis 的 `client.js`；模块图 `links=330 realdirs=6`；守卫探针 `shadow=0 patch=1 http=200`；容器 `Restarts=0 / healthy / 3080=200 / 公网=302→200`；runtimeOverrides 全按钉扎解析。
+- **攻克的环境障碍**：① pnpm store root-owned → `chown 1000:1000`；② hoisted × 只读镜像 `EROFS` → 先把软链反统一为实体可写副本再装；③ corepack `HOME=/root` 只读 → `-e HOME=/data/dsh/home`；④ 补跑安装器因 git 依赖失败而遗漏的 `retainWorkbenchArchives()`（生成 `workdsh-bootstrap-archives/index.json`），消除 quality-analysis 的 `workbench/installation-archive-unavailable`。
+- **真机验收（PASS）**：独立 browser-agent 访问 `https://dsh.10ge.cn/` → `/portal` → 应用外壳完整渲染，控制台无 error/warning，无 502/白屏/崩溃。
+- **未执行 / 边界**：① 登录后逐特性逐页业务点测（无凭据）；② `activity` 系官方 `disabled: true` 出厂配置，未启用（上游注释指 Native Conversation 已接管过程展示）；③ git 依赖 `dsh-prompt-market` 仍未拉取（不影响现运行）；④ npm 发布、git commit/push。
+
+## 2026-11-12：提示词优化插件改名线上切换收尾（解除 pnpm 构建依赖冲突 + 真机验收）
+
+用户指令「执行线上切换授权」→ 授权确认「先收尾线上切换（推荐）」。承接 2026-11-11 的改名（仅改仓库）。**已改线上 profile、已 install、已 force-recreate、已真机验收。未发布 npm、未 push。**
+
+- **线上不一致态已消除**：切换前 profile 已指向 `workdsh-prompt-optimize` 但 `node_modules/` 仍为第三方 `dsh-prompt-optimize@0.1.0`（registry 移植包）；本轮 install 后第三方目录消失，`node_modules/workdsh-prompt-optimize/` 为本站制品（`package.json` / `index.js` / `client.js` / `cordis.patch.yml` / `README.md`，5 文件，owner `node:node`）。
+- **安装阻塞根因（已解，证据确凿）**：`ERR_PNPM_CONFIG_CONFLICT_BUILT_DEPENDENCIES: Cannot have both neverBuiltDependencies and onlyBuiltDependencies`。经容器内三分实验（`/data/dsh/tmp/exp1..exp4`）定位：**`dangerouslyAllowAllBuilds: true` 与非空 `allowBuilds` 块共存即冲突**，与 `allowBuilds` 里 true/false 混合无关。实验矩阵：
+
+  | case | `allowBuilds` | `dangerouslyAllowAllBuilds` | 结果 |
+  | --- | --- | --- | --- |
+  | v0 原样 | 非空 | true | 冲突（exit 1） |
+  | v1 只留 true 行 | 非空 | true | 冲突（exit 1） |
+  | v5 只留 false 行 | 非空 | true | 冲突（exit 1） |
+  | v2 删整个 allowBuilds 块 | 空 | true | OK |
+  | v3 保留原块 / 删 dangerously | 非空 | 删除 | OK |
+
+  → 删任一侧即解。采用 **删除 `dangerouslyAllowAllBuilds: true`**（更小改动，且该行不在仓库快照 `deploy/profile/pnpm-workspace.yaml` 中，属线上外部漂移；删除即恢复仓库对齐）。备份 `pnpm-workspace.yaml.bak.pofix.<ts>`。
+- **安装与重建（通过）**：`corepack pnpm@10.34.5 install --no-frozen-lockfile --config.minimumReleaseAge=0 --store-dir /data/dsh/.pnpm-store/v10`（`CI=true` 以允许 node_modules 重建）→ `exit=0`，`Done in 1m 44.9s`；`docker compose up -d --force-recreate` → `status=running health=healthy restarts=0`。启动日志中 2 条 `did not activate` 为既有无关项（`computer-use-cua-driver-native` 缺 libX11、`workdsh-browser-session` 缺 Electron），非本轮引入。
+- **真机验收（PASS）**：浏览器登录 `https://dsh.10ge.cn`（账号 `18938845688`）→ 输入框工具栏右侧星标按钮存在，tooltip `优化您的输入`；输入 `帮我写一个函数` 点击后 2 秒返回结构化改写结果并整体替换草稿；再次点击（tooltip 变 `撤销优化`）完整还原为原文；无红色错误/ toast。宿主路由 `POST /prompt-optimize/optimize` 容器内实测：空输入 → 400 `empty input`；真实输入 → 200 `{"ok":true,"optimized":"…"}`（复用 `ctx.llm` provider `gxw` / model `deepseek-v4.1-flash`）。
+- **制品投递约定更正**：线上为 `file:/data/dsh/profiles/web/workdsh-package-assets/<sha256>.tgz`（文件名 = 内容 sha256），与本轮实测 `94af5f5f…c5` 一致；仓库快照 `deploy/profile/package.json` 仍写容器内挂载路径 `file:/workspace/wd-upload-019/…tgz`，二者属不同投递形态，未同步。
+- **未执行**：npm 发布；git commit / push（本轮线上改动未入库）；`build` / `typecheck`（本轮不涉及业务代码）；浏览器自动化回归套件。
+
 ## 2026-11-11：提示词优化插件改名去冲突（`dsh-prompt-optimize` → `workdsh-prompt-optimize`）
 
 用户指令「按这个方案处理包名冲突」→ 选定「换包名，彻底去冲突」。起因是 2026-11-10 复核发现：本站自研提示词插件与 npm registry 上第三方移植包 `dsh-prompt-optimize@0.1.0` **同名不同物**，且线上 profile 实际安装的正是后者（`main: lib/index.js` + `dsh.plugin.json`）。**仅改仓库，未改线上、未发布 npm、未 push。**
