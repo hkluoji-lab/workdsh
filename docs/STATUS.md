@@ -13,7 +13,8 @@
 - **核验（PASS）**：容器 `healthy / RestartCount=0`；3080=`200`、公网匿名 `/`=`302`、`/portal`=`200`；**进程实际 argv 已含两旗标**（`/proc/30/cmdline`）；容器内 `node -v` 仍 `v24.22.2`（未换运行时）；计量臂已切换 `log.txt` `flags=[none]`→`flags=[--no-concurrent-marking --no-concurrent-sweeping]`；`crash.log` 保留 13 条无旗标历史作对照基线（N0 = 13 次/日）；幂等已验证（重复运行 `new=0`）；cron 自动触发已实测（`12:25:02` 无人工干预落盘）。
 - **备份 / 回滚**：`docker-entrypoint.sh.bak.gcflags.20261114123000`、`docker-compose.yml.bak.gcflags.20261114123000`。回滚 A = 还原 entrypoint + `docker compose up -d --force-recreate`；撤销 C = 删 `/etc/cron.d/dsh-crash-watch`。
 - **边界**：① 这是**降频不是修复** —— [§5.1 旗标矩阵](evidence/v8-gc-sigsegv-repro.md) 证明无任何组合归零（Fisher p≈0.48），代价是 **GC 停顿变长**；② **A 的效果未验证**，需 ≥24h 崩溃计数回归对照 N0=13/日判定，若无下降应撤除旗标；③ 未排除同日宿主 `libssl.so.3 +0xaf89d` 段错误簇（已自愈，独立签名）。
-- **未执行**：镜像升级（结论无帮助）、npm 发布、profile 数据变更、git commit/push。
+- **入库**：commit `1cd3079d65`（4 文件，+388/-21）已 push `mygitee/main`。改前原文经 `cmp` 证明与线上逐字节一致；未改 `.env`、未动 portal/survey/vas 数据、未恢复 node26 包装器。
+- **未执行**：镜像升级（结论无帮助）、npm 发布、profile 数据变更。
 - **下一步**：≥24h 后以 `/var/lib/dsh-crash-watch/{crash.log,log.txt}` 对照 N0 判定旗标是否保留。
 - **证据**：[v8-gc-sigsegv-repro](evidence/v8-gc-sigsegv-repro.md) 第 12 节。
 
