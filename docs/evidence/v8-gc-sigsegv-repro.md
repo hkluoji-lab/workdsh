@@ -390,3 +390,99 @@ node --expose-gc biggc.js   → alive v22.22.2 3MB   （应约 62MB）
 注意：`1panel/deepseek-harness:0.2.0-rc.2` 的 arm64 清单因服务器无法访问 Docker Hub
 未核实；迁移前需确认镜像或改用 npm 方式在 arm64 Linux 上部署。
 
+## 12. 2026-11-14 生产处置：恢复运行时缓解 + 补 node 崩溃看护（A+C）
+
+本节记录「网站打不开」的处置。用户裁决的形态为 **A = 就地注入 GC 旗标**（不引入第二份
+node 二进制）、**节奏 = 先 C 观察基线再上 A**；后经用户确认改为当期一并执行 A+C。
+
+### 12.1 现场（2026-11-14，UTC）
+
+- **崩溃规模**：`docker logs dsh | grep -c 'Segmentation fault'` = **13 次**，
+  `RestartCount=5`。时间戳 `02:02:42 / 03:04:27 / 03:36:24 / 08:06:05 / 08:12:19 /
+  08:35:41 / 09:37:40 / 11:10:06 / 11:17:07 / 11:17:21 / 11:30:30 / 11:37:38 / 12:06:22`。
+- **崩溃行固定形态**：`docker-entrypoint.sh: line 197: N Segmentation fault (core dumped)
+  gosu node env HOME=/data/dsh/home DSH_HOME=/data/dsh DSH_TELEMETRY_DISABLED=1
+  ONEPANEL_DSH_AUTH_PROXY=1 node --expose-internals .../dsh/lib/bin.js web ...`。
+  line 197 是派生 entrypoint 的 `wait -n "$dsh_pid"` —— 属**运行期**崩溃
+  （启动期崩溃已由 `start_dsh` 重试兜住）。
+- **单次不可用窗口**：`12:06:22.57` 崩溃 → `12:06:30.01` 就绪 ≈ **7.4 s**，
+  由 compose `restart: always` 自行拉起；对应 Cloudflare 侧
+  `dial tcp 192.168.11.205:3090: connect: connection refused`。
+
+### 12.2 关键发现：11-07 的缓解措施已完全消失
+
+`/data/dsh/runtime/`（node26 二进制 + 包装器 + `node.bak.*`）与 `/data/dsh/coredump/`
+**两个目录均不存在**。当前派生 entrypoint 第 105 行直接调用镜像自带
+`/usr/local/bin/node`（v24.22.2），**裸奔无任何缓解旗标**。这解释了崩溃从
+「10 月低频」回到「今日 13 次」——**§9.6 / §10.2 登记的缓解已不在位，本次是恢复而非新增**。
+
+### 12.3 升级可行性核查（结论：rc.3 无帮助）
+
+| 项 | rc.1（当前线上） | rc.3（商店最新） |
+|---|---|---|
+| Node | v24.22.2 | v24.22.3 |
+| **V8** | **13.6.233.17-node.63** | **13.6.233.17-node.63（一字未变）** |
+| dsh 包 | 0.2.2-rc.1 | 0.2.2-rc.3 |
+| 镜像构建 | 2026-11-07T10:05:24Z | 2026-11-13T09:48:29Z |
+
+V8 引擎版本完全相同 ⇒ 按「同 V8 版本必然保留缺陷」的判据，**升级 rc.3 修不了崩溃**；
+rc.3 变更均为功能类（会话恢复、UI 偏移、SDK 描述）。镜像已拉取核对
+（`sha256:1ca2b9040e5c…f56df`，2.09 GB），**未切换线上**。
+
+另核：dsh 的 `engines.node = ">=24.9.0"`，`lib/` 内无 node 版本运行时断言；
+镜像内 15 个 `.node` **全为 N-API**（`napi-v9` / prebuilds），跨 Node 主版本无 ABI 风险。
+这两个事实决定了 A 可以「就地加旗标」而不必自造运行时。
+
+### 12.4 C：node 崩溃看护与计量（零停服）
+
+- **脚本** `deploy/ops/bin/dsh-crash-watch.sh` → 线上 `/usr/local/bin/dsh-crash-watch.sh`
+  （0755 root:root）；**调度** `/etc/cron.d/dsh-crash-watch` = `*/5 * * * * root`。
+- **与既有看护严格分离**：`dsh-module-guard-watch.sh` 只查模块图三项
+  `shadow=0 / patch=1 / http=200`，**今日 13 次崩溃全部漏报**（node 崩溃不改变模块图）。
+  新脚本只负责 node 崩溃计量与 3080 探针自愈，不改写 guard 状态。
+- **四项行为**：① 累积计数并逐条留档 NDJSON；② 每条崩溃附
+  `gcFlags`（读 entrypoint 实时提取）以**分离有/无旗标两臂**；③ 1 小时窗口 ≥3 次写
+  `ALERT crash_cluster`；④ 3080 探针连续失败 ≥90 s 才 `docker compose restart`
+  （10 分钟冷却防抖）。
+- **状态**：`/var/lib/dsh-crash-watch/{state,crash.log,watch.log,log.txt}`。
+- **合并说明**：仓库原有同名脚本是 **2026-10 从未部署的草稿**（宿主上原本无此文件）。
+  其断言的 `exited after startup` / `host preparation failed` / `cred-lock` 三个日志串
+  在现网**实测计数全为 0**（已消失），故按其口径重写为实测存在的
+  `seg` / `startup_retry`，并沿用其 `log.txt` 文件名与 `post_ready_crash=` 字段名
+  （`dsh-crash-report.sh` 依赖）。合并后为唯一一份。
+- **验证**：幂等（重复运行 `new=0`，`crash.log` 稳定 13 行）；cron 自动触发已实测
+  （`12:25:02` 无人工干预落盘）；基线 N0 = 13 已逐条回填。
+
+### 12.5 A：就地注入 GC 缓解旗标（一次性重建，约 20 s）
+
+- **派生器** `deploy/ops/derived/add-gc-flags-entrypoint.py`（幂等，含锚点唯一性断言）。
+  对「改前原文」产出与线上**逐字节相同**（`cmp` = BYTE_IDENTICAL），单行差异：
+  `node --expose-internals …` → `node --no-concurrent-marking --no-concurrent-sweeping
+  --expose-internals …`。
+- **未采用 NODE_OPTIONS**：实测 v24.22.2 拒绝 V8 旗标
+  （`--no-concurrent-marking is not allowed in NODE_OPTIONS`），只能改启动行。
+- **未采用另下 v22 运行时**：违反 `engines>=24.9.0`、等于自造运行时，且 §5 与
+  §11.2 证据显示 v22 同样崩（仅频次较低）。
+- **同批修日志轮转**：compose 原无 `logging` 配置（无 max-size，崩溃刷屏无上限），
+  补 `driver: json-file / max-size: 10m / max-file: 5`。
+- **执行与验证**：`docker compose up -d` 重建（新容器 `7cdbc4ee…`）；容器
+  `healthy / RestartCount=0`；3080 = `200`；公网匿名 `/` = `302`、`/portal` = `200`；
+  **进程实际命令行已含两旗标**（`pid=30` `/proc/30/cmdline` 实测）；
+  容器内 `node -v` 仍 `v24.22.2`（未换运行时）。
+- **计量臂切换已落档**：`log.txt` 由
+  `flags=[none]` → `flags=[--no-concurrent-marking --no-concurrent-sweeping]`，
+  `crash.log` 保留 13 条无旗标历史作为对照基线。
+- **备份（回滚用）**：`docker-entrypoint.sh.bak.gcflags.20261114123000`。
+  回滚 = 还原该文件 + `docker compose up -d --force-recreate`。
+
+### 12.6 边界与未验证项
+
+- **这是降频不是修复**：§5.1 旗标矩阵证明无任何组合归零（Fisher 精确检验 p≈0.48），
+  本改动只收窄并发 GC 竞态窗口。**副作用：GC 停顿变长**。
+- **效果未验证**：需 ≥24 h 崩溃计数回归（对照 N0 = 13/日）才能判定是否值得保留；
+  若计数无下降，应撤除旗标以避免白付停顿代价。
+- **未排除**：本机 11:11:43—11:18:23 另有宿主 `libssl.so.3` `+0xaf89d` 引发的
+  curl/openssl/python3 段错误簇，**已自愈**，与本节 V8 缺陷是两个独立签名，
+  替换来源未确认（`/root/libssl-backup-20261114-111824/` 由 root 创建）。
+- **未执行**：镜像升级（结论为无帮助）、npm 发布、profile 数据变更。
+

@@ -1,5 +1,22 @@
 # 当前进度
 
+## 2026-11-14：dsh node 崩溃处置（恢复 GC 缓解 A + 补崩溃看护 C）
+
+用户指令「按 A+C 方案执行，先给具体步骤」→ 形态确认「就地加 GC 旗标」→ 节奏改判「**现在就上 A**」（推翻原定 24h 观察期）。起因：11-14 当日 `dsh.10ge.cn` 反复打不开（13 次 `Segmentation fault`，崩溃窗口 3080 不监听 → Caddy 502 → cloudflared `connection refused`）。**已改线上、已重建、已核验。未升级镜像、未发布 npm、未改 profile 数据、未 commit/push。**
+
+- **现场**：13 次崩溃（`02:02:42`…`12:06:22` UTC），`RestartCount=5`；崩溃行固定为 `docker-entrypoint.sh: line 197`（`wait -n`），属**运行期**崩溃；单次不可用窗口约 7.4 s。
+- **关键发现（根因定位）**：`/data/dsh/runtime/` 与 `/data/dsh/coredump/` **均不存在** ⇒ [§9.6 / §10.2](evidence/v8-gc-sigsegv-repro.md) 登记的 node26 包装器缓解**已完全消失**，entrypoint 第 105 行裸调镜像自带 `node`（v24.22.2）无任何旗标。本次是**恢复缓解**，不是新增。
+- **升级核查（结论：rc.3 无帮助）**：rc.1 vs rc.3 的 **V8 均为 `13.6.233.17-node.63`，一字未变**（Node 仅 v24.22.2→v24.22.3）。按「同 V8 ⇒ 缺陷必然保留」判据，**未切换线上**（镜像已拉取核对 `sha256:1ca2b9040e5c…f56df`）。另核 `engines.node=">=24.9.0"`、`lib/` 无 node 版本断言、镜像内 15 个 `.node` 全为 N-API ⇒ 可「就地加旗标」而不必自造运行时。
+- **A（一次性重建约 20 s）**：派生器 [`add-gc-flags-entrypoint.py`](file:///Users/apple/Documents/AI-luoji/workdsh/deploy/ops/derived/add-gc-flags-entrypoint.py) 幂等注入 `--no-concurrent-marking --no-concurrent-sweeping` 到 entrypoint 第 105 行；对改前原文产出与线上 **`cmp` = BYTE_IDENTICAL**。**未用 NODE_OPTIONS**（实测 v24.22.2 拒绝 V8 旗标）。同批补 compose `logging: json-file / max-size 10m / max-file 5`（原本无 max-size）。`docker compose up -d` 重建（新容器 `7cdbc4ee…`）。
+- **C（零停服）**：宿主 `/usr/local/bin/dsh-crash-watch.sh`（0755）+ `/etc/cron.d/dsh-crash-watch`（`*/5 * * * *`）。**与 `dsh-module-guard-watch` 严格分离**：后者只查模块图三项（`shadow/patch/http`），今日 13 次崩溃**全漏报**；新脚本只管 node 崩溃计量与 3080 探针自愈。四项行为：累积计数 + NDJSON 逐条留档 + 每条附 `gcFlags`（分离有/无旗标两臂）+ 1h 内 ≥3 次告警 + 3080 连续失败 ≥90 s 才 restart（10 min 冷却）。
+- **仓库侧一致性**：仓库原有同名 `dsh-crash-watch.sh` 是 2026-10 **从未部署的草稿**（宿主原本无此文件），按「撞名合并」原则合并为唯一一份：以新版为骨架，沿用草稿的 `log.txt` 文件名与 `post_ready_crash=` 字段名（`dsh-crash-report.sh` 依赖），并把草稿中断言但现网**实测计数全为 0**的 `exited after startup`/`host preparation failed`/`cred-lock` 替换为实测存在的 `seg`/`startup_retry`。
+- **核验（PASS）**：容器 `healthy / RestartCount=0`；3080=`200`、公网匿名 `/`=`302`、`/portal`=`200`；**进程实际 argv 已含两旗标**（`/proc/30/cmdline`）；容器内 `node -v` 仍 `v24.22.2`（未换运行时）；计量臂已切换 `log.txt` `flags=[none]`→`flags=[--no-concurrent-marking --no-concurrent-sweeping]`；`crash.log` 保留 13 条无旗标历史作对照基线（N0 = 13 次/日）；幂等已验证（重复运行 `new=0`）；cron 自动触发已实测（`12:25:02` 无人工干预落盘）。
+- **备份 / 回滚**：`docker-entrypoint.sh.bak.gcflags.20261114123000`、`docker-compose.yml.bak.gcflags.20261114123000`。回滚 A = 还原 entrypoint + `docker compose up -d --force-recreate`；撤销 C = 删 `/etc/cron.d/dsh-crash-watch`。
+- **边界**：① 这是**降频不是修复** —— [§5.1 旗标矩阵](evidence/v8-gc-sigsegv-repro.md) 证明无任何组合归零（Fisher p≈0.48），代价是 **GC 停顿变长**；② **A 的效果未验证**，需 ≥24h 崩溃计数回归对照 N0=13/日判定，若无下降应撤除旗标；③ 未排除同日宿主 `libssl.so.3 +0xaf89d` 段错误簇（已自愈，独立签名）。
+- **未执行**：镜像升级（结论无帮助）、npm 发布、profile 数据变更、git commit/push。
+- **下一步**：≥24h 后以 `/var/lib/dsh-crash-watch/{crash.log,log.txt}` 对照 N0 判定旗标是否保留。
+- **证据**：[v8-gc-sigsegv-repro](evidence/v8-gc-sigsegv-repro.md) 第 12 节。
+
 ## 2026-11-13（续）：activity 完整 UI 制品重建并上线（`0.1.0-alpha.7`）
 
 用户指令「按第二条路线推进，重新构建并产出包含完整 UI 的新制品」。承接上一条「仅翻转 `disabled` 只提供服务、不产生可见面板」的边界。**已改仓库、已改线上 profile、已重启、已真机核验、已 commit 并 push `mygitee/main`。未发布 npm。**
