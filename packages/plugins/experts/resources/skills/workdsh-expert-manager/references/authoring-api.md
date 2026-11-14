@@ -30,4 +30,4 @@ export_file(expert_id,revision_id?,file_path) 通过原生 bash 写真实完整�
 
 ## 团队运行映射
 
-运行统一使用官方 Agent Teams：以成员 key 为 name 调用 spawn_teammate，使用 send_message 继续已有成员，list_agents/wait_agent 查询和等待，interrupt_agent 停止当前轮次。用 team_task_create/list/get/update 记录工作与依赖。场景正文保留专业流程、交付要求和独立评审要求；当前没有 WorkDSH 自有 SOP 执行器、尝试计数和自动签收机制。完整运行指导见 ../runtime/team-lead.md。
+运行统一使用官方 Agent Teams：以成员 key 为 name 调用 subagent（需继承当前讨论时用 subagent_fork），使用 send_message 继续已有成员，list_agents/wait_agent 查询和等待。用 team_task_create/list/get/update 记录工作与依赖。场景正文保留专业流程、交付要求和独立评审要求；当前没有 WorkDSH 自有 SOP 执行器、尝试计数和自动签收机制。完整运行指导见 ../runtime/team-lead.md。

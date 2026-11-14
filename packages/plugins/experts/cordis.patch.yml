@@ -1,20 +1,23 @@
-# Official Team composition (DSH 0.1.6). The official service owns execution.
+# Official Team composition (DSH 0.2.2-rc.3). The official `@deepseek-ai/dsh-agent-team`
+# service, its `dsh-tool-agent-team` tools and the `dsh-client-ui-agent-team` Web UI are
+# already provided by dsh-base / dsh-web-app, so this bundle no longer inserts them.
+# rc.3 keeps the host-plane delegation tools disabled and lets each Agent preset select
+# its own `delegation` group, which matches the intent of the rows below.
 - id: tool-subagent-control
-  disabled: true
-- id: tool-subagent-list-agents
   disabled: true
 - id: tool-subagent
   disabled: true
 - id: tool-subagent-fork
   disabled: true
+
+# Enable the rc.3 Team gate at the deployment layer. `config` replaces the official
+# row wholesale, so the official `maxTasks` default must be restated; the removed
+# rc.1 key `maxMembers` would now raise TEAM_INVALID_CONFIG.
+- id: agent-team
+  config:
+    maxTasks: 256
+    defaultEnabled: true
+
 - insert:
-    - id: agent-team
-      name: '@deepseek-ai/dsh-experimental-agent-team'
-      config:
-        maxMembers: 16
-    - id: tool-agent-team
-      name: '@deepseek-ai/dsh-experimental-tool-agent-team'
-    - id: client-ui-agent-team
-      name: '@deepseek-ai/dsh-experimental-client-ui-agent-team'
     - id: workdsh-experts
       name: workdsh-plugin-experts

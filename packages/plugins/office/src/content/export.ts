@@ -65,38 +65,34 @@ export async function exportAndPresent(
   for(const [index,command] of commands.entries()) {
     exec.signal.throwIfAborted();
     let write;
-    try { write = await ctx.tools.execute({
-      name:"bash",arguments:{command,description:`Export current document as ${format}${commands.length>1?` (${index+1}/${commands.length})`:""}`,timeoutMs:30000},
-      callId:`${exec.callId}:office-write${index?`-${index}`:""}` as typeof exec.callId,
-      rootCallId:exec.rootCallId,parent:exec.token,agent:exec.agent,signal:exec.signal,
-    }); } catch {
+    // rc.3 dispatches whole batches: one `ToolCallBlock` per call, settled
+    // outcomes correlated through `results[0]`, contexts aggregated per batch.
+    try { const batch = await ctx.tools.execute({
+      calls:[{type:"tool-call",id:`${exec.callId}:office-write${index?`-${index}`:""}` as typeof exec.callId,
+        name:"bash",arguments:JSON.stringify({command,description:`Export current document as ${format}${commands.length>1?` (${index+1}/${commands.length})`:""}`,timeoutMs:30000})}],
+      agent:exec.agent,signal:exec.signal,
+    });
+      for(const context of batch.additionalContexts)exec.deferContext(context);
+      write = batch.results[0]?.result;
+    } catch {
       throw new Error(`${format} 写入结果未知：${path}。未交付文件；重试 content_export 时使用同一 documentId 和 baseRevision ${snapshot.revision}，先核对已有文件，不覆盖原件。`);
     }
-    for(const context of write.additionalContexts??[])exec.deferContext(context);
+    if(write===undefined)throw new Error(`${format} 写入未返回执行结果，未交付文件。目标 ${path}；可使用同一修订 ${snapshot.revision} 重试导出并核对已有文件。`);
     if(write.isError||!write.content.some(b=>b.type==="text"&&b.text.includes(marker)))throw new Error(`${format} 文件写入失败、被策略拒绝或结果未知，未交付文件。目标 ${path}；可使用同一修订 ${snapshot.revision} 重试导出并核对已有文件，或使用右侧下载。`);
   }
   exec.signal.throwIfAborted();
   let present;
-  try { present = await ctx.tools.execute({
-    name: "present",
-    arguments: {
-      files: [
-        {
-          path,
-          description: `${snapshot.title} · ${format} · 修订 ${snapshot.revision}`,
-        },
-      ],
-    },
-    callId: `${exec.callId}:office-present` as typeof exec.callId,
-    rootCallId: exec.rootCallId,
-    parent: exec.token,
-    agent: exec.agent,
-    signal: exec.signal,
-  }); } catch {
+  try { const batch = await ctx.tools.execute({
+    calls:[{type:"tool-call",id:`${exec.callId}:office-present` as typeof exec.callId,
+      name:"present",arguments:JSON.stringify({files:[{path,description:`${snapshot.title} · ${format} · 修订 ${snapshot.revision}`}]})}],
+    agent:exec.agent,signal:exec.signal,
+  });
+    for (const context of batch.additionalContexts) exec.deferContext(context);
+    present = batch.results[0]?.result;
+  } catch {
     throw new Error(`${format} 已导出到 ${path}，但原生交付结果未知，请核对卡片后对该路径重试 present。`);
   }
-  for (const context of present.additionalContexts ?? [])
-    exec.deferContext(context);
+  if (present === undefined) throw new Error(`${format} 已导出到 ${path}，但原生交付未返回执行结果，请对该路径重试 present。`);
   if (present.isError)
     throw new Error(
       `${format} 已导出到 ${path}，但原生交付失败，请对该路径重试 present。`,

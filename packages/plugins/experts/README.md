@@ -1,6 +1,6 @@
 # WorkDSH 专家插件 / Experts plugin
 
-一个插件管理多个专家与专家团配置。当前源码候选为 `workdsh-plugin-experts@0.1.0-alpha.9`，面向 **DeepSeek Harness 0.2.0-rc.2 / Cordis 4.0.4**；候选代码与已经发布的安装包分别验收。
+一个插件管理多个专家与专家团配置。当前源码候选为 `workdsh-plugin-experts@0.1.0-alpha.10`，面向 **DeepSeek Harness 0.2.2-rc.3 / Cordis 4.1.0**；候选代码与已经发布的安装包分别验收。
 
 WorkDSH manages authored expert assets and immutable revisions. Team execution, messaging, tasks and the Web team panel use the official DSH Agent Teams plugins.
 
@@ -9,21 +9,21 @@ WorkDSH manages authored expert assets and immutable revisions. Team execution, 
 - 专家目录、搜索、收藏、复制、草稿、导入导出、启停和确认发布由专家插件管理。页面与 Agent 管理工具使用同一 Host 服务。
 - 支持 WorkBuddy 风格作品：`plugin.json`、`agents/*.md`、`settings.json`、README，以及 `skills`、`references`、`scripts`、`templates` 和二进制资源。
 - 发布冻结专家定义、成员修订、技能快照和官方 Agent preset。召唤创建原生任务并关联该版本；修改草稿不会静默改变已经发布的内容。
-- 团队创建成员使用官方 `spawn_teammate`；消息、等待、中断和共享任务也使用官方工具。团队面板直接加载官方 Client，不再另做一套成员状态面板。
-- 已发布成员的 key 对应官方 teammate 的 name。在公开 `agent/created` / `agent/pre-step` 中核验资产、主体和组织，通过 Agent 局部的官方 Persona / Skill Filesystem 插件装配该成员。未配置的成员名在模型请求前拒绝。
+- 团队创建成员使用官方 `subagent` / `subagent_fork`（`name` 传成员 key）；消息、等待和共享任务使用官方 `send_message`、`list_agents`、`wait_agent` 与 `team_task_*`。团队面板直接加载官方 Client，不再另做一套成员状态面板。
+- 已发布成员的 key 对应官方成员名。在公开 `agent/created` / `agent/pre-step` 中核验资产、主体和组织，通过 Agent 局部的官方 Persona / Skill Filesystem 插件装配该成员。未配置的成员名在模型请求前拒绝。
 - 场景与分工保留为工作指导；任务依赖和状态由官方 Team 及 Session 日志拥有。任务标记完成不等于专业成果已经验收。
 
 ## 官方装配
 
-本包的 `cordis.patch.yml` 装配三个精确锁定的官方插件：
+rc.3 起官方 `@deepseek-ai/dsh-agent-team`、`@deepseek-ai/dsh-tool-agent-team` 与 `@deepseek-ai/dsh-client-ui-agent-team` 已由 `dsh-base` / `dsh-web-app` 提供，本包不再自行 insert。本包的 `cordis.patch.yml` 只：
 
-| 插件 | 职责 |
+| 条目 | 职责 |
 | --- | --- |
-| `@deepseek-ai/dsh-experimental-agent-team` | 成员、消息、共享任务、持久化恢复 |
-| `@deepseek-ai/dsh-experimental-tool-agent-team` | 官方九项团队工具 |
-| `@deepseek-ai/dsh-experimental-client-ui-agent-team` | 官方成员与共享任务面板 |
+| `- id: agent-team` `config` | 在部署层开启 Team 使能门（`defaultEnabled: true`，`config` 整体替换，需带官方 `maxTasks`） |
+| `- id: tool-subagent` / `-tool-subagent-fork` / `-tool-subagent-control` `disabled: true` | 与官方 web-app 一致，团队模式下不用宿主平面委托工具 |
+| `insert: workdsh-experts` | 本插件自身入口 |
 
-启用 Team 时，按官方 Profile 组合停用旧 `subagent`、`subagent_fork` 及旧控制工具。默认成员创建上限为 16。九项工具为 `spawn_teammate`、`send_message`、`list_agents`、`wait_agent`、`interrupt_agent`、`team_task_create`、`team_task_list`、`team_task_get`、`team_task_update`。
+团队工具为 `subagent`、`subagent_fork`、`send_message`、`list_agents`、`wait_agent` 与 `team_task_create` / `team_task_list` / `team_task_get` / `team_task_update`。`interrupt_agent` 由官方 `config.interrupt` 条件注册，默认关闭。
 
 WorkDSH 的必需组合仍包含 identity-local、audit、access、skills、experts；可选 bundle 提供工作台导航，activity 仅显示个人工作动态。各包通过官方 Loader/Profile 和公开服务注入装配；无自建 Agent loop、消息邮箱、团队执行表或插件加载器。
 

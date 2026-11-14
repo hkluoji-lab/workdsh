@@ -409,7 +409,9 @@ export class SessionAccessBridge extends Service {
     if (request.sessionId !== undefined && !this.ctx.workdshAccess.sessionOwner(String(sessionId))) {
       let exists = false;
       try {
-        await this.ctx.sessionController.inspect(sessionId, signal);
+        // Passive existence read: `state()` never resumes an Agent, and rc.3
+        // rejects an unknown Session with `session/not-found`.
+        await this.ctx.sessionController.state({ sessionId }, signal ?? new AbortController().signal);
         exists = true;
       } catch (error) {
         if (!(error instanceof ApiSessionNotFound) && !hasErrorCode(error, 'session/not-found')) throw error;

@@ -176,7 +176,14 @@ export class ConnectorManager extends Service implements ConnectorManagementServ
     try {
       const agent = { id: `workdsh-connector-health-${randomUUID()}` } as never;
       const call = async (name: string, args: JsonRecord) => {
-        const output = await this.ctx.tools.execute({ name, arguments: args, callId: randomUUID() as never, agent, signal: signal ?? new AbortController().signal });
+        // rc.3 dispatches whole batches: one `ToolCallBlock` per call, and the
+        // settled outcome is correlated back through `results[0]`.
+        const batch = await this.ctx.tools.execute({
+          calls: [{ type: 'tool-call', id: randomUUID() as never, name, arguments: JSON.stringify(args) }],
+          agent, signal: signal ?? new AbortController().signal,
+        });
+        const output = batch.results[0]?.result;
+        if (output === undefined) throw new Error(`连接器健康检查工具 ${name} 未返回执行结果。`);
         if (output.isError) throw output.error; return record(output.value) ?? {};
       };
       // Resources are optional MCP capabilities. A server with working tools must not

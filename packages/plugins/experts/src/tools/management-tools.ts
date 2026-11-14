@@ -269,9 +269,18 @@ function renderResult(summary: string, value: unknown, draftUrl?: string) {
 
 function shellQuote(value: string): string { return "'" + value.replaceAll("'", "'\\''") + "'"; }
 async function nativeTool(ctx: Context, exec: ToolRunContext, name: string, args: object, suffix: string) {
-  const result = await ctx.tools.execute({ name, arguments: args, agent: exec.agent, signal: exec.signal, parent: exec.token, rootCallId: exec.rootCallId, callId: `${exec.callId}-${suffix}` as ToolRunContext['callId'] });
+  // rc.3 dispatches whole batches: one `ToolCallBlock` per call, settled results
+  // correlated by call id. A composite tool defers nested context to its own
+  // final result instead of receiving it synchronously.
+  const batch = await ctx.tools.execute({
+    calls: [{ type: 'tool-call', id: `${exec.callId}-${suffix}` as ToolRunContext['callId'], name, arguments: JSON.stringify(args) }],
+    signal: exec.signal,
+    ...(exec.agent === undefined ? {} : { agent: exec.agent }),
+  });
+  const result = batch.results[0]?.result;
+  if (result === undefined) throw new ExpertsError('experts/unavailable', `原生工具${name}未返回执行结果。`);
   if (result.isError) throw new ExpertsError('experts/forbidden', `原生工具${name}拒绝操作：${result.error.message}`);
-  for (const context of result.additionalContexts ?? []) exec.deferContext(context);
+  for (const context of batch.additionalContexts) exec.deferContext(context);
   return result;
 }
 async function workspaceTarget(ctx: Context, exec: ToolRunContext, path: string) {

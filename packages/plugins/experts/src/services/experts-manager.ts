@@ -1,7 +1,6 @@
 import { definitionFromDocuments, parseExpertDocument, projectExpertDisplay } from '../authoring/documents.js';
 import { randomUUID } from 'node:crypto';
-import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain';
@@ -53,7 +52,7 @@ import type {
 } from 'workdsh-contracts';
 import type { SkillManagementService } from 'workdsh-contracts/skills';
 import { expertsDomainSpec, keys } from '../storage/domain.js';
-import { COMPILER_VERSION, compileExpertPreset, expertPresetDir, presetIdFor, readExpertPreset, registerExpertPreset, verifyPackageFiles } from '../runtime/preset-compiler.js';
+import { COMPILER_VERSION, compileExpertPreset, expertPresetDir, presetIdFor, readExpertPreset, registerExpertPreset, resolveAgentsHome, verifyPackageFiles } from '../runtime/preset-compiler.js';
 import { ConfirmationStore } from '../runtime/confirmation.js';
 import { TtlStore } from '../runtime/plans.js';
 import { definitionDigest, normalizeDefinition, validateDefinition, teamDefinitionSchema } from '../domain/definition.js';
@@ -221,7 +220,7 @@ export class ExpertsManager extends Service implements ExpertsService {
 
   constructor(ctx: Context) {
     super(ctx, 'workdshExperts');
-    const agentsHome = resolve(process.env.DSH_AGENTS_HOME ?? join(homedir(), '.agents'));
+    const agentsHome = resolveAgentsHome();
     this.stagingRoot = join(agentsHome, '.workdsh-state', 'experts', 'staging');
   }
 

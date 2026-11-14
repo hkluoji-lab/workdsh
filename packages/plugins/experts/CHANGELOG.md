@@ -1,3 +1,19 @@
+## 0.1.0-alpha.11 — Unreleased（2026-11-15）
+
+- 修复专家预设目录解析回归：`expertPresetDir()` / 专家服务暂存根在 `DSH_HOME` 已设、`DSH_AGENTS_HOME` 未设时回落到 `~/.agents`，而线上 Web 进程只有 `HOME=/data/dsh/home`、`DSH_HOME=/data/dsh`，导致读取路径变成不存在的 `/data/dsh/home/.agents`，已发布修订全部抛 `experts/preset-broken`，`workdsh-experts` 整条 entry 不激活。
+- 恢复 `resolveAgentsHome(explicit?)` 单一解析器：显式参数 → `$DSH_AGENTS_HOME` → `$DSH_HOME/agents` → `~/.agents`。该口径是本仓库此前的修复（`bb58979e08`「share one agents home for publish and execution」，技能插件 [manager.ts](../../../packages/plugins/skills/src/services/manager.ts) 一直沿用同一 `$DSH_HOME/agents` 回落），本分支在 rc.3 适配时丢失，本版补回。分配、编译、读取、执行守卫与暂存目录统一走同一函数，避免「发布写在 A、读取打开 B」再次分裂。
+- 线上实测：`/data/dsh/agents` 为真实根（`skills/`、`skills-catalog/`、`.workdsh-state/experts/presets/` 均在此），`/data/dsh/home/.agents` 不存在；修复后 `expertPresetDir()` 在 `DSH_HOME=/data/dsh` 下解析为 `/data/dsh/agents/.workdsh-state/experts/presets/<id>`，`preset.json` 可读。
+- α.10 的退出证据中「线上重装后专家功能可用」不成立（当时该 entry 仍 `did not activate`），本版以真实运行结果取代；α.10 制品保留不改写。
+
+## 0.1.0-alpha.10 — Unreleased（2026-11-15）
+
+- 适配 DeepSeek Harness `0.2.2-rc.3`：团队包由 `dsh-experimental-agent-team` / `dsh-experimental-tool-agent-team` / `dsh-experimental-client-ui-agent-team` 改名为官方 `dsh-agent-team` / `dsh-tool-agent-team` / `dsh-client-ui-agent-team`，已由 `dsh-base` / `dsh-web-app` 提供，`cordis.patch.yml` 不再自行 insert（旧名引用在 rc.3 容器树中不存在，会导致整包 import 失败、`agentTeams` 服务不 provide、本插件 pending）。
+- 移除 rc.1 时代的 `maxMembers` 配置键（rc.3 已删除该键，保留会触发 `TEAM_INVALID_CONFIG`），改为部署层开启 rc.3 Team 使能门 `config: { maxTasks: 256, defaultEnabled: true }`。
+- 执行守卫迁移到 rc.3 公开面：`ctx.agentTeams.tryMembership` / `TeamMembership`（已移除）改为 `ctx.subagents.rootOf(caller)` + `ctx.subagents.namesOf(agent)`；`rootOf` 对非 live agent 抛 `SubagentError('…','UNAUTHORIZED')`，守卫显式捕获后按无授权处理，不向外冒泡。
+- 新增官方依赖 `@deepseek-ai/dsh-subagent`，并把 `@deepseek-ai/dsh-agent-team` 等 rc.3 依赖纳入 `inject`。
+- 跨插件同批适配（本插件调用面）：管理工具 `ctx.tools.execute` 迁移到 rc.3 batch API；`spawn_teammate` 在 rc.3 已移除，工具标签改用 `subagent`。
+- 退出证据：`typecheck`、`build` 通过；`pnpm check:versions`（649 DSH lock entries pinned to 0.2.2-rc.3）、`check:plan`（34 modules / 50 documents）通过。线上重装后 `workdsh-experts` 不再 pending、`agentTeams` 服务已 provide、专家功能可用（见 [dsh-0.2.2-rc.3-upgrade](../../../docs/evidence/dsh-0.2.2-rc.3-upgrade.md)）。
+
 ## 0.1.0-alpha.9 — Unreleased（2026-09-25）
 
 - 过期编译器修订改为**自动迁移，不再要求用户重新发布**：`experts-manager.ts` 的 `ensureCurrentExecutionRevision` 由「仅团队修订」泛化为任意 `compilerVersion` 过期的已发布修订，并新增 `ensureCompilerCurrent()` 在 `[Service.init]` 启动时与 `list()`／`get()` 读取前扫描并重编译。旧修订行按 [ADR-0010](../../../docs/adr/0010-immutable-preset-revisions.md) 保持只读不改写，结果写成派生修订并前移 `publishedRevisionRef`，审计码 `experts/compiler-migration-succeeded`（失败记 `experts/compiler-migration-failed`）。

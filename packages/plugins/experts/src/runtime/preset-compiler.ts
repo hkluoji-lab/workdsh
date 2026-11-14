@@ -1,6 +1,6 @@
 import { assetBytes, validateResources, type PackageAssets } from '../authoring/package-resources.js';
 import { mkdir, readFile, writeFile, readdir, lstat, chmod, mkdtemp, rename, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { Context } from '@deepseek-ai/cordis';
 import type { PresetDefinition } from '@deepseek-ai/dsh-agent-preset-registry';
 import type {} from '@deepseek-ai/cordis-plugin-loader';
@@ -53,12 +53,12 @@ function isPresetModule(name: string): boolean {
 
 const LEGACY_TEAM_TOOL_REPLACEMENTS: Readonly<Record<string, string>> = {
   workdsh_expert_team_start: '官方 Team 已随当前会话建立（无需调用建团工具）',
-  workdsh_expert_team_ask: '`spawn_teammate`、`send_message` 与 `wait_agent`',
-  workdsh_expert_team_delegate: '`spawn_teammate`、`team_task_create` 与 `send_message`',
+  workdsh_expert_team_ask: '`subagent`（`name` 传成员 key）、`send_message` 与 `wait_agent`',
+  workdsh_expert_team_delegate: '`subagent`（`name` 传成员 key）、`team_task_create` 与 `send_message`',
   workdsh_expert_team_status: '`list_agents`、`team_task_list` 与 `team_task_get`',
   workdsh_expert_team_complete: '`team_task_update`',
   workdsh_expert_team_deliver: '完成共享任务后直接汇总交付',
-  workdsh_expert_team_cancel: '`interrupt_agent` 或更新共享任务状态',
+  workdsh_expert_team_cancel: '更新共享任务状态（`interrupt_agent` 默认不注册）',
 };
 
 /** Keep older published team assets usable after the 0.1.6 official Team migration. */
@@ -105,10 +105,22 @@ export function presetIdFor(input: CompileInput): string {
   return `wd-exp-${kebab(input.expertId)}-${digest}`;
 }
 
+/**
+ * Resolve the shared agent configuration root used for expert presets.
+ *
+ * Precedence: explicit argument, `$DSH_AGENTS_HOME`, `$DSH_HOME/agents`, then `~/.agents`.
+ * The `$DSH_HOME/agents` step matches the skills plugin and the official single-root
+ * layout, so publishing and reading stay on one directory when only `DSH_HOME` is set.
+ */
+export function resolveAgentsHome(explicit?: string): string {
+  const selected = explicit ?? process.env.DSH_AGENTS_HOME ?? (process.env.DSH_HOME ? join(process.env.DSH_HOME, 'agents') : join(homedir(), '.agents'));
+  return resolve(selected);
+}
+
 /** Managed directory holding one immutable expert revision: declaration plus package resources. */
-export function expertPresetDir(presetId: string): string {
+export function expertPresetDir(presetId: string, agentsHome?: string): string {
   if (!/^wd-exp-[a-z0-9-]+$/.test(presetId)) throw new Error('experts/invalid-preset-id');
-  return join(process.env.DSH_AGENTS_HOME ?? join(homedir(), '.agents'), '.workdsh-state', 'experts', 'presets', presetId);
+  return join(resolveAgentsHome(agentsHome), '.workdsh-state', 'experts', 'presets', presetId);
 }
 
 /** Registered declarations per runtime Context, so one revision is registered once. */
