@@ -210,7 +210,7 @@ $ npm view @deepseek-ai/dsh dist-tags --json
 
 | 项 | 说明 |
 | --- | --- |
-| `docs/dsh-v0.2.2-rc.3/` 官方文档镜像 | **未落盘**。版本判定以 registry 与发布包实测为准；AGENTS.md 硬约束路径暂留 `docs/dsh-v0.1.7-rc.2/` 以免 404，镜像落盘后统一重锚 |
+| `docs/dsh-v0.2.2-rc.3/` 官方文档镜像 | **已落盘（2026-11-15）**。由 GitHub tag `dsh-v0.2.2-rc.3`（commit `38a6a5c965aa99ab525161efb7cc5cf1fe62fced`）下载 `docs/` 子树 → `docs/dsh-v0.2.2-rc.3/`：**1128 文件 / 709 md / 15MB / 11 子目录**。全仓操作性文档引用已由 `docs/dsh-v0.1.7-rc.2/` 重锚至新镜像；上游已无 `native/system/docs/`（历史排除项作废） |
 | tarball 逐文件比对 | **未执行**。线上已运行同版本，逐文件比对收益低于成本 |
 | 14 个新增包的业务语义 | **未逐一验证**。仅为 overrides 覆盖，不主动安装为 bundle |
 | 线上 16 条 workdsh 兼容豁免入库 | **未回填**。仓库 `deploy/profile/compatibility.json` 仍为「快照 1 条 agent-teams」口径（repo 实测 `git log --all -p -- deploy/profile/compatibility.json \| grep -c workdsh-` = 0）；线上 20 键从未入库，差异见 [deploy/profile/README.md](../../deploy/profile/README.md) |

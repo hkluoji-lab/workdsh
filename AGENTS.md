@@ -38,7 +38,7 @@ WorkDSH 是基于 DeepSeek Harness 公开插件接口的 Web 工作平台，参�
 
 ## Harness 优先复用硬约束
 
-- 所有 Harness 集成开发必须先查阅 `docs/dsh-v0.1.7-rc.2/` 中与锁定版本相符的官方说明，并按 [Harness 官方开发规范](docs/HARNESS-OFFICIAL-DEVELOPMENT.md) 完成扩展面、依赖、生命周期和验收核对。官网用于发现和交叉核对；发布包 exports/types 与锁定版本实测决定可用接口。（基线已随升至 `0.2.2-rc.3`，但 `docs/dsh-v0.2.2-rc.3/` 官方文档镜像**尚未落盘**，故本路径暂留 `0.1.7-rc.2` 以免 404；镜像落盘后统一重锚，边界见 [dsh-0.2.2-rc.3-upgrade](docs/evidence/dsh-0.2.2-rc.3-upgrade.md)「未覆盖项与边界」）
+- 所有 Harness 集成开发必须先查阅 `docs/dsh-v0.2.2-rc.3/` 中与锁定版本相符的官方说明，并按 [Harness 官方开发规范](docs/HARNESS-OFFICIAL-DEVELOPMENT.md) 完成扩展面、依赖、生命周期和验收核对。官网用于发现和交叉核对；发布包 exports/types 与锁定版本实测决定可用接口。镜像与锁定的差异边界见 [dsh-0.2.2-rc.3-upgrade](docs/evidence/dsh-0.2.2-rc.3-upgrade.md)「未覆盖项与边界」。
 - 左侧主导航只通过官方 `sidebar.panellist` 等已声明 Slot 增量贡献，并与 `main` 的同 key 页面配对；不得替换或复制官方 Workspace/Session/New Session/Settings owner。`sidebar-right` 只用于当前 Session 的文件、目录、成果或上下文页面，不承担全局主导航和全局管理页面。
 - 普通 Slot 贡献使用 `ctx.slots.inject(key, callback)` 等待 owner 生命周期；独立 registry/service/listener/timer/watcher/subprocess 等注册必须由 `ctx.effect()`、`ctx.on()` 或官方自动托管 API 拥有并可完整撤销。组件 props 从官方 `PropsRuntime<K>`/标准 owner props 推导，不复制框架 props，也不把 `ctx` 传入 React 组件。
 

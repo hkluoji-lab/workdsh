@@ -1,5 +1,5 @@
 {
-  "corpusRoot": "docs/dsh-v0.1.7-rc.2",
+  "corpusRoot": "docs/dsh-v0.2.2-rc.3",
   "canonicalRule": "Prefer each *.zh.md file; use English *.md only when no Chinese pair exists.",
   "reviewed": [
     "development.zh.md",
@@ -12,7 +12,6 @@
     "subsystems/extensions.zh.md",
     "subsystems/feedback.zh.md",
     "subsystems/goal.zh.md",
-    "subsystems/invariants.zh.md",
     "subsystems/lsp.zh.md",
     "subsystems/plan.zh.md",
     "subsystems/shell.zh.md",
@@ -53,7 +52,12 @@
     "cordis-tutorial/06-composition-and-hmr.zh.md",
     "cordis-tutorial/07-into-the-harness.zh.md",
     "cordis-tutorial/index.zh.md",
-    "defensive-patterns.zh.md",
+    "defensive-patterns/README.zh.md",
+    "defensive-patterns/general.zh.md",
+    "defensive-patterns/client-components.zh.md",
+    "defensive-patterns/conversation-and-session.zh.md",
+    "defensive-patterns/package-surface.zh.md",
+    "defensive-patterns/remote-and-api.zh.md",
     "deepseek-llm-api-wire-extensions.zh.md",
     "event-producer-consumer.zh.md",
     "glossary.zh.md",
