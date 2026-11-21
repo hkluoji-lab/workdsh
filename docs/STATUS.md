@@ -2,7 +2,7 @@
 
 ## 2026-11-21：线上 20 键版本兼容豁免回填仓库（承接 rc.5 升级轮，阶段 6）
 
-用户指令「**执行线上 20 键豁免回填**」。**已把线上 `dsh.10ge.cn` profile 实况的 20 条豁免逐字回填仓库 [deploy/profile/compatibility.json](file:///Users/apple/Documents/AI-luoji/workdsh/deploy/profile/compatibility.json)，并更新 README 口径与证据文档；`check:plan`/`check:versions` 双 PASS。未 commit / 未 push（待授权）。本轮为纯配置快照更新，零源码改动，未写线上。**
+用户指令「**执行线上 20 键豁免回填**」。**已把线上 `dsh.10ge.cn` profile 实况的 20 条豁免逐字回填仓库 [deploy/profile/compatibility.json](file:///Users/apple/Documents/AI-luoji/workdsh/deploy/profile/compatibility.json)，并更新 README 口径与证据文档；`check:plan`/`check:versions` 双 PASS。已 commit `4e830b7fdb`（4 文件 / +124 −8），已 push `fork/main`（GitHub）+ `mygitee/main`（Gitee），两远端均 = `4e830b7fdb`。本轮为纯配置快照更新，零源码改动，未写线上。**
 - **目标**：消除「线上 20 键 / 仓库 1 键（仅 agent-teams）」的已知差异（原记录见 rc.5 第 8、9.6 节及 rc.3 证据第八节）。
 - **线上只读取证**（`sudo cat …/profiles/web/compatibility.json`）：键数 **20**（workdsh **16** + 官方 **4**），`agent-teams` 键 = **0**；每键值为 `["0.2.2-rc.3","0.2.2-rc.5"]` 双值；官方 4 键后缀为 `dsh-computer-use@0.2.2-rc.1` + 其余 3 键 `@0.2.2-rc.3`。
 - **回填动作**：以线上内容逐字重写 `deploy/profile/compatibility.json`（20 键、2 空格缩进、键序对齐线上）；`deploy/profile/README.md` 的 `compatibility.json` 行由「本快照 1 条 + 线上实际 20 键（未入库）」改为「已回填 20 键」。
