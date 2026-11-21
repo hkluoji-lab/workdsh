@@ -1,5 +1,49 @@
 # 当前进度
 
+## 2026-11-21：npm 发布按「打包制品」执行（21 个 workspace 成员）
+
+用户指令「**执行 npm 发布**」，经确认选择**发布方式 = 打包制品**（不发布到 npm registry，符合本项目既有政策与 `scripts/pack-project-release.mjs` 的 `packages are GitHub assets and are not published to the npm registry` 口径）、**范围 = 全部 workspace 包**。**已产出本地制品 `.artifacts/0.2.2-rc.5-release/`：21 个 `.tgz` + `SHA256SUMS`（21 行，全 OK）+ `release-manifest.json`（21 包）；`check:plan`/`check:versions` 双 PASS。未 commit / 未 push（待授权）。**
+
+- **真发布前置事实（实测，构成不发布到 registry 的依据）**：`npm whoami` → `ENEEDAUTH`；`~/.npmrc` 无任何 `_authToken`/`_auth`/`username` 键；环境变量无 `NPM_TOKEN`/`NODE_AUTH_TOKEN`；`npm config get registry` = `https://registry.npmmirror.com/`（只读镜像，不可发布）；根 `package.json` 为 `private: true`、无 publish 脚本、无 `publishConfig`；`.github/workflows/` 仅 `pages.yml`，无发布流水线。故按既有政策走**打包制品**路径。
+- **包集合澄清**：`corepack pnpm -r list --depth -1` 返回 **22 行** = **21 个 workspace 成员 + 根聚合包 `workdsh@0.1.0-alpha.8`**。根包为 `private`、无 `files`/`main`/`bin`，`pnpm pack` 产出 ~34 MB 全源码 tarball（非可分发包）⇒ **实际打包 21 个成员，根部排除**。
+- **命令链**：
+  1. `corepack pnpm -r --if-present --filter '!workdsh-plugin-automations' build`（20 个成员；automations 因既有骨架缺陷排除，见下）
+  2. 逐成员 `corepack pnpm --filter <name> pack --pack-destination .artifacts/0.2.2-rc.5-release`（21/21 `ok`）
+  3. `node /tmp/gen-release-manifest.mjs` → `OK: SHA256SUMS 21 lines; release-manifest.json 21 packages; private 12 public 9`
+- **manifest 头部**：`project=WorkDSH`、`scope=plugin-refresh-0.2.2-rc.5`、`channel=local-artifact`、`sourceCommit=8ce4eec32edc965cd11d0abc2bb36d1676d11705`、`worktreeDirty=false`、`harness=0.2.2-rc.5`、`node=v24.15.0`、`packageManager=pnpm@10.34.5`。schema（顶层 9 键 / 包项 7 键）与既有范本 `.artifacts/0.2.1-alpha.2-release/` **完全一致**。
+- **21 包清单**（`private/public  name  version  bytes  dshPeers`；`dshPeers` = 该包 `peerDependencies` 中 `@deepseek-ai/dsh*` 前缀键数）：
+
+  | | 包 | 版本 | bytes | dshPeers |
+  | --- | --- | --- | --- | --- |
+  | PRIV | workdsh-bundle | 0.1.0-alpha.58 | 30506 | 0 |
+  | PRIV | workdsh-contracts | 0.1.0-alpha.13 | 26532 | 0 |
+  | PRIV | workdsh-plugin-access | 0.1.0-alpha.6 | 34656 | 5 |
+  | pub | workdsh-plugin-activity | 0.1.0-alpha.7 | 28789 | 6 |
+  | pub | workdsh-plugin-assistant | 0.1.0-alpha.1 | 38249 | 7 |
+  | PRIV | workdsh-plugin-audit | 0.1.0-alpha.4 | 4672 | 1 |
+  | pub | workdsh-plugin-automations | 0.1.0-alpha.1 | 31453 | 15 |
+  | pub | workdsh-plugin-connectors | 0.1.0-alpha.3 | 35578 | 11 |
+  | pub | workdsh-plugin-drive | 0.1.0-alpha.9 | 63717 | 19 |
+  | pub | workdsh-plugin-experts | 0.1.0-alpha.11 | 186164 | 10 |
+  | PRIV | workdsh-plugin-identity | 0.1.0-alpha.1 | 16663 | 3 |
+  | pub | workdsh-plugin-library | 0.1.0-alpha.4 | 61754 | 16 |
+  | PRIV | workdsh-plugin-office | 0.1.0-alpha.12 | 19626528 | 7 |
+  | pub | workdsh-plugin-projects | 0.1.0-alpha.4 | 63944 | 15 |
+  | pub | workdsh-plugin-skills | 0.1.0-alpha.32 | 146631 | 3 |
+  | PRIV | workdsh-plugin-workbench | 0.1.0-alpha.16 | 19750 | 0 |
+  | PRIV | workdsh-portal | 0.1.0-alpha.5 | 545029 | 0 |
+  | PRIV | workdsh-provider-identity-local | 0.1.0-alpha.6 | 6875 | 1 |
+  | PRIV | workdsh-survey | 0.1.0-alpha.1 | 42318 | 0 |
+  | PRIV | workdsh-ui | 0.1.0-alpha.6 | 9604 | 0 |
+  | PRIV | workdsh-vas | 0.1.0-alpha.1 | 60812 | 0 |
+
+  TOTAL bytes = **21080224**（约 21.1 MB；office 单包 19.6 MB，含 `dist/office-runtime.js` 25.1 MB、`dist/index.js` 23.0 MB、`dist/editor.html` 20.0 MB 打包前体量）；private **12** / public **9**。
+- **复验（PASS）**：`ls *.tgz | wc -l` = **21**；`(cd $D && shasum -a 256 -c SHA256SUMS)` → 21 行全 `OK`；21 个 tarball 全部 `tar -xzf` 解包成功且含 `package/package.json`；`check:plan` PASS（34 modules / 50 documents）；`check:versions` PASS（664 DSH lock entries pinned to `0.2.2-rc.5`）。
+- **已发现并如实登记——automations 制品不完整（既有骨架缺陷，非本轮引入）**：`packages/plugins/automations/package.json` 第 12–15 行 `exports["./client"]` 声明 `./dist/client.d.ts` + `./dist/client.browser.js`，但 tarball 内**无这两个文件**——因为 `scripts/build-automations.mjs` 第 2 行硬编码入口 `src/client.tsx` 而该文件不存在（`src/client/` 仅含 `.gitkeep`），构建必失败，故本轮打包**跳过了该包的 build**（`--filter '!workdsh-plugin-automations'`）。该包**不在根 `build` 过滤器内**、**不在任何 profile bundles 内**（仓库 0 / 线上 0 引用），属既有 WIP 骨架。其 `.tgz` 已产出且校验通过，但**其 `./client` 入口在包内不可解析**。
+- **入库口径**：`.artifacts/` 在 `.gitignore:10` 忽略，历史制品目录（含 `0.2.1-alpha.2-release`）**0 文件入库**；仓库仅跟踪 1 个 tgz（`packages/plugins/experts/workdsh-plugin-experts-0.1.0-alpha.11.tgz`，供 profile `file:` 依赖，其 sha256 = `7544c3f4…`，与本次重打包同名包 `7eb7c4d1…` 不同——`pnpm pack` 非确定性）。**本轮制品沿用既有惯例，作为本地交付资产保留在 `.artifacts/`，不入库。**
+- **未执行**：① 发布到 npm registry（无凭据 + 只读镜像 + 根包 `private` + 违背既有政策；用户已选择制品路径）；② `git commit` / `git push`（硬约束：需用户授权；`docs/**` 在 `/docs/` 忽略规则下需 `git add -f`）；③ 制品入库（`.artifacts/` gitignored，沿用惯例不入库）；④ `workdsh-plugin-automations` 的 `src/client.tsx` 缺失修复（既有骨架缺陷，未在本轮范围）。
+- **证据**：[dsh-0.2.2-rc.5-upgrade 第 9.8 节](evidence/dsh-0.2.2-rc.5-upgrade.md)。
+
 ## 2026-11-21：线上 20 键版本兼容豁免回填仓库（承接 rc.5 升级轮，阶段 6）
 
 用户指令「**执行线上 20 键豁免回填**」。**已把线上 `dsh.10ge.cn` profile 实况的 20 条豁免逐字回填仓库 [deploy/profile/compatibility.json](file:///Users/apple/Documents/AI-luoji/workdsh/deploy/profile/compatibility.json)，并更新 README 口径与证据文档；`check:plan`/`check:versions` 双 PASS。已 commit `4e830b7fdb`（4 文件 / +124 −8），已 push `fork/main`（GitHub）+ `mygitee/main`（Gitee），两远端均 = `4e830b7fdb`。本轮为纯配置快照更新，零源码改动，未写线上。**
