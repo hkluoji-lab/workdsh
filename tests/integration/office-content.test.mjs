@@ -600,13 +600,15 @@ test("PPT export delivers committed native bytes, retries safely and rejects cha
   const deck=await createPresentation("最终交付");
   const snapshot={documentId:"ppt-export-test",kind:"presentation",title:"最终交付",revision:3,state:{deck},generation:"test"};
   const calls=[];
-  const ctx={tools:{get:()=>true,execute:async input=>{
+  const ctx={tools:{get:()=>true,execute:async batch=>{
+    const [call]=batch.calls,input={callId:call.id,name:call.name,arguments:JSON.parse(call.arguments)};
     calls.push(input);
+    let result={content:[]};
     if(input.name==="bash"){
-      try{const {stdout}=await promisify(execFile)(process.execPath,["-e",input.arguments.command.slice(9,-1)],{cwd:home});return {content:[{type:"text",text:stdout}]};}
-      catch{return {isError:true,content:[]};}
+      try{const {stdout}=await promisify(execFile)(process.execPath,["-e",input.arguments.command.slice(9,-1)],{cwd:home});result={content:[{type:"text",text:stdout}]};}
+      catch{result={isError:true,content:[]};}
     }
-    return {content:[]};
+    return {results:[{callId:call.id,result}],additionalContexts:[]};
   }}};
   const exec={agent:{},signal:new AbortController().signal,callId:"export-test",deferContext:()=>{}};
   try{
@@ -653,7 +655,7 @@ test("Excel live service persists batches, fences human edits, and delivers actu
   assert.equal((await h.s.read(actor(),first.documentId)).revision,3);
   const latest=await h.s.read(actor(),first.documentId);const bytes=await spreadsheetXlsx(latest);assert.deepEqual(bytes,await spreadsheetXlsx(latest));
   const wb=new ExcelJS.Workbook();await wb.xlsx.load(bytes);assert.equal(wb.worksheets.length,2);assert.equal(wb.getWorksheet("工作表1").getCell("A2").value,9);assert.equal(wb.getWorksheet("工作表1").getCell("C2").formula,"SUM(A2:B2)");assert.equal(wb.getWorksheet("汇总").getCell("A1").formula,"'工作表1'!C2");
-  const {exportAndPresent}=await import(new URL("export.js",artifacts));const calls=[];const delivery={tools:{get:()=>true,execute:async input=>{calls.push(input);if(input.name==="bash"){const marker=/OFFICE_EXPORTED_[a-z0-9-]+/.exec(input.arguments.command)[0];return {content:[{type:"text",text:marker}]};}return {content:[]};}}};
+  const {exportAndPresent}=await import(new URL("export.js",artifacts));const calls=[];const delivery={tools:{get:()=>true,execute:async batch=>{const [call]=batch.calls,input={callId:call.id,name:call.name,arguments:JSON.parse(call.arguments)};calls.push(input);const result=input.name==="bash"?{content:[{type:"text",text:/OFFICE_EXPORTED_[a-z0-9-]+/.exec(input.arguments.command)[0]}]}:{content:[]};return {results:[{callId:call.id,result}],additionalContexts:[]};}}};
   const file=await exportAndPresent(delivery,{agent:{},signal:new AbortController().signal,callId:"excel-export",deferContext(){}},latest,3);assert.match(file.path,/\.xlsx$/);assert.equal(calls.at(-1).name,"present");
   await h.ctx.fiber.dispose();h=await boot(root);const cold=await h.s.read(actor(),first.documentId);assert.equal(cold.kind,"spreadsheet");assert.equal(cold.state.sheets["sheet-1"].cells.A2.value,9);assert.deepEqual(await h.s.editForAgent(actor(),batch),receipt);
  }finally{if(h)await h.ctx.fiber.dispose();await rm(root,{recursive:true,force:true});}
@@ -834,13 +836,16 @@ test("Large template PPTX exports through bounded commands without changing pack
  const bytes=await zip.generateAsync({type:"nodebuffer",compression:"STORE"});deck.bytes=bytes.toString("base64");
  const snapshot={documentId:"large-ppt",kind:"presentation",title:"大模板",revision:22,state:{deck},generation:"test"};
  const calls=[];let denied=false;
- const ctx={tools:{get:()=>true,execute:async input=>{
+ const ctx={tools:{get:()=>true,execute:async batch=>{
+  const [call]=batch.calls,input={callId:call.id,name:call.name,arguments:JSON.parse(call.arguments)};
   calls.push(input);
-  if(input.name!=="bash")return {content:[]};
-  assert.ok(Buffer.byteLength(input.arguments.command)<140000);
-  if(denied)return {isError:true,content:[{type:"text",text:"denied"}]};
-  const {stdout}=await promisify(execFile)(process.execPath,["-e",input.arguments.command.slice(9,-1)],{cwd:home});
-  return {content:[{type:"text",text:stdout}]};
+  let result={content:[]};
+  if(input.name==="bash"){
+   assert.ok(Buffer.byteLength(input.arguments.command)<140000);
+   if(denied)result={isError:true,content:[{type:"text",text:"denied"}]};
+   else{const {stdout}=await promisify(execFile)(process.execPath,["-e",input.arguments.command.slice(9,-1)],{cwd:home});result={content:[{type:"text",text:stdout}]};}
+  }
+  return {results:[{callId:call.id,result}],additionalContexts:[]};
  }}};
  const exec={agent:{},signal:new AbortController().signal,callId:"large-export",deferContext(){}};
  try{

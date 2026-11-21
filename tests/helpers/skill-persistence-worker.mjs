@@ -1,5 +1,5 @@
 import { apply as JsonlPersistence } from '@deepseek-ai/dsh-session-persistence-jsonl';
-import { createMessage, Context, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Tools, Llm, Skills, filesystem, skillTool, LocalFileSystem, WorkingDirectory, SkillRequestAdapter } from './skill-runtime.mjs';
+import { createMessage, Context, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Tools, Llm, Skills, filesystem, skillTool, LocalFileSystem, WorkingDirectory, SkillRequestAdapter, nativeToolExecutor } from './skill-runtime.mjs';
 
 const [phase, root, skillRoot, sessionId] = process.argv.slice(2);
 const ctx = new Context();
@@ -11,7 +11,8 @@ try {
     reader = await ctx.sessionPersistence.open(sessionId, 'read');
     process.stdout.write(JSON.stringify({ events: (await reader.read()).events }));
   } else {
-    for (const plugin of [LocalFileSystem, Sessions, Projections, SystemPrompt, WorkingDirectory, Tools, Llm, Agents, Skills, AgentLoop]) await ctx.plugin(plugin);
+    // rc.3 requires a custom composition to mount a tool executor explicitly.
+    for (const plugin of [LocalFileSystem, Sessions, Projections, SystemPrompt, WorkingDirectory, Tools, nativeToolExecutor, Llm, Agents, Skills, AgentLoop]) await ctx.plugin(plugin);
     const adapter = new SkillRequestAdapter();
     adapter.callId = `skill-${phase}`;
     ctx.llm.registerAdapter(['workdsh-test'], adapter);

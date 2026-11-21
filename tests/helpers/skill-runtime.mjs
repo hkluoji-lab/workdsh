@@ -11,6 +11,10 @@ import * as filesystem from '@deepseek-ai/dsh-skill-filesystem';
 import * as skillTool from '@deepseek-ai/dsh-tool-skill';
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local';
 import WorkingDirectory from '@deepseek-ai/dsh-working-directory';
+// rc.3 moved tool dispatch behind an explicit executor plugin. Any custom
+// composition (including these fixtures) must mount one; the official bundle
+// mounts it for real runs. https://dsh docs: v0.2.1-rc.2/tool-executor-plugins
+import * as nativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native';
 
 // Deterministic test double for model I/O only. The official loop executes the tool.
 export class SkillRequestAdapter extends LlmAdapter {
@@ -30,4 +34,4 @@ export class SkillRequestAdapter extends LlmAdapter {
   }
 }
 
-export { createMessage, Context, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Tools, Llm, Skills, filesystem, skillTool, LocalFileSystem, WorkingDirectory };
+export { createMessage, Context, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Tools, Llm, Skills, filesystem, skillTool, LocalFileSystem, WorkingDirectory, nativeToolExecutor };

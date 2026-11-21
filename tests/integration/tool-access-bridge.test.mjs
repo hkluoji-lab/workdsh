@@ -8,6 +8,8 @@ import Storage from '@deepseek-ai/dsh-storage';
 import * as JsonStorage from '@deepseek-ai/dsh-storage-json';
 import * as StorageDomain from '@deepseek-ai/dsh-storage-domain';
 import Tools from '@deepseek-ai/dsh-tools';
+// rc.3 requires a custom composition to mount a tool executor explicitly.
+import * as nativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native';
 import { AccessManager, SessionAccessBridge, ToolAccessBridge } from '../../packages/plugins/access/dist/index.js';
 import { createRequire } from 'node:module';
 const { ApiSessionNotFound } = await import(createRequire(new URL('../../packages/plugins/access/package.json', import.meta.url)).resolve('@deepseek-ai/dsh-api-session-controller'));
@@ -89,6 +91,7 @@ async function boot(root, selectedBySession, config = {}) {
     await ctx.plugin(JsonStorage, { root });
     await ctx.plugin(StorageDomain, { backend: 'json' });
     await ctx.plugin(Tools);
+    await ctx.plugin(nativeToolExecutor);
     await ctx.plugin(AuditJournal);
     await ctx.plugin(AccessManager);
     await ctx.plugin(ToolAccessBridge, { runtimeId: 'test-runtime', ...config });
@@ -100,13 +103,12 @@ async function boot(root, selectedBySession, config = {}) {
 }
 
 async function execute(ctx, sessionId, name = 'governed_echo') {
-  return ctx.tools.execute({
-    callId: `call-${sessionId}-${name}-${Math.random()}`,
-    name,
-    arguments: {},
+  const batch = await ctx.tools.execute({
+    calls: [{ type: 'tool-call', id: `call-${sessionId}-${name}-${Math.random()}`, name, arguments: '{}' }],
     agent: { id: sessionId },
     signal: new AbortController().signal,
   });
+  return batch.results[0].result;
 }
 
 test('official tool pipeline auto-binds a personal Session, denies unauthorized actors and audits final outcomes', async () => {
@@ -201,7 +203,7 @@ test('trusted Session ingress binds before create, preserves retry ownership and
   try {
     ctx = await boot(root, selected, { autoBindPersonalSessions: false });
     ctx.provide('sessionController', {
-      async inspect(sessionId) {
+      async state({ sessionId }) {
         if (existingSessions.has(String(sessionId))) return { header: { id: sessionId }, events: [] };
         throw new ApiSessionNotFound('fixture Session not found');
       },

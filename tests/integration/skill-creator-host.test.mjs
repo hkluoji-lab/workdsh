@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { Context } from '@deepseek-ai/cordis';
 import SkillRegistry, { renderSkillContent } from '@deepseek-ai/dsh-skill';
 import Tools from '@deepseek-ai/dsh-tools';
+// rc.3 requires a custom composition to mount an executor before running tools.
+import * as nativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,6 +20,7 @@ test('skills Host owns a disposable manager and official skill registration', as
     ctx.provide('connection', { fetch: { register(route) { routes.push(route); return async () => {}; } } });
     ctx.provide('systemPrompt', { tools() {}, section() {}, getSectionOrder() { return 0; } });
     await ctx.plugin(Tools);
+    await ctx.plugin(nativeToolExecutor);
     await ctx.plugin(SkillRegistry);
     ctx.effect(() => ctx.skills.register({ name: 'skill-creator', source: 'bundled', description: 'Original user guide fixture', content: 'ORIGINAL_GUIDE_SENTINEL' }));
     await ctx.plugin(skillsHost);
@@ -54,7 +57,10 @@ test('skills Host owns a disposable manager and official skill registration', as
     assert.ok(ctx.tools.get('workdsh_validate_skill_draft'));
     assert.ok(ctx.tools.get('workdsh_publish_skill_draft'));
     const controller = new AbortController();
-    const runTool = async (name, args) => ctx.tools.execute({ callId: `call-${name}`, name, arguments: args, signal: controller.signal });
+    const runTool = async (name, args) => {
+      const batch = await ctx.tools.execute({ calls: [{ type: 'tool-call', id: `call-${name}`, name, arguments: JSON.stringify(args) }], signal: controller.signal });
+      return batch.results[0].result;
+    };
     const documentFromTool = '---\nname: managed-authoring\ndescription: Managed authoring test\n---\nAlways return a deterministic fixture.\n';
     const drafted = await runTool('workdsh_save_skill_draft', { name: 'managed-authoring', document: documentFromTool, scope: 'shared-agents' });
     assert.equal(drafted.isError, false);

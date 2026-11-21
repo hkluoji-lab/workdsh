@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { Context } from '@deepseek-ai/cordis';
 import Tools from '@deepseek-ai/dsh-tools';
 import { registerExpertManagementTools } from '../../packages/plugins/experts/dist/tools/management-tools.js';
-import { createMessage, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Llm, skillTool, LocalFileSystem, WorkingDirectory, SkillRequestAdapter } from '../helpers/skill-runtime.mjs';
+import { createMessage, Agents, AgentLoop, Sessions, Projections, SystemPrompt, Llm, skillTool, LocalFileSystem, WorkingDirectory, SkillRequestAdapter, nativeToolExecutor } from '../helpers/skill-runtime.mjs';
 import Storage from '@deepseek-ai/dsh-storage';
 import * as JsonStorage from '@deepseek-ai/dsh-storage-json';
 import * as StorageDomain from '@deepseek-ai/dsh-storage-domain';
@@ -156,7 +156,11 @@ async function boot(existingRoot) {
   }
 
   const ctx = new Context();
-  ctx.provide('agentTeams', { tryMembership: () => undefined });
+  // rc.3 replaced `agentTeams.tryMembership` with `ctx.subagents.rootOf/namesOf`
+  // plus `agentTeams.isEnabled`. These tests never create a live Team child, so the
+  // subagent tree is a single root and every agent is its own root.
+  ctx.provide('subagents', { rootOf: (agent) => agent, namesOf: () => ({ self: '' }) });
+  ctx.provide('agentTeams', { isEnabled: () => false });
   const createCalls = [];
   try {
     ctx.provide('workdshIdentity', createIdentity());
@@ -653,7 +657,9 @@ test('published legacy team instructions are migrated to official DSH Team tools
     definition,
     teamMembers: { analyst: { expertId: 'member-1', revision: 'rev-1' } },
   });
-  assert.match(persona.prefix, /spawn_teammate/);
+  assert.match(persona.prefix, /`subagent`/);
+  assert.match(persona.prefix, /subagent_fork/);
+  assert.match(persona.prefix, /list_agents/);
   assert.match(persona.prefix, /team_task_create/);
   assert.match(persona.prefix, /team_task_list/);
   assert.match(persona.prefix, /wait_agent/);
@@ -667,9 +673,16 @@ test('authoring tool content preserves full definitions, CAS tokens and draft li
     h.ctx.workdshIdentity.resolve = async () => actor('owner-a');
     h.ctx.provide('systemPrompt', { tools() {}, section() {}, getSectionOrder() { return 0; } });
     await h.ctx.plugin(Tools);
+    await h.ctx.plugin(nativeToolExecutor);
     registerExpertManagementTools(h.ctx);
     let call = 0;
-    const run = (name, args) => h.ctx.tools.execute({ callId: `author-${++call}`, name, arguments: args, signal: new AbortController().signal });
+    const run = async (name, args) => {
+      const batch = await h.ctx.tools.execute({
+        calls: [{ type: 'tool-call', id: `author-${++call}`, name, arguments: JSON.stringify(args) }],
+        signal: new AbortController().signal,
+      });
+      return batch.results[0].result;
+    };
     const definition = fullDefinition('Authoring fixture');
     const { skillRequirements, futureRequirements, ...prose } = definition;
     const drafted = await run('workdsh_expert_create_draft', { definition: { ...prose, skill_requirements: [], future_requirements: [] } });
@@ -723,7 +736,7 @@ test('published expert persona and frozen Skill reach the official Agent Loop wi
     const personaConfig = rows.find(row => row.name === '@deepseek-ai/dsh-persona').config;
     const skillConfig = rows.find(row => row.name === '@deepseek-ai/dsh-skill-filesystem').config;
     const persona = await import(pathToFileURL(packageRequire.resolve('@deepseek-ai/dsh-persona')).href);
-    for (const plugin of [LocalFileSystem, Sessions, Projections, SystemPrompt, WorkingDirectory, Tools, Llm, Agents, AgentLoop]) await h.ctx.plugin(plugin);
+    for (const plugin of [LocalFileSystem, Sessions, Projections, SystemPrompt, WorkingDirectory, Tools, nativeToolExecutor, Llm, Agents, AgentLoop]) await h.ctx.plugin(plugin);
     // Alter the dynamic source after publication: the expert must consume its snapshot.
     await writeFile(join(h.agentsHome, 'skills/sample-skill/SKILL.md'), '---\nname: sample-skill\ndescription: Changed dynamic fixture\n---\nDYNAMIC_SOURCE_AFTER_PUBLISH\n');
     class PublishedSkillAdapter extends SkillRequestAdapter {

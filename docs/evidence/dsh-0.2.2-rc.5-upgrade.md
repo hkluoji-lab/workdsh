@@ -265,6 +265,35 @@ $ npm view @deepseek-ai/dsh time --json
 - **`zq.10ge.cn`**：公网 `/` = **302**（正常）。历史 `tls: first record does not look like a TLS handshake` 属该隧道另一链路（明文 8082/8088 + https origin 配置），**与本轮升级无关，未改动**。
 - **未执行**：隧道 ingress 配置变更（remote-managed，属外部账号，按硬约束需用户单独授权）。
 
+### 9.4.1 阶段 5｜`tests/integration` 既有失败修复（PASS）
+
+- **定性**：这 20 个失败**非 rc.5 引入**，根因是 rc.2/rc.3 官方接口迁移后 `tests/` fixture 未同步（旧单调用工具形状、`sessionController.inspect`、`agentTeams.tryMembership`、`spawn_teammate`）。修复方向 = 更新测试适配新官方接口，**未回滚任何 `packages/plugins/**/src` 适配代码**。
+- **依赖补充**：根 `package.json` devDependencies 新增 `@deepseek-ai/dsh-tool-executor-native`（`0.2.2-rc.5`）。rc.2 官方迁移指南明确「原生/PTC 执行分别要求 `dsh-tool-executor-native`/`dsh-tool-executor-ptc`；内置 profile 已挂载，**自定义组合必须添加一个**」。此前该包仅在 `pnpm.overrides` 中声明版本约束，未列入根依赖，导致测试自建 Cordis 组合无法解析 executor。
+- **改动清单（仅 `tests/` 与根依赖）**：
+  | 文件 | 改动 |
+  | --- | --- |
+  | `package.json` / `pnpm-lock.yaml` | 新增 `@deepseek-ai/dsh-tool-executor-native@0.2.2-rc.5` |
+  | `tests/helpers/skill-runtime.mjs` | 转出新 executor 模块供各 fixture 复用 |
+  | `tests/helpers/skill-persistence-worker.mjs` | 组合中挂载 `nativeToolExecutor` |
+  | `tests/integration/skill-session.test.mjs` | 组合中挂载 `nativeToolExecutor` |
+  | `tests/integration/skill-creator-host.test.mjs` | 挂载 `nativeToolExecutor`；`runTool` 改批次契约 |
+  | `tests/integration/office-content.test.mjs` | 3 处 executor mock 改批次契约（`calls`/`results[].result`/`additionalContexts`） |
+  | `tests/integration/office-download.test.mjs` | 3 处 executor mock 改批次契约；移除已不存在的 `input.parent` 断言 |
+  | `tests/integration/tool-access-bridge.test.mjs` | 挂载 executor；`execute()` 改批次契约；`sessionController` mock `inspect`→`state` |
+  | `tests/integration/expert-manager.test.mjs` | 补 `ctx.subagents = {rootOf,namesOf}`；`agentTeams.tryMembership`→`agentTeams.isEnabled`；挂载 executor；`/spawn_teammate/`→`subagent`/`subagent_fork`/`list_agents` |
+- **契约依据（官方发布包类型定义实测）**：`ctx.tools.execute(input)` 输入为 `ToolBatchInput { calls: ToolCallBlock[]; signal; agent?; maxParallelToolCalls?; toolSet?; log? }`，`ToolCallBlock = { type:'tool-call', id, name, arguments: string(JSON) }`；输出 `ToolBatchResult { results: {callId,result}[], additionalContexts, concluded }`。旧单调用形状 `execute({callId,name,arguments})` 会因 `input.calls` 为 `undefined` 在 `pipeline.js` `toolCalls.map` 抛 `TypeError`。
+- **rc.3 执行守卫迁移**：`agentTeams.tryMembership` → `ctx.subagents.rootOf`/`namesOf` + `agentTeams.isEnabled`（`packages/plugins/experts/src/runtime/execution-guard.ts`）。
+- **复验（PASS）**：
+
+  | 检查项 | 结果 |
+  | --- | --- |
+  | `node --test tests/integration/*.test.mjs` | `tests 111 / pass 111 / fail 0 / skipped 0` |
+  | 改前基线（同命令） | `tests 111 / pass 90 / fail 20`（上一轮报告记 21 属单次抖动；本轮以实测 20 为准） |
+  | `pnpm check:plan` | PASS |
+  | `pnpm check:versions` | PASS |
+  | `pnpm build` | exit 0 |
+  | `pnpm typecheck` | exit 0 |
+
 ### 9.5 回滚锚点
 
 - 线上：`.upgrade-rc5-$TS/`（compose + profile 5 文件）、`compatibility.json.bak.rc5.<ts>`；rc.3 镜像 tag 仍在本地。回滚 = compose `image` 改回 rc.3 + `--force-recreate` + 还原 profile 备份。
@@ -276,7 +305,6 @@ $ npm view @deepseek-ai/dsh time --json
 
 - `git commit` / `git push`（硬约束：需用户授权；且 `docs/dsh-v0.2.2-rc.5/` 与证据文档在 `/docs/` 忽略规则下，需 `git add -f`）。
 - npm 发布（无版本要发布）。
-- `tests/integration` 的 20 个既有失败修复（待用户决定）。
 - 线上 20 键豁免回填仓库 `deploy/profile/compatibility.json`（与 rc.3 轮次同口径保留为已知差异）。
 - `zq.10ge.cn` 隧道链路修复（外部账号，需授权）。
 - login 后逐页业务点测（无凭据）。
