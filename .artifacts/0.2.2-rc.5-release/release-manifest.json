@@ -1,0 +1,201 @@
+{
+  "project": "WorkDSH",
+  "scope": "plugin-refresh-0.2.2-rc.5",
+  "channel": "local-artifact",
+  "sourceCommit": "8ce4eec32edc965cd11d0abc2bb36d1676d11705",
+  "worktreeDirty": false,
+  "harness": "0.2.2-rc.5",
+  "node": "v24.15.0",
+  "packageManager": "pnpm@10.34.5",
+  "packages": [
+    {
+      "name": "workdsh-bundle",
+      "version": "0.1.0-alpha.58",
+      "private": true,
+      "filename": "workdsh-bundle-0.1.0-alpha.58.tgz",
+      "bytes": 30506,
+      "sha256": "e529d625fd62c84796a4bf02b48ecf118b0e208dc2283850cd689e483aa02114",
+      "dshPeers": 0
+    },
+    {
+      "name": "workdsh-contracts",
+      "version": "0.1.0-alpha.13",
+      "private": true,
+      "filename": "workdsh-contracts-0.1.0-alpha.13.tgz",
+      "bytes": 26532,
+      "sha256": "f3efbf67a76145522dd777a818da8df67320ebcddca1191940fcc6da65f1ba6f",
+      "dshPeers": 0
+    },
+    {
+      "name": "workdsh-plugin-access",
+      "version": "0.1.0-alpha.6",
+      "private": true,
+      "filename": "workdsh-plugin-access-0.1.0-alpha.6.tgz",
+      "bytes": 34656,
+      "sha256": "baa7da39b864a5ee55662bf101541675935d7ca44148e1c364172177a8e5c8f6",
+      "dshPeers": 5
+    },
+    {
+      "name": "workdsh-plugin-activity",
+      "version": "0.1.0-alpha.7",
+      "private": false,
+      "filename": "workdsh-plugin-activity-0.1.0-alpha.7.tgz",
+      "bytes": 28789,
+      "sha256": "ef219c8f4b80cab5d9648ed26a6d0fc82c1d8268c17cbef116f9211e2ddc813b",
+      "dshPeers": 6
+    },
+    {
+      "name": "workdsh-plugin-assistant",
+      "version": "0.1.0-alpha.1",
+      "private": false,
+      "filename": "workdsh-plugin-assistant-0.1.0-alpha.1.tgz",
+      "bytes": 38249,
+      "sha256": "ed1fbd0f1db341107df2d58831ecb76434bb51fd1396f08f20a532debc9348e1",
+      "dshPeers": 7
+    },
+    {
+      "name": "workdsh-plugin-audit",
+      "version": "0.1.0-alpha.4",
+      "private": true,
+      "filename": "workdsh-plugin-audit-0.1.0-alpha.4.tgz",
+      "bytes": 4672,
+      "sha256": "569302a0ce533a0099f353cb393908fd71e062095a9686511824dbc3aa1660f6",
+      "dshPeers": 1
+    },
+    {
+      "name": "workdsh-plugin-automations",
+      "version": "0.1.0-alpha.1",
+      "private": false,
+      "filename": "workdsh-plugin-automations-0.1.0-alpha.1.tgz",
+      "bytes": 31453,
+      "sha256": "50670c6b53cea806105fb632e6e379d82b9dde1565597f82ecd1e6cdd2e97211",
+      "dshPeers": 15
+    },
+    {
+      "name": "workdsh-plugin-connectors",
+      "version": "0.1.0-alpha.3",
+      "private": false,
+      "filename": "workdsh-plugin-connectors-0.1.0-alpha.3.tgz",
+      "bytes": 35578,
+      "sha256": "a8056806027f5dfa5b5452a15ebd67f5ce1645a6203f7997adc3827a03b0a8bc",
+      "dshPeers": 11
+    },
+    {
+      "name": "workdsh-plugin-drive",
+      "version": "0.1.0-alpha.9",
+      "private": false,
+      "filename": "workdsh-plugin-drive-0.1.0-alpha.9.tgz",
+      "bytes": 63717,
+      "sha256": "8d4798dfc84b8dbcae24d88216d0acd7642f3ec529f9bc34a342b34097f209e9",
+      "dshPeers": 19
+    },
+    {
+      "name": "workdsh-plugin-experts",
+      "version": "0.1.0-alpha.11",
+      "private": false,
+      "filename": "workdsh-plugin-experts-0.1.0-alpha.11.tgz",
+      "bytes": 186164,
+      "sha256": "7eb7c4d1ecb057de726e63097be017abe85568d1dec81d0f887ef223560e02e5",
+      "dshPeers": 10
+    },
+    {
+      "name": "workdsh-plugin-identity",
+      "version": "0.1.0-alpha.1",
+      "private": true,
+      "filename": "workdsh-plugin-identity-0.1.0-alpha.1.tgz",
+      "bytes": 16663,
+      "sha256": "aa076edf85e4055e10d8162b201540df4f5ffa74eab6ed32dae38c4520afce0b",
+      "dshPeers": 3
+    },
+    {
+      "name": "workdsh-plugin-library",
+      "version": "0.1.0-alpha.4",
+      "private": false,
+      "filename": "workdsh-plugin-library-0.1.0-alpha.4.tgz",
+      "bytes": 61754,
+      "sha256": "c0f8ba159e7538a38b86ce5cfd0b7fcd1f1f14bd32b7dfb226a89b43890bea2d",
+      "dshPeers": 16
+    },
+    {
+      "name": "workdsh-plugin-office",
+      "version": "0.1.0-alpha.12",
+      "private": true,
+      "filename": "workdsh-plugin-office-0.1.0-alpha.12.tgz",
+      "bytes": 19626528,
+      "sha256": "4a143422b7f0493c6b66d11a40b8dcc5c3e9d81a30038df13dd4ffbd0c1965f7",
+      "dshPeers": 7
+    },
+    {
+      "name": "workdsh-plugin-projects",
+      "version": "0.1.0-alpha.4",
+      "private": false,
+      "filename": "workdsh-plugin-projects-0.1.0-alpha.4.tgz",
+      "bytes": 63944,
+      "sha256": "da6a28576964aabe11217b1e46f298540143e229a81cbb016eaeff21f257d52f",
+      "dshPeers": 15
+    },
+    {
+      "name": "workdsh-plugin-skills",
+      "version": "0.1.0-alpha.32",
+      "private": false,
+      "filename": "workdsh-plugin-skills-0.1.0-alpha.32.tgz",
+      "bytes": 146631,
+      "sha256": "9fa50bfa078d93b78580636c21f69bd6cecb28749b5751a873495d8ff3ed0841",
+      "dshPeers": 3
+    },
+    {
+      "name": "workdsh-plugin-workbench",
+      "version": "0.1.0-alpha.16",
+      "private": true,
+      "filename": "workdsh-plugin-workbench-0.1.0-alpha.16.tgz",
+      "bytes": 19750,
+      "sha256": "d00570ca46018e6af14639c271bd037a8c2c3612df58a753b1a347f171e70456",
+      "dshPeers": 0
+    },
+    {
+      "name": "workdsh-portal",
+      "version": "0.1.0-alpha.5",
+      "private": true,
+      "filename": "workdsh-portal-0.1.0-alpha.5.tgz",
+      "bytes": 545029,
+      "sha256": "b400d28a2407b86f5ed52110095f29b38ba7569251cea25f57f9962200425a3b",
+      "dshPeers": 0
+    },
+    {
+      "name": "workdsh-provider-identity-local",
+      "version": "0.1.0-alpha.6",
+      "private": true,
+      "filename": "workdsh-provider-identity-local-0.1.0-alpha.6.tgz",
+      "bytes": 6875,
+      "sha256": "bf2ccb94c1706426adac394b3e500f4310566893181cef9bc9b26af472f50877",
+      "dshPeers": 1
+    },
+    {
+      "name": "workdsh-survey",
+      "version": "0.1.0-alpha.1",
+      "private": true,
+      "filename": "workdsh-survey-0.1.0-alpha.1.tgz",
+      "bytes": 42318,
+      "sha256": "9afdbab8be6d3a9b61f93f99c3014bafa988ce49e2bae163713fea262f5d1313",
+      "dshPeers": 0
+    },
+    {
+      "name": "workdsh-ui",
+      "version": "0.1.0-alpha.6",
+      "private": true,
+      "filename": "workdsh-ui-0.1.0-alpha.6.tgz",
+      "bytes": 9604,
+      "sha256": "2d99e22e310f5fab4873122c4c53ff3e0030eb48e4be818758855c90877518d8",
+      "dshPeers": 0
+    },
+    {
+      "name": "workdsh-vas",
+      "version": "0.1.0-alpha.1",
+      "private": true,
+      "filename": "workdsh-vas-0.1.0-alpha.1.tgz",
+      "bytes": 60812,
+      "sha256": "64216787d9a3cacb126d55264bde19a682deef21a3b68f08a91a2f2b622a231d",
+      "dshPeers": 0
+    }
+  ]
+}

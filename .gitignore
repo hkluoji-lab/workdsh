@@ -7,7 +7,10 @@ coverage/
 **/lib/
 *.tsbuildinfo
 .test-runtime/
-.artifacts/
+.artifacts/*
+# 发布制品（tgz + SHA256SUMS + release-manifest.json）作为交付资产入库：
+# 其余 .artifacts/ 内容仍为本地过程产物，保持忽略。
+!.artifacts/0.2.2-rc.5-release/
 tmp/
 .env
 .env.*
