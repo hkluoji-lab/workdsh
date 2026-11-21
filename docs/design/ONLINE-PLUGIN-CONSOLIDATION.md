@@ -125,7 +125,7 @@
 
 **任务 ID**：P1-15（专项 D19，批 1 —— access 域收敛，输入 4 件 → `packages/plugins/access`）。
 
-**官方文档路径**：`docs/dsh-v0.2.2-rc.3/`（本地镜像）。**边界**：基线已被用户推进到 `0.2.1-alpha.2`，而 `docs/dsh-v0.2.0-rc.2/` 镜像**尚未落盘**（见 [AGENTS.md](../../AGENTS.md) 与 [dsh-0.2.0-rc.2-upgrade](../evidence/dsh-0.2.0-rc.2-upgrade.md)「未覆盖项与边界」）；因此本批**以锁定发布包的 `exports` / `types` 实测决定可用接口**，镜像仅作交叉核对，不据镜像推断接口。
+**官方文档路径**：`docs/dsh-v0.2.2-rc.5/`（本地镜像）。**边界**：基线已被用户推进到 `0.2.1-alpha.2`，而 `docs/dsh-v0.2.0-rc.2/` 镜像**尚未落盘**（见 [AGENTS.md](../../AGENTS.md) 与 [dsh-0.2.0-rc.2-upgrade](../evidence/dsh-0.2.0-rc.2-upgrade.md)「未覆盖项与边界」）；因此本批**以锁定发布包的 `exports` / `types` 实测决定可用接口**，镜像仅作交叉核对，不据镜像推断接口。
 
 **锁定发布包公开入口**（全部取自已安装的 `0.2.1-alpha.2` 树，非推测）：
 
@@ -155,7 +155,7 @@
 
 **任务 ID**：P1-15（专项 D19，批 2 —— identity 域收敛，输入 2 件 → `packages/plugins/identity`，含门户签名去重）。
 
-**官方文档路径**：`docs/dsh-v0.2.2-rc.3/`（本地镜像）。**边界同批 1**：基线已推进到 `0.2.1-alpha.2`，`docs/dsh-v0.2.0-rc.2/` 镜像尚未落盘，故本批**以锁定发布包的 `exports` / `types` 实测决定可用接口**（尤其 `dsh-storage-domain` 与 `dsh-client-connection` 的类型签名），镜像只作交叉核对。
+**官方文档路径**：`docs/dsh-v0.2.2-rc.5/`（本地镜像）。**边界同批 1**：基线已推进到 `0.2.1-alpha.2`，`docs/dsh-v0.2.0-rc.2/` 镜像尚未落盘，故本批**以锁定发布包的 `exports` / `types` 实测决定可用接口**（尤其 `dsh-storage-domain` 与 `dsh-client-connection` 的类型签名），镜像只作交叉核对。
 
 **锁定发布包公开入口**（全部取自已安装的 `0.2.1-alpha.2` 树，非推测）：
 

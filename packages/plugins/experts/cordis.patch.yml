@@ -1,7 +1,7 @@
-# Official Team composition (DSH 0.2.2-rc.3). The official `@deepseek-ai/dsh-agent-team`
+# Official Team composition (DSH 0.2.2-rc.5). The official `@deepseek-ai/dsh-agent-team`
 # service, its `dsh-tool-agent-team` tools and the `dsh-client-ui-agent-team` Web UI are
 # already provided by dsh-base / dsh-web-app, so this bundle no longer inserts them.
-# rc.3 keeps the host-plane delegation tools disabled and lets each Agent preset select
+# rc.5 keeps the host-plane delegation tools disabled and lets each Agent preset select
 # its own `delegation` group, which matches the intent of the rows below.
 - id: tool-subagent-control
   disabled: true
