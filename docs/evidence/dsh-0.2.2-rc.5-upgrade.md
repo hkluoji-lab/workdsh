@@ -49,7 +49,7 @@
 | `packages/**/package.json` | **16 个**含 `0.2.2-rc.3` | 16 个全 `0.2.2-rc.5`（deps 精确、peer 保留 `^`） |
 | `deploy/profile/package.json` | 官方 4 条 `0.2.2-rc.3` | 官方 4 条 `0.2.2-rc.5` |
 | `deploy/profile/pnpm-workspace.yaml` | overrides dsh **292** 条 `0.2.2-rc.3` | 292 条全 `0.2.2-rc.5` |
-| `deploy/profile/compatibility.json` | `agent-teams@0.1.23 → ["0.2.1-rc.3","0.2.2-rc.1","0.2.2-rc.3"]` | 追加 `"0.2.2-rc.5"`（四值并存，便于回滚） |
+| `deploy/profile/compatibility.json` | `agent-teams@0.1.23 → ["0.2.1-rc.3","0.2.2-rc.1","0.2.2-rc.3"]` | 阶段 1 先追加 `"0.2.2-rc.5"`（四值并存，便于回滚）；**阶段 6 已整体回填为线上实况 20 键**（见 9.7） |
 | `scripts/check-published-versions.mjs` | `expected = '0.2.2-rc.3'` | `expected = '0.2.2-rc.5'` |
 
 实测计数（`grep -c '0.2.2-rc.3'`，升级前）：
@@ -192,7 +192,7 @@ $ npm view @deepseek-ai/dsh time --json
 - **未做 tarball 逐文件比对**：依赖结论来自 registry 元数据闭包比对，非发布包内容 diff。（阶段 2 已对 20 个官方包做 `lib/` 逐包 byte-diff 补充验证，见第九节 9.2。）
 - **未在升级前实测 rc.5 镜像的 1Panel 派生 entrypoint 兼容性**：留待阶段 3 步骤 4 现场核对（已执行，见 9.3）。
 - **未验证 rc.4 单版本**：rc.4 被 rc.5 覆盖，未单独评估。
-- **未回填仓库 `compatibility.json`**：仓库仍为「1 条 agent-teams」快照口径，线上 20 键（16 workdsh + 4 官方）的豁免差异**未回填仓库**，与 rc.3 轮次同口径（见 9.4）。
+- **~~未回填仓库 `compatibility.json`~~ 已回填**：仓库原为「1 条 agent-teams」快照口径，线上 20 键（16 workdsh + 4 官方）的豁免差异**已于 2026-11-21 阶段 6 回填入库**，见 9.7。
 - **未执行**：npm 发布、`git commit`/`push`（按硬约束不自动执行）。
 
 ---
@@ -305,6 +305,35 @@ $ npm view @deepseek-ai/dsh time --json
 
 - `git commit` / `git push`（硬约束：需用户授权；且 `docs/dsh-v0.2.2-rc.5/` 与证据文档在 `/docs/` 忽略规则下，需 `git add -f`）。
 - npm 发布（无版本要发布）。
-- 线上 20 键豁免回填仓库 `deploy/profile/compatibility.json`（与 rc.3 轮次同口径保留为已知差异）。
 - `zq.10ge.cn` 隧道链路修复（外部账号，需授权）。
 - login 后逐页业务点测（无凭据）。
+
+### 9.7 阶段 6｜线上 20 键豁免回填仓库（PASS）
+
+> 执行时间：2026-11-21。用户指令「执行线上 20 键豁免回填」。**纯配置快照更新，未改任何源码，未写线上。**
+
+- **目标**：把线上 `dsh.10ge.cn` profile 实况的 20 条版本兼容豁免回填仓库 `deploy/profile/compatibility.json`，消除「线上 20 键 / 仓库 1 键」的已知差异（原记录见 rc.5 第 9.6 节与 8 节，以及 [dsh-0.2.2-rc.3-upgrade](dsh-0.2.2-rc.3-upgrade.md) 第八节）。
+- **线上只读取证**（`sudo cat …/profiles/web/compatibility.json`，1789 B，属主 `luoji:luoji`）：
+  - 键数 **20**（workdsh **16** + 官方 **4**），`agent-teams` 键命中数 = **0**。
+  - 每键值均为 `["0.2.2-rc.3","0.2.2-rc.5"]` 双值（沿用 9.3.1 修复①后的形态，便于回滚）。
+  - 官方 4 键的已装版本后缀：`@deepseek-ai/dsh-computer-use@0.2.2-rc.1`；`dsh-browser-use`、`dsh-experimental-browser-use-playwright-mcp`、`dsh-experimental-computer-use-cua-driver-native` 均为 `@0.2.2-rc.3`（即 9.3.1 修复②把陈旧 `@0.2.2-rc.1` 改为实际安装版本后的结果）。
+  - workdsh 16 键中，键名带版本后缀者与 `deploy/profile/package.json` 声明的 workdsh 依赖版本**并非逐一相等**（如线上 `workdsh-plugin-skills@0.1.0-alpha.50` vs 快照 α.32、`workdsh-bundle@0.1.0-alpha.53` vs 快照 α.58、`workdsh-plugin-office@0.1.0-alpha.10` vs 快照 α.12）。**本目录保留线上逐字形态**，快照 `package.json` 的 workdsh 依赖版本差异属既有边界，未在本轮改动。
+- **回填动作**：以线上内容**逐字重写** `deploy/profile/compatibility.json`（缩进 2 空格、键序对齐线上），并将 `deploy/profile/README.md` 的 `compatibility.json` 行口径从「本快照 1 条 + 线上实际 20 键（未入库）」改为「已回填 20 键」。
+- **`@nanmicoder/dsh-agent-teams` 差异处理**：线上 profile 已**不含**该包（`compatibility.json` 键 0 处、`package.json` 依赖声明 0 处，前一阶段探针中 `node_modules` 亦无此目录）。因本目录定位为「线上配置真源」，回填**以线上为准删除该键**。`deploy/profile/package.json` 第 11 行依赖与第 54 行 bundles 中残留的 `@nanmicoder/dsh-agent-teams` 声明**不在本轮范围内**，未改动，记为**已知边界**（快照内部该条与线上不一致，待后续单独轮次按线上实况收敛 `package.json`/`bundles`）。
+- **复验（PASS）**：
+
+  | 检查项 | 结果 |
+  | --- | --- |
+  | `JSON.parse` 有效性 | 通过 |
+  | 键数 | **20** |
+  | `keys missing rc5` | **`[]`** |
+  | workdsh / 官方 键数 | **16 / 4** |
+  | `agent-teams` 键数 | **0** |
+  | **逐字比对（关键证据）** | 仓库文件前 **1789** 字节 `sha256 = 4d7ab63bef428a1a6c6fb04420fbae293d190fac96b00ed569f8f684b5f5e751`，与线上文件 `sha256` **完全相同**；仓库版仅尾部多一个 POSIX 换行（1790 vs 1789 B）。即豁免内容与线上**逐字节一致** |
+  | `git diff --stat deploy/profile/` | `compatibility.json` 1 文件 / +77 −3（README 1 文件 / +1 −1） |
+  | `pnpm check:plan` | PASS（34 modules / 50 documents） |
+  | `pnpm check:versions` | PASS（664 DSH lock entries pinned to `0.2.2-rc.5`） |
+
+- **未执行**：`git commit` / `git push`（需用户授权）。本轮改动文件：`deploy/profile/compatibility.json`、`deploy/profile/README.md`、本证据文档、`docs/STATUS.md`。
+- **回滚锚点**：`git checkout -- deploy/profile/compatibility.json deploy/profile/README.md` 可整体还原（改动未 commit）；线上文件未触碰。
+

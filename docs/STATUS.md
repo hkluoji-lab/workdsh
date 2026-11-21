@@ -1,5 +1,18 @@
 # 当前进度
 
+## 2026-11-21：线上 20 键版本兼容豁免回填仓库（承接 rc.5 升级轮，阶段 6）
+
+用户指令「**执行线上 20 键豁免回填**」。**已把线上 `dsh.10ge.cn` profile 实况的 20 条豁免逐字回填仓库 [deploy/profile/compatibility.json](file:///Users/apple/Documents/AI-luoji/workdsh/deploy/profile/compatibility.json)，并更新 README 口径与证据文档；`check:plan`/`check:versions` 双 PASS。未 commit / 未 push（待授权）。本轮为纯配置快照更新，零源码改动，未写线上。**
+- **目标**：消除「线上 20 键 / 仓库 1 键（仅 agent-teams）」的已知差异（原记录见 rc.5 第 8、9.6 节及 rc.3 证据第八节）。
+- **线上只读取证**（`sudo cat …/profiles/web/compatibility.json`）：键数 **20**（workdsh **16** + 官方 **4**），`agent-teams` 键 = **0**；每键值为 `["0.2.2-rc.3","0.2.2-rc.5"]` 双值；官方 4 键后缀为 `dsh-computer-use@0.2.2-rc.1` + 其余 3 键 `@0.2.2-rc.3`。
+- **回填动作**：以线上内容逐字重写 `deploy/profile/compatibility.json`（20 键、2 空格缩进、键序对齐线上）；`deploy/profile/README.md` 的 `compatibility.json` 行由「本快照 1 条 + 线上实际 20 键（未入库）」改为「已回填 20 键」。
+- **`@nanmicoder/dsh-agent-teams` 差异处理**：线上已不含该包（键 0 / 依赖声明 0 / node_modules 无此目录），按「本目录 = 线上配置真源」定位**以线上为准删除该键**。`deploy/profile/package.json` 第 11/54 行残留的 agent-teams 声明**不在本轮范围**，记为**已知边界**（待后续单独轮次按线上实况收敛）。
+- **复验（PASS）**：`JSON.parse` 通过；键数 **20**；`keys missing rc5` = **`[]`**；workdsh/官方 = **16/4**；`agent-teams` 键 = **0**；`pnpm check:plan` PASS（34 modules / 50 documents）；`pnpm check:versions` PASS（664 DSH lock entries pinned to `0.2.2-rc.5`）。
+- **改动文件（4）**：`deploy/profile/compatibility.json`（+77 −3）、`deploy/profile/README.md`、`docs/evidence/dsh-0.2.2-rc.5-upgrade.md`（新增 9.7 节并修订 8/9.6 节）、`docs/STATUS.md`。
+- **未执行**：`git commit` / `git push`（硬约束：需用户授权；`docs/**` 在 `/docs/` 忽略规则下需 `git add -f`）；`deploy/profile/package.json` 的 agent-teams 声明收敛（范围外）；npm 发布（无）。
+- **回滚锚点**：`git checkout -- deploy/profile/compatibility.json deploy/profile/README.md` 可整体还原（未 commit）；线上文件未触碰。
+- **证据**：[dsh-0.2.2-rc.5-upgrade 第 9.7 节](evidence/dsh-0.2.2-rc.5-upgrade.md)。
+
 ## 2026-11-21：`tests/integration` 既有 20 个失败修复（承接 rc.5 升级轮）
 
 用户指令「**先修复 tests/integration 的 20 个失败**」。**已修复，`node --test tests/integration/*.test.mjs` = `tests 111 / pass 111 / fail 0 / skipped 0`；`check:plan`/`check:versions`/`build`/`typecheck` 全部通过。未 commit / 未 push（待授权）。**
@@ -27,7 +40,7 @@
 - **复验（PASS）**：`1panel/deepseek-harness:0.2.2-rc.5` / `running (healthy)` / `RestartCount=0`；容器内 `bin.js --version` = **`0.2.2-rc.5`**；容器内 `127.0.0.1:3080` = **200**；宿主机 `https://127.0.0.1:3090` = **200**；公网 `https://dsh.10ge.cn/` = **302 → /portal → 200**；鉴权补丁命中 = **1**；重启后 `did not activate` / `disabling row` / `skipping bundle` = **0 / 0 / 0**；`[workdsh:probe] activated`、`[skillhub] self-check ok`；容器内 `dsh-web-app`/`dsh-agent`/`dsh-session`/`dsh-tools`/`dsh-brand`/`dsh-computer-use` 全部 = `0.2.2-rc.5`。
 - **502 排查（已定位，非升级缺陷）**：`dsh.10ge.cn` 公网 `/` 与 `/api/workdsh-connectors` 均 302/200 正常；cloudflared 日志中 `dial tcp 192.168.11.205:3090: connection refused` **全部落在容器重启窗口（13:48:37–38，共 86 条）**，`--since 13:49:30` 计数 = **0**；宿主机 `3090` 由 docker-proxy 正常监听（`0.0.0.0:3090->8443`）。**结论：502 为升级重启的瞬时现象，重启完成后自动消失，无需改隧道。** `zq.10ge.cn` 公网 `/` = 302 正常；其历史 `tls: first record does not look like a TLS handshake` 属另一链路，与本次升级无关。
 - **回滚锚点**：线上 `.upgrade-rc5-$TS/` 与 `compatibility.json.bak.rc5.<ts>`，rc.3 镜像 tag 仍在本地；仓库改动未 commit，`git checkout` 可整体还原。
-- **未执行**：① `git commit`/`push`（硬约束：需授权；`docs/` 有 `/docs/` 忽略规则 → `docs/dsh-v0.2.2-rc.5/`（1134 文件）与证据文档须 `git add -f`，与 rc.3 轮次 `55e7aef4f6`/`912d52a09b` 同做法）；② npm 发布（无版本要发布）；③ 线上 20 键豁免回填仓库 `deploy/profile/compatibility.json`（与 rc.3 轮次同口径保留为已知差异）；④ 隧道 ingress 配置变更（remote-managed，外部账号，需授权）；⑤ login 后逐页业务点测（无凭据）。~~`tests/integration` 20 个既有失败修复~~ → **已执行**（见上节，111/111）。
+- **未执行**：① `git commit`/`push`（硬约束：需授权；`docs/` 有 `/docs/` 忽略规则 → `docs/dsh-v0.2.2-rc.5/`（1134 文件）与证据文档须 `git add -f`，与 rc.3 轮次 `55e7aef4f6`/`912d52a09b` 同做法）；② npm 发布（无版本要发布）；~~③ 线上 20 键豁免回填仓库 `deploy/profile/compatibility.json`~~ → **已执行**（见上节，阶段 6）；④ 隧道 ingress 配置变更（remote-managed，外部账号，需授权）；⑤ login 后逐页业务点测（无凭据）。~~`tests/integration` 20 个既有失败修复~~ → **已执行**（见上节，111/111）。
 - **证据**：[dsh-0.2.2-rc.5-upgrade](evidence/dsh-0.2.2-rc.5-upgrade.md)（九节结构，第九节「执行结果」已回填实测取证）。前序见 [dsh-0.2.2-rc.3-upgrade](evidence/dsh-0.2.2-rc.3-upgrade.md)。
 
 ## 2026-11-15：DSH 基线 0.2.2-rc.1 → 0.2.2-rc.3 收敛（仓库真源 + 线上 profile 写入收口）

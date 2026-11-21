@@ -12,7 +12,7 @@
 | `package.json` | profile 依赖 + `dsh.profile.bundles`（28 项 bundle 装配顺序）与 `patchReload: live` |
 | `cordis.patch.yml` | 补丁层：`disabled` 开关（computer-use 系列、`ui-plugin-manager`）、`insert` 条目（`time-context`、`workdsh-remote-shell`）、`llm-pi-ai` 的 `jhpt` provider 与模型 ID、身份桥 `secretFile` 引用等 |
 | `cordis.yml` | profile 根条目列表（空 `[]`，树完全由 bundles + patch 组合） |
-| `compatibility.json` | 版本兼容豁免表（本快照 1 条：`@nanmicoder/dsh-agent-teams@0.1.23` 接受 `0.2.1-rc.3` / `0.2.2-rc.1` / `0.2.2-rc.3` / `0.2.2-rc.5` 四值并存以便回滚）。**注意：线上实际 20 键**（workdsh 16 + 官方 4），workdsh 豁免从未入库，差异见 [dsh-0.2.2-rc.3-upgrade](../../docs/evidence/dsh-0.2.2-rc.3-upgrade.md) 第八节 |
+| `compatibility.json` | 版本兼容豁免表，**已回填线上实况 20 键**（workdsh 16 + 官方 4），每键保留 `["0.2.2-rc.3","0.2.2-rc.5"]` 双值以便回滚；`@deepseek-ai/dsh-computer-use` 键的已装版本为 `@0.2.2-rc.1`，其余 3 个官方键为 `@0.2.2-rc.3`。回填过程与差异见 [dsh-0.2.2-rc.5-upgrade](../../docs/evidence/dsh-0.2.2-rc.5-upgrade.md) 第 9.7 节 |
 | `pnpm-workspace.yaml` | profile workspace 配置：`overrides`（决定实际解析版本，**压过 package.json**）、`allowBuilds`、`minimumReleaseAgeExclude`、`nodeLinker: hoisted`、`storeDir` |
 
 ## 不含密钥
